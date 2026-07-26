@@ -8,25 +8,33 @@ import { ColumnLabel, Unit, WeighmentType } from "@/lib/constants/enums"
 import { EntityKey } from "@/lib/constants/enums"
 import { integerIdSchema } from "./helpers"
 
+// Indian State & Union Territory codes (mirrors constants.py STATE_CODES, excluding BH which is handled separately)
 const STATE_CODES = [
   'AN','AP','AR','AS','BR','CH','CG','DD','DL','DN','GA','GJ','HR','HP',
-  'JK','JH','KA','KL','LA','LD','MP','MH','MN','ML','MZ','NL','OD','PY',
-  'PB','RJ','SK','TN','TS','TR','UP','UK','WB'
+  'JK','JH','KA','KL','LA','LD','MP','MH','MN','ML','MZ','NL','OD','OR',
+  'PB','PY','RJ','SK','TN','TS','TR','UP','UA','UK','WB'
 ]
+
+// Mirrors INDIAN_PLATE_REGEX in constants.py.
+// Standard: State(2L) + RTO(1-2 alphanum) + Series(1-3L) + Serial(3-4 digits), optional [\s.-] separators
+// BH series: 2-digit year + BH + 4-digit serial + 1-2 letter class, optional [\s.-] separators
+const INDIAN_PLATE_REGEX =
+  /^(?:([A-Z]{2})[\s.-]?([A-Z0-9]{1,2})[\s.-]?([A-Za-z]{1,3})[\s.-]?(\d{3,4})|(\d{2})[\s.-]?(BH)[\s.-]?(\d{4})[\s.-]?([A-Za-z]{1,2}))$/i
 
 export const addWeighmentSchema = z.object({
   [EntityKey.VEHICLE_NUMBER]: z
     .string()
     .min(1, `${ColumnLabel.VEHICLE_NUMBER} plate number is required`)
-    .max(10, `${ColumnLabel.VEHICLE_NUMBER} plate must be 10 characters or less`)
+    .max(15, `${ColumnLabel.VEHICLE_NUMBER} plate must be 15 characters or less`)
     .regex(
-      /^([A-Z]{2}\d{2}[A-Z]{1,2}\d{4})|(\d{2}BH\d{4}[A-Z]{1,2})$/,
-      `Must match standard Indian plate (e.g. PB10XY1234) or BH series plate (e.g. 21BH1234AB)`
+      INDIAN_PLATE_REGEX,
+      `Must match standard Indian plate (e.g. MH04BG6491, PB10XY1234) or BH series (e.g. 22BH1234AA)`
     )
     .refine(
       (val) => {
-        if (/^\d{2}BH/.test(val)) return true
-        return STATE_CODES.includes(val.substring(0, 2))
+        // BH series plates start with 2 digits followed by BH — no state code check needed
+        if (/^\d{2}[\s.-]?BH/i.test(val)) return true
+        return STATE_CODES.includes(val.substring(0, 2).toUpperCase())
       },
       {
         message: `First two characters must be a valid Indian state or union territory code`

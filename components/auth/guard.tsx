@@ -85,8 +85,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>
   }
 
-  // Show loading during initial rehydration, before auth initialized, or while profile is being fetched
-  if (!authHydrated || !initialized || profileLoading) {
+  // Show loading during initial rehydration, before auth initialized, or while initial profile is being fetched for an unauthenticated user
+  if (!authHydrated || !initialized || (profileLoading && !user)) {
     return <FullScreenStatus message="Loading..." />
   }
 

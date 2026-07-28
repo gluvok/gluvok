@@ -30,8 +30,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     return <AuthGuard>{children}</AuthGuard>
   }
 
-  // If user is authenticated but has no profile linked
-  if (user && !user.profile) {
+  // If user is authenticated but has neither a profile nor a customer record linked
+  if (user && !user.profile && !user.customer) {
     return (
       <AuthGuard>
         <UnlinkedProfile />

@@ -39,88 +39,103 @@ interface AuthStore {
   setHydrated: (state: boolean) => void
 }
 
+let activeProfileFetchPromise: Promise<boolean> | null = null
+let activeProfileFetchUserId: string | null = null
+
 async function fetchAndSetProfile(
   sessionUser: { id: string; email?: string; user_metadata?: { name?: string } },
   set: (state: Partial<AuthStore> | ((state: AuthStore) => Partial<AuthStore>)) => void
 ): Promise<boolean> {
-  try {
-    const { data: profile, error } = await supabase
-      .from(PROFILES_TABLE)
-      .select(PROFILE_SELECT_FIELDS)
-      .eq(EntityKey.USER_ID, sessionUser.id)
-      .maybeSingle()
+  if (activeProfileFetchPromise && activeProfileFetchUserId === sessionUser.id) {
+    return activeProfileFetchPromise
+  }
 
-    // Permission error (e.g. SECURITY INVOKER view + no RLS policy for this user).
-    // The account exists in auth but cannot query the view — treat as unlinked.
-    if (error) {
-      console.warn("profiles_with_email query error:", error.message, error.code)
-      set({
-        user: {
-          id: sessionUser.id,
-          name: sessionUser.user_metadata?.name || "User",
-          email: sessionUser.email || "",
-          avatar: DEFAULT_AVATAR,
-          role: Role.BASE,
-          profile: undefined,
-        }
-      })
-      toast.error("Unable to load your profile. You may not have permission to view it. Please contact an administrator.", { id: "profile-permission-error" })
-      return false
-    }
-
-    // No error but no matching profile row — genuinely unlinked account.
-    if (!profile) {
-      // Fallback: check if the user is a customer
-      const { data: customer, error: customerError } = await supabase
-        .from(CUSTOMERS_TABLE)
-        .select(CUSTOMER_SELECT_FIELDS)
+  activeProfileFetchUserId = sessionUser.id
+  activeProfileFetchPromise = (async () => {
+    try {
+      const { data: profile, error } = await supabase
+        .from(PROFILES_TABLE)
+        .select(PROFILE_SELECT_FIELDS)
         .eq(EntityKey.USER_ID, sessionUser.id)
         .maybeSingle()
-        
-      if (!customerError && customer) {
+
+      // Permission error (e.g. SECURITY INVOKER view + no RLS policy for this user).
+      // The account exists in auth but cannot query the view — treat as unlinked.
+      if (error) {
+        console.warn("profiles_with_email query error:", error.message, error.code)
         set({
           user: {
             id: sessionUser.id,
-            name: customer.name,
+            name: sessionUser.user_metadata?.name || "User",
             email: sessionUser.email || "",
             avatar: DEFAULT_AVATAR,
             role: Role.BASE,
             profile: undefined,
-            customer: customer as Customer,
           }
         })
-        return true
+        toast.error("Unable to load your profile. You may not have permission to view it. Please contact an administrator.", { id: "profile-permission-error" })
+        return false
+      }
+
+      // No error but no matching profile row — genuinely unlinked account.
+      if (!profile) {
+        // Fallback: check if the user is a customer
+        const { data: customer, error: customerError } = await supabase
+          .from(CUSTOMERS_TABLE)
+          .select(CUSTOMER_SELECT_FIELDS)
+          .eq(EntityKey.USER_ID, sessionUser.id)
+          .maybeSingle()
+          
+        if (!customerError && customer) {
+          set({
+            user: {
+              id: sessionUser.id,
+              name: customer.name,
+              email: sessionUser.email || "",
+              avatar: DEFAULT_AVATAR,
+              role: Role.BASE,
+              profile: undefined,
+              customer: customer as Customer,
+            }
+          })
+          return true
+        }
+
+        set({
+          user: {
+            id: sessionUser.id,
+            name: sessionUser.user_metadata?.name || "User",
+            email: sessionUser.email || "",
+            avatar: DEFAULT_AVATAR,
+            role: Role.BASE,
+            profile: undefined,
+          }
+        })
+        toast.error("No profile linked to this account. Please contact an administrator to link your account.", { id: "no-profile-error" })
+        return false
       }
 
       set({
         user: {
           id: sessionUser.id,
-          name: sessionUser.user_metadata?.name || "User",
+          name: profile.name,
           email: sessionUser.email || "",
           avatar: DEFAULT_AVATAR,
-          role: Role.BASE,
-          profile: undefined,
+          role: profile.role,
+          profile: profile as Profile,
         }
       })
-      toast.error("No profile linked to this account. Please contact an administrator to link your account.", { id: "no-profile-error" })
+      return true
+    } catch (err) {
+      console.error("Profile load error:", err)
       return false
+    } finally {
+      activeProfileFetchPromise = null
+      activeProfileFetchUserId = null
     }
+  })()
 
-    set({
-      user: {
-        id: sessionUser.id,
-        name: profile.name,
-        email: sessionUser.email || "",
-        avatar: DEFAULT_AVATAR,
-        role: profile.role,
-        profile: profile as Profile,
-      }
-    })
-    return true
-  } catch (err) {
-    console.error("Profile load error:", err)
-    return false
-  }
+  return activeProfileFetchPromise
 }
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
@@ -163,7 +178,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         const shouldFetch = isUserChanged || event === "USER_UPDATED"
 
         if (shouldFetch) {
-          set({ profileLoading: true })
+          if (!currentUser) {
+            set({ profileLoading: true })
+          }
           try {
             await fetchAndSetProfile(session.user, set)
           } catch (err) {

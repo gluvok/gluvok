@@ -57,9 +57,10 @@ export function getDynamicProfileSchema(config: FactoryConfig | null) {
   if (aadharMode === FieldRequirementMode.MANDATORY) {
     aadharSchema = z
       .preprocess(
-        (val) => (typeof val === "string" ? val.replace(/\s/g, "") : val),
+        (val) => (typeof val === "string" ? val.replace(/\s/g, "") : (val === null || val === undefined ? "" : val)),
         z
           .string({ message: `${ColumnLabel.AADHAR_NUMBER} is required` })
+          .min(1, `${ColumnLabel.AADHAR_NUMBER} is required`)
           .length(12, `${ColumnLabel.AADHAR_NUMBER} must be exactly 12 digits`)
           .regex(/^\d+$/, `${ColumnLabel.AADHAR_NUMBER} must contain only digits`)
       )

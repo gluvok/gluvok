@@ -41,7 +41,16 @@ function ConfigFormContent({
   )
   const [isSaving, setIsSaving] = React.useState(false)
 
+  const isUnchanged =
+    aadharMode === (initialConfig?.aadharNumberMode || FieldRequirementMode.OPTIONAL) &&
+    govtIdMode === (initialConfig?.govtIdMode || FieldRequirementMode.OPTIONAL) &&
+    selectedFactoryId === initialFactoryId
+
   const handleSave = async () => {
+    if (isUnchanged) {
+      toast.info("No changes to save")
+      return
+    }
     setIsSaving(true)
     try {
       const payload = {
@@ -147,24 +156,29 @@ function ConfigFormContent({
           </div>
 
           {/* Action Button */}
-          <div className="flex justify-end pt-2">
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="gap-2 px-6"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  Save Configuration
-                </>
-              )}
-            </Button>
+          <div className="flex items-center justify-between pt-2">
+            {isUnchanged && (
+              <span className="text-xs text-muted-foreground italic">No changes to save</span>
+            )}
+            <div className="ml-auto">
+              <Button
+                onClick={handleSave}
+                disabled={isSaving || isUnchanged}
+                className="gap-2 px-6"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Save Configuration
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </>
       )}

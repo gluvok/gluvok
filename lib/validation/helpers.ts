@@ -6,10 +6,13 @@
 import * as z from "zod"
 
 export const integerIdSchema = (fieldName: string) =>
-  z.coerce
-    .number({ message: `${fieldName} must be an integer` })
-    .int(`${fieldName} must be an integer`)
-    .positive(`${fieldName} must be a positive integer`)
+  z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? NaN : Number(val)),
+    z
+      .number({ message: `${fieldName} is required` })
+      .int(`${fieldName} must be an integer`)
+      .positive(`${fieldName} is required and must be a positive number`)
+  )
 
 export const uuidSchema = (fieldName: string) =>z.uuid(`${fieldName} must be a valid UUID`)
 

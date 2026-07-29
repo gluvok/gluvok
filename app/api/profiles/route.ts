@@ -95,11 +95,9 @@ export const POST = withAuth(async (req, user) => {
   const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.username, username))
   if (existingUser) return apiError("Username is already taken", StatusCodes.BAD_REQUEST)
 
-  const aadharStr = typeof aadhar_number === "string" && aadhar_number.length > 0 ? aadhar_number : null
-
   // Check aadhar uniqueness per factory if provided
-  if (aadharStr) {
-    const aadharConditions = [eq(profiles.aadharNumber, aadharStr)]
+  if (aadhar_number) {
+    const aadharConditions = [eq(profiles.aadharNumber, aadhar_number)]
     if (targetFactoryId) {
       aadharConditions.push(eq(users.factoryId, targetFactoryId))
     }
@@ -120,7 +118,12 @@ export const POST = withAuth(async (req, user) => {
 
   const [newProfile] = await db
     .insert(profiles)
-    .values({ userId: newUser.id, name, aadharNumber: aadharStr, role })
+    .values({
+      userId: newUser.id,
+      name,
+      ...(aadhar_number ? { aadharNumber: aadhar_number } : {}),
+      role,
+    })
     .returning()
 
   return NextResponse.json({

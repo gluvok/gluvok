@@ -110,7 +110,7 @@ export const POST = withAuth(async (req, user) => {
   const [newCustomer] = await db
     .insert(customers)
     .values({
-      govtId: govt_id != null ? Number(govt_id) : null,
+      ...(govt_id != null ? { govtId: Number(govt_id) } : {}),
       name,
       fatherName: father_name,
       userId: createdUserId,

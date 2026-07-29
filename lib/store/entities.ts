@@ -104,10 +104,13 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
       const centers = cList.map((c) => ({ id: c.id, name: c.name }))
       const profiles = pList.map((p) => ({ id: p.id, name: p.name }))
       const customers = cuList.map((cu) => ({ id: cu.id, name: cu.name }))
-      const rateOpts = rList.map((rate) => ({
-        id: rate.id,
-        label: `${(rate as unknown as { commodityName?: string }).commodityName ?? "—"} · ₹${rate.unit_price}/${rate.unit} (ID: ${rate.id})`,
-      }))
+      const rateOpts = rList.map((rate) => {
+        const factoryInfo = rate.factory_name ? ` (${rate.factory_name})` : ""
+        return {
+          id: rate.id,
+          label: `${rate.commodity_name ?? "Rate"}${factoryInfo} · ₹${rate.unit_price}/${rate.unit} (ID: ${rate.id})`,
+        }
+      })
 
       set((state) => ({
         weighmentFiltersData: { centers, profiles, customers, rates: rateOpts },

@@ -39,9 +39,11 @@ export const ENTITY_EXTRACTORS: Record<
   },
   [ProjectSlug.RATES]: (item) => {
     const p = item as Rate
+    const factoryInfo = p.factory_name ? ` (${p.factory_name})` : ""
+    const priceInfo = p.unit_price ? ` (₹${parseFloat(p.unit_price)})` : ""
     return {
       id: String(p.id),
-      name: `${p.commodity_name} (${p.factory_name}) (₹${parseFloat(p.unit_price)})`,
+      name: `${p.commodity_name || "Rate"}${factoryInfo}${priceInfo}`,
     }
   },
 }

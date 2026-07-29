@@ -124,6 +124,7 @@ export enum ApiRoutes {
   COMMODITIES = "/api/commodities",
   USERS = "/api/users",
   CONFIGS = "/api/configs",
+  FILTERS_PRELOAD = "/api/filters/preload",
 }
 
 export enum ProjectSlug {

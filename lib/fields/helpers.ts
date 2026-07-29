@@ -3,8 +3,8 @@
  * @description Helper definitions or configuration for entity table fields (helpers).
  */
 
-import { ProjectSlug, EntityKey, CommodityName, ProjectName, SystemSlug, SingularEntityName, Role, RoleLabel, WeighmentType } from "@/lib/constants/enums"
-import { Sprout, Wheat, Droplet, Hammer, Package, Leaf, Wine, Crown, ShieldCheck, Briefcase, HardHat, User, Cpu, Shield, ArrowDownLeft, ArrowUpRight, ArrowUpDown, type LucideIcon } from "lucide-react"
+import { ProjectSlug, EntityKey, CommodityName, ProjectName, SystemSlug, SingularEntityName, Role, RoleLabel, WeighmentType, FieldRequirementMode } from "@/lib/constants/enums"
+import { Sprout, Wheat, Droplet, Hammer, Package, Leaf, Wine, Crown, ShieldCheck, Briefcase, HardHat, User, Cpu, Shield, ArrowDownLeft, ArrowUpRight, ArrowUpDown, CheckCircle2, HelpCircle, Ban, SlidersHorizontal, type LucideIcon } from "lucide-react"
 
 export function getPrimaryIdKey(slug: string | ProjectSlug): EntityKey {
   switch (slug) {
@@ -95,6 +95,25 @@ export function getTypeIcon(typeVal?: string): LucideIcon {
   }
 }
 
+export function getModeIcon(modeVal?: string): LucideIcon {
+  if (!modeVal) return SlidersHorizontal
+  const normalized = modeVal.toLowerCase().trim()
+  switch (normalized) {
+    case FieldRequirementMode.MANDATORY:
+    case "mandatory":
+      return CheckCircle2
+    case FieldRequirementMode.OPTIONAL:
+    case "optional":
+      return HelpCircle
+    case FieldRequirementMode.NOT_REQUIRED:
+    case "not required":
+    case "not_required":
+      return Ban
+    default:
+      return SlidersHorizontal
+  }
+}
+
 export function getItemIcon(type: string | ProjectSlug, label: string): LucideIcon | null {
   switch (type) {
     case ProjectSlug.COMMODITIES:
@@ -105,6 +124,10 @@ export function getItemIcon(type: string | ProjectSlug, label: string): LucideIc
     case "type":
     case "types":
       return getTypeIcon(label)
+    case "mode":
+    case "modes":
+    case "field_requirement_mode":
+      return getModeIcon(label)
     default:
       return null
   }

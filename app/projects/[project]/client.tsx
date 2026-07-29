@@ -25,7 +25,7 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
   const pt = useProjectTable({ projectSlug, primaryIdKey, projectName })
   const { table, isLoading, isReady, creating, setCreating, editingItem, setEditingItem, deletingItem, setDeletingItem, handleReload } = pt
 
-  const isFiltersLoading = useEntitiesStore((state) => !!state.filtersLoading[projectSlug])
+  const isFiltersLoading = useEntitiesStore((state) => state.filtersLoading)
 
   const [hasLoadedOnce, setHasLoadedOnce] = React.useState(false)
 

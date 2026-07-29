@@ -6,17 +6,25 @@
 "use client"
 
 import { create } from "zustand"
-import { type Commodity, type Factory, type Center, type Profile, type Customer, type Rate } from "@/types"
-import { ProjectSlug } from "@/lib/constants/enums"
+import axios from "axios"
+import { ProjectSlug, ApiRoutes } from "@/lib/constants/enums"
 import {
   insertRow,
   updateRow,
   deleteRow,
-  fetchEntityListFromApi,
 } from "@/lib/services"
 
 export interface IdNamePair { id: number; name: string }
 export interface RateOption { id: number; label: string }
+
+interface PreloadPayload {
+  commodities: { id: number; name: string }[]
+  factories: { id: number; name: string }[]
+  centers: { id: number; name: string }[]
+  profiles: { id: number; name: string }[]
+  customers: { id: number; name: string }[]
+  rates: { id: number; unit_price: string; unit: string; commodity_name?: string; factory_name?: string }[]
+}
 
 interface EntitiesState {
   addEntity: (slug: ProjectSlug, newE: Record<string, unknown>) => Promise<void>
@@ -24,19 +32,15 @@ interface EntitiesState {
   deleteEntity: (slug: ProjectSlug, id: string | number) => Promise<void>
   entitiesUpdatedTrigger: number
   triggerEntitiesUpdate: () => void
-  commodities: Commodity[]
-  loadCommodities: () => Promise<void>
+  commodities: { id: number; name: string }[]
   factories: IdNamePair[]
-  loadFactories: () => Promise<void>
   weighmentFiltersData: {
     centers: IdNamePair[]
     profiles: IdNamePair[]
     customers: IdNamePair[]
     rates: RateOption[]
   } | null
-  loadWeighmentFiltersData: () => Promise<void>
-  filtersLoading: Record<string, boolean>
-  setFiltersLoading: (slug: string, loading: boolean) => void
+  filtersLoading: boolean
   filtersInitialized: boolean
   preloadAllFilters: () => Promise<void>
 }
@@ -44,79 +48,20 @@ interface EntitiesState {
 export const useEntitiesStore = create<EntitiesState>((set, get) => ({
   entitiesUpdatedTrigger: 0,
   triggerEntitiesUpdate: () => set((state) => ({ entitiesUpdatedTrigger: state.entitiesUpdatedTrigger + 1 })),
-  filtersLoading: {},
-  setFiltersLoading: (slug, loading) => set((state) => ({
-    filtersLoading: { ...state.filtersLoading, [slug]: loading }
-  })),
+  filtersLoading: false,
   filtersInitialized: false,
-  preloadAllFilters: async () => {
-    const { loadCommodities, loadFactories, loadWeighmentFiltersData } = get()
-    try {
-      await Promise.allSettled([
-        loadCommodities(),
-        loadFactories(),
-        loadWeighmentFiltersData(),
-      ])
-    } catch (err) {
-      console.error("Failed to preload filter entities:", err)
-    } finally {
-      set({ filtersInitialized: true })
-    }
-  },
+
   commodities: [],
-  loadCommodities: async () => {
-    set((state) => ({
-      filtersLoading: { ...state.filtersLoading, [ProjectSlug.RATES]: true }
-    }))
-    try {
-      const list = await fetchEntityListFromApi<Commodity>(ProjectSlug.COMMODITIES)
-      set((state) => ({
-        commodities: list,
-        filtersLoading: { ...state.filtersLoading, [ProjectSlug.RATES]: false }
-      }))
-    } catch (err) {
-      console.error("Failed to fetch commodities for store:", err)
-      set((state) => ({
-        filtersLoading: { ...state.filtersLoading, [ProjectSlug.RATES]: false }
-      }))
-    }
-  },
-
   factories: [],
-  loadFactories: async () => {
-    set((state) => ({
-      filtersLoading: { ...state.filtersLoading, [ProjectSlug.CENTERS]: true }
-    }))
-    try {
-      const list = await fetchEntityListFromApi<Factory>(ProjectSlug.FACTORIES)
-      set((state) => ({
-        factories: list.map((f) => ({ id: f.id, name: f.name })),
-        filtersLoading: { ...state.filtersLoading, [ProjectSlug.CENTERS]: false }
-      }))
-    } catch (err) {
-      console.error("Failed to fetch factories for store:", err)
-      set((state) => ({
-        filtersLoading: { ...state.filtersLoading, [ProjectSlug.CENTERS]: false }
-      }))
-    }
-  },
   weighmentFiltersData: null,
-  loadWeighmentFiltersData: async () => {
-    set((state) => ({
-      filtersLoading: { ...state.filtersLoading, [ProjectSlug.WEIGHMENTS]: true }
-    }))
-    try {
-      const [cList, pList, cuList, rList] = await Promise.all([
-        fetchEntityListFromApi<Center>(ProjectSlug.CENTERS),
-        fetchEntityListFromApi<Profile>(ProjectSlug.PROFILES),
-        fetchEntityListFromApi<Customer>(ProjectSlug.CUSTOMERS),
-        fetchEntityListFromApi<Rate>(ProjectSlug.RATES),
-      ])
 
-      const centers = cList.map((c) => ({ id: c.id, name: c.name }))
-      const profiles = pList.map((p) => ({ id: p.id, name: p.name }))
-      const customers = cuList.map((cu) => ({ id: cu.id, name: cu.name }))
-      const rateOpts = rList.map((rate) => {
+  preloadAllFilters: async () => {
+    set({ filtersLoading: true })
+    try {
+      const res = await axios.get<PreloadPayload>(ApiRoutes.FILTERS_PRELOAD)
+      const payload = res.data
+
+      const rateOpts: RateOption[] = payload.rates.map((rate) => {
         const factoryInfo = rate.factory_name ? ` (${rate.factory_name})` : ""
         return {
           id: rate.id,
@@ -124,15 +69,20 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
         }
       })
 
-      set((state) => ({
-        weighmentFiltersData: { centers, profiles, customers, rates: rateOpts },
-        filtersLoading: { ...state.filtersLoading, [ProjectSlug.WEIGHMENTS]: false }
-      }))
+      set({
+        commodities: payload.commodities,
+        factories: payload.factories,
+        weighmentFiltersData: {
+          centers: payload.centers,
+          profiles: payload.profiles,
+          customers: payload.customers,
+          rates: rateOpts,
+        },
+      })
     } catch (err) {
-      console.error("Failed to fetch weighment filters for store:", err)
-      set((state) => ({
-        filtersLoading: { ...state.filtersLoading, [ProjectSlug.WEIGHMENTS]: false }
-      }))
+      console.error("Failed to preload filter entities:", err)
+    } finally {
+      set({ filtersLoading: false, filtersInitialized: true })
     }
   },
 

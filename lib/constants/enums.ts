@@ -81,6 +81,8 @@ export const ColumnLabel = {
   CUSTOMER_NAME: "Customer Name",
   CENTER_NAME: "Center Name",
   USER_EMAIL: "User Email",
+  USERNAME: "Username",
+  PASSWORD: "Password",
 } as const
 export type ColumnLabel = typeof ColumnLabel[keyof typeof ColumnLabel]
 
@@ -128,6 +130,8 @@ export enum FieldType {
 export enum EntityKey {
   ID = "id",
   NAME = "name",
+  USERNAME = "username",
+  PASSWORD = "password",
   FACTORY_ID = "factory_id",
   UNIT_PRICE = "unit_price",
   UNIT = "unit",

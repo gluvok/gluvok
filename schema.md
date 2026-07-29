@@ -43,10 +43,24 @@
 | `created_at` | `TIMESTAMP` | Not Null, Default: `CURRENT_TIMESTAMP` | Record creation time. |
 | `updated_at` | `TIMESTAMP` | Not Null, Default: `CURRENT_TIMESTAMP` | Last update time. |
 
+### Entity A: users
+Represents authentication user accounts with Argon2 credentials, roles, and factory assignments.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `UUID` | Primary Key | Unique user account ID. |
+| `username` | `VARCHAR(255)` | Unique, Not Null | Login username. |
+| `password_hash` | `TEXT` | Not Null | Argon2 password hash. |
+| `role` | `role_enum` | Not Null, Default: `'base'` | User role defining access permissions. |
+| `factory_id` | `INTEGER` | FK → `factories.id`, Not Null, On Delete Restrict | Associated factory. |
+| `is_active` | `BOOLEAN` | Not Null, Default: `TRUE` | User account status. |
+| `created_at` | `TIMESTAMP` | Not Null, Default: `CURRENT_TIMESTAMP` | Record creation time. |
+| `updated_at` | `TIMESTAMP` | Not Null, Default: `CURRENT_TIMESTAMP` | Last update time. |
+
 ---
 
 ### Entity E: customers
-Represents workers/customers identified by government ID. No auth login required.
+Represents workers/customers identified by government ID. Login credentials are optional.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
@@ -54,20 +68,20 @@ Represents workers/customers identified by government ID. No auth login required
 | `govt_id` | `INTEGER` | Unique, Not Null | Government-issued ID, unique per customer. |
 | `name` | `VARCHAR(255)` | Not Null | Full name of the customer. |
 | `father_name` | `VARCHAR(255)` | Not Null | Father's full name (additional identifier). |
-| `user_id` | `UUID` | Unique, FK → `auth.users(id)`, On Delete Set Null | Optional link to an auth account. |
-| `factory_id` | `INTEGER` | FK → `factories.id`, Not Null | Associated factory. |
+| `user_id` | `UUID` | Unique, FK → `users.id`, On Delete Restrict | Optional link to a user account. |
+| `factory_id` | `INTEGER` | FK → `factories.id`, Not Null, On Delete Restrict | Associated factory. |
 | `created_at` | `TIMESTAMP` | Not Null, Default: `CURRENT_TIMESTAMP` | Record creation time. |
 | `updated_at` | `TIMESTAMP` | Not Null, Default: `CURRENT_TIMESTAMP` | Last update time. |
 
 ---
 
 ### Entity F: profiles
-Details of human resources/users linked to login accounts.
+Details of human resources/users linked to login accounts. Mandatory user account.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | `SERIAL` | Primary Key | Unique profile ID. |
-| `user_id` | `UUID` | Unique, Not Null, FK → `auth.users(id)`, On Delete Cascade | References Supabase Auth user. |
+| `user_id` | `UUID` | Unique, Not Null, FK → `users.id`, On Delete Restrict | References public user. |
 | `aadhar_number` | `CHAR(12)` | Unique, Not Null, CHECK (`aadhar_number ~ '^\d{12}$'`) | Aadhar number — unique profile identifier. |
 | `name` | `VARCHAR(255)` | Not Null | Full name of the profile owner. |
 | `role` | `role_enum` | Not Null, Default: `'base'` | User role defining access permissions. |

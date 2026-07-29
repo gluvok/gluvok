@@ -42,10 +42,10 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   ],
   [ProjectSlug.CUSTOMERS]: [
     { key: EntityKey.GOVT_ID, label: ColumnLabel.GOVT_ID, placeholder: "e.g. 1001", type: FieldType.NUMBER, icon: ShieldCheck, span: FieldSpan.HALF },
-    { key: EntityKey.USER_ID, label: ColumnLabel.USER, placeholder: getSelectPlaceholder(SingularEntityName.USER), type: FieldType.TEXT, icon: Hash, span: FieldSpan.HALF },
     { key: EntityKey.NAME, label: ColumnLabel.NAME, placeholder: "e.g. Ajay Kumar", type: FieldType.TEXT, icon: Tag, span: FieldSpan.HALF },
     { key: EntityKey.FATHER_NAME, label: ColumnLabel.FATHER_NAME, placeholder: "e.g. Vijay Kumar", type: FieldType.TEXT, icon: User, span: FieldSpan.HALF },
-    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.FULL },
+    { key: EntityKey.USERNAME, label: ColumnLabel.USERNAME, placeholder: "e.g. ajay123 (optional)", type: FieldType.TEXT, icon: Hash, span: FieldSpan.HALF },
+    { key: EntityKey.PASSWORD, label: ColumnLabel.PASSWORD, placeholder: "Optional login password", type: FieldType.TEXT, icon: ShieldCheck, span: FieldSpan.HALF },
   ],
   [ProjectSlug.WEIGHMENTS]: [
     {
@@ -100,9 +100,9 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       icon: Fingerprint,
       span: FieldSpan.HALF,
     },
-    { key: EntityKey.USER_ID, label: ColumnLabel.USER, placeholder: getSelectPlaceholder(SingularEntityName.USER), type: FieldType.TEXT, icon: Hash, span: FieldSpan.HALF },
     { key: EntityKey.NAME, label: ColumnLabel.NAME, placeholder: "e.g. Amit Sharma", type: FieldType.TEXT, icon: Tag, span: FieldSpan.HALF },
-    { key: EntityKey.ROLE, label: ColumnLabel.ROLE, placeholder: "Select role...", type: FieldType.ROLE, icon: ShieldCheck, span: FieldSpan.HALF },
-    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.FULL },
+    { key: EntityKey.USERNAME, label: ColumnLabel.USERNAME, placeholder: "e.g. amits123", type: FieldType.TEXT, icon: User, span: FieldSpan.HALF },
+    { key: EntityKey.PASSWORD, label: ColumnLabel.PASSWORD, placeholder: "Account password", type: FieldType.TEXT, icon: ShieldCheck, span: FieldSpan.HALF },
+    { key: EntityKey.ROLE, label: ColumnLabel.ROLE, placeholder: "Select role...", type: FieldType.ROLE, icon: ShieldCheck, span: FieldSpan.FULL },
   ],
 }

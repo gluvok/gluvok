@@ -59,7 +59,7 @@ export async function getScopingFilter(): Promise<ScopingFilter | null> {
 
   return {
     isSuperAdmin: currentUser.role === Role.SUPER_ADMIN,
-    factoryId: currentUser.profile?.factory_id ? Number(currentUser.profile.factory_id) : undefined,
+    factoryId: currentUser.factory_id ? Number(currentUser.factory_id) : (currentUser.profile?.factory_id ? Number(currentUser.profile.factory_id) : undefined),
     userProfileId: currentUser.profile?.id ? Number(currentUser.profile.id) : undefined,
     customerId: currentUser.customer?.id ? Number(currentUser.customer.id) : undefined,
   }

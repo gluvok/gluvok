@@ -9,18 +9,22 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "seed:superadmin": "tsx --env-file=.env.local scripts/seed-superadmin.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "@radix-ui/react-use-controllable-state": "^1.2.3",
     "@supabase/supabase-js": "^2.108.2",
     "@tanstack/react-table": "^8.21.3",
+    "axios": "^1.18.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
     "embla-carousel-react": "^8.6.0",
+    "hash-wasm": "^4.12.0",
+    "jose": "^6.2.4",
     "lucide-react": "^1.18.0",
     "next": "16.2.7",
     "radix-ui": "^1.5.0",
@@ -48,6 +52,7 @@
     "eslint-config-next": "16.2.7",
     "happy-dom": "^20.10.6",
     "tailwindcss": "^4.3.1",
+    "tsx": "^4.23.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.9"
   }

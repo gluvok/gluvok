@@ -129,6 +129,30 @@ CREATE TRIGGER set_timestamp_rates
   EXECUTE FUNCTION trigger_set_timestamp();
 
 
+-- A0. users table
+CREATE TABLE IF NOT EXISTS public.users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  username VARCHAR(255) NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  role role_enum NOT NULL DEFAULT 'base',
+  factory_id INTEGER NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  
+  CONSTRAINT fk_user_factory
+    FOREIGN KEY (factory_id)
+    REFERENCES public.factories(id)
+    ON DELETE RESTRICT
+);
+
+DROP TRIGGER IF EXISTS set_timestamp_users ON public.users;
+CREATE TRIGGER set_timestamp_users
+  BEFORE UPDATE ON public.users
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_set_timestamp();
+
+
 -- E. customers table
 CREATE TABLE IF NOT EXISTS public.customers (
   id SERIAL PRIMARY KEY,
@@ -140,10 +164,10 @@ CREATE TABLE IF NOT EXISTS public.customers (
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   
-  CONSTRAINT fk_customer_auth_user
+  CONSTRAINT fk_customer_user
     FOREIGN KEY (user_id)
-    REFERENCES auth.users(id)
-    ON DELETE SET NULL,
+    REFERENCES public.users(id)
+    ON DELETE RESTRICT,
     
   CONSTRAINT fk_customer_factory
     FOREIGN KEY (factory_id)
@@ -168,9 +192,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   
-  CONSTRAINT fk_profile_auth_user
+  CONSTRAINT fk_profile_user
     FOREIGN KEY (user_id)
-    REFERENCES auth.users(id)
+    REFERENCES public.users(id)
     ON DELETE RESTRICT,
     
   CONSTRAINT check_aadhar_format

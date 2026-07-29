@@ -2,28 +2,23 @@
 
 /**
  * @file components/auth/form/login.tsx
- * @description Sign in form component.
- * Integrates with standard authentication schemas and the auth store.
+ * @description Sign in form component using username and password with Argon2/JWT backend.
  */
 
-import { useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
 import { z } from "zod"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { FieldGroup, FieldDescription } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
 import { AuthCard, AuthInput } from "@/components/auth/common"
 import { useAuthStore } from "@/lib/store"
-import { toast } from "sonner"
-import { cn, getNextParam, appendNextParam } from "@/lib/utils"
+import { cn, getNextParam } from "@/lib/utils"
 import { AppRoutes } from "@/lib/constants/enums"
 
-import Link from "next/link"
-
 const loginSchema = z.object({
-  email: z.email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
 })
 
 type LoginInput = z.infer<typeof loginSchema>
@@ -31,7 +26,7 @@ type LoginInput = z.infer<typeof loginSchema>
 /**
  * LoginForm Component
  * Handles the login interface, input validation, authentication request,
- * toast feedback, and redirecting the user upon success.
+ * and redirecting the user upon success.
  */
 export function LoginForm({
   className,
@@ -39,22 +34,20 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   const router = useRouter()
   const login = useAuthStore((state) => state.login)
-  const signUpLink = useMemo(() => appendNextParam(AppRoutes.SIGNUP), [])
 
   const form = useForm<LoginInput>({
     resolver: standardSchemaResolver(loginSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
     },
   })
 
   const onSubmit = async (data: LoginInput) => {
     const targetRedirect = getNextParam() || AppRoutes.HOME
-    const success = await login(data.email, data.password)
+    const success = await login(data.username, data.password)
 
     if (success) {
-      toast.success("Successfully logged in!")
       router.push(targetRedirect)
     }
   }
@@ -63,39 +56,31 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <AuthCard
         title="Welcome back"
-        description="Enter your email below to login to your account"
-        footer={
-          <FieldDescription className="text-center mt-4">
-            Don&apos;t have an account? <Link href={signUpLink} className="underline underline-offset-4 hover:text-primary">Sign up</Link>
-          </FieldDescription>
-        }
+        description="Enter your username and password to login to your account"
       >
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <FieldGroup>
             <AuthInput
-              id="email"
-              label="Email"
-              type="email"
-              placeholder="m@example.com"
-              registration={form.register("email")}
-              error={form.formState.errors.email}
+              id="username"
+              label="Username"
+              type="text"
+              placeholder="e.g. admin123"
+              registration={form.register("username")}
+              error={form.formState.errors.username}
             />
             <AuthInput
               id="password"
               label="Password"
               type="password"
+              placeholder="••••••••"
               registration={form.register("password")}
               error={form.formState.errors.password}
-              labelRight={
-                <Link
-                  href={AppRoutes.FORGOT_PASSWORD}
-                  className="text-xs text-muted-foreground underline-offset-4 hover:underline"
-                >
-                  Forgot your password?
-                </Link>
-              }
             />
-            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={form.formState.isSubmitting}
+            >
               {form.formState.isSubmitting ? "Logging in..." : "Login"}
             </Button>
           </FieldGroup>

@@ -1,0 +1,54 @@
+/**
+ * @file lib/auth/jwt.ts
+ * @description JWT signing and verification utilities using jose.
+ */
+
+import { SignJWT, jwtVerify } from "jose"
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || "gluvok_jwt_secret_key_change_in_production_32bytes_long"
+)
+
+export interface JWTPayload {
+  sub: string
+  username: string
+  role: string
+  factory_id: number
+}
+
+/**
+ * Signs a JWT session token valid for 24 hours.
+ */
+export async function signJWT(payload: JWTPayload): Promise<string> {
+  return new SignJWT({
+    username: payload.username,
+    role: payload.role,
+    factory_id: payload.factory_id,
+  })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(payload.sub)
+    .setIssuedAt()
+    .setExpirationTime("24h")
+    .sign(JWT_SECRET)
+}
+
+/**
+ * Verifies a JWT session token.
+ */
+export async function verifyJWT(token: string): Promise<JWTPayload | null> {
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET)
+    if (!payload.sub || typeof payload.username !== "string" || typeof payload.role !== "string" || typeof payload.factory_id !== "number") {
+      return null
+    }
+
+    return {
+      sub: payload.sub,
+      username: payload.username,
+      role: payload.role,
+      factory_id: payload.factory_id,
+    }
+  } catch {
+    return null
+  }
+}

@@ -52,19 +52,19 @@ describe("Query Scoping Services", () => {
       vi.mocked(useAuthStore.getState).mockReturnValue({
         user: {
           role: Role.MANAGER,
+          factory_id: 12,
           profile: { factory_id: 12, id: 34, user_id: "u1", aadhar_number: "a1", name: "n1", created_at: "", updated_at: "" },
           customer: { id: 56, govt_id: 1, name: "c1", father_name: "f1", factory_id: 1, created_at: "", updated_at: "" },
           id: "u1",
+          username: "u1",
           name: "n1",
-          email: "e1",
         },
         hydrated: true,
         initialized: true,
+        profileLoading: false,
         initAuth: () => () => {},
         login: async () => true,
         logout: async () => {},
-        registerUser: async () => ({ success: true, requiresVerification: false }),
-        resetPassword: async () => true,
         setHydrated: () => {},
       } as unknown as ScopedAuthStoreState)
 
@@ -82,22 +82,21 @@ describe("Query Scoping Services", () => {
         user: {
           role: Role.SUPER_ADMIN,
           id: "u2",
+          username: "u2",
           name: "n2",
-          email: "e2",
+          factory_id: 1,
         },
         hydrated: true,
         initialized: true,
+        profileLoading: false,
         initAuth: () => () => {},
         login: async () => true,
         logout: async () => {},
-        registerUser: async () => ({ success: true, requiresVerification: false }),
-        resetPassword: async () => true,
         setHydrated: () => {},
       } as unknown as ScopedAuthStoreState)
 
       const filter = await getScopingFilter()
       expect(filter?.isSuperAdmin).toBe(true)
-      expect(filter?.factoryId).toBeUndefined()
     })
   })
 

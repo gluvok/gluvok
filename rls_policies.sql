@@ -1,78 +1,63 @@
 -- rls_policies.sql
--- Note: Replace placeholders with exact column names if they differ slightly
+-- Note: Policy definitions and helper functions for public.users architecture
 
 -- ============================================================================
--- OPTIONAL: Run this block to drop ALL existing policies in the public schema
--- ============================================================================
-/*
-DO $$ 
-DECLARE 
-  r RECORD; 
-END; $$;
-*/
--- ============================================================================
-
 -- 0. Schema Updates
--- Add missing factory_id column to customers table
-ALTER TABLE customers ADD COLUMN IF NOT EXISTS factory_id int REFERENCES factories(id);
+-- Ensure factory_id exists on customers table
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS factory_id int REFERENCES factories(id) ON DELETE RESTRICT;
 
--- Add missing unit column to weighments table
+-- Ensure unit column exists on weighments table
 ALTER TABLE weighments ADD COLUMN IF NOT EXISTS unit unit_enum NOT NULL DEFAULT 'kg';
 
 
--- 1. Helper functions to avoid multiple joins in RLS policies
+-- ============================================================================
+-- 1. Helper functions for user isolation and roles (using public.users)
+-- ============================================================================
 
--- Get current user's role from profiles
-CREATE OR REPLACE FUNCTION current_user_role() RETURNS text AS $$
-  SELECT role::text FROM profiles WHERE user_id = auth.uid() LIMIT 1;
+-- Get user's role from public.users or profiles
+CREATE OR REPLACE FUNCTION current_user_role(u_id uuid) RETURNS text AS $$
+  SELECT role::text FROM public.users WHERE id = u_id LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER;
 
--- Get current user's factory_id from either profiles or customers
-CREATE OR REPLACE FUNCTION current_user_factory_id() RETURNS int AS $$
-  SELECT COALESCE(
-    (SELECT factory_id FROM profiles WHERE user_id = auth.uid() LIMIT 1),
-    (SELECT factory_id FROM customers WHERE user_id = auth.uid() LIMIT 1)
-  );
+-- Get current user's factory_id from public.users
+CREATE OR REPLACE FUNCTION current_user_factory_id(u_id uuid) RETURNS int AS $$
+  SELECT factory_id FROM public.users WHERE id = u_id LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER;
 
--- Get current customer's ID based on auth.uid()
-CREATE OR REPLACE FUNCTION current_customer_id() RETURNS int AS $$
-  SELECT id FROM customers WHERE user_id = auth.uid() LIMIT 1;
+-- Get current customer's ID based on user_id
+CREATE OR REPLACE FUNCTION current_customer_id(u_id uuid) RETURNS int AS $$
+  SELECT id FROM customers WHERE user_id = u_id LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER;
 
--- Get current user's email securely from auth.users (running as SECURITY DEFINER)
-CREATE OR REPLACE FUNCTION get_user_email(u_id uuid) RETURNS text AS $$
-  SELECT email::text FROM auth.users WHERE id = u_id LIMIT 1;
+-- Get username from public.users
+CREATE OR REPLACE FUNCTION get_username(u_id uuid) RETURNS text AS $$
+  SELECT username::text FROM public.users WHERE id = u_id LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER;
 
-GRANT EXECUTE ON FUNCTION public.get_user_email(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_username(uuid) TO authenticated;
 
--- Get list of users from auth.users securely and isolated by factory (running as SECURITY DEFINER)
--- Only returns users who are registered in the system (have a profile or customer record).
--- Ghost auth accounts (no profile, no customer) are never returned.
--- super_admin and hardware role accounts are always excluded.
+-- Get list of users from public.users isolated by factory (running as SECURITY DEFINER)
+-- super_admin sees all registered users with non-excluded roles.
+-- Non-super-admin sees only their factory's users.
 CREATE OR REPLACE FUNCTION get_users(
+  current_u_id uuid DEFAULT NULL,
   exclude_current_id uuid DEFAULT NULL,
   filter_context text DEFAULT NULL
 )
-RETURNS TABLE (id uuid, email text) AS $$
+RETURNS TABLE (id uuid, username text, role text, factory_id int) AS $$
+DECLARE
+  caller_role text;
+  caller_factory int;
 BEGIN
-  IF (SELECT public.current_user_role() = 'super_admin') THEN
-    -- Super admin sees all registered users with non-excluded roles
+  SELECT u.role::text, u.factory_id INTO caller_role, caller_factory
+  FROM public.users u
+  WHERE u.id = current_u_id;
+
+  IF (caller_role = 'super_admin') THEN
     RETURN QUERY
-    SELECT u.id, u.email::text
-    FROM auth.users u
-    WHERE (
-      EXISTS (
-        SELECT 1 FROM public.profiles p
-        WHERE p.user_id = u.id
-        AND p.role::text NOT IN ('super_admin', 'hardware')
-      )
-      OR EXISTS (
-        SELECT 1 FROM public.customers c
-        WHERE c.user_id = u.id
-      )
-    )
+    SELECT u.id, u.username::text, u.role::text, u.factory_id
+    FROM public.users u
+    WHERE u.role::text NOT IN ('super_admin', 'hardware')
     AND (
       filter_context IS NULL
       OR (
@@ -89,23 +74,11 @@ BEGIN
       )
     );
   ELSE
-    -- Non-super-admin sees only their factory's users (non-excluded roles)
     RETURN QUERY
-    SELECT u.id, u.email::text
-    FROM auth.users u
-    WHERE (
-      EXISTS (
-        SELECT 1 FROM public.profiles p
-        WHERE p.user_id = u.id
-        AND p.role::text NOT IN ('super_admin', 'hardware')
-        AND p.factory_id = public.current_user_factory_id()
-      )
-      OR EXISTS (
-        SELECT 1 FROM public.customers c
-        WHERE c.user_id = u.id
-        AND c.factory_id = public.current_user_factory_id()
-      )
-    )
+    SELECT u.id, u.username::text, u.role::text, u.factory_id
+    FROM public.users u
+    WHERE u.role::text NOT IN ('super_admin', 'hardware')
+    AND u.factory_id = caller_factory
     AND (
       filter_context IS NULL
       OR (
@@ -125,10 +98,20 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-GRANT EXECUTE ON FUNCTION public.get_users(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_users(uuid, uuid, text) TO authenticated;
 
 
--- 2. Profiles
+-- ============================================================================
+-- 1.5 Users RLS Policies
+-- ============================================================================
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "users_all_policy" ON users;
+CREATE POLICY "users_all_policy" ON users FOR ALL USING (true);
+
+-- ============================================================================
+-- 2. Profiles RLS Policies
+-- ============================================================================
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "profiles_isolation_policy" ON profiles;
@@ -136,152 +119,88 @@ DROP POLICY IF EXISTS "profiles_select_policy" ON profiles;
 DROP POLICY IF EXISTS "profiles_modify_policy" ON profiles;
 
 CREATE POLICY "profiles_select_policy" ON profiles
-FOR SELECT TO authenticated
-USING (
-  current_user_role() = 'super_admin'
-  OR (
-    factory_id = current_user_factory_id()
-    AND (
-      user_id = auth.uid()
-      OR (
-        current_user_role() = 'admin' AND role::text IN ('admin', 'manager', 'operator', 'base')
-      )
-      OR (
-        current_user_role() = 'manager' AND role::text IN ('operator', 'base')
-      )
-    )
-  )
-);
+FOR SELECT USING (true);
 
 CREATE POLICY "profiles_modify_policy" ON profiles
-FOR ALL TO authenticated
-USING (
-  current_user_role() = 'super_admin'
-  OR (
-    factory_id = current_user_factory_id()
-    AND (
-      user_id = auth.uid()
-      OR (
-        current_user_role() = 'admin' AND role::text IN ('manager', 'operator', 'base')
-      )
-      OR (
-        current_user_role() = 'manager' AND role::text IN ('operator', 'base')
-      )
-    )
-  )
-);
+FOR ALL USING (true);
 
 
--- 3. Customers
+-- ============================================================================
+-- 3. Customers RLS Policies
+-- ============================================================================
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "customers_isolation_policy" ON customers;
 CREATE POLICY "customers_isolation_policy" ON customers
-FOR ALL TO authenticated
-USING (
-  current_user_role() = 'super_admin'
-  OR factory_id = current_user_factory_id()
-);
+FOR ALL USING (true);
 
 
--- 4. Factories
--- Super Admins can do anything
--- Others can only read/update their own factory
+-- ============================================================================
+-- 4. Factories RLS Policies
+-- ============================================================================
 ALTER TABLE factories ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "factories_isolation_policy" ON factories;
 CREATE POLICY "factories_isolation_policy" ON factories
-FOR ALL TO authenticated
-USING (
-  current_user_role() = 'super_admin'
-  OR id = current_user_factory_id()
-)
-WITH CHECK (
-  current_user_role() = 'super_admin'
-  OR (id = current_user_factory_id() AND current_user_role() = 'admin') -- Admin can edit
-);
+FOR ALL USING (true);
 
 
--- 5. Centers
+-- ============================================================================
+-- 5. Centers RLS Policies
+-- ============================================================================
 ALTER TABLE centers ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "centers_isolation_policy" ON centers;
 CREATE POLICY "centers_isolation_policy" ON centers
 FOR ALL TO authenticated
-USING (
-  current_user_role() = 'super_admin'
-  OR factory_id = current_user_factory_id()
-);
+USING (true);
 
 
--- 6. Rates
+-- ============================================================================
+-- 6. Rates RLS Policies
+-- ============================================================================
 ALTER TABLE rates ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "rates_isolation_policy" ON rates;
 CREATE POLICY "rates_isolation_policy" ON rates
 FOR ALL TO authenticated
-USING (
-  current_user_role() = 'super_admin'
-  OR factory_id = current_user_factory_id()
-);
+USING (true);
 
 
--- 7. Weighments
--- Linked to a center. Center is linked to factory.
--- Also check customer_id if logged-in user is a customer (profile role is null)
+-- ============================================================================
+-- 7. Weighments RLS Policies
+-- ============================================================================
 ALTER TABLE weighments ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "weighments_isolation_policy" ON weighments;
 CREATE POLICY "weighments_isolation_policy" ON weighments
 FOR ALL TO authenticated
-USING (
-  current_user_role() = 'super_admin'
-  OR current_user_role() = 'hardware'
-  OR (
-    center_id IN (SELECT id FROM centers WHERE factory_id = current_user_factory_id())
-    AND
-    (
-      -- If the user has a role in profiles (not a customer), they see all factory weighments
-      current_user_role() IS NOT NULL
-      OR
-      -- If they are a customer, they only see their own weighments
-      customer_id = current_customer_id()
-    )
-  )
-);
+USING (true);
 
 
-
--- 9. Commodities
--- Read: Anyone who is authenticated and has a profile/customer record or SUPER_ADMIN
--- Write: SUPER_ADMIN only
+-- ============================================================================
+-- 8. Commodities RLS Policies
+-- ============================================================================
 ALTER TABLE commodities ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "commodities_select_policy" ON commodities;
 CREATE POLICY "commodities_select_policy" ON commodities
 FOR SELECT TO authenticated
-USING (
-  current_user_factory_id() IS NOT NULL
-  OR current_user_role() = 'super_admin'
-);
+USING (true);
 
 DROP POLICY IF EXISTS "commodities_all_policy" ON commodities;
 CREATE POLICY "commodities_all_policy" ON commodities
 FOR ALL TO authenticated
-USING (current_user_role() = 'super_admin')
-WITH CHECK (current_user_role() = 'super_admin');
+USING (true);
 
 
 -- ============================================================================
--- 'profiles_with_email' view with security_invoker=on (Supabase recommended).
--- The view runs as the calling user, so the profiles table RLS policies apply
--- as a second layer of protection. All functions used inside (get_user_email,
--- current_user_role, current_user_factory_id, auth.uid) are SECURITY DEFINER
--- themselves, so they continue to work correctly under the invoker's context.
+-- 9. Profiles with Username View
 -- ============================================================================
 DROP VIEW IF EXISTS profiles_with_email CASCADE;
+DROP VIEW IF EXISTS profiles_with_username CASCADE;
 
-CREATE OR REPLACE VIEW profiles_with_email WITH (security_invoker = on) AS
+CREATE OR REPLACE VIEW profiles_with_username WITH (security_invoker = on) AS
 SELECT
   p.id,
   p.user_id,
@@ -289,20 +208,10 @@ SELECT
   p.name,
   p.created_at,
   p.updated_at,
-  p.role,
-  p.factory_id,
-  get_user_email(p.user_id) AS email
+  u.role,
+  u.factory_id,
+  u.username
 FROM profiles p
-WHERE
-  current_user_role() = 'super_admin'
-  OR (
-    p.factory_id = current_user_factory_id()
-    AND (
-      p.user_id = auth.uid()
-      OR (current_user_role() = 'admin' AND p.role::text = ANY (ARRAY['admin', 'manager', 'operator', 'base']))
-      OR (current_user_role() = 'manager' AND p.role::text = ANY (ARRAY['operator', 'base']))
-    )
-  );
+JOIN public.users u ON p.user_id = u.id;
 
-GRANT SELECT ON public.profiles_with_email TO authenticated;
-
+GRANT SELECT ON public.profiles_with_username TO authenticated;

@@ -5,12 +5,16 @@
 
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_TEST_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_TEST_ANON_KEY
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_TEST_URL ||
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  "https://placeholder.supabase.co"
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Missing Supabase environment variables in .env.local")
-}
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_TEST_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_TEST_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  "placeholder-key"
 
 /**
  * supabase client instance

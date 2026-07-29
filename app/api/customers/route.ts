@@ -11,7 +11,7 @@ export const GET = withAuth(async (req, user) => {
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
 
   const conditions = []
-  if (user.role !== Role.SUPER_ADMIN) conditions.push(eq(customers.factoryId, user.factory_id != null ? user.factory_id : 0))
+  if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) conditions.push(eq(customers.factoryId, user.factory_id))
   if (search) {
     const searchNum = parseInt(search, 10)
     const searchConds = isNaN(searchNum)
@@ -63,7 +63,7 @@ export const POST = withAuth(async (req, user) => {
   if (err) return err
 
   const { govt_id, name, father_name, username, password, factory_id } = body
-  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : user.factory_id != null ? user.factory_id : 0
+  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : (user.factory_id ?? 0)
 
   const [existingCustomer] = await db
     .select({ id: customers.id })

@@ -10,8 +10,8 @@ export const GET = withAuth(async (req, user) => {
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
 
   const conditions = []
-  if (user.role !== Role.SUPER_ADMIN && user.factory_id != null ? user.factory_id : 0) {
-    conditions.push(eq(centers.factoryId, user.factory_id != null ? user.factory_id : 0))
+  if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) {
+    conditions.push(eq(centers.factoryId, user.factory_id))
   }
   if (search) conditions.push(ilike(centers.name, `%${search}%`))
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
@@ -53,7 +53,7 @@ export const POST = withAuth(async (req, user) => {
   if (err) return err
 
   const { name, factory_id } = body
-  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : user.factory_id != null ? user.factory_id : 0
+  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : (user.factory_id ?? 0)
 
   const [newCenter] = await db.insert(centers).values({ name, factoryId: targetFactoryId }).returning()
 

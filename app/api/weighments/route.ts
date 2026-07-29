@@ -14,7 +14,7 @@ export const GET = withAuth(async (req, user) => {
   const isActiveParam = req.nextUrl.searchParams.get(EntityKey.IS_ACTIVE)
 
   const conditions = []
-  if (user.role !== Role.SUPER_ADMIN) conditions.push(eq(centers.factoryId, user.factory_id != null ? user.factory_id : 0))
+  if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) conditions.push(eq(centers.factoryId, user.factory_id))
   if (centerIdParam && centerIdParam !== FilterValue.ALL) conditions.push(eq(weighments.centerId, Number(centerIdParam)))
   if (commodityIdParam && commodityIdParam !== FilterValue.ALL) conditions.push(eq(rates.commodityId, Number(commodityIdParam)))
   if (typeParam && typeParam !== FilterValue.ALL) conditions.push(eq(weighments.type, typeParam as WeighmentType))
@@ -90,7 +90,7 @@ export const POST = withAuth(async (req, user) => {
   // Ensure center belongs to user's factory if non-super_admin
   const [center] = await db.select({ factoryId: centers.factoryId }).from(centers).where(eq(centers.id, Number(center_id)))
   if (!center) return apiError("Selected center not found", StatusCodes.NOT_FOUND)
-  if (user.role !== Role.SUPER_ADMIN && center.factoryId !== user.factory_id != null ? user.factory_id : 0) {
+  if (user.role !== Role.SUPER_ADMIN && center.factoryId !== user.factory_id) {
     return forbiddenError()
   }
 

@@ -7,7 +7,7 @@ import { Role } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (_req, user) => {
   const conditions = [eq(users.isActive, true)]
-  if (user.role !== Role.SUPER_ADMIN) conditions.push(eq(users.factoryId, user.factory_id != null ? user.factory_id : 0))
+  if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) conditions.push(eq(users.factoryId, user.factory_id))
 
   const rows = await db
     .select({

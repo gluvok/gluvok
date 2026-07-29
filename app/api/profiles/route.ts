@@ -13,7 +13,7 @@ export const GET = withAuth(async (req, user) => {
   const roleParam = req.nextUrl.searchParams.get(EntityKey.ROLE)
 
   const conditions = []
-  if (user.role !== Role.SUPER_ADMIN) conditions.push(eq(users.factoryId, user.factory_id != null ? user.factory_id : 0))
+  if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) conditions.push(eq(users.factoryId, user.factory_id))
   if (roleParam && roleParam !== FilterValue.ALL) conditions.push(eq(profiles.role, roleParam as Role))
   if (search) {
     conditions.push(
@@ -75,7 +75,7 @@ export const POST = withAuth(async (req, user) => {
   }
 
   const { name, aadhar_number, username, password, role, factory_id } = parsed.data
-  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? factory_id : user.factory_id != null ? user.factory_id : 0
+  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? factory_id : user.factory_id
 
   // Check username uniqueness
   const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.username, username))

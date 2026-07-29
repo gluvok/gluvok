@@ -31,6 +31,7 @@ export function FormFieldInput({ field, form, idPrefix, disabled, projectSlug }:
   const referencedSlug = getReferencedEntitySlug(field.key)
   const fieldId = `${idPrefix}-field-${field.key}`
   const value = useWatch({ control: form.control, name: field.key })
+  const stringValue = value !== undefined && value !== null ? String(value) : ""
 
   switch (field.type) {
     case FieldType.IMAGES:
@@ -58,7 +59,7 @@ export function FormFieldInput({ field, form, idPrefix, disabled, projectSlug }:
       return (
         <RoleCombobox
           id={`${idPrefix}-role-trigger`}
-          value={typeof value === "string" ? value : ""}
+          value={stringValue}
           onChange={(val) => form.setValue(field.key, val, { shouldValidate: true })}
           disabled={disabled}
         />
@@ -67,7 +68,7 @@ export function FormFieldInput({ field, form, idPrefix, disabled, projectSlug }:
       return (
         <UnitCombobox
           id={`${idPrefix}-unit-trigger`}
-          value={typeof value === "string" ? value : ""}
+          value={stringValue}
           onChange={(val) => form.setValue(field.key, val, { shouldValidate: true })}
         />
       )
@@ -75,7 +76,7 @@ export function FormFieldInput({ field, form, idPrefix, disabled, projectSlug }:
       return (
         <TypeCombobox
           id={`${idPrefix}-type-trigger`}
-          value={typeof value === "string" ? value : ""}
+          value={stringValue}
           onChange={(val) => form.setValue(field.key, val, { shouldValidate: true })}
         />
       )
@@ -83,7 +84,7 @@ export function FormFieldInput({ field, form, idPrefix, disabled, projectSlug }:
       return (
         <ModeCombobox
           id={`${idPrefix}-mode-trigger-${field.key}`}
-          value={typeof value === "string" ? value : ""}
+          value={stringValue}
           onChange={(val) => form.setValue(field.key, val, { shouldValidate: true })}
         />
       )
@@ -93,7 +94,7 @@ export function FormFieldInput({ field, form, idPrefix, disabled, projectSlug }:
           <EntityCombobox
             id={fieldId}
             entitySlug={referencedSlug}
-            value={typeof value === "string" ? value : ""}
+            value={stringValue}
             onChange={(val) => form.setValue(field.key, val, { shouldValidate: true })}
             placeholder={field.placeholder}
             contextSlug={projectSlug}

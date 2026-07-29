@@ -1,8 +1,8 @@
 # Antigravity System Directives & Standards
 
 ## Verification & Tool Commands
-Always use **pnpm** (never raw npm or yarn) for all CLI checks, test executions, linting, type checks, and builds in this codebase:
-- **Unit Testing**: `pnpm test`
+Always use **pnpm** (never raw npm or yarn) for all CLI checks, test executions, linting, type checks, and builds in this codebase. **You MUST always run unit tests (`pnpm test`) after modifying code**:
+- **Unit Testing (Mandatory)**: `pnpm test`
 - **TypeScript Type Checking**: `pnpm exec tsc --noEmit`
 - **Linting**: `pnpm lint`
 - **Production Build Validation**: `pnpm build`

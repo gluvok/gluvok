@@ -9,20 +9,13 @@ import { type EntityRecord } from "@/types"
 import { ColumnDef, ColumnFiltersState, SortingState, VisibilityState, getCoreRowModel } from "@tanstack/react-table"
 import { useReactTable } from "@/lib/utils"
 import { getProjectColumns } from "@/components/projects/columns"
-import { ProjectSlug, EntityKey } from "@/lib/constants/enums"
+import { ProjectSlug } from "@/lib/constants/enums"
 import { useProjectDialogStates, parseColumnFilters, areFiltersEqual, getVisibleColumnsList, isStringArrayEqual } from "./use-helpers"
 import { useAuthStore, getPermissions, useEntitiesStore, usePreferencesStore } from "@/lib/store"
 import { fetchEntityListPaginated } from "@/lib/services"
 
 /** Stable empty object — avoids creating a new reference on every render in Zustand selectors */
 const EMPTY_FILTERS: Record<string, unknown> = {}
-
-/** Declarative map for entity-specific metadata pre-loading actions */
-const ENTITY_METADATA_LOADERS: Partial<Record<ProjectSlug | string, (store: ReturnType<typeof useEntitiesStore.getState>) => void>> = {
-  [ProjectSlug.WEIGHMENTS]: (store) => store.loadWeighmentFiltersData(),
-  [ProjectSlug.RATES]: (store) => store.loadCommodities(),
-  [ProjectSlug.CENTERS]: (store) => store.loadFactories(),
-}
 
 /** Computes initial or updated column visibility map based on saved preferences */
 function computeColumnVisibility(columns: ColumnDef<EntityRecord>[], savedVisibleColumns?: string[]): VisibilityState {
@@ -208,16 +201,6 @@ export function useProjectTable({
     const timer = setTimeout(() => setIsReady(true), 0)
     return () => clearTimeout(timer)
   }, [])
-
-  // Pre-load required entity dropdown/filter data
-  // Skip loading if the factory filter is hidden for this role (e.g. CENTERS factory filter is hidden for non-super-admins)
-  React.useEffect(() => {
-    const loader = ENTITY_METADATA_LOADERS[projectSlug]
-    if (!loader) return
-    const isFactoryFilterHidden = permissions.hiddenFilters?.includes(EntityKey.FACTORY_ID)
-    if (projectSlug === ProjectSlug.CENTERS && isFactoryFilterHidden) return
-    loader(useEntitiesStore.getState())
-  }, [projectSlug, permissions])
 
   return {
     table,

@@ -7,12 +7,13 @@ import * as React from "react"
 import axios from "axios"
 import { ENTITY_EXTRACTORS, type Entity } from "@/lib/utils/entity-extractors"
 import { fetchEntityList } from "@/lib/services"
-import { SystemSlug, ApiRoutes } from "@/lib/constants/enums"
+import { ProjectSlug, SystemSlug, ApiRoutes } from "@/lib/constants/enums"
+import { useEntitiesStore } from "@/lib/store"
 
 /**
  * useEntityOptions Hook
- * Performs API request depending on the entity type, pulls rows,
- * extracts display attributes using custom mappings, and manages loading state.
+ * Returns options directly from the preloaded Zustand entities store when available,
+ * or performs an API fallback request for dynamic entities (like users).
  */
 export function useEntityOptions(
   entitySlug: string,
@@ -20,14 +21,76 @@ export function useEntityOptions(
   fieldKey?: string,
   currentValue?: string
 ) {
-  const [options, setOptions] = React.useState<{ value: string; label: string }[]>([])
-  const [loading, setLoading] = React.useState(true)
+  const storeCommodities = useEntitiesStore((state) => state.commodities)
+  const storeFactories = useEntitiesStore((state) => state.factories)
+  const weighmentFiltersData = useEntitiesStore((state) => state.weighmentFiltersData)
+
+  const preloadedOptions = React.useMemo(() => {
+    switch (entitySlug) {
+      case ProjectSlug.COMMODITIES:
+        if (storeCommodities && storeCommodities.length > 0) {
+          return storeCommodities.map((c) => ({
+            value: String(c.id),
+            label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
+          }))
+        }
+        break
+      case ProjectSlug.FACTORIES:
+        if (storeFactories && storeFactories.length > 0) {
+          return storeFactories.map((f) => ({
+            value: String(f.id),
+            label: f.name ? `${f.name} (ID: ${f.id})` : String(f.id),
+          }))
+        }
+        break
+      case ProjectSlug.CENTERS:
+        if (weighmentFiltersData?.centers && weighmentFiltersData.centers.length > 0) {
+          return weighmentFiltersData.centers.map((c) => ({
+            value: String(c.id),
+            label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
+          }))
+        }
+        break
+      case ProjectSlug.PROFILES:
+        if (weighmentFiltersData?.profiles && weighmentFiltersData.profiles.length > 0) {
+          return weighmentFiltersData.profiles.map((p) => ({
+            value: String(p.id),
+            label: p.name ? `${p.name} (ID: ${p.id})` : String(p.id),
+          }))
+        }
+        break
+      case ProjectSlug.CUSTOMERS:
+        if (weighmentFiltersData?.customers && weighmentFiltersData.customers.length > 0) {
+          return weighmentFiltersData.customers.map((c) => ({
+            value: String(c.id),
+            label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
+          }))
+        }
+        break
+      case ProjectSlug.RATES:
+        if (weighmentFiltersData?.rates && weighmentFiltersData.rates.length > 0) {
+          return weighmentFiltersData.rates.map((r) => ({
+            value: String(r.id),
+            label: r.label,
+          }))
+        }
+        break
+      default:
+        break
+    }
+    return null
+  }, [entitySlug, storeCommodities, storeFactories, weighmentFiltersData])
+
+  const [apiOptions, setApiOptions] = React.useState<{ value: string; label: string }[]>([])
+  const [apiLoading, setApiLoading] = React.useState(false)
 
   React.useEffect(() => {
+    if (preloadedOptions) return
+
     let active = true
     async function load() {
       try {
-        setLoading(true)
+        setApiLoading(true)
         let rawList: Entity[] = []
         switch (entitySlug) {
           case SystemSlug.USERS: {
@@ -44,7 +107,7 @@ export function useEntityOptions(
 
         const extractor = ENTITY_EXTRACTORS[entitySlug]
         if (!extractor) {
-          setOptions([])
+          setApiOptions([])
           return
         }
 
@@ -62,18 +125,21 @@ export function useEntityOptions(
             label: name === id ? name : name ? `${name} (ID: ${displayId})` : id,
           }
         })
-        setOptions(opts)
+        setApiOptions(opts)
       } catch (err) {
         console.error("Failed to load options for", entitySlug, err)
       } finally {
-        if (active) setLoading(false)
+        if (active) setApiLoading(false)
       }
     }
     load()
     return () => {
       active = false
     }
-  }, [entitySlug, contextSlug, fieldKey, currentValue])
+  }, [entitySlug, contextSlug, fieldKey, currentValue, preloadedOptions])
+
+  const options = preloadedOptions || apiOptions
+  const loading = !preloadedOptions && apiLoading
 
   return { options, loading }
 }

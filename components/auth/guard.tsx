@@ -8,7 +8,7 @@
 
 import { useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
-import { useAuthStore, useConfigStore, hasPageAccess } from "@/lib/store"
+import { useAuthStore, useConfigStore, useEntitiesStore, hasPageAccess } from "@/lib/store"
 import { AppRoutes } from "@/lib/constants/enums"
 import { AUTH_ROUTES, PUBLIC_ROUTES } from "@/lib/constants"
 import NotFound from "@/app/not-found"
@@ -41,6 +41,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const profileLoading = useAuthStore((state) => state.profileLoading)
 
   const configInitialized = useConfigStore((state) => state.configInitialized)
+  const filtersInitialized = useEntitiesStore((state) => state.filtersInitialized)
 
   const router = useRouter()
   const pathname = usePathname()
@@ -61,12 +62,17 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Fetch config whenever user is authenticated and config is not yet initialized
+  // Fetch config and preload filters whenever user is authenticated
   useEffect(() => {
-    if (user && !configInitialized) {
-      useConfigStore.getState().fetchConfig()
+    if (user) {
+      if (!configInitialized) {
+        useConfigStore.getState().fetchConfig()
+      }
+      if (!filtersInitialized) {
+        useEntitiesStore.getState().preloadAllFilters()
+      }
     }
-  }, [user, configInitialized])
+  }, [user, configInitialized, filtersInitialized])
 
   useEffect(() => {
     if (!authHydrated || !initialized || profileLoading) return
@@ -94,8 +100,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>
   }
 
-  // Show loading during initial rehydration, before auth/config initialized for authenticated user, or while profile is loading
-  if (!authHydrated || !initialized || (profileLoading && !user) || (user && !configInitialized)) {
+  // Show loading during initial rehydration, before auth/config/filters initialized for authenticated user, or while profile is loading
+  if (!authHydrated || !initialized || (profileLoading && !user) || (user && (!configInitialized || !filtersInitialized))) {
     return <FullScreenStatus message="Loading..." />
   }
 

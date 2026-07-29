@@ -37,6 +37,8 @@ interface EntitiesState {
   loadWeighmentFiltersData: () => Promise<void>
   filtersLoading: Record<string, boolean>
   setFiltersLoading: (slug: string, loading: boolean) => void
+  filtersInitialized: boolean
+  preloadAllFilters: () => Promise<void>
 }
 
 export const useEntitiesStore = create<EntitiesState>((set, get) => ({
@@ -46,6 +48,21 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
   setFiltersLoading: (slug, loading) => set((state) => ({
     filtersLoading: { ...state.filtersLoading, [slug]: loading }
   })),
+  filtersInitialized: false,
+  preloadAllFilters: async () => {
+    const { loadCommodities, loadFactories, loadWeighmentFiltersData } = get()
+    try {
+      await Promise.allSettled([
+        loadCommodities(),
+        loadFactories(),
+        loadWeighmentFiltersData(),
+      ])
+    } catch (err) {
+      console.error("Failed to preload filter entities:", err)
+    } finally {
+      set({ filtersInitialized: true })
+    }
+  },
   commodities: [],
   loadCommodities: async () => {
     set((state) => ({

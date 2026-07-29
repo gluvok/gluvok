@@ -129,7 +129,7 @@ export function EntityDialogContent({
       flushGroup()
       fieldGroups.push({ span: FieldSpan.FULL, fields: [field] })
     } else {
-      if (currentGroupSpan !== fieldSpan || currentGroup.length >= maxInGroup) {
+      if (field.newRow || currentGroupSpan !== fieldSpan || currentGroup.length >= maxInGroup) {
         flushGroup()
       }
       currentGroupSpan = fieldSpan

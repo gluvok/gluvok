@@ -15,6 +15,8 @@ export interface FieldConfig {
   type: FieldType
   required?: boolean
   createOnly?: boolean
+  /** When true, this field always starts a new layout row, breaking out of the current group. */
+  newRow?: boolean
   className?: string
   transformOnChange?: (value: string) => string
   inputMode?: InputMode

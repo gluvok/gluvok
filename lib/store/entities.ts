@@ -6,18 +6,13 @@
 "use client"
 
 import { create } from "zustand"
-import { type Commodity } from "@/types"
+import { type Commodity, type Factory, type Center, type Profile, type Customer, type Rate } from "@/types"
 import { ProjectSlug } from "@/lib/constants/enums"
 import {
   insertRow,
   updateRow,
   deleteRow,
-  fetchCommodities,
-  fetchFactories,
-  fetchCenters,
-  fetchProfiles,
-  fetchCustomers,
-  fetchRates,
+  fetchEntityListFromApi,
 } from "@/lib/services"
 
 export interface IdNamePair { id: number; name: string }
@@ -57,9 +52,9 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
       filtersLoading: { ...state.filtersLoading, [ProjectSlug.RATES]: true }
     }))
     try {
-      const list = await fetchCommodities()
+      const list = await fetchEntityListFromApi<Commodity>(ProjectSlug.COMMODITIES)
       set((state) => ({
-        commodities: list as Commodity[],
+        commodities: list,
         filtersLoading: { ...state.filtersLoading, [ProjectSlug.RATES]: false }
       }))
     } catch (err) {
@@ -76,7 +71,7 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
       filtersLoading: { ...state.filtersLoading, [ProjectSlug.CENTERS]: true }
     }))
     try {
-      const list = await fetchFactories()
+      const list = await fetchEntityListFromApi<Factory>(ProjectSlug.FACTORIES)
       set((state) => ({
         factories: list.map((f) => ({ id: f.id, name: f.name })),
         filtersLoading: { ...state.filtersLoading, [ProjectSlug.CENTERS]: false }
@@ -95,10 +90,10 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
     }))
     try {
       const [cList, pList, cuList, rList] = await Promise.all([
-        fetchCenters(),
-        fetchProfiles(),
-        fetchCustomers(),
-        fetchRates(),
+        fetchEntityListFromApi<Center>(ProjectSlug.CENTERS),
+        fetchEntityListFromApi<Profile>(ProjectSlug.PROFILES),
+        fetchEntityListFromApi<Customer>(ProjectSlug.CUSTOMERS),
+        fetchEntityListFromApi<Rate>(ProjectSlug.RATES),
       ])
 
       const centers = cList.map((c) => ({ id: c.id, name: c.name }))

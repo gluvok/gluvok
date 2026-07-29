@@ -6,13 +6,6 @@
 import axios from "axios"
 import { ProjectSlug, ApiRoutes } from "@/lib/constants/enums"
 import { type EntityRecord } from "@/types"
-import { fetchCenters, fetchCentersPaginated } from "./centers"
-import { fetchCommodities, fetchCommoditiesPaginated } from "./commodities"
-import { fetchRates, fetchRatesPaginated } from "./rates"
-import { fetchCustomers, fetchCustomersPaginated } from "./customers"
-import { fetchWeighments, fetchWeighmentsPaginated } from "./weighments"
-import { fetchFactories, fetchFactoriesPaginated } from "./factories"
-import { fetchProfiles, fetchProfilesPaginated } from "./profiles"
 import { type PaginatedParams } from "./scoping"
 
 const SLUG_TO_API_ROUTE: Record<ProjectSlug, ApiRoutes> = {
@@ -64,39 +57,15 @@ export async function fetchEntityPaginatedFromApi<T = EntityRecord>(
   })
 }
 
-interface ServiceMethods {
-  fetchList: () => Promise<EntityRecord[]>
-  fetchPaginated: (params: PaginatedParams) => Promise<{ data: EntityRecord[]; count: number }>
-}
-
-/** Declarative registry mapping each entity ProjectSlug to its corresponding service handlers */
-const ENTITY_SERVICES: Record<ProjectSlug, ServiceMethods> = {
-  [ProjectSlug.CENTERS]: { fetchList: fetchCenters, fetchPaginated: fetchCentersPaginated },
-  [ProjectSlug.COMMODITIES]: { fetchList: fetchCommodities, fetchPaginated: fetchCommoditiesPaginated },
-  [ProjectSlug.RATES]: { fetchList: fetchRates, fetchPaginated: fetchRatesPaginated },
-  [ProjectSlug.CUSTOMERS]: { fetchList: fetchCustomers, fetchPaginated: fetchCustomersPaginated },
-  [ProjectSlug.WEIGHMENTS]: { fetchList: fetchWeighments, fetchPaginated: fetchWeighmentsPaginated },
-  [ProjectSlug.FACTORIES]: { fetchList: fetchFactories, fetchPaginated: fetchFactoriesPaginated },
-  [ProjectSlug.PROFILES]: { fetchList: fetchProfiles, fetchPaginated: fetchProfilesPaginated },
-}
-
 export async function fetchEntityList(slug: ProjectSlug | string): Promise<EntityRecord[]> {
-  const service = ENTITY_SERVICES[slug as ProjectSlug]
-  if (!service) {
-    throw new Error(`Unknown project slug: ${slug}`)
-  }
-  return service.fetchList()
+  return fetchEntityListFromApi(slug as ProjectSlug)
 }
 
 export async function fetchEntityListPaginated(
   slug: ProjectSlug,
   params: PaginatedParams
 ): Promise<{ data: EntityRecord[]; count: number }> {
-  const service = ENTITY_SERVICES[slug]
-  if (!service) {
-    throw new Error(`Pagination not configured for slug: ${slug}`)
-  }
-  return service.fetchPaginated(params)
+  return fetchEntityPaginatedFromApi(slug, params)
 }
 
 // Mutate functions via Axios and API Routes with error message extraction

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { StatusCodes, ReasonPhrases } from "http-status-codes"
+import { sql } from "drizzle-orm"
 import { verifyJWT, JWTPayload } from "@/lib/auth/jwt"
-import { Role, RequestHeader } from "@/lib/constants/enums"
+import { Role, RequestHeader, ProjectSlug, PermissionKey, QueryParam } from "@/lib/constants/enums"
+import { RBAC_MATRIX, type Permission } from "@/lib/store/access"
+import { db } from "@/db"
 
 export interface PaginationParams {
   page: number
@@ -22,10 +25,24 @@ export function apiError(message: string, status: StatusCodes): NextResponse {
   return NextResponse.json({ error: message }, { status })
 }
 
+// ─── RBAC permission check ────────────────────────────────────────────────────
+export function hasPermission(
+  user: JWTPayload,
+  slug: ProjectSlug,
+  operation: PermissionKey
+): boolean {
+  const perms = RBAC_MATRIX[user.role as Role]?.[slug]
+  return perms ? (perms[operation as keyof Permission] as boolean ?? false) : false
+}
+
+export function forbiddenError(): NextResponse {
+  return apiError(ReasonPhrases.FORBIDDEN, StatusCodes.FORBIDDEN)
+}
+
 // ─── Pagination ───────────────────────────────────────────────────────────────
 export function getPaginationParams(url: URL): PaginationParams {
-  const pageParam = url.searchParams.get("page")
-  const limitParam = url.searchParams.get("limit")
+  const pageParam = url.searchParams.get(QueryParam.PAGE)
+  const limitParam = url.searchParams.get(QueryParam.LIMIT)
 
   const page = Math.max(1, parseInt(pageParam || "1", 10) || 1)
   const limit = Math.max(1, Math.min(100, parseInt(limitParam || "10", 10) || 10))
@@ -114,4 +131,15 @@ export function withAuth<P extends Record<string, string> = Record<string, strin
     if (errorResponse) return errorResponse
     return handler(req, user, ctx)
   }
+}
+// ─── DB Session Context — set before queries so RLS policies can read them ────
+// Call this inside withAuth handler (or any authed route) before DB queries.
+// Uses SET LOCAL so values are scoped to the current transaction only.
+export async function setDbSessionContext(user: JWTPayload): Promise<void> {
+  await db.execute(sql`
+    SELECT
+      set_config('app.current_role',       ${user.role},              true),
+      set_config('app.current_factory_id', ${String(user.factory_id)}, true),
+      set_config('app.current_user_id',    ${user.sub},               true)
+  `)
 }

@@ -2,11 +2,20 @@ import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 import { db } from "@/db"
 import { customers, users } from "@/db/schema"
-import { withAuth, apiError, isFKViolation, StatusCodes } from "@/db/helpers"
+import { withAuth, apiError, isFKViolation, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import { ProjectSlug, PermissionKey } from "@/lib/constants/enums"
 
-export const PUT = withAuth(async (req, _user, ctx) => {
+export const PUT = withAuth(async (req, user, ctx) => {
   const { id } = await ctx.params
   const customerId = parseInt(id, 10)
+
+  // Fetch the record first to check ownership
+  const [existing] = await db.select({ userId: customers.userId }).from(customers).where(eq(customers.id, customerId))
+  const isOwn = existing?.userId != null && existing.userId === user.sub
+
+  // Self-update allowed even without write permission; otherwise check RBAC
+  if (!isOwn && !hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.WRITE)) return forbiddenError()
+
   const { name, fatherName, father_name, is_active } = await req.json()
   const targetFatherName = fatherName ?? father_name
 
@@ -44,7 +53,8 @@ export const PUT = withAuth(async (req, _user, ctx) => {
   })
 })
 
-export const DELETE = withAuth(async (_req, _user, ctx) => {
+export const DELETE = withAuth(async (_req, user, ctx) => {
+  if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.DELETE)) return forbiddenError()
   try {
     const { id } = await ctx.params
     await db.delete(customers).where(eq(customers.id, parseInt(id, 10)))

@@ -255,3 +255,18 @@ export enum RequestHeader {
   FACTORY_ID = "x-user-factory-id",
 }
 
+export enum PermissionKey {
+  READ = "read",
+  WRITE = "write",
+  DELETE = "delete",
+  CREATE = "create",
+  SHOW = "show",
+  FILTER = "filter",
+}
+
+export enum QueryParam {
+  SEARCH = "search",
+  PAGE = "page",
+  LIMIT = "limit",
+}
+

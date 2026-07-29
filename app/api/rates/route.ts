@@ -2,8 +2,8 @@ import { NextResponse } from "next/server"
 import { eq, count, and, desc } from "drizzle-orm"
 import { db } from "@/db"
 import { rates, commodities, factories } from "@/db/schema"
-import { withAuth, getPaginationParams, apiError, StatusCodes } from "@/db/helpers"
-import { Role } from "@/lib/constants/enums"
+import { withAuth, getPaginationParams, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import { Role, ProjectSlug, PermissionKey } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user) => {
   const { page, limit, offset } = getPaginationParams(req.nextUrl)
@@ -40,6 +40,7 @@ export const GET = withAuth(async (req, user) => {
 })
 
 export const POST = withAuth(async (req, user) => {
+  if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.CREATE)) return forbiddenError()
   const body = await req.json()
   const { commodityId, commodity_id, unitPrice, unit_price, unit, factoryId, factory_id } = body
 

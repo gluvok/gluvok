@@ -2,12 +2,12 @@ import { NextResponse } from "next/server"
 import { eq, ilike, count, and, desc } from "drizzle-orm"
 import { db } from "@/db"
 import { centers, factories } from "@/db/schema"
-import { withAuth, getPaginationParams, apiError, StatusCodes } from "@/db/helpers"
-import { Role } from "@/lib/constants/enums"
+import { withAuth, getPaginationParams, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import { Role, ProjectSlug, QueryParam, PermissionKey } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user) => {
   const { page, limit, offset } = getPaginationParams(req.nextUrl)
-  const search = req.nextUrl.searchParams.get("search")
+  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
 
   const conditions = []
   if (user.role !== Role.SUPER_ADMIN) conditions.push(eq(centers.factoryId, user.factory_id))
@@ -40,6 +40,7 @@ export const GET = withAuth(async (req, user) => {
 })
 
 export const POST = withAuth(async (req, user) => {
+  if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.CREATE)) return forbiddenError()
   const body = await req.json()
   const { name, factoryId, factory_id } = body
   if (!name || typeof name !== "string") return apiError("Name is required", StatusCodes.BAD_REQUEST)

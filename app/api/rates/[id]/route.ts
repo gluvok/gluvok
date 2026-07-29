@@ -2,9 +2,11 @@ import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 import { db } from "@/db"
 import { rates } from "@/db/schema"
-import { withAuth, apiError, isFKViolation, StatusCodes } from "@/db/helpers"
+import { withAuth, apiError, isFKViolation, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import { ProjectSlug, PermissionKey } from "@/lib/constants/enums"
 
-export const PUT = withAuth(async (req, _user, ctx) => {
+export const PUT = withAuth(async (req, user, ctx) => {
+  if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.WRITE)) return forbiddenError()
   const { id } = await ctx.params
   const { unitPrice, unit_price, unit } = await req.json()
   const targetUnitPrice = unitPrice ?? unit_price
@@ -34,7 +36,8 @@ export const PUT = withAuth(async (req, _user, ctx) => {
   })
 })
 
-export const DELETE = withAuth(async (_req, _user, ctx) => {
+export const DELETE = withAuth(async (_req, user, ctx) => {
+  if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.DELETE)) return forbiddenError()
   try {
     const { id } = await ctx.params
     await db.delete(rates).where(eq(rates.id, parseInt(id, 10)))

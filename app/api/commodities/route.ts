@@ -2,11 +2,12 @@ import { NextResponse } from "next/server"
 import { ilike, count, desc } from "drizzle-orm"
 import { db } from "@/db"
 import { commodities } from "@/db/schema"
-import { withAuth, getPaginationParams, apiError, StatusCodes } from "@/db/helpers"
+import { withAuth, getPaginationParams, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import { ProjectSlug, QueryParam, PermissionKey } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req) => {
   const { page, limit, offset } = getPaginationParams(req.nextUrl)
-  const search = req.nextUrl.searchParams.get("search")
+  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
   const whereClause = search ? ilike(commodities.name, `%${search}%`) : undefined
 
   const [totalCountResult] = await db.select({ count: count() }).from(commodities).where(whereClause)
@@ -30,7 +31,8 @@ export const GET = withAuth(async (req) => {
   })
 })
 
-export const POST = withAuth(async (req) => {
+export const POST = withAuth(async (req, user) => {
+  if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.CREATE)) return forbiddenError()
   const { name } = await req.json()
   if (!name || typeof name !== "string") return apiError("Name is required", StatusCodes.BAD_REQUEST)
 

@@ -3,13 +3,13 @@ import { eq, ilike, count, and, desc, or } from "drizzle-orm"
 import { db } from "@/db"
 import { profiles, users, factories } from "@/db/schema"
 import { withAuth, getPaginationParams, apiError, StatusCodes } from "@/db/helpers"
-import { Role } from "@/lib/constants/enums"
+import { Role, QueryParam } from "@/lib/constants/enums"
 import { createProfileSchema } from "@/lib/validations/profile"
 import { hashPassword } from "@/lib/auth/password"
 
 export const GET = withAuth(async (req, user) => {
   const { page, limit, offset } = getPaginationParams(req.nextUrl)
-  const search = req.nextUrl.searchParams.get("search")
+  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
 
   const conditions = []
   if (user.role !== Role.SUPER_ADMIN) conditions.push(eq(users.factoryId, user.factory_id))

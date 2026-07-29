@@ -24,6 +24,7 @@ const baseCustomerSchema = z.object({
     .optional()
     .or(z.literal(""))
     .transform((v) => (v === "" ? undefined : v)),
+  [EntityKey.IS_ACTIVE]: z.boolean().optional(),
 })
 
 export const addCustomerSchema = baseCustomerSchema

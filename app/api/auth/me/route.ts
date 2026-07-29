@@ -1,18 +1,19 @@
 /**
  * @file app/api/auth/me/route.ts
- * @description API route to verify active JWT session and return user profile & permissions.
+ * @description API route to verify active JWT session and return user profile & permissions using Drizzle ORM.
  */
 
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
+import { eq } from "drizzle-orm"
+import { db } from "@/db"
+import { users, profiles, customers } from "@/db/schema"
 import { verifyJWT } from "@/lib/auth/jwt"
-import { supabase } from "@/lib/supabase"
-import { EntityKey } from "@/lib/constants/enums"
 
 export async function GET() {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get("auth_token")?.value
+    const token = cookieStore.get("token")?.value || cookieStore.get("auth_token")?.value
 
     if (!token) {
       return NextResponse.json({ user: null })
@@ -23,36 +24,36 @@ export async function GET() {
       return NextResponse.json({ user: null })
     }
 
-    // Verify user account is still valid and active in database
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("*")
-      .eq(EntityKey.ID, payload.sub)
-      .maybeSingle()
+    // Verify user account is still valid and active in database using Drizzle ORM
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, payload.sub))
+      .limit(1)
 
-    if (userError || !user || !user.is_active) {
+    if (!user || !user.isActive) {
       return NextResponse.json({ user: null })
     }
 
-    // Load profile or customer metadata
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq(EntityKey.USER_ID, user.id)
-      .maybeSingle()
+    // Load profile or customer metadata using Drizzle ORM
+    const [profile] = await db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.userId, user.id))
+      .limit(1)
 
-    const { data: customer } = await supabase
-      .from("customers")
-      .select("*")
-      .eq(EntityKey.USER_ID, user.id)
-      .maybeSingle()
+    const [customer] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.userId, user.id))
+      .limit(1)
 
     const userPayload = {
       id: user.id,
       username: user.username,
       name: profile?.name || customer?.name || user.username,
       role: user.role,
-      factory_id: user.factory_id,
+      factory_id: user.factoryId,
       profile: profile || undefined,
       customer: customer || undefined,
     }

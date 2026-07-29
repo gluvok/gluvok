@@ -107,6 +107,19 @@ export enum AppRoutes {
   FEEDBACK = "/feedback",
 }
 
+export enum ApiRoutes {
+  AUTH_LOGIN = "/api/auth/login",
+  AUTH_ME = "/api/auth/me",
+  PROFILES = "/api/profiles",
+  CUSTOMERS = "/api/customers",
+  FACTORIES = "/api/factories",
+  CENTERS = "/api/centers",
+  RATES = "/api/rates",
+  WEIGHMENTS = "/api/weighments",
+  COMMODITIES = "/api/commodities",
+  USERS = "/api/users",
+}
+
 export enum ProjectSlug {
   CENTERS = "centers",
   COMMODITIES = "commodities",

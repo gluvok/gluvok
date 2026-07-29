@@ -35,4 +35,5 @@ export const editProfileSchema = addProfileSchema.extend({
     .min(6, `${ColumnLabel.PASSWORD} must be at least 6 characters`)
     .optional()
     .or(z.literal("")),
+  [EntityKey.IS_ACTIVE]: z.boolean().optional(),
 })

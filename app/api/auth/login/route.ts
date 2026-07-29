@@ -1,13 +1,14 @@
 /**
  * @file app/api/auth/login/route.ts
- * @description API route for authenticating user credentials with Argon2 and setting JWT cookie.
+ * @description API route for authenticating user credentials with Argon2 and Drizzle ORM.
  */
 
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { eq } from "drizzle-orm"
+import { db } from "@/db"
+import { users, profiles, customers } from "@/db/schema"
 import { verifyPassword } from "@/lib/auth/password"
 import { signJWT } from "@/lib/auth/jwt"
-import { EntityKey } from "@/lib/constants/enums"
 
 export async function POST(request: Request) {
   try {
@@ -21,14 +22,14 @@ export async function POST(request: Request) {
       )
     }
 
-    // 1. Query user by username
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("*")
-      .eq(EntityKey.USERNAME, username)
-      .maybeSingle()
+    // 1. Query user by username using Drizzle ORM
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1)
 
-    if (userError || !user || !user.is_active) {
+    if (!user || !user.isActive) {
       return NextResponse.json(
         { error: "Invalid username or password" },
         { status: 401 }
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     }
 
     // 2. Verify password with Argon2id
-    const isValidPassword = await verifyPassword(password, user.password_hash)
+    const isValidPassword = await verifyPassword(password, user.passwordHash)
     if (!isValidPassword) {
       return NextResponse.json(
         { error: "Invalid username or password" },
@@ -44,25 +45,25 @@ export async function POST(request: Request) {
       )
     }
 
-    // 3. Immediate permissions & metadata check
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq(EntityKey.USER_ID, user.id)
-      .maybeSingle()
+    // 3. Immediate permissions & metadata check using Drizzle ORM
+    const [profile] = await db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.userId, user.id))
+      .limit(1)
 
-    const { data: customer } = await supabase
-      .from("customers")
-      .select("*")
-      .eq(EntityKey.USER_ID, user.id)
-      .maybeSingle()
+    const [customer] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.userId, user.id))
+      .limit(1)
 
     // 4. Sign JWT session token
     const token = await signJWT({
       sub: user.id,
       username: user.username,
       role: user.role,
-      factory_id: user.factory_id,
+      factory_id: user.factoryId,
     })
 
     // 5. Construct response with HttpOnly cookie
@@ -71,20 +72,23 @@ export async function POST(request: Request) {
       username: user.username,
       name: profile?.name || customer?.name || user.username,
       role: user.role,
-      factory_id: user.factory_id,
+      factory_id: user.factoryId,
       profile: profile || undefined,
       customer: customer || undefined,
     }
 
     const response = NextResponse.json({ success: true, user: userPayload })
 
-    response.cookies.set("auth_token", token, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "lax" as const,
       path: "/",
       maxAge: 60 * 60 * 24, // 24 hours
-    })
+    }
+
+    response.cookies.set("token", token, cookieOptions)
+    response.cookies.set("auth_token", token, cookieOptions)
 
     return response
   } catch (error) {

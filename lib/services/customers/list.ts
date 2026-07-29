@@ -1,18 +1,15 @@
-/**
- * @file lib/services/customers/list.ts
- * @description Database service logic for listing of customers.
- */
-
+import axios from "axios"
 import { type Customer } from "@/types"
-import { executeListQuery, executeSingleQuery } from "../scoping"
-import { buildListQuery, enrichCustomer, enrichCustomers } from "./query"
+import { ApiRoutes } from "@/lib/constants/enums"
 
 export async function fetchCustomers(): Promise<Customer[]> {
-  const data = await executeListQuery(buildListQuery())
-  return enrichCustomers(data)
+  const res = await axios.get<{ data: Customer[] }>(ApiRoutes.CUSTOMERS)
+  return res.data.data
 }
 
 export async function fetchCustomerById(id: number): Promise<Customer> {
-  const item = await executeSingleQuery(buildListQuery(), id)
-  return enrichCustomer(item)
+  const res = await axios.get<{ data: Customer[] }>(ApiRoutes.CUSTOMERS)
+  const found = res.data.data.find((item) => item.id === id)
+  if (!found) throw new Error(`Customer with ID ${id} not found`)
+  return found
 }

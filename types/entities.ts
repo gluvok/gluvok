@@ -51,10 +51,13 @@ export interface Customer {
   father_name: string
   user_id?: string
   factory_id: number
+  is_active?: boolean
   created_at: string
   updated_at: string
   // Flattened join fields
   user_email?: string
+  username?: string
+  factory_name?: string
 }
 
 export interface Factory {
@@ -63,7 +66,6 @@ export interface Factory {
   created_at: string
   updated_at: string
 }
-
 
 export interface Weighment {
   id: number
@@ -96,6 +98,7 @@ export interface Profile {
   aadhar_number: string
   name: string
   role: Role
+  is_active?: boolean
   preferences?: Record<string, string[]>
   created_at: string
   updated_at: string
@@ -103,6 +106,7 @@ export interface Profile {
   factory?: { name: string } | null
   // Flattened join/view fields
   email?: string
+  username?: string
   factory_name?: string
 }
 
@@ -115,4 +119,3 @@ export type EntityRecord =
   | Weighment
   | Factory
   | Profile
-

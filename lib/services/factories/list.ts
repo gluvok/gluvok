@@ -1,18 +1,15 @@
-/**
- * @file lib/services/factories/list.ts
- * @description Database service logic for listing of factories.
- */
-
+import axios from "axios"
 import { type Factory } from "@/types"
-import { executeListQuery, executeSingleQuery } from "../scoping"
-import { buildListQuery, enrichFactory } from "./query"
+import { ApiRoutes } from "@/lib/constants/enums"
 
 export async function fetchFactories(): Promise<Factory[]> {
-  const data = await executeListQuery(buildListQuery())
-  return data.map(enrichFactory)
+  const res = await axios.get<{ data: Factory[] }>(ApiRoutes.FACTORIES)
+  return res.data.data
 }
 
 export async function fetchFactoryById(id: number): Promise<Factory> {
-  const item = await executeSingleQuery(buildListQuery(), id)
-  return enrichFactory(item)
+  const res = await axios.get<{ data: Factory[] }>(ApiRoutes.FACTORIES)
+  const found = res.data.data.find((item) => item.id === id)
+  if (!found) throw new Error(`Factory with ID ${id} not found`)
+  return found
 }

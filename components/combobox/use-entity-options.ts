@@ -4,16 +4,14 @@
  */
 
 import * as React from "react"
+import axios from "axios"
 import { ENTITY_EXTRACTORS, type Entity } from "@/lib/utils/entity-extractors"
-
-
 import { fetchEntityList } from "@/lib/services"
-import { supabase } from "@/lib/supabase"
-import { SystemSlug, ProjectSlug } from "@/lib/constants/enums"
+import { SystemSlug, ApiRoutes } from "@/lib/constants/enums"
 
 /**
  * useEntityOptions Hook
- * Performs API or RPC request depending on the entity type, pulls rows,
+ * Performs API request depending on the entity type, pulls rows,
  * extracts display attributes using custom mappings, and manages loading state.
  */
 export function useEntityOptions(
@@ -33,16 +31,8 @@ export function useEntityOptions(
         let rawList: Entity[] = []
         switch (entitySlug) {
           case SystemSlug.USERS: {
-            const params: Record<string, unknown> = {}
-            if (contextSlug === ProjectSlug.CUSTOMERS || contextSlug === ProjectSlug.PROFILES) {
-              params.filter_context = contextSlug
-              if (currentValue) {
-                params.exclude_current_id = currentValue
-              }
-            }
-            const { data, error } = await supabase.rpc("get_users", params)
-            if (error) throw new Error(error.message)
-            rawList = data || []
+            const res = await axios.get<{ data: Entity[] }>(ApiRoutes.USERS)
+            rawList = res.data.data || []
             break
           }
           default:
@@ -87,4 +77,3 @@ export function useEntityOptions(
 
   return { options, loading }
 }
-

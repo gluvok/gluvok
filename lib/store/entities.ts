@@ -1,20 +1,24 @@
 /**
  * @file lib/store/entities.ts
- * @description Zustand state store or helper for managing entities data.
+ * @description Zustand state store for managing entities data via axios and API routes.
  */
 
 "use client"
 
 import { create } from "zustand"
 import { type Commodity } from "@/types"
-import { ProjectSlug, EntityKey } from "@/lib/constants/enums"
-import { insertRow, updateRow, deleteRow, fetchCommodities } from "@/lib/services"
-import { supabase } from "@/lib/supabase"
-
-export const CENTERS_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.NAME}`
-export const PROFILES_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.NAME}`
-export const CUSTOMERS_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.NAME}`
-export const RATES_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.UNIT_PRICE}, ${EntityKey.UNIT}, commodity:${ProjectSlug.COMMODITIES}(${EntityKey.NAME})`
+import { ProjectSlug } from "@/lib/constants/enums"
+import {
+  insertRow,
+  updateRow,
+  deleteRow,
+  fetchCommodities,
+  fetchFactories,
+  fetchCenters,
+  fetchProfiles,
+  fetchCustomers,
+  fetchRates,
+} from "@/lib/services"
 
 export interface IdNamePair { id: number; name: string }
 export interface RateOption { id: number; label: string }
@@ -76,10 +80,9 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
       filtersLoading: { ...state.filtersLoading, [ProjectSlug.CENTERS]: true }
     }))
     try {
-      const { data, error } = await supabase.from(ProjectSlug.FACTORIES).select(`id, ${EntityKey.NAME}`).order(EntityKey.NAME)
-      if (error) throw error
+      const list = await fetchFactories()
       set((state) => ({
-        factories: (data as IdNamePair[]) || [],
+        factories: list.map((f) => ({ id: f.id, name: f.name })),
         filtersLoading: { ...state.filtersLoading, [ProjectSlug.CENTERS]: false }
       }))
     } catch (err) {
@@ -95,19 +98,19 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
       filtersLoading: { ...state.filtersLoading, [ProjectSlug.WEIGHMENTS]: true }
     }))
     try {
-      const [c, p, cu, r] = await Promise.all([
-        supabase.from(ProjectSlug.CENTERS).select(CENTERS_SELECT_FIELDS).order(EntityKey.NAME),
-        supabase.from(ProjectSlug.PROFILES).select(PROFILES_SELECT_FIELDS).order(EntityKey.NAME),
-        supabase.from(ProjectSlug.CUSTOMERS).select(CUSTOMERS_SELECT_FIELDS).order(EntityKey.NAME),
-        supabase.from(ProjectSlug.RATES).select(RATES_SELECT_FIELDS).order(EntityKey.ID),
+      const [cList, pList, cuList, rList] = await Promise.all([
+        fetchCenters(),
+        fetchProfiles(),
+        fetchCustomers(),
+        fetchRates(),
       ])
 
-      const centers = (c.data as IdNamePair[]) || []
-      const profiles = (p.data as IdNamePair[]) || []
-      const customers = (cu.data as IdNamePair[]) || []
-      const rateOpts = ((r.data || []) as unknown as Array<{ id: number; unit_price: number; unit: string; commodity: { name: string } | null }>).map((rate) => ({
+      const centers = cList.map((c) => ({ id: c.id, name: c.name }))
+      const profiles = pList.map((p) => ({ id: p.id, name: p.name }))
+      const customers = cuList.map((cu) => ({ id: cu.id, name: cu.name }))
+      const rateOpts = rList.map((rate) => ({
         id: rate.id,
-        label: `${rate.commodity?.name ?? "—"} · ₹${rate.unit_price}/${rate.unit} (ID: ${rate.id})`,
+        label: `${(rate as unknown as { commodityName?: string }).commodityName ?? "—"} · ₹${rate.unit_price}/${rate.unit} (ID: ${rate.id})`,
       }))
 
       set((state) => ({
@@ -137,4 +140,3 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
     get().triggerEntitiesUpdate()
   },
 }))
-

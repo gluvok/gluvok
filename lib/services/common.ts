@@ -1,10 +1,10 @@
 /**
  * @file lib/services/common.ts
- * @description Database service logic for CRUD operations of services.
+ * @description Database service logic for CRUD operations of services using backend API routes and axios.
  */
 
-import { supabase } from "@/lib/supabase"
-import { ProjectSlug, EntityKey } from "@/lib/constants/enums"
+import axios from "axios"
+import { ProjectSlug, ApiRoutes } from "@/lib/constants/enums"
 import { type EntityRecord } from "@/types"
 import { fetchCenters, fetchCentersPaginated, fetchCenterById } from "./centers"
 import { fetchCommodities, fetchCommoditiesPaginated, fetchCommodityById } from "./commodities"
@@ -14,6 +14,16 @@ import { fetchWeighments, fetchWeighmentsPaginated, fetchWeighmentById } from ".
 import { fetchFactories, fetchFactoriesPaginated, fetchFactoryById } from "./factories"
 import { fetchProfiles, fetchProfilesPaginated, fetchProfileById } from "./profiles"
 import { type PaginatedParams } from "./scoping"
+
+const SLUG_TO_API_ROUTE: Record<ProjectSlug, ApiRoutes> = {
+  [ProjectSlug.CENTERS]: ApiRoutes.CENTERS,
+  [ProjectSlug.COMMODITIES]: ApiRoutes.COMMODITIES,
+  [ProjectSlug.RATES]: ApiRoutes.RATES,
+  [ProjectSlug.CUSTOMERS]: ApiRoutes.CUSTOMERS,
+  [ProjectSlug.WEIGHMENTS]: ApiRoutes.WEIGHMENTS,
+  [ProjectSlug.FACTORIES]: ApiRoutes.FACTORIES,
+  [ProjectSlug.PROFILES]: ApiRoutes.PROFILES,
+}
 
 interface ServiceMethods {
   fetchSingle: (id: number) => Promise<EntityRecord>
@@ -59,29 +69,23 @@ export async function fetchEntityListPaginated(
   return service.fetchPaginated(params)
 }
 
-// Mutate functions
+// Mutate functions via Axios and API Routes
 export async function insertRow(slug: ProjectSlug, record: Record<string, unknown>): Promise<EntityRecord> {
-  const table = slug
-  const { data, error } = await supabase.from(table).insert(record).select(EntityKey.ID).maybeSingle()
-  if (error) throw new Error(error.message)
-  if (!data) {
-    throw new Error(`Failed to insert row into table "${table}". You may not have write permission (RLS) for this table.`)
-  }
-  return fetchSingleEntity(slug, data.id)
+  const endpoint = SLUG_TO_API_ROUTE[slug]
+  if (!endpoint) throw new Error(`Unknown API route for slug: ${slug}`)
+  const res = await axios.post<{ data: EntityRecord }>(endpoint, record)
+  return res.data.data
 }
 
 export async function updateRow(slug: ProjectSlug, id: number, record: Record<string, unknown>): Promise<EntityRecord> {
-  const table = slug
-  const { data, error } = await supabase.from(table).update(record).eq(EntityKey.ID as never, id).select(EntityKey.ID).maybeSingle()
-  if (error) throw new Error(error.message)
-  if (!data) {
-    throw new Error(`Row with id ${id} in table "${table}" not found, or you do not have permission (RLS) to update it.`)
-  }
-  return fetchSingleEntity(slug, data.id)
+  const endpoint = SLUG_TO_API_ROUTE[slug]
+  if (!endpoint) throw new Error(`Unknown API route for slug: ${slug}`)
+  const res = await axios.put<{ data: EntityRecord }>(`${endpoint}/${id}`, record)
+  return res.data.data
 }
 
 export async function deleteRow(slug: ProjectSlug, id: number): Promise<void> {
-  const table = slug
-  const { error } = await supabase.from(table).delete().eq(EntityKey.ID as never, id)
-  if (error) throw new Error(error.message)
+  const endpoint = SLUG_TO_API_ROUTE[slug]
+  if (!endpoint) throw new Error(`Unknown API route for slug: ${slug}`)
+  await axios.delete(`${endpoint}/${id}`)
 }

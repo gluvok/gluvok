@@ -1,18 +1,15 @@
-/**
- * @file lib/services/weighments/list.ts
- * @description Database service logic for listing of weighments.
- */
-
+import axios from "axios"
 import { type Weighment } from "@/types"
-import { executeListQuery, executeSingleQuery } from "../scoping"
-import { buildListQuery, enrichWeighment, enrichWeighments } from "./query"
+import { ApiRoutes } from "@/lib/constants/enums"
 
 export async function fetchWeighments(): Promise<Weighment[]> {
-  const data = await executeListQuery(buildListQuery())
-  return enrichWeighments(data)
+  const res = await axios.get<{ data: Weighment[] }>(ApiRoutes.WEIGHMENTS)
+  return res.data.data
 }
 
 export async function fetchWeighmentById(id: number): Promise<Weighment> {
-  const item = await executeSingleQuery(buildListQuery(), id)
-  return enrichWeighment(item)
+  const res = await axios.get<{ data: Weighment[] }>(ApiRoutes.WEIGHMENTS)
+  const found = res.data.data.find((item) => item.id === id)
+  if (!found) throw new Error(`Weighment with ID ${id} not found`)
+  return found
 }

@@ -1,19 +1,15 @@
-/**
- * @file lib/services/centers/list.ts
- * @description Database service logic for listing of centers.
- */
-
+import axios from "axios"
 import { type Center } from "@/types"
-import { executeListQuery, executeSingleQuery } from "../scoping"
-import { buildListQuery, enrichCenter } from "./query"
+import { ApiRoutes } from "@/lib/constants/enums"
 
 export async function fetchCenters(): Promise<Center[]> {
-  const data = await executeListQuery(buildListQuery())
-  return data.map(enrichCenter)
+  const res = await axios.get<{ data: Center[] }>(ApiRoutes.CENTERS)
+  return res.data.data
 }
 
 export async function fetchCenterById(id: number): Promise<Center> {
-  const item = await executeSingleQuery(buildListQuery(), id)
-  return enrichCenter(item)
+  const res = await axios.get<{ data: Center[] }>(ApiRoutes.CENTERS)
+  const found = res.data.data.find((item) => item.id === id)
+  if (!found) throw new Error(`Center with ID ${id} not found`)
+  return found
 }
-

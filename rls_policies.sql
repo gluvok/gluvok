@@ -1,5 +1,5 @@
 -- rls_policies.sql
--- Note: Policy definitions and helper functions for public.users architecture
+-- Production RLS policies and helper functions for public.users architecture
 
 -- ============================================================================
 -- 0. Schema Updates
@@ -14,7 +14,7 @@ ALTER TABLE weighments ADD COLUMN IF NOT EXISTS unit unit_enum NOT NULL DEFAULT 
 -- 1. Helper functions for user isolation and roles (using public.users)
 -- ============================================================================
 
--- Get user's role from public.users or profiles
+-- Get user's role from public.users
 CREATE OR REPLACE FUNCTION current_user_role(u_id uuid) RETURNS text AS $$
   SELECT role::text FROM public.users WHERE id = u_id LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER;
@@ -107,7 +107,12 @@ GRANT EXECUTE ON FUNCTION public.get_users(uuid, uuid, text) TO authenticated;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "users_all_policy" ON users;
-CREATE POLICY "users_all_policy" ON users FOR ALL USING (true);
+DROP POLICY IF EXISTS "users_select_policy" ON users;
+DROP POLICY IF EXISTS "users_modify_policy" ON users;
+
+CREATE POLICY "users_select_policy" ON users FOR SELECT TO authenticated USING (true);
+CREATE POLICY "users_modify_policy" ON users FOR ALL TO authenticated USING (true);
+
 
 -- ============================================================================
 -- 2. Profiles RLS Policies
@@ -118,11 +123,8 @@ DROP POLICY IF EXISTS "profiles_isolation_policy" ON profiles;
 DROP POLICY IF EXISTS "profiles_select_policy" ON profiles;
 DROP POLICY IF EXISTS "profiles_modify_policy" ON profiles;
 
-CREATE POLICY "profiles_select_policy" ON profiles
-FOR SELECT USING (true);
-
-CREATE POLICY "profiles_modify_policy" ON profiles
-FOR ALL USING (true);
+CREATE POLICY "profiles_select_policy" ON profiles FOR SELECT TO authenticated USING (true);
+CREATE POLICY "profiles_modify_policy" ON profiles FOR ALL TO authenticated USING (true);
 
 
 -- ============================================================================
@@ -131,8 +133,7 @@ FOR ALL USING (true);
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "customers_isolation_policy" ON customers;
-CREATE POLICY "customers_isolation_policy" ON customers
-FOR ALL USING (true);
+CREATE POLICY "customers_isolation_policy" ON customers FOR ALL TO authenticated USING (true);
 
 
 -- ============================================================================
@@ -141,8 +142,7 @@ FOR ALL USING (true);
 ALTER TABLE factories ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "factories_isolation_policy" ON factories;
-CREATE POLICY "factories_isolation_policy" ON factories
-FOR ALL USING (true);
+CREATE POLICY "factories_isolation_policy" ON factories FOR ALL TO authenticated USING (true);
 
 
 -- ============================================================================
@@ -151,9 +151,7 @@ FOR ALL USING (true);
 ALTER TABLE centers ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "centers_isolation_policy" ON centers;
-CREATE POLICY "centers_isolation_policy" ON centers
-FOR ALL TO authenticated
-USING (true);
+CREATE POLICY "centers_isolation_policy" ON centers FOR ALL TO authenticated USING (true);
 
 
 -- ============================================================================
@@ -162,9 +160,7 @@ USING (true);
 ALTER TABLE rates ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "rates_isolation_policy" ON rates;
-CREATE POLICY "rates_isolation_policy" ON rates
-FOR ALL TO authenticated
-USING (true);
+CREATE POLICY "rates_isolation_policy" ON rates FOR ALL TO authenticated USING (true);
 
 
 -- ============================================================================
@@ -173,9 +169,7 @@ USING (true);
 ALTER TABLE weighments ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "weighments_isolation_policy" ON weighments;
-CREATE POLICY "weighments_isolation_policy" ON weighments
-FOR ALL TO authenticated
-USING (true);
+CREATE POLICY "weighments_isolation_policy" ON weighments FOR ALL TO authenticated USING (true);
 
 
 -- ============================================================================
@@ -184,14 +178,10 @@ USING (true);
 ALTER TABLE commodities ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "commodities_select_policy" ON commodities;
-CREATE POLICY "commodities_select_policy" ON commodities
-FOR SELECT TO authenticated
-USING (true);
+CREATE POLICY "commodities_select_policy" ON commodities FOR SELECT TO authenticated USING (true);
 
 DROP POLICY IF EXISTS "commodities_all_policy" ON commodities;
-CREATE POLICY "commodities_all_policy" ON commodities
-FOR ALL TO authenticated
-USING (true);
+CREATE POLICY "commodities_all_policy" ON commodities FOR ALL TO authenticated USING (true);
 
 
 -- ============================================================================

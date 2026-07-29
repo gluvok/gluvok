@@ -21,30 +21,32 @@ export const GET = withAuth(async (req, user) => {
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  const [totalCountResult] = await db.select({ count: count() }).from(customers).where(whereClause)
-  const rows = await db
-    .select({
-      id: customers.id,
-      govt_id: customers.govtId,
-      name: customers.name,
-      father_name: customers.fatherName,
-      user_id: customers.userId,
-      factory_id: customers.factoryId,
-      created_at: customers.createdAt,
-      updated_at: customers.updatedAt,
-      username: users.username,
-      is_active: users.isActive,
-      factory_name: factories.name,
-    })
-    .from(customers)
-    .leftJoin(users, eq(customers.userId, users.id))
-    .leftJoin(factories, eq(customers.factoryId, factories.id))
-    .where(whereClause)
-    .orderBy(desc(customers.createdAt))
-    .limit(limit)
-    .offset(offset)
+  const [totalCountResult, rows] = await Promise.all([
+    db.select({ count: count() }).from(customers).where(whereClause),
+    db
+      .select({
+        id: customers.id,
+        govt_id: customers.govtId,
+        name: customers.name,
+        father_name: customers.fatherName,
+        user_id: customers.userId,
+        factory_id: customers.factoryId,
+        created_at: customers.createdAt,
+        updated_at: customers.updatedAt,
+        username: users.username,
+        is_active: users.isActive,
+        factory_name: factories.name,
+      })
+      .from(customers)
+      .leftJoin(users, eq(customers.userId, users.id))
+      .leftJoin(factories, eq(customers.factoryId, factories.id))
+      .where(whereClause)
+      .orderBy(desc(customers.createdAt))
+      .limit(limit)
+      .offset(offset),
+  ])
 
-  const total = Number(totalCountResult?.count || 0)
+  const total = Number(totalCountResult[0]?.count || 0)
   return NextResponse.json({
     data: rows,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },

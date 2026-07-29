@@ -11,28 +11,30 @@ export const GET = withAuth(async (req, user) => {
   if (user.role !== Role.SUPER_ADMIN) conditions.push(eq(rates.factoryId, user.factory_id))
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  const [totalCountResult] = await db.select({ count: count() }).from(rates).where(whereClause)
-  const rows = await db
-    .select({
-      id: rates.id,
-      commodity_id: rates.commodityId,
-      unit_price: rates.unitPrice,
-      unit: rates.unit,
-      factory_id: rates.factoryId,
-      created_at: rates.createdAt,
-      updated_at: rates.updatedAt,
-      commodity_name: commodities.name,
-      factory_name: factories.name,
-    })
-    .from(rates)
-    .leftJoin(commodities, eq(rates.commodityId, commodities.id))
-    .leftJoin(factories, eq(rates.factoryId, factories.id))
-    .where(whereClause)
-    .orderBy(desc(rates.createdAt))
-    .limit(limit)
-    .offset(offset)
+  const [totalCountResult, rows] = await Promise.all([
+    db.select({ count: count() }).from(rates).where(whereClause),
+    db
+      .select({
+        id: rates.id,
+        commodity_id: rates.commodityId,
+        unit_price: rates.unitPrice,
+        unit: rates.unit,
+        factory_id: rates.factoryId,
+        created_at: rates.createdAt,
+        updated_at: rates.updatedAt,
+        commodity_name: commodities.name,
+        factory_name: factories.name,
+      })
+      .from(rates)
+      .leftJoin(commodities, eq(rates.commodityId, commodities.id))
+      .leftJoin(factories, eq(rates.factoryId, factories.id))
+      .where(whereClause)
+      .orderBy(desc(rates.createdAt))
+      .limit(limit)
+      .offset(offset),
+  ])
 
-  const total = Number(totalCountResult?.count || 0)
+  const total = Number(totalCountResult[0]?.count || 0)
   return NextResponse.json({
     data: rows,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },

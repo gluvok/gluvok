@@ -24,35 +24,36 @@ export const GET = withAuth(async (req, user) => {
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  const [totalCountResult] = await db
-    .select({ count: count() })
-    .from(profiles)
-    .innerJoin(users, eq(profiles.userId, users.id))
-    .where(whereClause)
+  const [totalCountResult, rows] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(profiles)
+      .innerJoin(users, eq(profiles.userId, users.id))
+      .where(whereClause),
+    db
+      .select({
+        id: profiles.id,
+        user_id: profiles.userId,
+        name: profiles.name,
+        aadhar_number: profiles.aadharNumber,
+        role: profiles.role,
+        created_at: profiles.createdAt,
+        updated_at: profiles.updatedAt,
+        username: users.username,
+        factory_id: users.factoryId,
+        is_active: users.isActive,
+        factory_name: factories.name,
+      })
+      .from(profiles)
+      .innerJoin(users, eq(profiles.userId, users.id))
+      .leftJoin(factories, eq(users.factoryId, factories.id))
+      .where(whereClause)
+      .orderBy(desc(profiles.createdAt))
+      .limit(limit)
+      .offset(offset),
+  ])
 
-  const rows = await db
-    .select({
-      id: profiles.id,
-      user_id: profiles.userId,
-      name: profiles.name,
-      aadhar_number: profiles.aadharNumber,
-      role: profiles.role,
-      created_at: profiles.createdAt,
-      updated_at: profiles.updatedAt,
-      username: users.username,
-      factory_id: users.factoryId,
-      is_active: users.isActive,
-      factory_name: factories.name,
-    })
-    .from(profiles)
-    .innerJoin(users, eq(profiles.userId, users.id))
-    .leftJoin(factories, eq(users.factoryId, factories.id))
-    .where(whereClause)
-    .orderBy(desc(profiles.createdAt))
-    .limit(limit)
-    .offset(offset)
-
-  const total = Number(totalCountResult?.count || 0)
+  const total = Number(totalCountResult[0]?.count || 0)
   return NextResponse.json({
     data: rows,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },

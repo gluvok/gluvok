@@ -10,21 +10,23 @@ export const GET = withAuth(async (req) => {
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
   const whereClause = search ? ilike(commodities.name, `%${search}%`) : undefined
 
-  const [totalCountResult] = await db.select({ count: count() }).from(commodities).where(whereClause)
-  const rows = await db
-    .select({
-      id: commodities.id,
-      name: commodities.name,
-      created_at: commodities.createdAt,
-      updated_at: commodities.updatedAt,
-    })
-    .from(commodities)
-    .where(whereClause)
-    .orderBy(desc(commodities.createdAt))
-    .limit(limit)
-    .offset(offset)
+  const [totalCountResult, rows] = await Promise.all([
+    db.select({ count: count() }).from(commodities).where(whereClause),
+    db
+      .select({
+        id: commodities.id,
+        name: commodities.name,
+        created_at: commodities.createdAt,
+        updated_at: commodities.updatedAt,
+      })
+      .from(commodities)
+      .where(whereClause)
+      .orderBy(desc(commodities.createdAt))
+      .limit(limit)
+      .offset(offset),
+  ])
 
-  const total = Number(totalCountResult?.count || 0)
+  const total = Number(totalCountResult[0]?.count || 0)
   return NextResponse.json({
     data: rows,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },

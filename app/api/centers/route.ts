@@ -14,25 +14,26 @@ export const GET = withAuth(async (req, user) => {
   if (search) conditions.push(ilike(centers.name, `%${search}%`))
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  const [totalCountResult] = await db.select({ count: count() }).from(centers).where(whereClause)
+  const [totalCountResult, rows] = await Promise.all([
+    db.select({ count: count() }).from(centers).where(whereClause),
+    db
+      .select({
+        id: centers.id,
+        name: centers.name,
+        factory_id: centers.factoryId,
+        created_at: centers.createdAt,
+        updated_at: centers.updatedAt,
+        factory_name: factories.name,
+      })
+      .from(centers)
+      .leftJoin(factories, eq(centers.factoryId, factories.id))
+      .where(whereClause)
+      .orderBy(desc(centers.createdAt))
+      .limit(limit)
+      .offset(offset),
+  ])
 
-  const rows = await db
-    .select({
-      id: centers.id,
-      name: centers.name,
-      factory_id: centers.factoryId,
-      created_at: centers.createdAt,
-      updated_at: centers.updatedAt,
-      factory_name: factories.name,
-    })
-    .from(centers)
-    .leftJoin(factories, eq(centers.factoryId, factories.id))
-    .where(whereClause)
-    .orderBy(desc(centers.createdAt))
-    .limit(limit)
-    .offset(offset)
-
-  const total = Number(totalCountResult?.count || 0)
+  const total = Number(totalCountResult[0]?.count || 0)
   return NextResponse.json({
     data: rows,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },

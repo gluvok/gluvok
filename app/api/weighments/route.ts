@@ -23,47 +23,48 @@ export const GET = withAuth(async (req, user) => {
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  const [totalCountResult] = await db
-    .select({ count: count() })
-    .from(weighments)
-    .leftJoin(centers, eq(weighments.centerId, centers.id))
-    .leftJoin(customers, eq(weighments.customerId, customers.id))
-    .leftJoin(profiles, eq(weighments.profileId, profiles.id))
-    .where(whereClause)
+  const [totalCountResult, rows] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(weighments)
+      .leftJoin(centers, eq(weighments.centerId, centers.id))
+      .leftJoin(customers, eq(weighments.customerId, customers.id))
+      .leftJoin(profiles, eq(weighments.profileId, profiles.id))
+      .where(whereClause),
+    db
+      .select({
+        id: weighments.id,
+        vehicle_number: weighments.vehicleNumber,
+        weight: weighments.weight,
+        images: weighments.images,
+        unit: weighments.unit,
+        type: weighments.type,
+        rate_id: weighments.rateId,
+        center_id: weighments.centerId,
+        profile_id: weighments.profileId,
+        customer_id: weighments.customerId,
+        is_active: weighments.isActive,
+        created_at: weighments.createdAt,
+        updated_at: weighments.updatedAt,
+        center_name: centers.name,
+        profile_name: profiles.name,
+        customer_name: customers.name,
+        commodity_name: commodities.name,
+        unit_price: rates.unitPrice,
+      })
+      .from(weighments)
+      .leftJoin(rates, eq(weighments.rateId, rates.id))
+      .leftJoin(commodities, eq(rates.commodityId, commodities.id))
+      .leftJoin(centers, eq(weighments.centerId, centers.id))
+      .leftJoin(profiles, eq(weighments.profileId, profiles.id))
+      .leftJoin(customers, eq(weighments.customerId, customers.id))
+      .where(whereClause)
+      .orderBy(desc(weighments.createdAt))
+      .limit(limit)
+      .offset(offset),
+  ])
 
-  const rows = await db
-    .select({
-      id: weighments.id,
-      vehicle_number: weighments.vehicleNumber,
-      weight: weighments.weight,
-      images: weighments.images,
-      unit: weighments.unit,
-      type: weighments.type,
-      rate_id: weighments.rateId,
-      center_id: weighments.centerId,
-      profile_id: weighments.profileId,
-      customer_id: weighments.customerId,
-      is_active: weighments.isActive,
-      created_at: weighments.createdAt,
-      updated_at: weighments.updatedAt,
-      center_name: centers.name,
-      profile_name: profiles.name,
-      customer_name: customers.name,
-      commodity_name: commodities.name,
-      unit_price: rates.unitPrice,
-    })
-    .from(weighments)
-    .leftJoin(rates, eq(weighments.rateId, rates.id))
-    .leftJoin(commodities, eq(rates.commodityId, commodities.id))
-    .leftJoin(centers, eq(weighments.centerId, centers.id))
-    .leftJoin(profiles, eq(weighments.profileId, profiles.id))
-    .leftJoin(customers, eq(weighments.customerId, customers.id))
-    .where(whereClause)
-    .orderBy(desc(weighments.createdAt))
-    .limit(limit)
-    .offset(offset)
-
-  const total = Number(totalCountResult?.count || 0)
+  const total = Number(totalCountResult[0]?.count || 0)
   return NextResponse.json({
     data: rows,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },

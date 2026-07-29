@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, integer, boolean, pgEnum, decimal, jsonb, bigint } from "drizzle-orm/pg-core"
+import { pgTable, uuid, varchar, text, integer, boolean, pgEnum, decimal, jsonb, bigint, uniqueIndex } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 import { timestamps } from "./columns.helpers"
 import { Role, Unit, WeighmentType, EntityKey, TableName, DbEnum } from "@/lib/constants/enums"
@@ -63,18 +63,20 @@ export const users = pgTable(TableName.USERS, {
 
 export const customers = pgTable(TableName.CUSTOMERS, {
   id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-  govtId: integer(EntityKey.GOVT_ID).notNull().unique(),
+  govtId: integer(EntityKey.GOVT_ID).notNull(),
   name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
   fatherName: varchar(EntityKey.FATHER_NAME, { length: 255 }).notNull(),
   userId: uuid(EntityKey.USER_ID).unique().references(() => users.id, { onDelete: "restrict" }),
   factoryId: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
   ...timestamps,
-})
+}, (table) => [
+  uniqueIndex("customers_govt_id_factory_id_idx").on(table.govtId, table.factoryId)
+])
 
 export const profiles = pgTable(TableName.PROFILES, {
   id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
   userId: uuid(EntityKey.USER_ID).notNull().unique().references(() => users.id, { onDelete: "restrict" }),
-  aadharNumber: varchar(EntityKey.AADHAR_NUMBER, { length: 12 }).notNull().unique(),
+  aadharNumber: varchar(EntityKey.AADHAR_NUMBER, { length: 12 }).notNull(),
   name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
   role: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
   ...timestamps,

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { eq, ilike, count, and, desc, or } from "drizzle-orm"
 import { db } from "@/db"
 import { customers, users, factories } from "@/db/schema"
-import { withAuth, getPaginationParams, validateRequiredFields, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import { withAuth, getPaginationParams, validateRequiredFields, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
 import { Role, ProjectSlug, PermissionKey, QueryParam } from "@/lib/constants/enums"
 import { hashPassword } from "@/lib/auth/password"
 
@@ -64,6 +64,14 @@ export const POST = withAuth(async (req, user) => {
 
   const { govt_id, name, father_name, username, password, factory_id } = body
   const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : user.factory_id != null ? user.factory_id : 0
+
+  const [existingCustomer] = await db
+    .select({ id: customers.id })
+    .from(customers)
+    .where(and(eq(customers.govtId, Number(govt_id)), eq(customers.factoryId, targetFactoryId)))
+  if (existingCustomer) {
+    return apiError("Govt ID already exists in this factory", StatusCodes.BAD_REQUEST)
+  }
 
   let createdUserId: string | null = null
   if (username && password) {

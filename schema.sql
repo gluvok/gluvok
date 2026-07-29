@@ -156,7 +156,7 @@ CREATE TRIGGER set_timestamp_users
 -- E. customers table
 CREATE TABLE IF NOT EXISTS public.customers (
   id SERIAL PRIMARY KEY,
-  govt_id INTEGER NOT NULL UNIQUE,
+  govt_id INTEGER NOT NULL,
   name VARCHAR(255) NOT NULL,
   father_name VARCHAR(255) NOT NULL,
   user_id UUID UNIQUE,
@@ -172,7 +172,10 @@ CREATE TABLE IF NOT EXISTS public.customers (
   CONSTRAINT fk_customer_factory
     FOREIGN KEY (factory_id)
     REFERENCES public.factories(id)
-    ON DELETE RESTRICT
+    ON DELETE RESTRICT,
+
+  CONSTRAINT uq_customer_govt_factory
+    UNIQUE (govt_id, factory_id)
 );
 
 DROP TRIGGER IF EXISTS set_timestamp_customers ON public.customers;
@@ -186,7 +189,7 @@ CREATE TRIGGER set_timestamp_customers
 CREATE TABLE IF NOT EXISTS public.profiles (
   id SERIAL PRIMARY KEY,
   user_id UUID NOT NULL UNIQUE,
-  aadhar_number CHAR(12) NOT NULL UNIQUE,
+  aadhar_number CHAR(12) NOT NULL,
   name VARCHAR(255) NOT NULL,
   role role_enum NOT NULL DEFAULT 'base',
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -484,3 +487,34 @@ CREATE POLICY "assignments_update" ON public.assignments FOR UPDATE TO authentic
 
 DROP POLICY IF EXISTS "assignments_delete" ON public.assignments;
 CREATE POLICY "assignments_delete" ON public.assignments FOR DELETE TO authenticated USING (public.get_user_role() IN ('super_admin', 'admin'));
+
+
+-- J. Supabase Storage Bucket and RLS Policies (for 'gluvok' bucket - Private to Authenticated Users)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('gluvok', 'gluvok', false)
+ON CONFLICT (id) DO UPDATE SET public = false;
+
+DROP POLICY IF EXISTS "Public Read Access for gluvok bucket" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated Read Access for gluvok bucket" ON storage.objects;
+CREATE POLICY "Authenticated Read Access for gluvok bucket"
+ON storage.objects FOR SELECT TO authenticated
+USING (bucket_id = 'gluvok');
+
+DROP POLICY IF EXISTS "Public Insert Access for gluvok bucket" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated Insert Access for gluvok bucket" ON storage.objects;
+CREATE POLICY "Authenticated Insert Access for gluvok bucket"
+ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'gluvok');
+
+DROP POLICY IF EXISTS "Public Update Access for gluvok bucket" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated Update Access for gluvok bucket" ON storage.objects;
+CREATE POLICY "Authenticated Update Access for gluvok bucket"
+ON storage.objects FOR UPDATE TO authenticated
+USING (bucket_id = 'gluvok')
+WITH CHECK (bucket_id = 'gluvok');
+
+DROP POLICY IF EXISTS "Public Delete Access for gluvok bucket" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated Delete Access for gluvok bucket" ON storage.objects;
+CREATE POLICY "Authenticated Delete Access for gluvok bucket"
+ON storage.objects FOR DELETE TO authenticated
+USING (bucket_id = 'gluvok');

@@ -81,9 +81,17 @@ export const POST = withAuth(async (req, user) => {
   const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.username, username))
   if (existingUser) return apiError("Username is already taken", StatusCodes.BAD_REQUEST)
 
-  // Check aadhar uniqueness
-  const [existingProfile] = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.aadharNumber, aadhar_number))
-  if (existingProfile) return apiError("Aadhar number is already registered", StatusCodes.BAD_REQUEST)
+  // Check aadhar uniqueness per factory
+  const aadharConditions = [eq(profiles.aadharNumber, aadhar_number)]
+  if (targetFactoryId) {
+    aadharConditions.push(eq(users.factoryId, targetFactoryId))
+  }
+  const [existingProfile] = await db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .innerJoin(users, eq(profiles.userId, users.id))
+    .where(and(...aadharConditions))
+  if (existingProfile) return apiError("Aadhar number is already registered in this factory", StatusCodes.BAD_REQUEST)
 
   const passwordHash = await hashPassword(password)
 

@@ -224,6 +224,34 @@ export enum DatePreset {
   LAST_7_DAYS = "7days",
   THIS_MONTH = "thisMonth",
 }
+export enum DbEnum {
+  ROLE = "role_enum",
+  UNIT = "unit_enum",
+  WEIGHMENT_TYPE = "weighment_type",
+}
 
+export enum TableName {
+  FACTORIES = "factories",
+  CENTERS = "centers",
+  COMMODITIES = "commodities",
+  RATES = "rates",
+  USERS = "users",
+  CUSTOMERS = "customers",
+  PROFILES = "profiles",
+  WEIGHMENTS = "weighments",
+}
 
+export enum ApiPrefix {
+  API = "/api/",
+  NEXT = "/_next",
+  FAVICON = "/favicon.ico",
+  FACTORIES_API = "/api/factories",
+}
+
+export enum RequestHeader {
+  USER_ID = "x-user-id",
+  USERNAME = "x-user-username",
+  ROLE = "x-user-role",
+  FACTORY_ID = "x-user-factory-id",
+}
 

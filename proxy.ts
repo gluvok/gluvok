@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { StatusCodes, ReasonPhrases } from "http-status-codes"
 import { verifyJWT } from "@/lib/auth/jwt"
-import { AppRoutes, Role } from "@/lib/constants/enums"
+import { AppRoutes, Role, ApiPrefix, RequestHeader } from "@/lib/constants/enums"
 import { PUBLIC_ROUTES, AUTH_ROUTES, PUBLIC_API_ROUTES } from "@/lib/constants/routes"
 
 const PUBLIC_PATHNAMES = new Set<string>([
@@ -10,14 +11,16 @@ const PUBLIC_PATHNAMES = new Set<string>([
   ...PUBLIC_API_ROUTES,
 ])
 
+const STATIC_EXTENSIONS = /\.(png|jpg|jpeg|svg|css|js)$/
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Allow static assets
   if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon.ico") ||
-    pathname.match(/\.(png|jpg|jpeg|svg|css|js)$/)
+    pathname.startsWith(ApiPrefix.NEXT) ||
+    pathname.startsWith(ApiPrefix.FAVICON) ||
+    STATIC_EXTENSIONS.test(pathname)
   ) {
     return NextResponse.next()
   }
@@ -27,40 +30,42 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const token = request.cookies.get("token")?.value || request.cookies.get("auth_token")?.value
+  const token =
+    request.cookies.get("token")?.value ||
+    request.cookies.get("auth_token")?.value
+
+  const isApiRoute = pathname.startsWith(ApiPrefix.API)
 
   if (!token) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-    return NextResponse.redirect(new URL(AppRoutes.LOGIN, request.url))
+    return isApiRoute
+      ? NextResponse.json({ error: ReasonPhrases.UNAUTHORIZED }, { status: StatusCodes.UNAUTHORIZED })
+      : NextResponse.redirect(new URL(AppRoutes.LOGIN, request.url))
   }
 
   const payload = await verifyJWT(token)
   if (!payload) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Invalid or expired token" }, { status: 401 })
-    }
-    return NextResponse.redirect(new URL(AppRoutes.LOGIN, request.url))
+    return isApiRoute
+      ? NextResponse.json({ error: ReasonPhrases.UNAUTHORIZED }, { status: StatusCodes.UNAUTHORIZED })
+      : NextResponse.redirect(new URL(AppRoutes.LOGIN, request.url))
   }
 
-  // Centralized Super Admin permission check for factory mutations
-  if (pathname.startsWith("/api/factories") && request.method !== "GET" && payload.role !== Role.SUPER_ADMIN) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  // Centralized Super Admin check for factory mutations
+  if (
+    pathname.startsWith(ApiPrefix.FACTORIES_API) &&
+    request.method !== "GET" &&
+    payload.role !== Role.SUPER_ADMIN
+  ) {
+    return NextResponse.json({ error: ReasonPhrases.FORBIDDEN }, { status: StatusCodes.FORBIDDEN })
   }
 
-  // Forward verified user session context headers downstream to API handlers
+  // Forward verified user context as headers for API route handlers
   const requestHeaders = new Headers(request.headers)
-  requestHeaders.set("x-user-id", payload.sub)
-  requestHeaders.set("x-user-username", payload.username)
-  requestHeaders.set("x-user-role", payload.role)
-  requestHeaders.set("x-user-factory-id", String(payload.factory_id))
+  requestHeaders.set(RequestHeader.USER_ID, payload.sub)
+  requestHeaders.set(RequestHeader.USERNAME, payload.username)
+  requestHeaders.set(RequestHeader.ROLE, payload.role)
+  requestHeaders.set(RequestHeader.FACTORY_ID, String(payload.factory_id))
 
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  })
+  return NextResponse.next({ request: { headers: requestHeaders } })
 }
 
 export const config = {

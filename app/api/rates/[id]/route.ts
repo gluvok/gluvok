@@ -1,77 +1,51 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 import { db } from "@/db"
 import { rates } from "@/db/schema"
-import { requireAuth } from "@/db/helpers"
+import { withAuth, apiError, isFKViolation, StatusCodes } from "@/db/helpers"
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { errorResponse } = await requireAuth(req)
-    if (errorResponse) return errorResponse
+export const PUT = withAuth(async (req, _user, ctx) => {
+  const { id } = await ctx.params
+  const { unitPrice, unit_price, unit } = await req.json()
+  const targetUnitPrice = unitPrice ?? unit_price
 
-    const { id } = await params
-    const rateId = parseInt(id, 10)
-    const body = await req.json()
-    const { unitPrice, unit_price, unit } = body
-
-    const targetUnitPrice = unitPrice ?? unit_price
-
-    const [updated] = await db
-      .update(rates)
-      .set({
-        ...(targetUnitPrice ? { unitPrice: String(targetUnitPrice) } : {}),
-        ...(unit ? { unit } : {}),
-        updatedAt: new Date(),
-      })
-      .where(eq(rates.id, rateId))
-      .returning()
-
-    if (!updated) {
-      return NextResponse.json({ error: "Rate not found" }, { status: 404 })
-    }
-
-    return NextResponse.json({
-      data: {
-        id: updated.id,
-        commodity_id: updated.commodityId,
-        unit_price: updated.unitPrice,
-        unit: updated.unit,
-        factory_id: updated.factoryId,
-        created_at: updated.createdAt,
-        updated_at: updated.updatedAt,
-      },
+  const [updated] = await db
+    .update(rates)
+    .set({
+      ...(targetUnitPrice ? { unitPrice: String(targetUnitPrice) } : {}),
+      ...(unit ? { unit } : {}),
+      updatedAt: new Date(),
     })
-  } catch (error) {
-    console.error("PUT /api/rates/[id] error:", error)
-    return NextResponse.json({ error: "Failed to update rate" }, { status: 500 })
-  }
-}
+    .where(eq(rates.id, parseInt(id, 10)))
+    .returning()
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+  if (!updated) return apiError("Rate not found", StatusCodes.NOT_FOUND)
+
+  return NextResponse.json({
+    data: {
+      id: updated.id,
+      commodity_id: updated.commodityId,
+      unit_price: updated.unitPrice,
+      unit: updated.unit,
+      factory_id: updated.factoryId,
+      created_at: updated.createdAt,
+      updated_at: updated.updatedAt,
+    },
+  })
+})
+
+export const DELETE = withAuth(async (_req, _user, ctx) => {
   try {
-    const { errorResponse } = await requireAuth(req)
-    if (errorResponse) return errorResponse
-
-    const { id } = await params
-    const rateId = parseInt(id, 10)
-
-    await db.delete(rates).where(eq(rates.id, rateId))
+    const { id } = await ctx.params
+    await db.delete(rates).where(eq(rates.id, parseInt(id, 10)))
     return NextResponse.json({ success: true })
-  } catch (error: unknown) {
-    console.error("DELETE /api/rates/[id] error:", error)
-    const errObj = error as { code?: string; message?: string }
-    if (errObj.code === "23503" || errObj.message?.includes("foreign key")) {
-      return NextResponse.json(
-        { error: "Cannot delete this rate because it is referenced by existing weighments. Please reassign or delete dependent weighments first." },
-        { status: 400 }
+  } catch (error) {
+    if (isFKViolation(error)) {
+      return apiError(
+        "Cannot delete this rate because it is referenced by existing weighments. Please reassign or delete dependent weighments first.",
+        StatusCodes.BAD_REQUEST
       )
     }
-    return NextResponse.json({ error: "Failed to delete rate" }, { status: 500 })
+    throw error
   }
-}
+})

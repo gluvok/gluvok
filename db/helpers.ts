@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
+import { StatusCodes, ReasonPhrases } from "http-status-codes"
 import { verifyJWT, JWTPayload } from "@/lib/auth/jwt"
-import { Role } from "@/lib/constants/enums"
+import { Role, RequestHeader } from "@/lib/constants/enums"
 
 export interface PaginationParams {
   page: number
@@ -8,9 +9,20 @@ export interface PaginationParams {
   offset: number
 }
 
-/**
- * Extracts pagination parameters (page, limit, offset) from request URL search params.
- */
+// ─── Typed route context (Next.js dynamic segments) ──────────────────────────
+export type RouteContext<P extends Record<string, string> = Record<string, string>> = {
+  params: Promise<P>
+}
+
+// ─── Re-export StatusCodes for convenience across API routes ─────────────────
+export { StatusCodes }
+
+// ─── apiError helper — no more raw numbers or "Unauthorized" strings ──────────
+export function apiError(message: string, status: StatusCodes): NextResponse {
+  return NextResponse.json({ error: message }, { status })
+}
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
 export function getPaginationParams(url: URL): PaginationParams {
   const pageParam = url.searchParams.get("page")
   const limitParam = url.searchParams.get("limit")
@@ -22,15 +34,20 @@ export function getPaginationParams(url: URL): PaginationParams {
   return { page, limit, offset }
 }
 
-/**
- * Extracts and resolves authenticated user from headers set by proxy.ts middleware
- * or falls back to JWT token verification.
- */
+// ─── FK constraint error catcher ─────────────────────────────────────────────
+const PG_FK_VIOLATION = "23503"
+
+export function isFKViolation(error: unknown): boolean {
+  const e = error as { code?: string; message?: string }
+  return e.code === PG_FK_VIOLATION || Boolean(e.message?.includes("foreign key"))
+}
+
+// ─── Auth: resolve user from proxy-forwarded headers or JWT cookie ────────────
 export async function getAuthUser(req: NextRequest | Request): Promise<JWTPayload | null> {
-  const userId = req.headers.get("x-user-id")
-  const username = req.headers.get("x-user-username")
-  const role = req.headers.get("x-user-role")
-  const factoryIdStr = req.headers.get("x-user-factory-id")
+  const userId = req.headers.get(RequestHeader.USER_ID)
+  const username = req.headers.get(RequestHeader.USERNAME)
+  const role = req.headers.get(RequestHeader.ROLE)
+  const factoryIdStr = req.headers.get(RequestHeader.FACTORY_ID)
 
   if (userId && username && role && factoryIdStr) {
     return {
@@ -43,38 +60,58 @@ export async function getAuthUser(req: NextRequest | Request): Promise<JWTPayloa
 
   let token: string | undefined
 
-  if ("cookies" in req && typeof req.cookies?.get === "function") {
-    token = req.cookies.get("token")?.value || req.cookies.get("auth_token")?.value
+  if ("cookies" in req && typeof (req as NextRequest).cookies?.get === "function") {
+    token =
+      (req as NextRequest).cookies.get("token")?.value ||
+      (req as NextRequest).cookies.get("auth_token")?.value
   }
 
   if (!token) {
     const authHeader = req.headers.get("authorization")
-    if (authHeader && authHeader.startsWith("Bearer ")) {
+    if (authHeader?.startsWith("Bearer ")) {
       token = authHeader.substring(7)
     }
   }
 
-  if (!token) {
-    return null
-  }
-
+  if (!token) return null
   return await verifyJWT(token)
 }
 
-/**
- * Centralized auth check helper for API route handlers.
- * Returns verified user or a pre-formatted 401/403 NextResponse error.
- */
+// ─── requireAuth: call inline when you need the user object ──────────────────
 export async function requireAuth(
   req: NextRequest | Request,
   requiredRole?: Role
 ): Promise<{ user: JWTPayload; errorResponse?: NextResponse }> {
   const user = await getAuthUser(req)
   if (!user) {
-    return { user: null as never, errorResponse: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) }
+    return {
+      user: null as never,
+      errorResponse: apiError(ReasonPhrases.UNAUTHORIZED, StatusCodes.UNAUTHORIZED),
+    }
   }
   if (requiredRole && user.role !== requiredRole) {
-    return { user, errorResponse: NextResponse.json({ error: "Forbidden" }, { status: 403 }) }
+    return {
+      user,
+      errorResponse: apiError(ReasonPhrases.FORBIDDEN, StatusCodes.FORBIDDEN),
+    }
   }
   return { user }
+}
+
+// ─── withAuth: HOF — declare role at the export site, not in the handler ─────
+type AuthedHandler<P extends Record<string, string> = Record<string, string>> = (
+  req: NextRequest,
+  user: JWTPayload,
+  ctx: RouteContext<P>
+) => Promise<NextResponse>
+
+export function withAuth<P extends Record<string, string> = Record<string, string>>(
+  handler: AuthedHandler<P>,
+  requiredRole?: Role
+) {
+  return async (req: NextRequest, ctx: RouteContext<P>): Promise<NextResponse> => {
+    const { user, errorResponse } = await requireAuth(req, requiredRole)
+    if (errorResponse) return errorResponse
+    return handler(req, user, ctx)
+  }
 }

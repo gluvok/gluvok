@@ -1,96 +1,97 @@
 import { pgTable, uuid, varchar, text, integer, boolean, pgEnum, decimal, jsonb, bigint } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 import { timestamps } from "./columns.helpers"
+import { Role, Unit, WeighmentType, EntityKey, TableName, DbEnum } from "@/lib/constants/enums"
 
-export const roleEnum = pgEnum("role_enum", [
-  "super_admin",
-  "admin",
-  "manager",
-  "operator",
-  "base",
-  "hardware",
+export const roleEnum = pgEnum(DbEnum.ROLE, [
+  Role.SUPER_ADMIN,
+  Role.ADMIN,
+  Role.MANAGER,
+  Role.OPERATOR,
+  Role.BASE,
+  Role.HARDWARE,
 ])
 
-export const unitEnum = pgEnum("unit_enum", [
-  "kg",
-  "q",
-  "gal",
+export const unitEnum = pgEnum(DbEnum.UNIT, [
+  Unit.KG,
+  Unit.Q,
+  Unit.GAL,
 ])
 
-export const weighmentTypeEnum = pgEnum("weighment_type", [
-  "in",
-  "out",
+export const weighmentTypeEnum = pgEnum(DbEnum.WEIGHMENT_TYPE, [
+  WeighmentType.IN,
+  WeighmentType.OUT,
 ])
 
-export const factories = pgTable("factories", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  name: varchar("name", { length: 255 }).notNull(),
+export const factories = pgTable(TableName.FACTORIES, {
+  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
   ...timestamps,
 })
 
-export const centers = pgTable("centers", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  name: varchar("name", { length: 255 }).notNull(),
-  factoryId: integer("factory_id").notNull().references(() => factories.id, { onDelete: "restrict" }),
+export const centers = pgTable(TableName.CENTERS, {
+  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
+  factoryId: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
   ...timestamps,
 })
 
-export const commodities = pgTable("commodities", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  name: varchar("name", { length: 255 }).notNull().unique(),
+export const commodities = pgTable(TableName.COMMODITIES, {
+  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar(EntityKey.NAME, { length: 255 }).notNull().unique(),
   ...timestamps,
 })
 
-export const rates = pgTable("rates", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  commodityId: integer("commodity_id").notNull().references(() => commodities.id, { onDelete: "restrict", onUpdate: "cascade" }),
-  unitPrice: decimal("unit_price", { precision: 12, scale: 2 }).notNull(),
-  unit: unitEnum("unit").notNull(),
-  factoryId: integer("factory_id").notNull().references(() => factories.id, { onDelete: "restrict" }),
+export const rates = pgTable(TableName.RATES, {
+  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  commodityId: integer(EntityKey.COMMODITY_ID).notNull().references(() => commodities.id, { onDelete: "restrict", onUpdate: "cascade" }),
+  unitPrice: decimal(EntityKey.UNIT_PRICE, { precision: 12, scale: 2 }).notNull(),
+  unit: unitEnum(EntityKey.UNIT).notNull(),
+  factoryId: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
   ...timestamps,
 })
 
-export const users = pgTable("users", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  username: varchar("username", { length: 255 }).notNull().unique(),
+export const users = pgTable(TableName.USERS, {
+  id: uuid(EntityKey.ID).defaultRandom().primaryKey(),
+  username: varchar(EntityKey.USERNAME, { length: 255 }).notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  role: roleEnum("role").notNull().default("base"),
-  factoryId: integer("factory_id").notNull().references(() => factories.id, { onDelete: "restrict" }),
-  isActive: boolean("is_active").notNull().default(true),
+  role: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
+  factoryId: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
+  isActive: boolean(EntityKey.IS_ACTIVE).notNull().default(true),
   ...timestamps,
 })
 
-export const customers = pgTable("customers", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  govtId: integer("govt_id").notNull().unique(),
-  name: varchar("name", { length: 255 }).notNull(),
-  fatherName: varchar("father_name", { length: 255 }).notNull(),
-  userId: uuid("user_id").unique().references(() => users.id, { onDelete: "restrict" }),
-  factoryId: integer("factory_id").notNull().references(() => factories.id, { onDelete: "restrict" }),
+export const customers = pgTable(TableName.CUSTOMERS, {
+  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  govtId: integer(EntityKey.GOVT_ID).notNull().unique(),
+  name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
+  fatherName: varchar(EntityKey.FATHER_NAME, { length: 255 }).notNull(),
+  userId: uuid(EntityKey.USER_ID).unique().references(() => users.id, { onDelete: "restrict" }),
+  factoryId: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
   ...timestamps,
 })
 
-export const profiles = pgTable("profiles", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  userId: uuid("user_id").notNull().unique().references(() => users.id, { onDelete: "restrict" }),
-  aadharNumber: varchar("aadhar_number", { length: 12 }).notNull().unique(),
-  name: varchar("name", { length: 255 }).notNull(),
-  role: roleEnum("role").notNull().default("base"),
+export const profiles = pgTable(TableName.PROFILES, {
+  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid(EntityKey.USER_ID).notNull().unique().references(() => users.id, { onDelete: "restrict" }),
+  aadharNumber: varchar(EntityKey.AADHAR_NUMBER, { length: 12 }).notNull().unique(),
+  name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
+  role: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
   ...timestamps,
 })
 
-export const weighments = pgTable("weighments", {
-  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
-  vehicleNumber: varchar("vehicle_number", { length: 10 }).notNull(),
-  weight: decimal("weight", { precision: 12, scale: 3 }).notNull(),
-  images: jsonb("images").default([]),
-  unit: unitEnum("unit").notNull().default("kg"),
-  type: weighmentTypeEnum("type").notNull().default("in"),
-  rateId: integer("rate_id").notNull().references(() => rates.id, { onDelete: "restrict" }),
-  centerId: integer("center_id").notNull().references(() => centers.id, { onDelete: "restrict" }),
-  profileId: integer("profile_id").notNull().references(() => profiles.id, { onDelete: "restrict" }),
-  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "restrict" }),
-  isActive: boolean("is_active").notNull().default(true),
+export const weighments = pgTable(TableName.WEIGHMENTS, {
+  id: bigint(EntityKey.ID, { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  vehicleNumber: varchar(EntityKey.VEHICLE_NUMBER, { length: 10 }).notNull(),
+  weight: decimal(EntityKey.WEIGHT, { precision: 12, scale: 3 }).notNull(),
+  images: jsonb(EntityKey.IMAGES).default([]),
+  unit: unitEnum(EntityKey.UNIT).notNull().default(Unit.KG),
+  type: weighmentTypeEnum(EntityKey.TYPE).notNull().default(WeighmentType.IN),
+  rateId: integer(EntityKey.RATE_ID).notNull().references(() => rates.id, { onDelete: "restrict" }),
+  centerId: integer(EntityKey.CENTER_ID).notNull().references(() => centers.id, { onDelete: "restrict" }),
+  profileId: integer(EntityKey.PROFILE_ID).notNull().references(() => profiles.id, { onDelete: "restrict" }),
+  customerId: integer(EntityKey.CUSTOMER_ID).notNull().references(() => customers.id, { onDelete: "restrict" }),
+  isActive: boolean(EntityKey.IS_ACTIVE).notNull().default(true),
   ...timestamps,
 })
 

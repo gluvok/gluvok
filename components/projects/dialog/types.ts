@@ -22,6 +22,7 @@ export interface EntityDialogContentProps {
   projectName: string
   projectSlug: string
   isEdit: boolean
+  isUnchanged?: boolean
   fields: FieldConfig[]
   form: UseFormReturn<FieldValues>
   onSubmit: (values: FieldValues) => void

@@ -15,7 +15,7 @@ import { type FieldConfig, getSingularName } from "@/lib/fields"
 import { useAuthStore, isFieldVisible, isFieldRequired } from "@/lib/store"
 
 export function EntityDialogContent({
-  mode, onOpenChange, projectName, projectSlug, isEdit, fields, form, onSubmit, primaryIdKey
+  mode, onOpenChange, projectName, projectSlug, isEdit, isUnchanged, fields, form, onSubmit, primaryIdKey
 }: EntityDialogContentProps) {
   const currentUser = useAuthStore((state) => state.user)
   const Icon = isEdit ? Pencil : Plus
@@ -162,18 +162,23 @@ export function EntityDialogContent({
             </div>
           )
         })}
-        <DialogFooter className="bg-transparent border-t-0 p-0 pt-4 mx-0 mb-0 flex flex-row items-center justify-end gap-3">
-          <Button id={`${mode}-entity-cancel`} type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5 h-8 px-3 text-xs" disabled={form.formState.isSubmitting}>
-            <X className="h-3.5 w-3.5" /> Cancel
-          </Button>
-          <Button id={`${mode}-entity-submit`} type="submit" size="sm" className="gap-1.5 h-8 px-3 text-xs shadow-sm" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="h-3.5 w-3.5" />
-            )}
-            {originalText}
-          </Button>
+        <DialogFooter className="bg-transparent border-t-0 p-0 pt-4 mx-0 mb-0 flex flex-row items-center justify-between gap-3">
+          {isEdit && isUnchanged && (
+            <span className="text-xs text-muted-foreground italic">No changes to save</span>
+          )}
+          <div className="flex items-center gap-2 ml-auto">
+            <Button id={`${mode}-entity-cancel`} type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5 h-8 px-3 text-xs" disabled={form.formState.isSubmitting}>
+              <X className="h-3.5 w-3.5" /> Cancel
+            </Button>
+            <Button id={`${mode}-entity-submit`} type="submit" size="sm" className="gap-1.5 h-8 px-3 text-xs shadow-sm" disabled={form.formState.isSubmitting || (isEdit && !!isUnchanged)}>
+              {form.formState.isSubmitting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Save className="h-3.5 w-3.5" />
+              )}
+              {originalText}
+            </Button>
+          </div>
         </DialogFooter>
       </form>
     </>

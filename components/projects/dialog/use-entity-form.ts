@@ -126,5 +126,7 @@ export function useEntityForm({
     }
   }
 
-  return { form, fields, onSubmit, isEdit }
+  const isUnchanged = isEdit && !form.formState.isDirty
+
+  return { form, fields, onSubmit, isEdit, isUnchanged }
 }

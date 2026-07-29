@@ -9,7 +9,7 @@ import { type EntityRecord } from "@/types"
 import { ColumnDef, ColumnFiltersState, SortingState, VisibilityState, getCoreRowModel } from "@tanstack/react-table"
 import { useReactTable } from "@/lib/utils"
 import { getProjectColumns } from "@/components/projects/columns"
-import { ProjectSlug } from "@/lib/constants/enums"
+import { ProjectSlug, EntityKey } from "@/lib/constants/enums"
 import { useProjectDialogStates, parseColumnFilters, areFiltersEqual, getVisibleColumnsList, isStringArrayEqual } from "./use-helpers"
 import { useAuthStore, getPermissions, useEntitiesStore, usePreferencesStore } from "@/lib/store"
 import { fetchEntityListPaginated } from "@/lib/services"
@@ -210,12 +210,14 @@ export function useProjectTable({
   }, [])
 
   // Pre-load required entity dropdown/filter data
+  // Skip loading if the factory filter is hidden for this role (e.g. CENTERS factory filter is hidden for non-super-admins)
   React.useEffect(() => {
     const loader = ENTITY_METADATA_LOADERS[projectSlug]
-    if (loader) {
-      loader(useEntitiesStore.getState())
-    }
-  }, [projectSlug])
+    if (!loader) return
+    const isFactoryFilterHidden = permissions.hiddenFilters?.includes(EntityKey.FACTORY_ID)
+    if (projectSlug === ProjectSlug.CENTERS && isFactoryFilterHidden) return
+    loader(useEntitiesStore.getState())
+  }, [projectSlug, permissions])
 
   return {
     table,

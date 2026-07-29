@@ -7,8 +7,8 @@
 
 import * as React from "react"
 import { Table } from "@tanstack/react-table"
-import { EntityKey } from "@/lib/constants/enums"
-import { useEntitiesStore } from "@/lib/store"
+import { EntityKey, ProjectSlug } from "@/lib/constants/enums"
+import { useEntitiesStore, useAuthStore, isFilterVisible } from "@/lib/store"
 import { Factory } from "lucide-react"
 import { BaseCombobox } from "@/components/combobox/base"
 
@@ -17,7 +17,22 @@ interface CentersFiltersProps<TData> {
 }
 
 export function CentersFilters<TData>({ table }: CentersFiltersProps<TData>) {
+  const user = useAuthStore((state) => state.user)
   const factories = useEntitiesStore((state) => state.factories)
+
+  const factoryOptions = React.useMemo(() => {
+    return [
+      { value: "all", label: "All Factories" },
+      ...factories.map((f) => ({
+        value: String(f.id),
+        label: `${f.name} (ID: ${f.id})`,
+      })),
+    ]
+  }, [factories])
+
+  if (!isFilterVisible(user?.role, ProjectSlug.CENTERS, EntityKey.FACTORY_ID)) {
+    return null
+  }
 
   const columnFilters = table.getState().columnFilters
   const currentFactoryId = columnFilters.find((f) => f.id === EntityKey.FACTORY_ID)?.value
@@ -31,16 +46,6 @@ export function CentersFilters<TData>({ table }: CentersFiltersProps<TData>) {
       return filtered
     })
   }
-
-  const factoryOptions = React.useMemo(() => {
-    return [
-      { value: "all", label: "All Factories" },
-      ...factories.map((f) => ({
-        value: String(f.id),
-        label: `${f.name} (ID: ${f.id})`,
-      })),
-    ]
-  }, [factories])
 
   return (
     <div className="flex items-center gap-2">

@@ -47,11 +47,7 @@ interface EntitiesState {
 export const useEntitiesStore = create<EntitiesState>((set, get) => ({
   entitiesUpdatedTrigger: 0,
   triggerEntitiesUpdate: () => set((state) => ({ entitiesUpdatedTrigger: state.entitiesUpdatedTrigger + 1 })),
-  filtersLoading: {
-    [ProjectSlug.WEIGHMENTS]: true,
-    [ProjectSlug.RATES]: true,
-    [ProjectSlug.CENTERS]: true,
-  },
+  filtersLoading: {},
   setFiltersLoading: (slug, loading) => set((state) => ({
     filtersLoading: { ...state.filtersLoading, [slug]: loading }
   })),

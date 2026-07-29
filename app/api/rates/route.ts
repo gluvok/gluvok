@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { eq, count, and, desc } from "drizzle-orm"
 import { db } from "@/db"
 import { rates, commodities, factories } from "@/db/schema"
-import { getAuthUser, getPaginationParams } from "@/db/helpers"
+import { requireAuth, getPaginationParams } from "@/db/helpers"
 import { Role } from "@/lib/constants/enums"
 
 export async function GET(req: NextRequest) {
   try {
-    const authUser = await getAuthUser(req)
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const { user: authUser, errorResponse } = await requireAuth(req)
+    if (errorResponse) return errorResponse
 
     const { page, limit, offset } = getPaginationParams(req.nextUrl)
 
@@ -29,14 +27,14 @@ export async function GET(req: NextRequest) {
     const rows = await db
       .select({
         id: rates.id,
-        commodityId: rates.commodityId,
-        unitPrice: rates.unitPrice,
+        commodity_id: rates.commodityId,
+        unit_price: rates.unitPrice,
         unit: rates.unit,
-        factoryId: rates.factoryId,
-        createdAt: rates.createdAt,
-        updatedAt: rates.updatedAt,
-        commodityName: commodities.name,
-        factoryName: factories.name,
+        factory_id: rates.factoryId,
+        created_at: rates.createdAt,
+        updated_at: rates.updatedAt,
+        commodity_name: commodities.name,
+        factory_name: factories.name,
       })
       .from(rates)
       .leftJoin(commodities, eq(rates.commodityId, commodities.id))
@@ -65,31 +63,43 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const authUser = await getAuthUser(req)
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const { user: authUser, errorResponse } = await requireAuth(req)
+    if (errorResponse) return errorResponse
 
     const body = await req.json()
-    const { commodityId, unitPrice, unit, factoryId } = body
+    const { commodityId, commodity_id, unitPrice, unit_price, unit, factoryId, factory_id } = body
 
-    if (!commodityId || !unitPrice || !unit) {
-      return NextResponse.json({ error: "commodityId, unitPrice, and unit are required" }, { status: 400 })
+    const targetCommodityId = commodityId ?? commodity_id
+    const targetUnitPrice = unitPrice ?? unit_price
+
+    if (!targetCommodityId || !targetUnitPrice || !unit) {
+      return NextResponse.json({ error: "commodity_id, unit_price, and unit are required" }, { status: 400 })
     }
 
-    const targetFactoryId = authUser.role === Role.SUPER_ADMIN && factoryId ? Number(factoryId) : authUser.factory_id
+    const rawFactoryId = factoryId ?? factory_id
+    const targetFactoryId = authUser.role === Role.SUPER_ADMIN && rawFactoryId ? Number(rawFactoryId) : authUser.factory_id
 
     const [newRate] = await db
       .insert(rates)
       .values({
-        commodityId: Number(commodityId),
-        unitPrice: String(unitPrice),
+        commodityId: Number(targetCommodityId),
+        unitPrice: String(targetUnitPrice),
         unit,
         factoryId: targetFactoryId,
       })
       .returning()
 
-    return NextResponse.json({ data: newRate }, { status: 201 })
+    return NextResponse.json({
+      data: {
+        id: newRate.id,
+        commodity_id: newRate.commodityId,
+        unit_price: newRate.unitPrice,
+        unit: newRate.unit,
+        factory_id: newRate.factoryId,
+        created_at: newRate.createdAt,
+        updated_at: newRate.updatedAt,
+      },
+    }, { status: 201 })
   } catch (error) {
     console.error("POST /api/rates error:", error)
     return NextResponse.json({ error: "Failed to create rate" }, { status: 500 })

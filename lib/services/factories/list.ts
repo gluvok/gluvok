@@ -1,15 +1,14 @@
-import axios from "axios"
+import { fetchEntityListFromApi } from "../common"
 import { type Factory } from "@/types"
-import { ApiRoutes } from "@/lib/constants/enums"
+import { ProjectSlug } from "@/lib/constants/enums"
 
 export async function fetchFactories(): Promise<Factory[]> {
-  const res = await axios.get<{ data: Factory[] }>(ApiRoutes.FACTORIES)
-  return res.data.data
+  return fetchEntityListFromApi<Factory>(ProjectSlug.FACTORIES)
 }
 
 export async function fetchFactoryById(id: number): Promise<Factory> {
-  const res = await axios.get<{ data: Factory[] }>(ApiRoutes.FACTORIES)
-  const found = res.data.data.find((item) => item.id === id)
+  const list = await fetchFactories()
+  const found = list.find((item) => item.id === id)
   if (!found) throw new Error(`Factory with ID ${id} not found`)
   return found
 }

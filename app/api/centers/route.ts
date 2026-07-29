@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { eq, ilike, count, and, desc } from "drizzle-orm"
 import { db } from "@/db"
 import { centers, factories } from "@/db/schema"
-import { getAuthUser, getPaginationParams } from "@/db/helpers"
+import { requireAuth, getPaginationParams } from "@/db/helpers"
 import { Role } from "@/lib/constants/enums"
 
 export async function GET(req: NextRequest) {
   try {
-    const authUser = await getAuthUser(req)
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const { user: authUser, errorResponse } = await requireAuth(req)
+    if (errorResponse) return errorResponse
 
     const { page, limit, offset } = getPaginationParams(req.nextUrl)
     const search = req.nextUrl.searchParams.get("search")
@@ -36,10 +34,10 @@ export async function GET(req: NextRequest) {
       .select({
         id: centers.id,
         name: centers.name,
-        factoryId: centers.factoryId,
-        createdAt: centers.createdAt,
-        updatedAt: centers.updatedAt,
-        factoryName: factories.name,
+        factory_id: centers.factoryId,
+        created_at: centers.createdAt,
+        updated_at: centers.updatedAt,
+        factory_name: factories.name,
       })
       .from(centers)
       .leftJoin(factories, eq(centers.factoryId, factories.id))
@@ -67,19 +65,18 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const authUser = await getAuthUser(req)
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const { user: authUser, errorResponse } = await requireAuth(req)
+    if (errorResponse) return errorResponse
 
     const body = await req.json()
-    const { name, factoryId } = body
+    const { name, factoryId, factory_id } = body
 
     if (!name || typeof name !== "string") {
       return NextResponse.json({ error: "Name is required" }, { status: 400 })
     }
 
-    const targetFactoryId = authUser.role === Role.SUPER_ADMIN && factoryId ? Number(factoryId) : authUser.factory_id
+    const rawFactoryId = factoryId ?? factory_id
+    const targetFactoryId = authUser.role === Role.SUPER_ADMIN && rawFactoryId ? Number(rawFactoryId) : authUser.factory_id
 
     const [newCenter] = await db
       .insert(centers)
@@ -89,7 +86,15 @@ export async function POST(req: NextRequest) {
       })
       .returning()
 
-    return NextResponse.json({ data: newCenter }, { status: 201 })
+    return NextResponse.json({
+      data: {
+        id: newCenter.id,
+        name: newCenter.name,
+        factory_id: newCenter.factoryId,
+        created_at: newCenter.createdAt,
+        updated_at: newCenter.updatedAt,
+      },
+    }, { status: 201 })
   } catch (error) {
     console.error("POST /api/centers error:", error)
     return NextResponse.json({ error: "Failed to create center" }, { status: 500 })

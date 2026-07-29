@@ -1,15 +1,14 @@
-import axios from "axios"
+import { fetchEntityListFromApi } from "../common"
 import { type Rate } from "@/types"
-import { ApiRoutes } from "@/lib/constants/enums"
+import { ProjectSlug } from "@/lib/constants/enums"
 
 export async function fetchRates(): Promise<Rate[]> {
-  const res = await axios.get<{ data: Rate[] }>(ApiRoutes.RATES)
-  return res.data.data
+  return fetchEntityListFromApi<Rate>(ProjectSlug.RATES)
 }
 
 export async function fetchRateById(id: number): Promise<Rate> {
-  const res = await axios.get<{ data: Rate[] }>(ApiRoutes.RATES)
-  const found = res.data.data.find((item) => item.id === id)
+  const list = await fetchRates()
+  const found = list.find((item) => item.id === id)
   if (!found) throw new Error(`Rate with ID ${id} not found`)
   return found
 }

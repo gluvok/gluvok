@@ -47,10 +47,11 @@ export function DeleteEntityDialogContent({
       
       onSuccess?.()
       onOpenChange(false)
-    } catch {
+    } catch (err: unknown) {
       const pName = projectName || "Item"
       const singularName = getSingularName(pName)
-      toast.error(`Failed to delete ${isBulk ? pName.toLowerCase() : singularName.toLowerCase()}`)
+      const errorMsg = err instanceof Error ? err.message : `Failed to delete ${isBulk ? pName.toLowerCase() : singularName.toLowerCase()}`
+      toast.error(errorMsg)
     }
   }
 

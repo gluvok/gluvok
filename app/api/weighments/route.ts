@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { eq, ilike, count, and, desc, or } from "drizzle-orm"
 import { db } from "@/db"
 import { weighments, rates, commodities, centers, profiles, customers } from "@/db/schema"
-import { getAuthUser, getPaginationParams } from "@/db/helpers"
+import { requireAuth, getPaginationParams } from "@/db/helpers"
 import { Role } from "@/lib/constants/enums"
 
 export async function GET(req: NextRequest) {
   try {
-    const authUser = await getAuthUser(req)
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const { user: authUser, errorResponse } = await requireAuth(req)
+    if (errorResponse) return errorResponse
 
     const { page, limit, offset } = getPaginationParams(req.nextUrl)
     const search = req.nextUrl.searchParams.get("search")
@@ -45,23 +43,23 @@ export async function GET(req: NextRequest) {
     const rows = await db
       .select({
         id: weighments.id,
-        vehicleNumber: weighments.vehicleNumber,
+        vehicle_number: weighments.vehicleNumber,
         weight: weighments.weight,
         images: weighments.images,
         unit: weighments.unit,
         type: weighments.type,
-        rateId: weighments.rateId,
-        centerId: weighments.centerId,
-        profileId: weighments.profileId,
-        customerId: weighments.customerId,
-        isActive: weighments.isActive,
-        createdAt: weighments.createdAt,
-        updatedAt: weighments.updatedAt,
-        centerName: centers.name,
-        profileName: profiles.name,
-        customerName: customers.name,
-        commodityName: commodities.name,
-        unitPrice: rates.unitPrice,
+        rate_id: weighments.rateId,
+        center_id: weighments.centerId,
+        profile_id: weighments.profileId,
+        customer_id: weighments.customerId,
+        is_active: weighments.isActive,
+        created_at: weighments.createdAt,
+        updated_at: weighments.updatedAt,
+        center_name: centers.name,
+        profile_name: profiles.name,
+        customer_name: customers.name,
+        commodity_name: commodities.name,
+        unit_price: rates.unitPrice,
       })
       .from(weighments)
       .leftJoin(rates, eq(weighments.rateId, rates.id))

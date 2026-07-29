@@ -1,15 +1,14 @@
-import axios from "axios"
+import { fetchEntityListFromApi } from "../common"
 import { type Customer } from "@/types"
-import { ApiRoutes } from "@/lib/constants/enums"
+import { ProjectSlug } from "@/lib/constants/enums"
 
 export async function fetchCustomers(): Promise<Customer[]> {
-  const res = await axios.get<{ data: Customer[] }>(ApiRoutes.CUSTOMERS)
-  return res.data.data
+  return fetchEntityListFromApi<Customer>(ProjectSlug.CUSTOMERS)
 }
 
 export async function fetchCustomerById(id: number): Promise<Customer> {
-  const res = await axios.get<{ data: Customer[] }>(ApiRoutes.CUSTOMERS)
-  const found = res.data.data.find((item) => item.id === id)
+  const list = await fetchCustomers()
+  const found = list.find((item) => item.id === id)
   if (!found) throw new Error(`Customer with ID ${id} not found`)
   return found
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { verifyJWT } from "@/lib/auth/jwt"
-import { AppRoutes } from "@/lib/constants/enums"
+import { AppRoutes, Role } from "@/lib/constants/enums"
 import { PUBLIC_ROUTES, AUTH_ROUTES, PUBLIC_API_ROUTES } from "@/lib/constants/routes"
 
 const PUBLIC_PATHNAMES = new Set<string>([
@@ -27,7 +27,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const token = request.cookies.get("token")?.value
+  const token = request.cookies.get("token")?.value || request.cookies.get("auth_token")?.value
 
   if (!token) {
     if (pathname.startsWith("/api/")) {
@@ -44,7 +44,23 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(AppRoutes.LOGIN, request.url))
   }
 
-  return NextResponse.next()
+  // Centralized Super Admin permission check for factory mutations
+  if (pathname.startsWith("/api/factories") && request.method !== "GET" && payload.role !== Role.SUPER_ADMIN) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
+  // Forward verified user session context headers downstream to API handlers
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set("x-user-id", payload.sub)
+  requestHeaders.set("x-user-username", payload.username)
+  requestHeaders.set("x-user-role", payload.role)
+  requestHeaders.set("x-user-factory-id", String(payload.factory_id))
+
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
 }
 
 export const config = {

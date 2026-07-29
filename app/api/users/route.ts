@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { eq, and } from "drizzle-orm"
 import { db } from "@/db"
 import { users } from "@/db/schema"
-import { getAuthUser } from "@/db/helpers"
+import { requireAuth } from "@/db/helpers"
 import { Role } from "@/lib/constants/enums"
 
 export async function GET(req: NextRequest) {
   try {
-    const authUser = await getAuthUser(req)
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const { user: authUser, errorResponse } = await requireAuth(req)
+    if (errorResponse) return errorResponse
 
     const conditions = [eq(users.isActive, true)]
     if (authUser.role !== Role.SUPER_ADMIN) {

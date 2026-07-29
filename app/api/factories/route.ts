@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { eq, ilike, count, desc } from "drizzle-orm"
 import { db } from "@/db"
 import { factories } from "@/db/schema"
-import { getAuthUser, getPaginationParams } from "@/db/helpers"
+import { requireAuth, getPaginationParams } from "@/db/helpers"
 import { Role } from "@/lib/constants/enums"
 
 export async function GET(req: NextRequest) {
   try {
-    const authUser = await getAuthUser(req)
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const { user: authUser, errorResponse } = await requireAuth(req)
+    if (errorResponse) return errorResponse
 
     const { page, limit, offset } = getPaginationParams(req.nextUrl)
     const search = req.nextUrl.searchParams.get("search")
@@ -27,8 +25,13 @@ export async function GET(req: NextRequest) {
       .from(factories)
       .where(whereClause)
 
-    const data = await db
-      .select()
+    const rows = await db
+      .select({
+        id: factories.id,
+        name: factories.name,
+        created_at: factories.createdAt,
+        updated_at: factories.updatedAt,
+      })
       .from(factories)
       .where(whereClause)
       .orderBy(desc(factories.createdAt))
@@ -38,7 +41,7 @@ export async function GET(req: NextRequest) {
     const total = Number(totalCountResult?.count || 0)
 
     return NextResponse.json({
-      data,
+      data: rows,
       pagination: {
         page,
         limit,
@@ -54,10 +57,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const authUser = await getAuthUser(req)
-    if (!authUser || authUser.role !== Role.SUPER_ADMIN) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
+    const { errorResponse } = await requireAuth(req, Role.SUPER_ADMIN)
+    if (errorResponse) return errorResponse
 
     const body = await req.json()
     const { name } = body
@@ -71,7 +72,14 @@ export async function POST(req: NextRequest) {
       .values({ name })
       .returning()
 
-    return NextResponse.json({ data: newFactory }, { status: 201 })
+    return NextResponse.json({
+      data: {
+        id: newFactory.id,
+        name: newFactory.name,
+        created_at: newFactory.createdAt,
+        updated_at: newFactory.updatedAt,
+      },
+    }, { status: 201 })
   } catch (error) {
     console.error("POST /api/factories error:", error)
     return NextResponse.json({ error: "Failed to create factory" }, { status: 500 })

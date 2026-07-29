@@ -1,60 +1,79 @@
--- rls_policies.sql
--- Disable RLS and drop all legacy policies (backend API / Drizzle architecture)
+-- ==========================================
+-- SUPABASE ROW LEVEL SECURITY (RLS) POLICIES
+-- Fully Idempotent Script (Safe to re-run)
+-- Enables RLS on all public tables with basic permissive policies
+-- ==========================================
 
--- 1. Schema Updates
-ALTER TABLE customers ADD COLUMN IF NOT EXISTS factory_id int REFERENCES factories(id) ON DELETE RESTRICT;
-ALTER TABLE weighments ADD COLUMN IF NOT EXISTS unit unit_enum NOT NULL DEFAULT 'kg';
-
--- 2. Drop Obsolete Views if present
-DROP VIEW IF EXISTS profiles_with_email CASCADE;
-DROP VIEW IF EXISTS profiles_with_username CASCADE;
-
--- 3. Drop all policies and DISABLE Row Level Security on all tables
--- Users
-DROP POLICY IF EXISTS "users_all_policy" ON users;
-DROP POLICY IF EXISTS "users_select_policy" ON users;
-DROP POLICY IF EXISTS "users_modify_policy" ON users;
-ALTER TABLE users DISABLE ROW LEVEL SECURITY;
-
--- Profiles
-DROP POLICY IF EXISTS "profiles_isolation_policy" ON profiles;
-DROP POLICY IF EXISTS "profiles_select_policy" ON profiles;
-DROP POLICY IF EXISTS "profiles_modify_policy" ON profiles;
-ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
-
--- Customers
-DROP POLICY IF EXISTS "customers_isolation_policy" ON customers;
-DROP POLICY IF EXISTS "customers_select_policy" ON customers;
-DROP POLICY IF EXISTS "customers_modify_policy" ON customers;
-ALTER TABLE customers DISABLE ROW LEVEL SECURITY;
+-- 1. Enable RLS and create basic permissive policies for all public tables
 
 -- Factories
-DROP POLICY IF EXISTS "factories_isolation_policy" ON factories;
-DROP POLICY IF EXISTS "factories_select_policy" ON factories;
-DROP POLICY IF EXISTS "factories_modify_policy" ON factories;
-ALTER TABLE factories DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.factories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "factories_allow_all" ON public.factories;
+CREATE POLICY "factories_allow_all" ON public.factories
+  FOR ALL
+  TO public
+  USING (true)
+  WITH CHECK (true);
 
 -- Centers
-DROP POLICY IF EXISTS "centers_isolation_policy" ON centers;
-DROP POLICY IF EXISTS "centers_select_policy" ON centers;
-DROP POLICY IF EXISTS "centers_modify_policy" ON centers;
-ALTER TABLE centers DISABLE ROW LEVEL SECURITY;
-
--- Rates
-DROP POLICY IF EXISTS "rates_isolation_policy" ON rates;
-DROP POLICY IF EXISTS "rates_select_policy" ON rates;
-DROP POLICY IF EXISTS "rates_modify_policy" ON rates;
-ALTER TABLE rates DISABLE ROW LEVEL SECURITY;
-
--- Weighments
-DROP POLICY IF EXISTS "weighments_isolation_policy" ON weighments;
-DROP POLICY IF EXISTS "weighments_select_policy" ON weighments;
-DROP POLICY IF EXISTS "weighments_modify_policy" ON weighments;
-ALTER TABLE weighments DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.centers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "centers_allow_all" ON public.centers;
+CREATE POLICY "centers_allow_all" ON public.centers
+  FOR ALL
+  TO public
+  USING (true)
+  WITH CHECK (true);
 
 -- Commodities
-DROP POLICY IF EXISTS "commodities_isolation_policy" ON commodities;
-DROP POLICY IF EXISTS "commodities_select_policy" ON commodities;
-DROP POLICY IF EXISTS "commodities_all_policy" ON commodities;
-DROP POLICY IF EXISTS "commodities_modify_policy" ON commodities;
-ALTER TABLE commodities DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.commodities ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "commodities_allow_all" ON public.commodities;
+CREATE POLICY "commodities_allow_all" ON public.commodities
+  FOR ALL
+  TO public
+  USING (true)
+  WITH CHECK (true);
+
+-- Rates
+ALTER TABLE public.rates ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "rates_allow_all" ON public.rates;
+CREATE POLICY "rates_allow_all" ON public.rates
+  FOR ALL
+  TO public
+  USING (true)
+  WITH CHECK (true);
+
+-- Users
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "users_allow_all" ON public.users;
+CREATE POLICY "users_allow_all" ON public.users
+  FOR ALL
+  TO public
+  USING (true)
+  WITH CHECK (true);
+
+-- Customers
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "customers_allow_all" ON public.customers;
+CREATE POLICY "customers_allow_all" ON public.customers
+  FOR ALL
+  TO public
+  USING (true)
+  WITH CHECK (true);
+
+-- Profiles
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "profiles_allow_all" ON public.profiles;
+CREATE POLICY "profiles_allow_all" ON public.profiles
+  FOR ALL
+  TO public
+  USING (true)
+  WITH CHECK (true);
+
+-- Weighments
+ALTER TABLE public.weighments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "weighments_allow_all" ON public.weighments;
+CREATE POLICY "weighments_allow_all" ON public.weighments
+  FOR ALL
+  TO public
+  USING (true)
+  WITH CHECK (true);

@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { eq, ilike, count, and, desc, or } from "drizzle-orm"
 import { db } from "@/db"
 import { customers, users, factories } from "@/db/schema"
-import { getAuthUser, getPaginationParams } from "@/db/helpers"
+import { requireAuth, getPaginationParams } from "@/db/helpers"
 import { Role } from "@/lib/constants/enums"
 
 export async function GET(req: NextRequest) {
   try {
-    const authUser = await getAuthUser(req)
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const { user: authUser, errorResponse } = await requireAuth(req)
+    if (errorResponse) return errorResponse
 
     const { page, limit, offset } = getPaginationParams(req.nextUrl)
     const search = req.nextUrl.searchParams.get("search")
@@ -51,16 +49,16 @@ export async function GET(req: NextRequest) {
     const rows = await db
       .select({
         id: customers.id,
-        govtId: customers.govtId,
+        govt_id: customers.govtId,
         name: customers.name,
-        fatherName: customers.fatherName,
-        userId: customers.userId,
-        factoryId: customers.factoryId,
-        createdAt: customers.createdAt,
-        updatedAt: customers.updatedAt,
+        father_name: customers.fatherName,
+        user_id: customers.userId,
+        factory_id: customers.factoryId,
+        created_at: customers.createdAt,
+        updated_at: customers.updatedAt,
         username: users.username,
-        isActive: users.isActive,
-        factoryName: factories.name,
+        is_active: users.isActive,
+        factory_name: factories.name,
       })
       .from(customers)
       .leftJoin(users, eq(customers.userId, users.id))

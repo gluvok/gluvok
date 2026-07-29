@@ -25,6 +25,45 @@ const SLUG_TO_API_ROUTE: Record<ProjectSlug, ApiRoutes> = {
   [ProjectSlug.PROFILES]: ApiRoutes.PROFILES,
 }
 
+export function getEndpoint(slug: ProjectSlug): ApiRoutes {
+  const endpoint = SLUG_TO_API_ROUTE[slug]
+  if (!endpoint) throw new Error(`Unknown API route for slug: ${slug}`)
+  return endpoint
+}
+
+export async function apiRequest<T>(requestFn: () => Promise<T>): Promise<T> {
+  try {
+    return await requestFn()
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      throw new Error(error.response.data.error)
+    }
+    throw error
+  }
+}
+
+export async function fetchEntityListFromApi<T = EntityRecord>(slug: ProjectSlug): Promise<T[]> {
+  const endpoint = getEndpoint(slug)
+  return apiRequest(async () => {
+    const res = await axios.get<{ data: T[] }>(endpoint)
+    return res.data.data
+  })
+}
+
+export async function fetchEntityPaginatedFromApi<T = EntityRecord>(
+  slug: ProjectSlug,
+  params: PaginatedParams
+): Promise<{ data: T[]; count: number }> {
+  const endpoint = getEndpoint(slug)
+  const { page, pageSize, search } = params
+  return apiRequest(async () => {
+    const res = await axios.get<{ data: T[]; pagination: { total: number } }>(endpoint, {
+      params: { page: page + 1, limit: pageSize, search },
+    })
+    return { data: res.data.data, count: res.data.pagination.total }
+  })
+}
+
 interface ServiceMethods {
   fetchSingle: (id: number) => Promise<EntityRecord>
   fetchList: () => Promise<EntityRecord[]>
@@ -69,23 +108,26 @@ export async function fetchEntityListPaginated(
   return service.fetchPaginated(params)
 }
 
-// Mutate functions via Axios and API Routes
+// Mutate functions via Axios and API Routes with error message extraction
 export async function insertRow(slug: ProjectSlug, record: Record<string, unknown>): Promise<EntityRecord> {
-  const endpoint = SLUG_TO_API_ROUTE[slug]
-  if (!endpoint) throw new Error(`Unknown API route for slug: ${slug}`)
-  const res = await axios.post<{ data: EntityRecord }>(endpoint, record)
-  return res.data.data
+  const endpoint = getEndpoint(slug)
+  return apiRequest(async () => {
+    const res = await axios.post<{ data: EntityRecord }>(endpoint, record)
+    return res.data.data
+  })
 }
 
 export async function updateRow(slug: ProjectSlug, id: number, record: Record<string, unknown>): Promise<EntityRecord> {
-  const endpoint = SLUG_TO_API_ROUTE[slug]
-  if (!endpoint) throw new Error(`Unknown API route for slug: ${slug}`)
-  const res = await axios.put<{ data: EntityRecord }>(`${endpoint}/${id}`, record)
-  return res.data.data
+  const endpoint = getEndpoint(slug)
+  return apiRequest(async () => {
+    const res = await axios.put<{ data: EntityRecord }>(`${endpoint}/${id}`, record)
+    return res.data.data
+  })
 }
 
 export async function deleteRow(slug: ProjectSlug, id: number): Promise<void> {
-  const endpoint = SLUG_TO_API_ROUTE[slug]
-  if (!endpoint) throw new Error(`Unknown API route for slug: ${slug}`)
-  await axios.delete(`${endpoint}/${id}`)
+  const endpoint = getEndpoint(slug)
+  return apiRequest(async () => {
+    await axios.delete(`${endpoint}/${id}`)
+  })
 }

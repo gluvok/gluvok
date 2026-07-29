@@ -112,6 +112,11 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     { key: EntityKey.CONFIRM_PASSWORD, label: ColumnLabel.CONFIRM_PASSWORD, placeholder: "Repeat password", type: FieldType.PASSWORD, required: true, icon: KeyRound, span: FieldSpan.HALF },
     { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, visibleRoles: [Role.SUPER_ADMIN], editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.FULL },
   ],
+  [ProjectSlug.CONFIGS]: [
+    { key: EntityKey.AADHAR_NUMBER_MODE, label: ColumnLabel.AADHAR_NUMBER_MODE, placeholder: "Select Aadhaar Mode...", type: FieldType.FIELD_REQUIREMENT_MODE, required: true, icon: Fingerprint, span: FieldSpan.HALF },
+    { key: EntityKey.GOVT_ID_MODE, label: ColumnLabel.GOVT_ID_MODE, placeholder: "Select Govt ID Mode...", type: FieldType.FIELD_REQUIREMENT_MODE, required: true, icon: ShieldCheck, span: FieldSpan.HALF },
+    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, visibleRoles: [Role.SUPER_ADMIN], editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.FULL },
+  ],
 }
 
 export const REQUIRED_CREATE_FIELDS: Record<string, EntityKey[]> = {
@@ -134,6 +139,10 @@ export const REQUIRED_CREATE_FIELDS: Record<string, EntityKey[]> = {
     EntityKey.USERNAME,
     EntityKey.PASSWORD,
     EntityKey.CONFIRM_PASSWORD,
+  ],
+  [ProjectSlug.CONFIGS]: [
+    EntityKey.AADHAR_NUMBER_MODE,
+    EntityKey.GOVT_ID_MODE,
   ],
 }
 

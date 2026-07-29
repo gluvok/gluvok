@@ -2,14 +2,17 @@ import { NextResponse } from "next/server"
 import { eq, ilike, count, and, desc, or } from "drizzle-orm"
 import { db } from "@/db"
 import { customers, users, factories } from "@/db/schema"
-import { withAuth, getPaginationParams, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
-import { Role, ProjectSlug, PermissionKey, QueryParam } from "@/lib/constants/enums"
+import { withAuth, getPaginationParams, apiError, forbiddenError, hasPermission, StatusCodes, getFactoryConfig } from "@/db/helpers"
+import { Role, ProjectSlug, PermissionKey, QueryParam, FieldRequirementMode } from "@/lib/constants/enums"
 import { hashPassword } from "@/lib/auth/password"
-import { addCustomerSchema } from "@/lib/validation/customers"
+import { getDynamicCustomerSchema } from "@/lib/validation"
 
 export const GET = withAuth(async (req, user) => {
   const { page, limit, offset } = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
+
+  const activeConfig = await getFactoryConfig(user.factory_id)
+  const isGovtIdNotRequired = activeConfig?.govtIdMode === FieldRequirementMode.NOT_REQUIRED
 
   const conditions = []
   if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) conditions.push(eq(customers.factoryId, user.factory_id))
@@ -17,16 +20,21 @@ export const GET = withAuth(async (req, user) => {
     const searchNum = parseInt(search, 10)
     const searchConds = isNaN(searchNum)
       ? or(ilike(customers.name, `%${search}%`), ilike(customers.fatherName, `%${search}%`))
-      : or(ilike(customers.name, `%${search}%`), ilike(customers.fatherName, `%${search}%`), eq(customers.govtId, searchNum))
+      : or(
+          ilike(customers.name, `%${search}%`),
+          ilike(customers.fatherName, `%${search}%`),
+          ...(isGovtIdNotRequired ? [] : [eq(customers.govtId, searchNum)])
+        )
     if (searchConds) conditions.push(searchConds)
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
   const isSuperAdmin = user.role === Role.SUPER_ADMIN
 
+  // Dynamic Drizzle query building: omit govt_id if mode is NOT_REQUIRED
   let baseQuery = db
     .select({
       id: customers.id,
-      govt_id: customers.govtId,
+      ...(isGovtIdNotRequired ? {} : { govt_id: customers.govtId }),
       name: customers.name,
       father_name: customers.fatherName,
       user_id: customers.userId,
@@ -60,20 +68,33 @@ export const GET = withAuth(async (req, user) => {
 export const POST = withAuth(async (req, user) => {
   if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.CREATE)) return forbiddenError()
   const body = await req.json()
-  const parsed = addCustomerSchema.safeParse(body)
+
+  const targetFactoryId = user.role === Role.SUPER_ADMIN && body.factory_id ? Number(body.factory_id) : (user.factory_id ?? 0)
+  const activeConfig = await getFactoryConfig(targetFactoryId)
+
+  // Dynamic Drizzle validation schema
+  const dynamicSchema = getDynamicCustomerSchema(activeConfig)
+  const parsed = dynamicSchema.safeParse(body)
   if (!parsed.success) {
     return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST)
   }
 
-  const { govt_id, name, father_name, username, password, factory_id } = body
-  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : (user.factory_id ?? 0)
+  const { govt_id, name, father_name, username, password } = parsed.data as {
+    govt_id?: number | null
+    name: string
+    father_name: string
+    username?: string
+    password?: string
+  }
 
-  const [existingCustomer] = await db
-    .select({ id: customers.id })
-    .from(customers)
-    .where(and(eq(customers.govtId, Number(govt_id)), eq(customers.factoryId, targetFactoryId)))
-  if (existingCustomer) {
-    return apiError("Govt ID already exists in this factory", StatusCodes.BAD_REQUEST)
+  if (govt_id != null) {
+    const [existingCustomer] = await db
+      .select({ id: customers.id })
+      .from(customers)
+      .where(and(eq(customers.govtId, Number(govt_id)), eq(customers.factoryId, targetFactoryId)))
+    if (existingCustomer) {
+      return apiError("Govt ID already exists in this factory", StatusCodes.BAD_REQUEST)
+    }
   }
 
   let createdUserId: string | null = null
@@ -89,7 +110,7 @@ export const POST = withAuth(async (req, user) => {
   const [newCustomer] = await db
     .insert(customers)
     .values({
-      govtId: Number(govt_id),
+      govtId: govt_id != null ? Number(govt_id) : null,
       name,
       fatherName: father_name,
       userId: createdUserId,
@@ -110,4 +131,3 @@ export const POST = withAuth(async (req, user) => {
     },
   }, { status: StatusCodes.CREATED })
 })
-

@@ -2,15 +2,18 @@ import { NextResponse } from "next/server"
 import { eq, ilike, count, and, desc, or } from "drizzle-orm"
 import { db } from "@/db"
 import { profiles, users, factories } from "@/db/schema"
-import { withAuth, getPaginationParams, apiError, StatusCodes } from "@/db/helpers"
-import { Role, QueryParam, EntityKey, FilterValue } from "@/lib/constants/enums"
-import { createProfileSchema } from "@/lib/validation"
+import { withAuth, getPaginationParams, apiError, StatusCodes, getFactoryConfig } from "@/db/helpers"
+import { Role, QueryParam, EntityKey, FilterValue, FieldRequirementMode } from "@/lib/constants/enums"
+import { getDynamicProfileSchema } from "@/lib/validation"
 import { hashPassword } from "@/lib/auth/password"
 
 export const GET = withAuth(async (req, user) => {
   const { page, limit, offset } = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
   const roleParam = req.nextUrl.searchParams.get(EntityKey.ROLE)
+
+  const activeConfig = await getFactoryConfig(user.factory_id)
+  const isAadharNotRequired = activeConfig?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED
 
   const conditions = []
   if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) conditions.push(eq(users.factoryId, user.factory_id))
@@ -19,7 +22,7 @@ export const GET = withAuth(async (req, user) => {
     conditions.push(
       or(
         ilike(profiles.name, `%${search}%`),
-        ilike(profiles.aadharNumber, `%${search}%`),
+        ...(isAadharNotRequired ? [] : [ilike(profiles.aadharNumber, `%${search}%`)]),
         ilike(users.username, `%${search}%`)
       )
     )
@@ -27,12 +30,13 @@ export const GET = withAuth(async (req, user) => {
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
   const isSuperAdmin = user.role === Role.SUPER_ADMIN
 
+  // Dynamic Drizzle query building: omit aadhar_number if mode is NOT_REQUIRED
   let baseQuery = db
     .select({
       id: profiles.id,
       user_id: profiles.userId,
       name: profiles.name,
-      aadhar_number: profiles.aadharNumber,
+      ...(isAadharNotRequired ? {} : { aadhar_number: profiles.aadharNumber }),
       role: profiles.role,
       created_at: profiles.createdAt,
       updated_at: profiles.updatedAt,
@@ -67,31 +71,45 @@ export const GET = withAuth(async (req, user) => {
 
 export const POST = withAuth(async (req, user) => {
   const body = await req.json()
-  const parsed = createProfileSchema.safeParse(body)
+  const targetFactoryId = user.role === Role.SUPER_ADMIN && body.factory_id ? body.factory_id : user.factory_id
+  const activeConfig = await getFactoryConfig(targetFactoryId)
+
+  // Dynamic Drizzle validation schema
+  const dynamicSchema = getDynamicProfileSchema(activeConfig)
+  const parsed = dynamicSchema.safeParse(body)
 
   if (!parsed.success) {
     const firstIssue = parsed.error.issues[0]
     return apiError(firstIssue.message, StatusCodes.BAD_REQUEST)
   }
 
-  const { name, aadhar_number, username, password, role, factory_id } = parsed.data
-  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? factory_id : user.factory_id
+  const { name, aadhar_number, username, password, role } = parsed.data as {
+    name: string
+    aadhar_number?: string | null
+    username: string
+    password: string
+    role: Role
+  }
 
   // Check username uniqueness
   const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.username, username))
   if (existingUser) return apiError("Username is already taken", StatusCodes.BAD_REQUEST)
 
-  // Check aadhar uniqueness per factory
-  const aadharConditions = [eq(profiles.aadharNumber, aadhar_number)]
-  if (targetFactoryId) {
-    aadharConditions.push(eq(users.factoryId, targetFactoryId))
+  const aadharStr = typeof aadhar_number === "string" && aadhar_number.length > 0 ? aadhar_number : null
+
+  // Check aadhar uniqueness per factory if provided
+  if (aadharStr) {
+    const aadharConditions = [eq(profiles.aadharNumber, aadharStr)]
+    if (targetFactoryId) {
+      aadharConditions.push(eq(users.factoryId, targetFactoryId))
+    }
+    const [existingProfile] = await db
+      .select({ id: profiles.id })
+      .from(profiles)
+      .innerJoin(users, eq(profiles.userId, users.id))
+      .where(and(...aadharConditions))
+    if (existingProfile) return apiError("Aadhar number is already registered in this factory", StatusCodes.BAD_REQUEST)
   }
-  const [existingProfile] = await db
-    .select({ id: profiles.id })
-    .from(profiles)
-    .innerJoin(users, eq(profiles.userId, users.id))
-    .where(and(...aadharConditions))
-  if (existingProfile) return apiError("Aadhar number is already registered in this factory", StatusCodes.BAD_REQUEST)
 
   const passwordHash = await hashPassword(password)
 
@@ -102,7 +120,7 @@ export const POST = withAuth(async (req, user) => {
 
   const [newProfile] = await db
     .insert(profiles)
-    .values({ userId: newUser.id, name, aadharNumber: aadhar_number, role })
+    .values({ userId: newUser.id, name, aadharNumber: aadharStr, role })
     .returning()
 
   return NextResponse.json({

@@ -12,8 +12,8 @@ import { toast } from "sonner"
 import { type EntityRecord } from "@/types"
 import { DialogMode, ProjectSlug, FieldType, EntityKey, ActiveStatus } from "@/lib/constants/enums"
 import { PROJECT_FIELDS, getSingularName } from "@/lib/fields"
-import { ENTITY_ADD_SCHEMAS, ENTITY_EDIT_SCHEMAS, checkEditUniqueness } from "@/lib/validation"
-import { useEntitiesStore, useAuthStore, getField } from "@/lib/store"
+import { ENTITY_ADD_SCHEMAS, ENTITY_EDIT_SCHEMAS, checkEditUniqueness, getDynamicCustomerSchema, getDynamicProfileSchema } from "@/lib/validation"
+import { useEntitiesStore, useAuthStore, useConfigStore, getField } from "@/lib/store"
 import { type EntityFormProps } from "./types"
 import { processImageUploadsAndDeletions } from "@/components/form/image/upload"
 
@@ -36,14 +36,21 @@ export function useEntityForm({
   const addEntity = useEntitiesStore((state) => state.addEntity)
   const updateEntity = useEntitiesStore((state) => state.updateEntity)
   const currentUser = useAuthStore((state) => state.user)
+  const activeConfig = useConfigStore((state) => state.config)
 
   const fields = React.useMemo(() => PROJECT_FIELDS[projectSlug] || [], [projectSlug])
   
   const formSchema = React.useMemo(() => {
+    if (projectSlug === ProjectSlug.CUSTOMERS) {
+      return getDynamicCustomerSchema(activeConfig)
+    }
+    if (projectSlug === ProjectSlug.PROFILES) {
+      return getDynamicProfileSchema(activeConfig)
+    }
     return isEdit 
       ? ENTITY_EDIT_SCHEMAS[projectSlug as ProjectSlug] 
       : ENTITY_ADD_SCHEMAS[projectSlug as ProjectSlug]
-  }, [isEdit, projectSlug])
+  }, [isEdit, projectSlug, activeConfig])
 
   const form = useForm<FieldValues>({ 
     resolver: standardSchemaResolver(formSchema as never) as unknown as Resolver<FieldValues>, 

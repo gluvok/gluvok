@@ -16,6 +16,7 @@ const SLUG_TO_API_ROUTE: Record<ProjectSlug, ApiRoutes> = {
   [ProjectSlug.WEIGHMENTS]: ApiRoutes.WEIGHMENTS,
   [ProjectSlug.FACTORIES]: ApiRoutes.FACTORIES,
   [ProjectSlug.PROFILES]: ApiRoutes.PROFILES,
+  [ProjectSlug.CONFIGS]: ApiRoutes.CONFIGS,
 }
 
 export function getEndpoint(slug: ProjectSlug): ApiRoutes {

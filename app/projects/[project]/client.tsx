@@ -12,19 +12,15 @@ import { DataTablePagination } from "@/components/data-table"
 import { ProjectToolbar, ProjectDialogs, ProjectTable, useProjectTable } from "@/components/projects"
 import { Spinner } from "@/components/kibo-ui/spinner"
 import { useEntitiesStore } from "@/lib/store"
+import { ProjectSlug } from "@/lib/constants/enums"
+import { ConfigSettingsView } from "@/components/projects/config-settings"
 
 interface ProjectClientProps {
   projectName: string;
   projectSlug: string;
 }
 
-/**
- * ProjectClient Component
- * Serves as the main orchestrator for a project's data management UI.
- * Handles fetching, pagination, creation, editing, deletion, and reloading operations
- * using the custom `useProjectTable` hook.
- */
-export function ProjectClient({ projectName, projectSlug }: ProjectClientProps) {
+function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps) {
   const primaryIdKey = getPrimaryIdKey(projectSlug)
   const pt = useProjectTable({ projectSlug, primaryIdKey, projectName })
   const { table, isLoading, isReady, creating, setCreating, editingItem, setEditingItem, deletingItem, setDeletingItem, handleReload } = pt
@@ -66,14 +62,12 @@ export function ProjectClient({ projectName, projectSlug }: ProjectClientProps) 
       {/* Main data representation grid/table */}
       <ProjectTable table={table} isLoading={isLoading} />
 
-
       {/* Pagination controls */}
       {table.getRowModel().rows?.length > 0 && (
         <div className="pt-2">
           <DataTablePagination table={table} />
         </div>
       )}
-
 
       {/* Dialog overlays for CUD operations (Create, Update, Delete) */}
       <ProjectDialogs
@@ -91,3 +85,14 @@ export function ProjectClient({ projectName, projectSlug }: ProjectClientProps) 
   )
 }
 
+/**
+ * ProjectClient Component
+ * Serves as the main orchestrator for a project's data management UI.
+ */
+export function ProjectClient({ projectName, projectSlug }: ProjectClientProps) {
+  if (projectSlug === ProjectSlug.CONFIGS) {
+    return <ConfigSettingsView />
+  }
+
+  return <StandardProjectClient projectName={projectName} projectSlug={projectSlug} />
+}

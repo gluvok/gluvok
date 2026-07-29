@@ -32,6 +32,14 @@ DO $$ BEGIN
       'out'
     );
   END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'field_requirement_mode') THEN
+    CREATE TYPE field_requirement_mode AS ENUM (
+      'mandatory',
+      'optional',
+      'not_required'
+    );
+  END IF;
 END $$;
 
 
@@ -60,6 +68,28 @@ CREATE TABLE IF NOT EXISTS public.factories (
 DROP TRIGGER IF EXISTS set_timestamp_factories ON public.factories;
 CREATE TRIGGER set_timestamp_factories
   BEFORE UPDATE ON public.factories
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_set_timestamp();
+
+
+-- A2. configs table
+CREATE TABLE IF NOT EXISTS public.configs (
+  id SERIAL PRIMARY KEY,
+  factory_id INTEGER NOT NULL UNIQUE,
+  aadhar_number_mode field_requirement_mode NOT NULL DEFAULT 'optional',
+  govt_id_mode field_requirement_mode NOT NULL DEFAULT 'optional',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  
+  CONSTRAINT fk_config_factory
+    FOREIGN KEY (factory_id)
+    REFERENCES public.factories(id)
+    ON DELETE RESTRICT
+);
+
+DROP TRIGGER IF EXISTS set_timestamp_configs ON public.configs;
+CREATE TRIGGER set_timestamp_configs
+  BEFORE UPDATE ON public.configs
   FOR EACH ROW
   EXECUTE FUNCTION trigger_set_timestamp();
 
@@ -136,7 +166,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   password_hash TEXT NOT NULL,
   role role_enum NOT NULL DEFAULT 'base',
   factory_id INTEGER,
-  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   
@@ -156,7 +186,7 @@ CREATE TRIGGER set_timestamp_users
 -- E. customers table
 CREATE TABLE IF NOT EXISTS public.customers (
   id SERIAL PRIMARY KEY,
-  govt_id INTEGER NOT NULL,
+  govt_id INTEGER,
   name VARCHAR(255) NOT NULL,
   father_name VARCHAR(255) NOT NULL,
   user_id UUID UNIQUE,
@@ -172,11 +202,13 @@ CREATE TABLE IF NOT EXISTS public.customers (
   CONSTRAINT fk_customer_factory
     FOREIGN KEY (factory_id)
     REFERENCES public.factories(id)
-    ON DELETE RESTRICT,
-
-  CONSTRAINT uq_customer_govt_factory
-    UNIQUE (govt_id, factory_id)
+    ON DELETE RESTRICT
 );
+
+DROP INDEX IF EXISTS public.customers_govt_id_factory_id_idx;
+CREATE UNIQUE INDEX IF NOT EXISTS customers_govt_id_factory_id_idx 
+  ON public.customers (govt_id, factory_id) 
+  WHERE govt_id IS NOT NULL;
 
 DROP TRIGGER IF EXISTS set_timestamp_customers ON public.customers;
 CREATE TRIGGER set_timestamp_customers
@@ -189,7 +221,7 @@ CREATE TRIGGER set_timestamp_customers
 CREATE TABLE IF NOT EXISTS public.profiles (
   id SERIAL PRIMARY KEY,
   user_id UUID NOT NULL UNIQUE,
-  aadhar_number CHAR(12) NOT NULL,
+  aadhar_number VARCHAR(12),
   name VARCHAR(255) NOT NULL,
   role role_enum NOT NULL DEFAULT 'base',
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -201,8 +233,13 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     ON DELETE RESTRICT,
     
   CONSTRAINT check_aadhar_format
-    CHECK (aadhar_number ~ '^\d{12}$')
+    CHECK (aadhar_number IS NULL OR aadhar_number ~ '^\d{12}$')
 );
+
+DROP INDEX IF EXISTS public.profiles_aadhar_factory_id_idx;
+CREATE UNIQUE INDEX IF NOT EXISTS profiles_aadhar_factory_id_idx 
+  ON public.profiles (aadhar_number, user_id) 
+  WHERE aadhar_number IS NOT NULL;
 
 DROP TRIGGER IF EXISTS set_timestamp_profiles ON public.profiles;
 CREATE TRIGGER set_timestamp_profiles
@@ -370,6 +407,7 @@ ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.weighments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.assignments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.configs ENABLE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION public.get_user_role()
 RETURNS text AS $$
@@ -487,6 +525,19 @@ CREATE POLICY "assignments_update" ON public.assignments FOR UPDATE TO authentic
 
 DROP POLICY IF EXISTS "assignments_delete" ON public.assignments;
 CREATE POLICY "assignments_delete" ON public.assignments FOR DELETE TO authenticated USING (public.get_user_role() IN ('super_admin', 'admin'));
+
+-- J. configs policies
+DROP POLICY IF EXISTS "configs_select" ON public.configs;
+CREATE POLICY "configs_select" ON public.configs FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "configs_insert" ON public.configs;
+CREATE POLICY "configs_insert" ON public.configs FOR INSERT TO authenticated WITH CHECK (public.get_user_role() IN ('super_admin', 'admin'));
+
+DROP POLICY IF EXISTS "configs_update" ON public.configs;
+CREATE POLICY "configs_update" ON public.configs FOR UPDATE TO authenticated USING (public.get_user_role() IN ('super_admin', 'admin'));
+
+DROP POLICY IF EXISTS "configs_delete" ON public.configs;
+CREATE POLICY "configs_delete" ON public.configs FOR DELETE TO authenticated USING (public.get_user_role() IN ('super_admin', 'admin'));
 
 
 -- J. Supabase Storage Bucket and RLS Policies (for 'gluvok' bucket)

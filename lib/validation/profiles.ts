@@ -25,7 +25,11 @@ export const addProfileSchema = z
           .string()
           .length(12, `${ColumnLabel.AADHAR_NUMBER} must be exactly 12 digits`)
           .regex(/^\d+$/, `${ColumnLabel.AADHAR_NUMBER} must contain only digits`)
-      ),
+          .optional()
+          .nullable()
+          .or(z.literal(""))
+      )
+      .transform((v) => (v === "" || v === undefined ? null : v)),
     [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
     [EntityKey.ROLE]: z.nativeEnum(Role, {
       message: "Please select a valid role",
@@ -51,7 +55,11 @@ export const editProfileSchema = z
           .string()
           .length(12, `${ColumnLabel.AADHAR_NUMBER} must be exactly 12 digits`)
           .regex(/^\d+$/, `${ColumnLabel.AADHAR_NUMBER} must contain only digits`)
-      ),
+          .optional()
+          .nullable()
+          .or(z.literal(""))
+      )
+      .transform((v) => (v === "" || v === undefined ? null : v)),
     [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
     [EntityKey.ROLE]: z.nativeEnum(Role, {
       message: "Please select a valid role",
@@ -76,7 +84,7 @@ export const editProfileSchema = z
 
     if (hasPassword && rawPassword!.trim().length < 6) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: `${ColumnLabel.PASSWORD} must be at least 6 characters`,
         path: [EntityKey.PASSWORD],
       })
@@ -84,7 +92,7 @@ export const editProfileSchema = z
 
     if (hasPassword && rawPassword !== rawConfirm) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "Passwords do not match",
         path: [EntityKey.CONFIRM_PASSWORD],
       })

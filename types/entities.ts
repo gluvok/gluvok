@@ -4,7 +4,7 @@
  * Includes flattened and computed fields used across views and forms.
  */
 
-import { Role, Unit, WeighmentType } from "@/lib/constants/enums"
+import { Role, Unit, WeighmentType, FieldRequirementMode } from "@/lib/constants/enums"
 
 /**
  * Center Entity
@@ -46,7 +46,8 @@ export interface Rate {
 
 export interface Customer {
   id: number
-  govt_id: number
+  govt_id?: number | null
+  aadhar_number?: string | null
   name: string
   father_name: string
   user_id?: string
@@ -64,6 +65,17 @@ export interface Factory {
   name: string
   created_at: string
   updated_at: string
+}
+
+export interface Config {
+  id: number
+  factory_id: number
+  aadhar_number_mode: FieldRequirementMode
+  govt_id_mode: FieldRequirementMode
+  created_at: string
+  updated_at: string
+  // Flattened join fields
+  factory_name?: string
 }
 
 export interface Weighment {
@@ -94,7 +106,7 @@ export interface Weighment {
 export interface Profile {
   id: number
   user_id: string
-  aadhar_number: string
+  aadhar_number?: string | null
   name: string
   role: Role
   is_active?: boolean
@@ -117,3 +129,5 @@ export type EntityRecord =
   | Weighment
   | Factory
   | Profile
+  | Config
+

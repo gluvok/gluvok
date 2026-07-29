@@ -38,6 +38,12 @@ export enum RoleLabel {
   HARDWARE = "HARDWARE",
 }
 
+export enum FieldRequirementMode {
+  MANDATORY = "mandatory",
+  OPTIONAL = "optional",
+  NOT_REQUIRED = "not_required",
+}
+
 export const SingularEntityName = {
   CENTER: "Center",
   COMMODITY: "Commodity",
@@ -47,6 +53,7 @@ export const SingularEntityName = {
   FACTORY: "Factory",
   PROFILE: "Profile",
   USER: "User",
+  CONFIG: "Config",
 } as const
 export type SingularEntityName = typeof SingularEntityName[keyof typeof SingularEntityName]
 
@@ -82,6 +89,8 @@ export const ColumnLabel = {
   USERNAME: "Username",
   PASSWORD: "Password",
   CONFIRM_PASSWORD: "Confirm Password",
+  AADHAR_NUMBER_MODE: "Aadhaar Number Mode",
+  GOVT_ID_MODE: "Govt ID Mode",
 } as const
 export type ColumnLabel = typeof ColumnLabel[keyof typeof ColumnLabel]
 
@@ -114,6 +123,7 @@ export enum ApiRoutes {
   WEIGHMENTS = "/api/weighments",
   COMMODITIES = "/api/commodities",
   USERS = "/api/users",
+  CONFIGS = "/api/configs",
 }
 
 export enum ProjectSlug {
@@ -124,6 +134,7 @@ export enum ProjectSlug {
   WEIGHMENTS = "weighments",
   FACTORIES = "factories",
   PROFILES = "profiles",
+  CONFIGS = "configs",
 }
 
 export enum FieldType {
@@ -135,6 +146,7 @@ export enum FieldType {
   UNIT = "unit",
   TYPE = "type",
   CHECKBOX = "checkbox",
+  FIELD_REQUIREMENT_MODE = "field_requirement_mode",
 }
 
 export enum EntityKey {
@@ -177,6 +189,8 @@ export enum EntityKey {
   PROFILE = "profile",
   CUSTOMER = "customer",
   CONFIRM_PASSWORD = "confirmPassword",
+  AADHAR_NUMBER_MODE = "aadhar_number_mode",
+  GOVT_ID_MODE = "govt_id_mode",
 }
 
 export enum InputMode {
@@ -206,6 +220,7 @@ export enum ProjectName {
   WEIGHMENTS = "Weighments",
   FACTORIES = "Factories",
   PROFILES = "Profiles",
+  CONFIGS = "Configs",
 }
 
 export enum SystemSlug {
@@ -223,6 +238,7 @@ export enum DbEnum {
   ROLE = "role_enum",
   UNIT = "unit_enum",
   WEIGHMENT_TYPE = "weighment_type",
+  FIELD_REQUIREMENT_MODE = "field_requirement_mode",
 }
 
 export enum TableName {
@@ -234,6 +250,7 @@ export enum TableName {
   CUSTOMERS = "customers",
   PROFILES = "profiles",
   WEIGHMENTS = "weighments",
+  CONFIGS = "configs",
 }
 
 export enum ApiPrefix {

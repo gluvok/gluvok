@@ -102,7 +102,7 @@ describe("RBAC Access Controls", () => {
     })
 
     it("should grant Base role read only access to all but show: false to all except weighments", () => {
-      const allSlugs = Object.values(ProjectSlug)
+      const allSlugs = Object.values(ProjectSlug).filter((slug) => slug !== ProjectSlug.CONFIGS)
       for (const slug of allSlugs) {
         const perms = getPermissions(Role.BASE, slug)
         expect(perms).toMatchObject({
@@ -114,6 +114,7 @@ describe("RBAC Access Controls", () => {
           filter: slug !== ProjectSlug.CENTERS && slug !== ProjectSlug.FACTORIES,
         })
       }
+      expect(getPermissions(Role.BASE, ProjectSlug.CONFIGS).read).toBe(false)
     })
   })
 

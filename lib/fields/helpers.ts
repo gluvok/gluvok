@@ -130,6 +130,8 @@ export function getSingularName(name: string): string {
       return SingularEntityName.FACTORY
     case ProjectName.PROFILES:
       return SingularEntityName.PROFILE
+    case ProjectName.CONFIGS:
+      return SingularEntityName.CONFIG
 
     default:
       if (name.endsWith("ies")) {

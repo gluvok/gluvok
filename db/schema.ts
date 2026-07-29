@@ -1,7 +1,7 @@
 import { pgTable, uuid, varchar, text, integer, boolean, pgEnum, decimal, jsonb, bigint, uniqueIndex } from "drizzle-orm/pg-core"
-import { relations } from "drizzle-orm"
+import { relations, sql } from "drizzle-orm"
 import { timestamps } from "./columns.helpers"
-import { Role, Unit, WeighmentType, EntityKey, TableName, DbEnum } from "@/lib/constants/enums"
+import { Role, Unit, WeighmentType, EntityKey, TableName, DbEnum, FieldRequirementMode } from "@/lib/constants/enums"
 
 export const roleEnum = pgEnum(DbEnum.ROLE, [
   Role.SUPER_ADMIN,
@@ -23,9 +23,23 @@ export const weighmentTypeEnum = pgEnum(DbEnum.WEIGHMENT_TYPE, [
   WeighmentType.OUT,
 ])
 
+export const fieldRequirementModeEnum = pgEnum(DbEnum.FIELD_REQUIREMENT_MODE, [
+  FieldRequirementMode.MANDATORY,
+  FieldRequirementMode.OPTIONAL,
+  FieldRequirementMode.NOT_REQUIRED,
+])
+
 export const factories = pgTable(TableName.FACTORIES, {
   id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
   name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
+  ...timestamps,
+})
+
+export const configs = pgTable(TableName.CONFIGS, {
+  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  factoryId: integer(EntityKey.FACTORY_ID).notNull().unique().references(() => factories.id, { onDelete: "restrict" }),
+  aadharNumberMode: fieldRequirementModeEnum(EntityKey.AADHAR_NUMBER_MODE).notNull().default(FieldRequirementMode.OPTIONAL),
+  govtIdMode: fieldRequirementModeEnum(EntityKey.GOVT_ID_MODE).notNull().default(FieldRequirementMode.OPTIONAL),
   ...timestamps,
 })
 
@@ -63,20 +77,22 @@ export const users = pgTable(TableName.USERS, {
 
 export const customers = pgTable(TableName.CUSTOMERS, {
   id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-  govtId: integer(EntityKey.GOVT_ID).notNull(),
+  govtId: integer(EntityKey.GOVT_ID),
   name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
   fatherName: varchar(EntityKey.FATHER_NAME, { length: 255 }).notNull(),
   userId: uuid(EntityKey.USER_ID).unique().references(() => users.id, { onDelete: "restrict" }),
   factoryId: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
   ...timestamps,
 }, (table) => [
-  uniqueIndex("customers_govt_id_factory_id_idx").on(table.govtId, table.factoryId)
+  uniqueIndex("customers_govt_id_factory_id_idx")
+    .on(table.govtId, table.factoryId)
+    .where(sql`${table.govtId} IS NOT NULL`),
 ])
 
 export const profiles = pgTable(TableName.PROFILES, {
   id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
   userId: uuid(EntityKey.USER_ID).notNull().unique().references(() => users.id, { onDelete: "restrict" }),
-  aadharNumber: varchar(EntityKey.AADHAR_NUMBER, { length: 12 }).notNull(),
+  aadharNumber: varchar(EntityKey.AADHAR_NUMBER, { length: 12 }),
   name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
   role: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
   ...timestamps,
@@ -98,11 +114,19 @@ export const weighments = pgTable(TableName.WEIGHMENTS, {
 })
 
 // Relations
-export const factoriesRelations = relations(factories, ({ many }) => ({
+export const factoriesRelations = relations(factories, ({ one, many }) => ({
   centers: many(centers),
   users: many(users),
   customers: many(customers),
   rates: many(rates),
+  config: one(configs),
+}))
+
+export const configsRelations = relations(configs, ({ one }) => ({
+  factory: one(factories, {
+    fields: [configs.factoryId],
+    references: [factories.id],
+  }),
 }))
 
 export const centersRelations = relations(centers, ({ one, many }) => ({

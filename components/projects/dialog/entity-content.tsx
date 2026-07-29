@@ -12,7 +12,7 @@ import { FormFieldInput } from "@/components/form"
 import { type EntityDialogContentProps } from "./types"
 import { FieldType, Role, FieldSpan, EntityKey } from "@/lib/constants/enums"
 import { type FieldConfig, getSingularName } from "@/lib/fields"
-import { useAuthStore, isFieldVisible } from "@/lib/store"
+import { useAuthStore, isFieldVisible, isFieldRequired } from "@/lib/store"
 
 export function EntityDialogContent({
   mode, onOpenChange, projectName, projectSlug, isEdit, fields, form, onSubmit, primaryIdKey
@@ -59,7 +59,8 @@ export function EntityDialogContent({
           ? (field.key === EntityKey.PASSWORD ? "New Password" : "Confirm New Password")
           : field.label
         const displayPlaceholder = isPasswordInEdit ? "Leave blank to keep unchanged" : field.placeholder
-        const showAsterisk = field.required && !isPasswordInEdit
+        const isReq = isFieldRequired(projectSlug, field.key, field.required)
+        const showAsterisk = isReq && !isPasswordInEdit
 
         const effectiveField = {
           ...field,

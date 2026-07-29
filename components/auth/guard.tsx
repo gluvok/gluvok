@@ -8,7 +8,7 @@
 
 import { useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
-import { useAuthStore, hasPageAccess } from "@/lib/store"
+import { useAuthStore, useConfigStore, hasPageAccess } from "@/lib/store"
 import { AppRoutes } from "@/lib/constants/enums"
 import { AUTH_ROUTES, PUBLIC_ROUTES } from "@/lib/constants"
 import NotFound from "@/app/not-found"
@@ -40,6 +40,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const initialized = useAuthStore((state) => state.initialized)
   const profileLoading = useAuthStore((state) => state.profileLoading)
 
+  const configInitialized = useConfigStore((state) => state.configInitialized)
+
   const router = useRouter()
   const pathname = usePathname()
 
@@ -58,6 +60,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       unsubscribe()
     }
   }, [])
+
+  // Fetch config whenever user is authenticated and config is not yet initialized
+  useEffect(() => {
+    if (user && !configInitialized) {
+      useConfigStore.getState().fetchConfig()
+    }
+  }, [user, configInitialized])
 
   useEffect(() => {
     if (!authHydrated || !initialized || profileLoading) return
@@ -85,8 +94,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>
   }
 
-  // Show loading during initial rehydration, before auth initialized, or while initial profile is being fetched for an unauthenticated user
-  if (!authHydrated || !initialized || (profileLoading && !user)) {
+  // Show loading during initial rehydration, before auth/config initialized for authenticated user, or while profile is loading
+  if (!authHydrated || !initialized || (profileLoading && !user) || (user && !configInitialized)) {
     return <FullScreenStatus message="Loading..." />
   }
 

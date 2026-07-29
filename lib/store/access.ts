@@ -3,7 +3,8 @@
  * @description Role-based access control (RBAC) matrix and permission helper functions.
  */
 
-import { Role, ProjectSlug, EntityKey } from "@/lib/constants/enums"
+import { Role, ProjectSlug, EntityKey, FieldRequirementMode } from "@/lib/constants/enums"
+import { useConfigStore } from "./config"
 
 export interface Permission {
   /** Whether this role can query records from this entity table */
@@ -26,11 +27,20 @@ export interface Permission {
   hiddenFilters?: string[]
 }
 
-const NON_SUPER_ADMIN_FACTORY_COLUMNS = [EntityKey.FACTORY_ID, EntityKey.FACTORY_NAME]
-const NON_SUPER_ADMIN_FACTORY_FIELDS = [EntityKey.FACTORY_ID]
-const NON_SUPER_ADMIN_FACTORY_FILTERS = [EntityKey.FACTORY_ID]
+export type RoleAccessMatrix = {
+  [K in ProjectSlug]: Permission
+}
 
-export const RBAC_MATRIX: Record<Role, Record<ProjectSlug, Permission>> = {
+export type RbacMatrix = {
+  [key in Role]: RoleAccessMatrix
+}
+
+/** Non-super-admin factory-level hidden fields/columns/filters */
+const NON_SUPER_ADMIN_FACTORY_COLUMNS: string[] = [EntityKey.FACTORY_ID, EntityKey.FACTORY_NAME]
+const NON_SUPER_ADMIN_FACTORY_FIELDS: string[] = [EntityKey.FACTORY_ID]
+const NON_SUPER_ADMIN_FACTORY_FILTERS: string[] = [EntityKey.FACTORY_ID]
+
+export const RBAC_MATRIX: RbacMatrix = {
   [Role.SUPER_ADMIN]: {
     [ProjectSlug.PROFILES]:    { read: true, write: true, delete: true,  create: true,  show: true, filter: true },
     [ProjectSlug.FACTORIES]:   { read: true, write: true, delete: true,  create: true,  show: true, filter: true },
@@ -39,6 +49,7 @@ export const RBAC_MATRIX: Record<Role, Record<ProjectSlug, Permission>> = {
     [ProjectSlug.RATES]:       { read: true, write: true, delete: true,  create: true,  show: true, filter: true },
     [ProjectSlug.CUSTOMERS]:   { read: true, write: true, delete: true,  create: true,  show: true, filter: true },
     [ProjectSlug.WEIGHMENTS]:  { read: true, write: true, delete: true,  create: true,  show: true, filter: true },
+    [ProjectSlug.CONFIGS]:     { read: true, write: true, delete: true,  create: true,  show: true, filter: true },
   },
   [Role.ADMIN]: {
     [ProjectSlug.PROFILES]:    { read: true, write: true,  delete: true,  create: true,  show: true,  filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
@@ -48,6 +59,7 @@ export const RBAC_MATRIX: Record<Role, Record<ProjectSlug, Permission>> = {
     [ProjectSlug.RATES]:       { read: true, write: true,  delete: true,  create: true,  show: true,  filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
     [ProjectSlug.CUSTOMERS]:   { read: true, write: true,  delete: true,  create: true,  show: true,  filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
     [ProjectSlug.WEIGHMENTS]:  { read: true, write: true,  delete: true,  create: true,  show: true,  filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
+    [ProjectSlug.CONFIGS]:     { read: true, write: true,  delete: true,  create: true,  show: true,  filter: false, hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
   },
   [Role.MANAGER]: {
     [ProjectSlug.PROFILES]:    { read: true, write: true,  delete: false, create: true,  show: true,  filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
@@ -57,6 +69,7 @@ export const RBAC_MATRIX: Record<Role, Record<ProjectSlug, Permission>> = {
     [ProjectSlug.RATES]:       { read: true, write: true,  delete: false, create: true,  show: true,  filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
     [ProjectSlug.CUSTOMERS]:   { read: true, write: true,  delete: false, create: true,  show: true,  filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
     [ProjectSlug.WEIGHMENTS]:  { read: true, write: true,  delete: false, create: true,  show: true,  filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
+    [ProjectSlug.CONFIGS]:     { read: false, write: false, delete: false, create: false, show: false, filter: false },
   },
   [Role.OPERATOR]: {
     [ProjectSlug.PROFILES]:    { read: true, write: false, delete: false, create: false, show: false, filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
@@ -66,6 +79,7 @@ export const RBAC_MATRIX: Record<Role, Record<ProjectSlug, Permission>> = {
     [ProjectSlug.RATES]:       { read: true, write: false, delete: false, create: false, show: false, filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
     [ProjectSlug.CUSTOMERS]:   { read: true, write: true,  delete: false, create: true,  show: true,  filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
     [ProjectSlug.WEIGHMENTS]:  { read: true, write: true,  delete: false, create: true,  show: true,  filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
+    [ProjectSlug.CONFIGS]:     { read: false, write: false, delete: false, create: false, show: false, filter: false },
   },
   [Role.BASE]: {
     [ProjectSlug.PROFILES]:    { read: true, write: false, delete: false, create: false, show: false, filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
@@ -75,6 +89,7 @@ export const RBAC_MATRIX: Record<Role, Record<ProjectSlug, Permission>> = {
     [ProjectSlug.RATES]:       { read: true, write: false, delete: false, create: false, show: false, filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
     [ProjectSlug.CUSTOMERS]:   { read: true, write: false, delete: false, create: false, show: false, filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FILTERS },
     [ProjectSlug.WEIGHMENTS]:  { read: true, write: false, delete: false, create: false, show: true,  filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
+    [ProjectSlug.CONFIGS]:     { read: false, write: false, delete: false, create: false, show: false, filter: false },
   },
   [Role.HARDWARE]: {
     [ProjectSlug.PROFILES]:    { read: true, write: false, delete: false, create: false, show: false, filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
@@ -84,6 +99,7 @@ export const RBAC_MATRIX: Record<Role, Record<ProjectSlug, Permission>> = {
     [ProjectSlug.RATES]:       { read: true, write: false, delete: false, create: false, show: false, filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
     [ProjectSlug.CUSTOMERS]:   { read: true, write: false, delete: false, create: false, show: false, filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
     [ProjectSlug.WEIGHMENTS]:  { read: true, write: false, delete: false, create: true,  show: true,  filter: true,  hiddenColumns: NON_SUPER_ADMIN_FACTORY_COLUMNS, hiddenFields: NON_SUPER_ADMIN_FACTORY_FIELDS, hiddenFilters: NON_SUPER_ADMIN_FACTORY_FILTERS },
+    [ProjectSlug.CONFIGS]:     { read: false, write: false, delete: false, create: false, show: false, filter: false },
   },
 }
 
@@ -91,7 +107,11 @@ export function getPermissions(role: Role | null | undefined, projectSlug: strin
   if (!role) {
     return { read: false, write: false, delete: false, create: false, show: false, filter: false }
   }
-  return RBAC_MATRIX[role]?.[projectSlug as ProjectSlug] || { read: false, write: false, delete: false, create: false, show: false, filter: false }
+  const roleMatrix = RBAC_MATRIX[role]
+  if (!roleMatrix) {
+    return { read: false, write: false, delete: false, create: false, show: false, filter: false }
+  }
+  return roleMatrix[projectSlug as ProjectSlug] || { read: false, write: false, delete: false, create: false, show: false, filter: false }
 }
 
 /**
@@ -113,18 +133,58 @@ export function hasDeleteAccess(role: Role | null | undefined, projectSlug: stri
 
 export function isColumnVisible(role: Role | null | undefined, projectSlug: string, columnKey: string): boolean {
   const perms = getPermissions(role, projectSlug)
-  if (!perms.hiddenColumns) return true
-  return !perms.hiddenColumns.includes(columnKey)
+  if (perms.hiddenColumns && perms.hiddenColumns.includes(columnKey)) return false
+
+  const config = useConfigStore.getState().config
+  if (projectSlug === ProjectSlug.CUSTOMERS && columnKey === EntityKey.GOVT_ID) {
+    if (config?.govtIdMode === FieldRequirementMode.NOT_REQUIRED) return false
+  }
+  if (projectSlug === ProjectSlug.PROFILES && columnKey === EntityKey.AADHAR_NUMBER) {
+    if (config?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED) return false
+  }
+
+  return true
 }
 
 export function isFieldVisible(role: Role | null | undefined, projectSlug: string, fieldKey: string): boolean {
   const perms = getPermissions(role, projectSlug)
-  if (!perms.hiddenFields) return true
-  return !perms.hiddenFields.includes(fieldKey)
+  if (perms.hiddenFields && perms.hiddenFields.includes(fieldKey)) return false
+
+  const config = useConfigStore.getState().config
+  if (projectSlug === ProjectSlug.CUSTOMERS && fieldKey === EntityKey.GOVT_ID) {
+    if (config?.govtIdMode === FieldRequirementMode.NOT_REQUIRED) return false
+  }
+  if (projectSlug === ProjectSlug.PROFILES && fieldKey === EntityKey.AADHAR_NUMBER) {
+    if (config?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED) return false
+  }
+
+  return true
 }
 
 export function isFilterVisible(role: Role | null | undefined, projectSlug: string, filterKey: string): boolean {
   const perms = getPermissions(role, projectSlug)
-  if (!perms.hiddenFilters) return true
-  return !perms.hiddenFilters.includes(filterKey)
+  if (perms.hiddenFilters && perms.hiddenFilters.includes(filterKey)) return false
+
+  const config = useConfigStore.getState().config
+  if (projectSlug === ProjectSlug.CUSTOMERS && filterKey === EntityKey.GOVT_ID) {
+    if (config?.govtIdMode === FieldRequirementMode.NOT_REQUIRED) return false
+  }
+  if (projectSlug === ProjectSlug.PROFILES && filterKey === EntityKey.AADHAR_NUMBER) {
+    if (config?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED) return false
+  }
+
+  return true
+}
+
+export function isFieldRequired(projectSlug: string, fieldKey: string, defaultRequired?: boolean): boolean {
+  const config = useConfigStore.getState().config
+  if (projectSlug === ProjectSlug.CUSTOMERS && fieldKey === EntityKey.GOVT_ID) {
+    if (config?.govtIdMode === FieldRequirementMode.MANDATORY) return true
+    if (config?.govtIdMode === FieldRequirementMode.OPTIONAL || config?.govtIdMode === FieldRequirementMode.NOT_REQUIRED) return false
+  }
+  if (projectSlug === ProjectSlug.PROFILES && fieldKey === EntityKey.AADHAR_NUMBER) {
+    if (config?.aadharNumberMode === FieldRequirementMode.MANDATORY) return true
+    if (config?.aadharNumberMode === FieldRequirementMode.OPTIONAL || config?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED) return false
+  }
+  return !!defaultRequired
 }

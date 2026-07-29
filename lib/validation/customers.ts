@@ -5,11 +5,16 @@
 
 import * as z from "zod"
 import { EntityKey, ColumnLabel } from "@/lib/constants/enums"
-import { integerIdSchema, nameSchema } from "./helpers"
+import { nameSchema } from "./helpers"
 
 const baseCustomerSchema = z
   .object({
-    [EntityKey.GOVT_ID]: integerIdSchema(ColumnLabel.GOVT_ID),
+    [EntityKey.GOVT_ID]: z
+      .preprocess(
+        (v) => (v === "" || v === null || v === undefined ? null : Number(v)),
+        z.number().int().positive().nullable().optional()
+      )
+      .transform((v) => (v === undefined || Number.isNaN(v) ? null : v)),
     [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
     [EntityKey.FATHER_NAME]: nameSchema(ColumnLabel.FATHER_NAME),
     [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
@@ -40,7 +45,7 @@ const baseCustomerSchema = z
 
     if (hasPassword && !hasUsername) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: `${ColumnLabel.USERNAME} is required when setting a password`,
         path: [EntityKey.USERNAME],
       })
@@ -48,7 +53,7 @@ const baseCustomerSchema = z
 
     if (hasUsername && !hasPassword) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: `${ColumnLabel.PASSWORD} is required when providing a username`,
         path: [EntityKey.PASSWORD],
       })
@@ -56,7 +61,7 @@ const baseCustomerSchema = z
 
     if (hasUsername && rawUsername!.trim().length < 3) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: `${ColumnLabel.USERNAME} must be at least 3 characters`,
         path: [EntityKey.USERNAME],
       })
@@ -64,7 +69,7 @@ const baseCustomerSchema = z
 
     if (hasPassword && rawPassword!.trim().length < 6) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: `${ColumnLabel.PASSWORD} must be at least 6 characters`,
         path: [EntityKey.PASSWORD],
       })
@@ -72,7 +77,7 @@ const baseCustomerSchema = z
 
     if (hasPassword && rawPassword !== rawConfirm) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "Passwords do not match",
         path: [EntityKey.CONFIRM_PASSWORD],
       })

@@ -11,6 +11,7 @@ import {
   Factory,
   UserCog,
   Tag,
+  Settings,
 } from "lucide-react"
 import { ProjectSlug } from "@/lib/constants/enums"
 import { ProjectName } from "@/lib/constants/enums"
@@ -24,4 +25,5 @@ export const PROJECTS: ProjectMetadata[] = [
   { slug: ProjectSlug.WEIGHMENTS, name: ProjectName.WEIGHMENTS, desc: "Input logs, sheets and record metrics", icon: ClipboardList, color: "text-purple-500" },
   { slug: ProjectSlug.FACTORIES, name: ProjectName.FACTORIES, desc: "Configure manufacturing plants and lines", icon: Factory, color: "text-indigo-500" },
   { slug: ProjectSlug.PROFILES, name: ProjectName.PROFILES, desc: "Manage user profiles and credentials", icon: UserCog, color: "text-pink-500" },
+  { slug: ProjectSlug.CONFIGS, name: ProjectName.CONFIGS, desc: "Manage factory identification field requirement modes", icon: Settings, color: "text-slate-500" },
 ]

@@ -8,7 +8,7 @@
  */
 
 import { useWatch, type UseFormReturn, type FieldValues } from "react-hook-form"
-import { EntityCombobox, RoleCombobox, UnitCombobox, TypeCombobox } from "@/components/combobox"
+import { EntityCombobox, RoleCombobox, UnitCombobox, TypeCombobox, ModeCombobox } from "@/components/combobox"
 import { FieldType } from "@/lib/constants/enums"
 import { type FieldConfig, getReferencedEntitySlug } from "@/lib/fields"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -75,6 +75,14 @@ export function FormFieldInput({ field, form, idPrefix, disabled, projectSlug }:
       return (
         <TypeCombobox
           id={`${idPrefix}-type-trigger`}
+          value={typeof value === "string" ? value : ""}
+          onChange={(val) => form.setValue(field.key, val, { shouldValidate: true })}
+        />
+      )
+    case FieldType.FIELD_REQUIREMENT_MODE:
+      return (
+        <ModeCombobox
+          id={`${idPrefix}-mode-trigger-${field.key}`}
           value={typeof value === "string" ? value : ""}
           onChange={(val) => form.setValue(field.key, val, { shouldValidate: true })}
         />

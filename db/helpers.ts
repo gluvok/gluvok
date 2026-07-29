@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { StatusCodes, ReasonPhrases } from "http-status-codes"
-import { sql } from "drizzle-orm"
+import { sql, eq } from "drizzle-orm"
 import { verifyJWT, JWTPayload } from "@/lib/auth/jwt"
 import { Role, RequestHeader, ProjectSlug, PermissionKey, QueryParam } from "@/lib/constants/enums"
 import { RBAC_MATRIX, type Permission } from "@/lib/store/access"
 import { REQUIRED_CREATE_FIELDS } from "@/lib/fields/config"
 import { db } from "@/db"
+import { configs } from "@/db/schema"
 
 export interface PaginationParams {
   page: number
@@ -162,4 +163,25 @@ export async function setDbSessionContext(user: JWTPayload): Promise<void> {
       set_config('app.current_factory_id', ${String(user.factory_id)}, true),
       set_config('app.current_user_id',    ${user.sub},               true)
   `)
+}
+
+/**
+ * Reusable helper to fetch factory field requirement configuration (Aadhaar & Govt ID modes).
+ */
+export async function getFactoryConfig(factoryId: number | null | undefined) {
+  if (!factoryId) return null
+  try {
+    const [c] = await db
+      .select({
+        factoryId: configs.factoryId,
+        aadharNumberMode: configs.aadharNumberMode,
+        govtIdMode: configs.govtIdMode,
+      })
+      .from(configs)
+      .where(eq(configs.factoryId, factoryId))
+      .limit(1)
+    return c || null
+  } catch {
+    return null
+  }
 }

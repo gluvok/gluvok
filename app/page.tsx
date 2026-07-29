@@ -10,10 +10,12 @@ import React from "react"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { LayoutDashboard } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { LayoutDashboard, RefreshCw, Loader2 } from "lucide-react"
 import { PROJECTS } from "@/lib/projects"
 import { DashboardCard } from "@/components/dashboard"
 import { useAuthStore, hasPageAccess } from "@/lib/store"
+import { useEntitiesStore } from "@/lib/store"
 
 /**
  * Page Component
@@ -23,6 +25,10 @@ import { useAuthStore, hasPageAccess } from "@/lib/store"
 export default function Page() {
   const user = useAuthStore((state) => state.user)
   const hydrated = useAuthStore((state) => state.hydrated)
+  const filtersLoading = useEntitiesStore((state) => state.filtersLoading)
+  const preloadAllFilters = useEntitiesStore((state) => state.preloadAllFilters)
+
+  const handleSyncData = () => { preloadAllFilters() }
 
   // Filters projects dynamically based on user role authorization and hydration state
   const filteredProjects = React.useMemo(() => {
@@ -32,7 +38,7 @@ export default function Page() {
 
   return (
     <>
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b">
+      <header className="flex h-16 shrink-0 items-center gap-2 border-b justify-between">
         <div className="flex items-center gap-2 px-4">
           <SidebarTrigger id="sidebar-trigger-home" className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 data-vertical:h-4 data-vertical:self-auto" />
@@ -46,6 +52,23 @@ export default function Page() {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+        </div>
+        <div className="px-4">
+          <Button
+            id="sync-data-btn"
+            variant="outline"
+            size="sm"
+            onClick={handleSyncData}
+            disabled={filtersLoading}
+            className="h-8 text-xs gap-1.5 font-medium"
+          >
+            {filtersLoading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            Sync Data
+          </Button>
         </div>
       </header>
 

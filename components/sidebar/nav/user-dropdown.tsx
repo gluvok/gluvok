@@ -2,15 +2,15 @@
 
 /**
  * @file components/sidebar/nav/user-dropdown.tsx
- * @description Dropdown panel content showing account details, billing, notifications, and log out options.
+ * @description Dropdown panel content showing account details, sync status, and log out options.
  */
 
-import { SparklesIcon, BadgeCheckIcon, CreditCardIcon, BellIcon, LogOutIcon } from "lucide-react"
+import { BadgeCheckIcon, CreditCardIcon, BellIcon, LogOutIcon, RefreshCw, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { Status, StatusIndicator, StatusLabel } from "@/components/kibo-ui/status"
 import { UserAvatarInfo, type UserInfo } from "./user-info"
-import { useAuthStore } from "@/lib/store"
+import { useAuthStore, useEntitiesStore } from "@/lib/store"
 import { AppRoutes } from "@/lib/constants/enums"
 
 interface NavUserDropdownProps {
@@ -31,10 +31,16 @@ const MENU_ITEMS = [
 export function NavUserDropdown({ user, isMobile }: NavUserDropdownProps) {
   const router = useRouter()
   const logout = useAuthStore((state) => state.logout)
+  const filtersLoading = useEntitiesStore((state) => state.filtersLoading)
+  const preloadAllFilters = useEntitiesStore((state) => state.preloadAllFilters)
 
   const handleLogout = async () => {
     await logout()
     router.push(AppRoutes.LOGIN)
+  }
+
+  const handleSyncData = () => {
+    preloadAllFilters()
   }
 
   return (
@@ -57,8 +63,18 @@ export function NavUserDropdown({ user, isMobile }: NavUserDropdownProps) {
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuItem id="user-menu-upgrade">
-          <SparklesIcon className="mr-2 h-4 w-4" /> Upgrade to Pro
+        <DropdownMenuItem
+          id="user-menu-sync"
+          onClick={handleSyncData}
+          disabled={filtersLoading}
+          className="cursor-pointer"
+        >
+          {filtersLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-2 h-4 w-4" />
+          )}
+          Sync Data
         </DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />

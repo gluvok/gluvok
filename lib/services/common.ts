@@ -1,18 +1,18 @@
 /**
  * @file lib/services/common.ts
- * @description Database service logic for CRUD operations of services using backend API routes and axios.
+ * @description Service utilities for CRUD operations via backend API routes and axios.
  */
 
 import axios from "axios"
 import { ProjectSlug, ApiRoutes } from "@/lib/constants/enums"
 import { type EntityRecord } from "@/types"
-import { fetchCenters, fetchCentersPaginated, fetchCenterById } from "./centers"
-import { fetchCommodities, fetchCommoditiesPaginated, fetchCommodityById } from "./commodities"
-import { fetchRates, fetchRatesPaginated, fetchRateById } from "./rates"
-import { fetchCustomers, fetchCustomersPaginated, fetchCustomerById } from "./customers"
-import { fetchWeighments, fetchWeighmentsPaginated, fetchWeighmentById } from "./weighments"
-import { fetchFactories, fetchFactoriesPaginated, fetchFactoryById } from "./factories"
-import { fetchProfiles, fetchProfilesPaginated, fetchProfileById } from "./profiles"
+import { fetchCenters, fetchCentersPaginated } from "./centers"
+import { fetchCommodities, fetchCommoditiesPaginated } from "./commodities"
+import { fetchRates, fetchRatesPaginated } from "./rates"
+import { fetchCustomers, fetchCustomersPaginated } from "./customers"
+import { fetchWeighments, fetchWeighmentsPaginated } from "./weighments"
+import { fetchFactories, fetchFactoriesPaginated } from "./factories"
+import { fetchProfiles, fetchProfilesPaginated } from "./profiles"
 import { type PaginatedParams } from "./scoping"
 
 const SLUG_TO_API_ROUTE: Record<ProjectSlug, ApiRoutes> = {
@@ -65,28 +65,19 @@ export async function fetchEntityPaginatedFromApi<T = EntityRecord>(
 }
 
 interface ServiceMethods {
-  fetchSingle: (id: number) => Promise<EntityRecord>
   fetchList: () => Promise<EntityRecord[]>
   fetchPaginated: (params: PaginatedParams) => Promise<{ data: EntityRecord[]; count: number }>
 }
 
-/** Declarative registry mapping each entity ProjectSlug to its corresponding CRUD service handlers */
+/** Declarative registry mapping each entity ProjectSlug to its corresponding service handlers */
 const ENTITY_SERVICES: Record<ProjectSlug, ServiceMethods> = {
-  [ProjectSlug.CENTERS]: { fetchSingle: fetchCenterById, fetchList: fetchCenters, fetchPaginated: fetchCentersPaginated },
-  [ProjectSlug.COMMODITIES]: { fetchSingle: fetchCommodityById, fetchList: fetchCommodities, fetchPaginated: fetchCommoditiesPaginated },
-  [ProjectSlug.RATES]: { fetchSingle: fetchRateById, fetchList: fetchRates, fetchPaginated: fetchRatesPaginated },
-  [ProjectSlug.CUSTOMERS]: { fetchSingle: fetchCustomerById, fetchList: fetchCustomers, fetchPaginated: fetchCustomersPaginated },
-  [ProjectSlug.WEIGHMENTS]: { fetchSingle: fetchWeighmentById, fetchList: fetchWeighments, fetchPaginated: fetchWeighmentsPaginated },
-  [ProjectSlug.FACTORIES]: { fetchSingle: fetchFactoryById, fetchList: fetchFactories, fetchPaginated: fetchFactoriesPaginated },
-  [ProjectSlug.PROFILES]: { fetchSingle: fetchProfileById, fetchList: fetchProfiles, fetchPaginated: fetchProfilesPaginated },
-}
-
-export async function fetchSingleEntity(slug: ProjectSlug, id: number): Promise<EntityRecord> {
-  const service = ENTITY_SERVICES[slug]
-  if (!service) {
-    throw new Error(`No fetch configured for single entity slug: ${slug}`)
-  }
-  return service.fetchSingle(id)
+  [ProjectSlug.CENTERS]: { fetchList: fetchCenters, fetchPaginated: fetchCentersPaginated },
+  [ProjectSlug.COMMODITIES]: { fetchList: fetchCommodities, fetchPaginated: fetchCommoditiesPaginated },
+  [ProjectSlug.RATES]: { fetchList: fetchRates, fetchPaginated: fetchRatesPaginated },
+  [ProjectSlug.CUSTOMERS]: { fetchList: fetchCustomers, fetchPaginated: fetchCustomersPaginated },
+  [ProjectSlug.WEIGHMENTS]: { fetchList: fetchWeighments, fetchPaginated: fetchWeighmentsPaginated },
+  [ProjectSlug.FACTORIES]: { fetchList: fetchFactories, fetchPaginated: fetchFactoriesPaginated },
+  [ProjectSlug.PROFILES]: { fetchList: fetchProfiles, fetchPaginated: fetchProfilesPaginated },
 }
 
 export async function fetchEntityList(slug: ProjectSlug | string): Promise<EntityRecord[]> {

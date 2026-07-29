@@ -3,7 +3,6 @@
  * @description Database service logic for CRUD operations of rates.
  */
 
-export { fetchRates, fetchRateById } from "./list"
+export { fetchRates } from "./list"
 export { fetchRatesPaginated } from "./paginated"
-export { TABLE_NAME } from "./query"
 

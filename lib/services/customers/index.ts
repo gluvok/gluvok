@@ -3,7 +3,6 @@
  * @description Database service logic for CRUD operations of customers.
  */
 
-export { fetchCustomers, fetchCustomerById } from "./list"
+export { fetchCustomers } from "./list"
 export { fetchCustomersPaginated } from "./paginated"
-export { TABLE_NAME } from "./query"
 

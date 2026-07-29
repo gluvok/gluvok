@@ -98,9 +98,6 @@ export enum ActiveStatus {
 export enum AppRoutes {
   HOME = "/",
   LOGIN = "/login",
-  SIGNUP = "/signup",
-  FORGOT_PASSWORD = "/forgot-password",
-  RESET_PASSWORD = "/reset-password",
   SERVICES = "/services",
   SUPPORT = "/support",
   FEEDBACK = "/feedback",

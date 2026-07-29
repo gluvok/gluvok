@@ -3,7 +3,6 @@
  * @description Database service logic for CRUD operations of profiles.
  */
 
-export { fetchProfiles, fetchProfileById } from "./list"
+export { fetchProfiles } from "./list"
 export { fetchProfilesPaginated } from "./paginated"
-export { TABLE_NAME } from "./query"
 

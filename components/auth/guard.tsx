@@ -69,8 +69,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         break
       }
 
-      // 2. Authenticated users trying to access general auth pages (except password reset)
-      case !!user && isAuthPage && pathname !== AppRoutes.RESET_PASSWORD: {
+      // 2. Authenticated users trying to access general auth pages
+      case !!user && isAuthPage: {
         router.push(getNextParam() || AppRoutes.HOME)
         break
       }
@@ -94,7 +94,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <FullScreenStatus message="Redirecting..." />
   }
 
-  if (user && isAuthPage && pathname !== AppRoutes.RESET_PASSWORD) {
+  if (user && isAuthPage) {
     return <FullScreenStatus message="Redirecting..." />
   }
 

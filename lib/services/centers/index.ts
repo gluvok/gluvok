@@ -3,7 +3,6 @@
  * @description Database service logic for CRUD operations of centers.
  */
 
-export { fetchCenters, fetchCenterById } from "./list"
+export { fetchCenters } from "./list"
 export { fetchCentersPaginated } from "./paginated"
-export { TABLE_NAME } from "./query"
 

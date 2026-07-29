@@ -38,7 +38,7 @@ export default function Page() {
 
   return (
     <>
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b justify-between">
+      <header className="flex h-16 shrink-0 items-center gap-2 border-b">
         <div className="flex items-center gap-2 px-4">
           <SidebarTrigger id="sidebar-trigger-home" className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 data-vertical:h-4 data-vertical:self-auto" />
@@ -53,35 +53,33 @@ export default function Page() {
             </BreadcrumbList>
           </Breadcrumb>
         </div>
-        <div className="px-4">
-          <Button
-            id="sync-data-btn"
-            variant="outline"
-            size="sm"
-            onClick={handleSyncData}
-            disabled={filtersLoading}
-            className="h-8 text-xs gap-1.5 font-medium"
-          >
-            {filtersLoading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}
-            Sync Data
-          </Button>
-        </div>
       </header>
 
       <main className="p-8 w-full min-w-0 space-y-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-2 flex flex-col items-start text-left">
-            <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2.5 text-foreground">
+        <div className="space-y-2 flex flex-col items-start text-left">
+          <div className="flex items-center justify-between w-full">
+            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
               Dashboard
             </h1>
-            <p className="text-muted-foreground text-sm max-w-xl">
-              Welcome back. Access the platform tools, manage entities, configure visibility settings, and track operations.
-            </p>
+            <Button
+              id="sync-data-btn"
+              variant="outline"
+              size="sm"
+              onClick={handleSyncData}
+              disabled={filtersLoading}
+              className="h-8 text-xs gap-1.5 font-medium border-border shadow-xs shrink-0"
+            >
+              {filtersLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              Sync Data
+            </Button>
           </div>
+          <p className="text-muted-foreground text-sm max-w-xl">
+            Welcome back. Access the platform tools, manage entities, configure visibility settings, and track operations.
+          </p>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">

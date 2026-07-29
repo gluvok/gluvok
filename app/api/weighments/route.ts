@@ -8,6 +8,7 @@ import { Role, ProjectSlug, PermissionKey, QueryParam, Unit, WeighmentType, Enti
 export const GET = withAuth(async (req, user) => {
   const { page, limit, offset } = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
+  const unitParam = req.nextUrl.searchParams.get(EntityKey.UNIT)
   const centerIdParam = req.nextUrl.searchParams.get(EntityKey.CENTER_ID)
   const commodityIdParam = req.nextUrl.searchParams.get(EntityKey.COMMODITY_ID)
   const typeParam = req.nextUrl.searchParams.get(EntityKey.TYPE)
@@ -15,6 +16,7 @@ export const GET = withAuth(async (req, user) => {
 
   const conditions = []
   if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) conditions.push(eq(centers.factoryId, user.factory_id))
+  if (unitParam && unitParam !== FilterValue.ALL) conditions.push(eq(weighments.unit, unitParam as Unit))
   if (centerIdParam && centerIdParam !== FilterValue.ALL) conditions.push(eq(weighments.centerId, Number(centerIdParam)))
   if (commodityIdParam && commodityIdParam !== FilterValue.ALL) conditions.push(eq(rates.commodityId, Number(commodityIdParam)))
   if (typeParam && typeParam !== FilterValue.ALL) conditions.push(eq(weighments.type, typeParam as WeighmentType))

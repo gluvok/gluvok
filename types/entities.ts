@@ -55,7 +55,6 @@ export interface Customer {
   created_at: string
   updated_at: string
   // Flattened join fields
-  user_email?: string
   username?: string
   factory_name?: string
 }
@@ -105,7 +104,6 @@ export interface Profile {
   factory_id?: number | null
   factory?: { name: string } | null
   // Flattened join/view fields
-  email?: string
   username?: string
   factory_name?: string
 }

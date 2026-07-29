@@ -35,7 +35,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const activeUser = {
     name: (hydrated && user?.name) || SIDEBAR_DATA.user.name,
-    email: (hydrated && user?.email) || SIDEBAR_DATA.user.email,
     avatar: (hydrated && user?.avatar) || SIDEBAR_DATA.user.avatar,
   }
 

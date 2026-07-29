@@ -7,7 +7,7 @@
 import { ProjectSlug, SystemSlug } from "@/lib/constants/enums"
 import { type Rate, type EntityRecord } from "@/types"
 
-export type Entity = EntityRecord | { id: string; email: string }
+export type Entity = EntityRecord | { id: string; username: string }
 
 /**
  * Standard extractor helper
@@ -34,8 +34,8 @@ export const ENTITY_EXTRACTORS: Record<
   [ProjectSlug.COMMODITIES]: (item) => extractByIdAndName(item as { id: number; name: string }),
   [ProjectSlug.FACTORIES]: (item) => extractByIdAndName(item as { id: number; name: string }),
   [SystemSlug.USERS]: (item) => {
-    const u = item as { id: string; email: string }
-    return { id: u.id, name: u.email }
+    const u = item as { id: string; username: string }
+    return { id: u.id, name: u.username }
   },
   [ProjectSlug.RATES]: (item) => {
     const p = item as Rate

@@ -42,7 +42,6 @@ export function getColumnLabel(id: string): string {
     case EntityKey.CENTER_ID: return ColumnLabel.CENTER_ID
     case EntityKey.PROFILE_ID: return ColumnLabel.PROFILE_ID
     case EntityKey.CUSTOMER_ID: return ColumnLabel.CUSTOMER_ID
-    case EntityKey.EMAIL: return ColumnLabel.EMAIL
     case EntityKey.ROLE: return ColumnLabel.ROLE
     case EntityKey.CREATED_AT: return ColumnLabel.CREATED_AT
     case EntityKey.UPDATED_AT: return ColumnLabel.UPDATED_AT
@@ -62,7 +61,6 @@ export function getColumnLabel(id: string): string {
     case EntityKey.CENTER: return ColumnLabel.CENTER
     case EntityKey.PROFILE: return ColumnLabel.PROFILE
     case EntityKey.CUSTOMER: return ColumnLabel.CUSTOMER
-    case EntityKey.USER_EMAIL: return ColumnLabel.USER_EMAIL
     default:
       return id
   }

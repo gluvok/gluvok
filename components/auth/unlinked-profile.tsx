@@ -37,7 +37,7 @@ export function UnlinkedProfile() {
             No Profile Linked
           </h1>
           <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mx-auto">
-            Your email <strong className="text-foreground">{user.email}</strong> is not associated with an active profile. Please contact an administrator to link your account.
+            Your account <strong className="text-foreground">{user.username}</strong> is not associated with an active profile. Please contact an administrator to link your account.
           </p>
         </div>
 

@@ -8,7 +8,7 @@ import { type Profile } from "@/types"
 
 import { ProjectSlug, EntityKey } from "@/lib/constants/enums"
 
-export const TABLE_NAME = "profiles_with_email"
+export const TABLE_NAME = ProjectSlug.PROFILES
 
 export const SELECT_QUERY = `
   *,

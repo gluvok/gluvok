@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { eq, ilike, count, and, desc, or } from "drizzle-orm"
+import { eq, ilike, count, and, desc, or, gte, lte } from "drizzle-orm"
 import { db } from "@/db"
 import { weighments, rates, commodities, centers, profiles, customers } from "@/db/schema"
 import { withAuth, getPaginationParams, validateRequiredFields, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
@@ -13,6 +13,8 @@ export const GET = withAuth(async (req, user) => {
   const commodityIdParam = req.nextUrl.searchParams.get(EntityKey.COMMODITY_ID)
   const typeParam = req.nextUrl.searchParams.get(EntityKey.TYPE)
   const isActiveParam = req.nextUrl.searchParams.get(EntityKey.IS_ACTIVE)
+  const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE)
+  const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE)
 
   const conditions = []
   if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) conditions.push(eq(centers.factoryId, user.factory_id))
@@ -21,6 +23,8 @@ export const GET = withAuth(async (req, user) => {
   if (commodityIdParam && commodityIdParam !== FilterValue.ALL) conditions.push(eq(rates.commodityId, Number(commodityIdParam)))
   if (typeParam && typeParam !== FilterValue.ALL) conditions.push(eq(weighments.type, typeParam as WeighmentType))
   if (isActiveParam && isActiveParam !== FilterValue.ALL) conditions.push(eq(weighments.isActive, isActiveParam === "true"))
+  if (startDateParam) conditions.push(gte(weighments.createdAt, new Date(startDateParam)))
+  if (endDateParam) conditions.push(lte(weighments.createdAt, new Date(endDateParam)))
   if (search) {
     conditions.push(
       or(

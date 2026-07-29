@@ -6,7 +6,7 @@
  */
 
 import * as React from "react"
-import { format, subDays, startOfMonth } from "date-fns"
+import { format, subDays, startOfMonth, startOfDay, endOfDay } from "date-fns"
 import { type DateRange } from "react-day-picker"
 import { Table } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
@@ -17,7 +17,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Calendar as CalendarIcon, X, Zap, CalendarCheck } from "lucide-react"
-import { DatePreset } from "@/lib/constants/enums"
+import { DatePreset, QueryParam } from "@/lib/constants/enums"
 
 interface DateRangeFilterProps<TData> {
   table: Table<TData>
@@ -38,8 +38,8 @@ const PRESET_OPTIONS: { id: DatePreset; label: string }[] = [
 
 export function DateRangeFilter<TData>({
   table,
-  startKey = "start_date",
-  endKey = "end_date",
+  startKey = QueryParam.START_DATE,
+  endKey = QueryParam.END_DATE,
   className = "w-auto",
 }: DateRangeFilterProps<TData>) {
   const columnFilters = table.getState().columnFilters
@@ -55,14 +55,14 @@ export function DateRangeFilter<TData>({
 
   const [open, setOpen] = React.useState(false)
 
-  const handleRangeSelect = (range: DateRange | undefined) => {
+  const applyRange = (range: DateRange | undefined) => {
     table.setColumnFilters((prev) => {
       const filtered = prev.filter((f) => f.id !== startKey && f.id !== endKey)
       if (range?.from) {
-        filtered.push({ id: startKey, value: range.from.toISOString() })
+        filtered.push({ id: startKey, value: startOfDay(range.from).toISOString() })
       }
       if (range?.to) {
-        filtered.push({ id: endKey, value: range.to.toISOString() })
+        filtered.push({ id: endKey, value: endOfDay(range.to).toISOString() })
       }
       return filtered
     })
@@ -70,34 +70,26 @@ export function DateRangeFilter<TData>({
 
   const handleClear = (e?: React.MouseEvent) => {
     e?.stopPropagation()
-    handleRangeSelect(undefined)
+    applyRange(undefined)
   }
 
   const handlePresetSelect = (preset: DatePreset) => {
     const now = new Date()
-    let range: DateRange
 
     switch (preset) {
       case DatePreset.TODAY:
-        range = { from: now, to: now }
-        break
+        return applyRange({ from: now, to: now })
       case DatePreset.YESTERDAY: {
         const yest = subDays(now, 1)
-        range = { from: yest, to: yest }
-        break
+        return applyRange({ from: yest, to: yest })
       }
       case DatePreset.LAST_2_DAYS:
-        range = { from: subDays(now, 1), to: now }
-        break
+        return applyRange({ from: subDays(now, 1), to: now })
       case DatePreset.LAST_7_DAYS:
-        range = { from: subDays(now, 6), to: now }
-        break
+        return applyRange({ from: subDays(now, 6), to: now })
       case DatePreset.THIS_MONTH:
-        range = { from: startOfMonth(now), to: now }
-        break
+        return applyRange({ from: startOfMonth(now), to: now })
     }
-
-    handleRangeSelect(range)
   }
 
   return (
@@ -166,7 +158,7 @@ export function DateRangeFilter<TData>({
             captionLayout="dropdown"
             defaultMonth={dateRange?.from}
             selected={dateRange}
-            onSelect={handleRangeSelect}
+            onSelect={applyRange}
             numberOfMonths={2}
             disabled={{ after: new Date() }}
             endMonth={new Date()}
@@ -176,7 +168,7 @@ export function DateRangeFilter<TData>({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleRangeSelect({ from: dateRange.from!, to: new Date() })}
+                onClick={() => applyRange({ from: dateRange.from!, to: new Date() })}
                 className="h-6 text-2xs px-2.5 font-medium bg-background hover:bg-accent text-primary border-primary/30 gap-1.5 shadow-2xs transition-all hover:border-primary/50"
                 id="set-end-to-today"
               >

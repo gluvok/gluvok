@@ -281,6 +281,8 @@ export enum QueryParam {
   SEARCH = "search",
   PAGE = "page",
   LIMIT = "limit",
+  START_DATE = "start_date",
+  END_DATE = "end_date",
 }
 
 export enum AutoComplete {

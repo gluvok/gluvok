@@ -1,18 +1,22 @@
 import { NextResponse } from "next/server"
-import { eq, count, and, desc } from "drizzle-orm"
+import { eq, count, and, desc, gte, lte } from "drizzle-orm"
 import { db } from "@/db"
 import { rates, commodities, factories } from "@/db/schema"
 import { withAuth, getPaginationParams, validateRequiredFields, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
-import { Role, ProjectSlug, PermissionKey, EntityKey, FilterValue, Unit } from "@/lib/constants/enums"
+import { Role, ProjectSlug, PermissionKey, EntityKey, FilterValue, Unit, QueryParam } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user) => {
   const { page, limit, offset } = getPaginationParams(req.nextUrl)
   const commodityIdParam = req.nextUrl.searchParams.get(EntityKey.COMMODITY_ID)
   const unitParam = req.nextUrl.searchParams.get(EntityKey.UNIT)
+  const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE)
+  const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE)
   const conditions = []
   if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) conditions.push(eq(rates.factoryId, user.factory_id))
   if (commodityIdParam && commodityIdParam !== FilterValue.ALL) conditions.push(eq(rates.commodityId, Number(commodityIdParam)))
   if (unitParam && unitParam !== FilterValue.ALL) conditions.push(eq(rates.unit, unitParam as Unit))
+  if (startDateParam) conditions.push(gte(rates.createdAt, new Date(startDateParam)))
+  if (endDateParam) conditions.push(lte(rates.createdAt, new Date(endDateParam)))
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
   const isSuperAdmin = user.role === Role.SUPER_ADMIN

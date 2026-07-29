@@ -2,9 +2,10 @@ import { NextResponse } from "next/server"
 import { eq, ilike, count, and, desc, or } from "drizzle-orm"
 import { db } from "@/db"
 import { customers, users, factories } from "@/db/schema"
-import { withAuth, getPaginationParams, validateRequiredFields, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import { withAuth, getPaginationParams, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
 import { Role, ProjectSlug, PermissionKey, QueryParam } from "@/lib/constants/enums"
 import { hashPassword } from "@/lib/auth/password"
+import { addCustomerSchema } from "@/lib/validation/customers"
 
 export const GET = withAuth(async (req, user) => {
   const { page, limit, offset } = getPaginationParams(req.nextUrl)
@@ -59,8 +60,10 @@ export const GET = withAuth(async (req, user) => {
 export const POST = withAuth(async (req, user) => {
   if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.CREATE)) return forbiddenError()
   const body = await req.json()
-  const err = validateRequiredFields(body, ProjectSlug.CUSTOMERS)
-  if (err) return err
+  const parsed = addCustomerSchema.safeParse(body)
+  if (!parsed.success) {
+    return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST)
+  }
 
   const { govt_id, name, father_name, username, password, factory_id } = body
   const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : (user.factory_id ?? 0)

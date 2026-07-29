@@ -33,8 +33,7 @@ export function EntityDialogContent({
     switch (field.type) {
       case FieldType.CHECKBOX:
         return (
-          <div key={field.key} className="flex flex-col gap-1.5 justify-end">
-            <span className="text-xs font-semibold text-muted-foreground opacity-0 select-none hidden sm:block">&nbsp;</span>
+          <div key={field.key} className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2 h-9 px-1">
               <FormFieldInput
                 field={field}
@@ -147,7 +146,7 @@ export function EntityDialogContent({
         </DialogTitle>
         <DialogDescription>{desc}</DialogDescription>
       </DialogHeader>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
         {fieldGroups.map((group, groupIdx) => {
           if (group.span === FieldSpan.FULL || group.fields.length === 1) {
             return renderField(group.fields[0])

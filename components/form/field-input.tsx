@@ -60,7 +60,7 @@ export function FormFieldInput({ field, form, idPrefix, disabled, projectSlug }:
         <RoleCombobox
           id={`${idPrefix}-role-trigger`}
           value={stringValue}
-          onChange={(val) => form.setValue(field.key, val, { shouldValidate: true })}
+          onChange={(val) => form.setValue(field.key, val, { shouldValidate: true, shouldDirty: true })}
           disabled={disabled}
         />
       )
@@ -69,7 +69,7 @@ export function FormFieldInput({ field, form, idPrefix, disabled, projectSlug }:
         <UnitCombobox
           id={`${idPrefix}-unit-trigger`}
           value={stringValue}
-          onChange={(val) => form.setValue(field.key, val, { shouldValidate: true })}
+          onChange={(val) => form.setValue(field.key, val, { shouldValidate: true, shouldDirty: true })}
         />
       )
     case FieldType.TYPE:
@@ -77,7 +77,7 @@ export function FormFieldInput({ field, form, idPrefix, disabled, projectSlug }:
         <TypeCombobox
           id={`${idPrefix}-type-trigger`}
           value={stringValue}
-          onChange={(val) => form.setValue(field.key, val, { shouldValidate: true })}
+          onChange={(val) => form.setValue(field.key, val, { shouldValidate: true, shouldDirty: true })}
         />
       )
     case FieldType.FIELD_REQUIREMENT_MODE:
@@ -85,7 +85,7 @@ export function FormFieldInput({ field, form, idPrefix, disabled, projectSlug }:
         <ModeCombobox
           id={`${idPrefix}-mode-trigger-${field.key}`}
           value={stringValue}
-          onChange={(val) => form.setValue(field.key, val, { shouldValidate: true })}
+          onChange={(val) => form.setValue(field.key, val, { shouldValidate: true, shouldDirty: true })}
         />
       )
     default:
@@ -95,7 +95,7 @@ export function FormFieldInput({ field, form, idPrefix, disabled, projectSlug }:
             id={fieldId}
             entitySlug={referencedSlug}
             value={stringValue}
-            onChange={(val) => form.setValue(field.key, val, { shouldValidate: true })}
+            onChange={(val) => form.setValue(field.key, val, { shouldValidate: true, shouldDirty: true })}
             placeholder={field.placeholder}
             contextSlug={projectSlug}
             fieldKey={field.key}

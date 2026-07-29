@@ -30,14 +30,14 @@ import {
 export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   [ProjectSlug.CENTERS]: [
     { key: EntityKey.NAME, label: ColumnLabel.NAME, placeholder: "e.g. Center F", type: FieldType.TEXT, required: true, icon: Tag, span: FieldSpan.HALF },
-    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, required: true, icon: Factory, editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.HALF },
+    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, visibleRoles: [Role.SUPER_ADMIN], editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.HALF },
   ],
   [ProjectSlug.COMMODITIES]: [
     { key: EntityKey.NAME, label: ColumnLabel.NAME, placeholder: "e.g. Barley", type: FieldType.TEXT, required: true, icon: Tag, span: FieldSpan.FULL },
   ],
   [ProjectSlug.RATES]: [
     { key: EntityKey.COMMODITY_ID, label: ColumnLabel.COMMODITY, placeholder: getSelectPlaceholder(SingularEntityName.COMMODITY), type: FieldType.TEXT, required: true, icon: Tag, span: FieldSpan.HALF },
-    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, required: true, icon: Factory, editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.HALF },
+    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, visibleRoles: [Role.SUPER_ADMIN], editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.HALF },
     { key: EntityKey.UNIT_PRICE, label: ColumnLabel.UNIT_PRICE, placeholder: "e.g. 15000", type: FieldType.NUMBER, required: true, icon: IndianRupee, span: FieldSpan.HALF },
     { key: EntityKey.UNIT, label: ColumnLabel.UNIT, placeholder: "Select unit...", type: FieldType.UNIT, required: true, icon: Ruler, span: FieldSpan.HALF },
   ],
@@ -48,7 +48,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     { key: EntityKey.USERNAME, label: ColumnLabel.USERNAME, placeholder: "e.g. ajay123 (optional)", type: FieldType.TEXT, icon: AtSign, span: FieldSpan.HALF },
     { key: EntityKey.PASSWORD, label: ColumnLabel.PASSWORD, placeholder: "Optional login password", type: FieldType.PASSWORD, icon: KeyRound, span: FieldSpan.HALF },
     { key: EntityKey.CONFIRM_PASSWORD, label: ColumnLabel.CONFIRM_PASSWORD, placeholder: "Repeat password", type: FieldType.PASSWORD, icon: KeyRound, span: FieldSpan.HALF },
-    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.FULL },
+    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, visibleRoles: [Role.SUPER_ADMIN], editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.FULL },
   ],
   [ProjectSlug.WEIGHMENTS]: [
     {
@@ -110,7 +110,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     { key: EntityKey.ROLE, label: ColumnLabel.ROLE, placeholder: "Select role...", type: FieldType.ROLE, required: true, icon: ShieldCheck, span: FieldSpan.HALF },
     { key: EntityKey.PASSWORD, label: ColumnLabel.PASSWORD, placeholder: "Account password", type: FieldType.PASSWORD, required: true, icon: KeyRound, span: FieldSpan.HALF },
     { key: EntityKey.CONFIRM_PASSWORD, label: ColumnLabel.CONFIRM_PASSWORD, placeholder: "Repeat password", type: FieldType.PASSWORD, required: true, icon: KeyRound, span: FieldSpan.HALF },
-    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.FULL },
+    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, visibleRoles: [Role.SUPER_ADMIN], editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.FULL },
   ],
 }
 

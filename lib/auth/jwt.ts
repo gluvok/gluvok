@@ -13,7 +13,7 @@ export interface JWTPayload {
   sub: string
   username: string
   role: string
-  factory_id: number
+  factory_id?: number | null
 }
 
 /**
@@ -23,7 +23,7 @@ export async function signJWT(payload: JWTPayload): Promise<string> {
   return new SignJWT({
     username: payload.username,
     role: payload.role,
-    factory_id: payload.factory_id,
+    factory_id: payload.factory_id ?? null,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
@@ -38,7 +38,7 @@ export async function signJWT(payload: JWTPayload): Promise<string> {
 export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET)
-    if (!payload.sub || typeof payload.username !== "string" || typeof payload.role !== "string" || typeof payload.factory_id !== "number") {
+    if (!payload.sub || typeof payload.username !== "string" || typeof payload.role !== "string") {
       return null
     }
 
@@ -46,7 +46,7 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
       sub: payload.sub,
       username: payload.username,
       role: payload.role,
-      factory_id: payload.factory_id,
+      factory_id: typeof payload.factory_id === "number" ? payload.factory_id : null,
     }
   } catch {
     return null

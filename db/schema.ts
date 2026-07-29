@@ -56,7 +56,7 @@ export const users = pgTable(TableName.USERS, {
   username: varchar(EntityKey.USERNAME, { length: 255 }).notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   role: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
-  factoryId: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
+  factoryId: integer(EntityKey.FACTORY_ID).references(() => factories.id, { onDelete: "restrict" }),
   isActive: boolean(EntityKey.IS_ACTIVE).notNull().default(true),
   ...timestamps,
 })

@@ -10,7 +10,7 @@ export const GET = withAuth(async (req, user) => {
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
 
   const whereClause =
-    user.role !== Role.SUPER_ADMIN
+    user.role !== Role.SUPER_ADMIN && user.factory_id != null
       ? eq(factories.id, user.factory_id)
       : search
         ? ilike(factories.name, `%${search}%`)

@@ -10,27 +10,33 @@ export const GET = withAuth(async (req, user) => {
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
 
   const conditions = []
-  if (user.role !== Role.SUPER_ADMIN) conditions.push(eq(centers.factoryId, user.factory_id))
+  if (user.role !== Role.SUPER_ADMIN && user.factory_id != null ? user.factory_id : 0) {
+    conditions.push(eq(centers.factoryId, user.factory_id != null ? user.factory_id : 0))
+  }
   if (search) conditions.push(ilike(centers.name, `%${search}%`))
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
+  const isSuperAdmin = user.role === Role.SUPER_ADMIN
+
+  let baseQuery = db
+    .select({
+      id: centers.id,
+      name: centers.name,
+      factory_id: centers.factoryId,
+      created_at: centers.createdAt,
+      updated_at: centers.updatedAt,
+      ...(isSuperAdmin ? { factory_name: factories.name } : {}),
+    })
+    .from(centers)
+    .$dynamic()
+
+  if (isSuperAdmin) {
+    baseQuery = baseQuery.leftJoin(factories, eq(centers.factoryId, factories.id)) as typeof baseQuery
+  }
+
   const [totalCountResult, rows] = await Promise.all([
     db.select({ count: count() }).from(centers).where(whereClause),
-    db
-      .select({
-        id: centers.id,
-        name: centers.name,
-        factory_id: centers.factoryId,
-        created_at: centers.createdAt,
-        updated_at: centers.updatedAt,
-        factory_name: factories.name,
-      })
-      .from(centers)
-      .leftJoin(factories, eq(centers.factoryId, factories.id))
-      .where(whereClause)
-      .orderBy(desc(centers.createdAt))
-      .limit(limit)
-      .offset(offset),
+    baseQuery.where(whereClause).orderBy(desc(centers.createdAt)).limit(limit).offset(offset),
   ])
 
   const total = Number(totalCountResult[0]?.count || 0)
@@ -47,7 +53,7 @@ export const POST = withAuth(async (req, user) => {
   if (err) return err
 
   const { name, factory_id } = body
-  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : user.factory_id
+  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : user.factory_id != null ? user.factory_id : 0
 
   const [newCenter] = await db.insert(centers).values({ name, factoryId: targetFactoryId }).returning()
 

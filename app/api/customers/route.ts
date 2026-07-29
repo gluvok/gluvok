@@ -11,7 +11,7 @@ export const GET = withAuth(async (req, user) => {
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
 
   const conditions = []
-  if (user.role !== Role.SUPER_ADMIN) conditions.push(eq(customers.factoryId, user.factory_id))
+  if (user.role !== Role.SUPER_ADMIN) conditions.push(eq(customers.factoryId, user.factory_id != null ? user.factory_id : 0))
   if (search) {
     const searchNum = parseInt(search, 10)
     const searchConds = isNaN(searchNum)
@@ -20,30 +20,33 @@ export const GET = withAuth(async (req, user) => {
     if (searchConds) conditions.push(searchConds)
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+  const isSuperAdmin = user.role === Role.SUPER_ADMIN
+
+  let baseQuery = db
+    .select({
+      id: customers.id,
+      govt_id: customers.govtId,
+      name: customers.name,
+      father_name: customers.fatherName,
+      user_id: customers.userId,
+      factory_id: customers.factoryId,
+      created_at: customers.createdAt,
+      updated_at: customers.updatedAt,
+      username: users.username,
+      is_active: users.isActive,
+      ...(isSuperAdmin ? { factory_name: factories.name } : {}),
+    })
+    .from(customers)
+    .leftJoin(users, eq(customers.userId, users.id))
+    .$dynamic()
+
+  if (isSuperAdmin) {
+    baseQuery = baseQuery.leftJoin(factories, eq(customers.factoryId, factories.id)) as typeof baseQuery
+  }
 
   const [totalCountResult, rows] = await Promise.all([
     db.select({ count: count() }).from(customers).where(whereClause),
-    db
-      .select({
-        id: customers.id,
-        govt_id: customers.govtId,
-        name: customers.name,
-        father_name: customers.fatherName,
-        user_id: customers.userId,
-        factory_id: customers.factoryId,
-        created_at: customers.createdAt,
-        updated_at: customers.updatedAt,
-        username: users.username,
-        is_active: users.isActive,
-        factory_name: factories.name,
-      })
-      .from(customers)
-      .leftJoin(users, eq(customers.userId, users.id))
-      .leftJoin(factories, eq(customers.factoryId, factories.id))
-      .where(whereClause)
-      .orderBy(desc(customers.createdAt))
-      .limit(limit)
-      .offset(offset),
+    baseQuery.where(whereClause).orderBy(desc(customers.createdAt)).limit(limit).offset(offset),
   ])
 
   const total = Number(totalCountResult[0]?.count || 0)
@@ -60,7 +63,7 @@ export const POST = withAuth(async (req, user) => {
   if (err) return err
 
   const { govt_id, name, father_name, username, password, factory_id } = body
-  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : user.factory_id
+  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : user.factory_id != null ? user.factory_id : 0
 
   let createdUserId: string | null = null
   if (username && password) {

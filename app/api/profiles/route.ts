@@ -13,7 +13,7 @@ export const GET = withAuth(async (req, user) => {
   const roleParam = req.nextUrl.searchParams.get(EntityKey.ROLE)
 
   const conditions = []
-  if (user.role !== Role.SUPER_ADMIN) conditions.push(eq(users.factoryId, user.factory_id))
+  if (user.role !== Role.SUPER_ADMIN) conditions.push(eq(users.factoryId, user.factory_id != null ? user.factory_id : 0))
   if (roleParam && roleParam !== FilterValue.ALL) conditions.push(eq(profiles.role, roleParam as Role))
   if (search) {
     conditions.push(
@@ -25,6 +25,29 @@ export const GET = withAuth(async (req, user) => {
     )
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+  const isSuperAdmin = user.role === Role.SUPER_ADMIN
+
+  let baseQuery = db
+    .select({
+      id: profiles.id,
+      user_id: profiles.userId,
+      name: profiles.name,
+      aadhar_number: profiles.aadharNumber,
+      role: profiles.role,
+      created_at: profiles.createdAt,
+      updated_at: profiles.updatedAt,
+      username: users.username,
+      factory_id: users.factoryId,
+      is_active: users.isActive,
+      ...(isSuperAdmin ? { factory_name: factories.name } : {}),
+    })
+    .from(profiles)
+    .innerJoin(users, eq(profiles.userId, users.id))
+    .$dynamic()
+
+  if (isSuperAdmin) {
+    baseQuery = baseQuery.leftJoin(factories, eq(users.factoryId, factories.id)) as typeof baseQuery
+  }
 
   const [totalCountResult, rows] = await Promise.all([
     db
@@ -32,27 +55,7 @@ export const GET = withAuth(async (req, user) => {
       .from(profiles)
       .innerJoin(users, eq(profiles.userId, users.id))
       .where(whereClause),
-    db
-      .select({
-        id: profiles.id,
-        user_id: profiles.userId,
-        name: profiles.name,
-        aadhar_number: profiles.aadharNumber,
-        role: profiles.role,
-        created_at: profiles.createdAt,
-        updated_at: profiles.updatedAt,
-        username: users.username,
-        factory_id: users.factoryId,
-        is_active: users.isActive,
-        factory_name: factories.name,
-      })
-      .from(profiles)
-      .innerJoin(users, eq(profiles.userId, users.id))
-      .leftJoin(factories, eq(users.factoryId, factories.id))
-      .where(whereClause)
-      .orderBy(desc(profiles.createdAt))
-      .limit(limit)
-      .offset(offset),
+    baseQuery.where(whereClause).orderBy(desc(profiles.createdAt)).limit(limit).offset(offset),
   ])
 
   const total = Number(totalCountResult[0]?.count || 0)
@@ -72,7 +75,7 @@ export const POST = withAuth(async (req, user) => {
   }
 
   const { name, aadhar_number, username, password, role, factory_id } = parsed.data
-  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? factory_id : user.factory_id
+  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? factory_id : user.factory_id != null ? user.factory_id : 0
 
   // Check username uniqueness
   const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.username, username))

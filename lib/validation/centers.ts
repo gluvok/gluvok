@@ -6,11 +6,11 @@
 import * as z from "zod"
 import { EntityKey } from "@/lib/constants/enums"
 import { ColumnLabel } from "@/lib/constants/enums"
-import { integerIdSchema, nameSchema } from "./helpers"
+import { nameSchema } from "./helpers"
 
 const baseCenterSchema = z.object({
   [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
-  [EntityKey.FACTORY_ID]: integerIdSchema(ColumnLabel.FACTORY),
+  [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
 })
 
 export const addCenterSchema = baseCenterSchema

@@ -4,7 +4,7 @@
  */
 
 import { ColumnDef } from "@tanstack/react-table"
-import { Mail, Fingerprint, Tag, Factory, Shield } from "lucide-react"
+import { Fingerprint, Tag, Factory, Shield } from "lucide-react"
 import { EntityKey, ColumnLabel } from "@/lib/constants/enums"
 import { getRoleIcon } from "@/lib/fields/helpers"
 import { createTextColumn, createCustomColumn } from "./helpers"
@@ -12,7 +12,6 @@ import { createTextColumn, createCustomColumn } from "./helpers"
 export function getProfilesColumns<T>(): ColumnDef<T>[] {
   return [
     createTextColumn(EntityKey.AADHAR_NUMBER, ColumnLabel.AADHAR_NUMBER, Fingerprint, "font-mono text-muted-foreground text-xs"),
-    createTextColumn(EntityKey.EMAIL, ColumnLabel.EMAIL, Mail),
     createTextColumn(EntityKey.NAME, ColumnLabel.NAME, Tag),
     createCustomColumn(EntityKey.ROLE, ColumnLabel.ROLE, Shield, (val) => {
       const roleStr = String(val || "")

@@ -4,7 +4,7 @@ import { db } from "@/db"
 import { profiles, users, factories } from "@/db/schema"
 import { withAuth, getPaginationParams, apiError, StatusCodes } from "@/db/helpers"
 import { Role, QueryParam, EntityKey, FilterValue } from "@/lib/constants/enums"
-import { createProfileSchema } from "@/lib/validations/profile"
+import { createProfileSchema } from "@/lib/validation"
 import { hashPassword } from "@/lib/auth/password"
 
 export const GET = withAuth(async (req, user) => {

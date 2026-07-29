@@ -36,10 +36,10 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     { key: EntityKey.NAME, label: ColumnLabel.NAME, placeholder: "e.g. Barley", type: FieldType.TEXT, required: true, icon: Tag, span: FieldSpan.FULL },
   ],
   [ProjectSlug.RATES]: [
-    { key: EntityKey.COMMODITY_ID, label: ColumnLabel.COMMODITY, placeholder: getSelectPlaceholder(SingularEntityName.COMMODITY), type: FieldType.TEXT, required: true, icon: Tag, span: FieldSpan.HALF },
-    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, visibleRoles: [Role.SUPER_ADMIN], editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.HALF },
-    { key: EntityKey.UNIT_PRICE, label: ColumnLabel.UNIT_PRICE, placeholder: "e.g. 15000", type: FieldType.NUMBER, required: true, icon: IndianRupee, span: FieldSpan.HALF },
-    { key: EntityKey.UNIT, label: ColumnLabel.UNIT, placeholder: "Select unit...", type: FieldType.UNIT, required: true, icon: Ruler, span: FieldSpan.HALF },
+    { key: EntityKey.COMMODITY_ID, label: ColumnLabel.COMMODITY, placeholder: getSelectPlaceholder(SingularEntityName.COMMODITY), type: FieldType.TEXT, required: true, icon: Tag, span: FieldSpan.THIRD },
+    { key: EntityKey.UNIT_PRICE, label: ColumnLabel.UNIT_PRICE, placeholder: "e.g. 15000", type: FieldType.NUMBER, required: true, icon: IndianRupee, span: FieldSpan.THIRD },
+    { key: EntityKey.UNIT, label: ColumnLabel.UNIT, placeholder: "Select unit...", type: FieldType.UNIT, required: true, icon: Ruler, span: FieldSpan.THIRD },
+    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, visibleRoles: [Role.SUPER_ADMIN], editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.FULL },
   ],
   [ProjectSlug.CUSTOMERS]: [
     { key: EntityKey.GOVT_ID, label: ColumnLabel.GOVT_ID, placeholder: "e.g. 1001", type: FieldType.NUMBER, required: true, icon: ShieldCheck, span: FieldSpan.HALF },

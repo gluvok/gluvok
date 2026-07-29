@@ -24,7 +24,7 @@ export function EntityDialogContent({
     ? "Update the attributes of this record. Click save when done."
     : `Enter the details for the new ${singularName.toLowerCase()}. Click save when done.`
 
-  const originalText = isEdit ? "Save changes" : `Save ${singularName}`
+  const originalText = isEdit ? "Save" : "Save"
 
   const renderField = (field: FieldConfig) => {
     const disabled = (isEdit && field.key === primaryIdKey) ||
@@ -142,7 +142,7 @@ export function EntityDialogContent({
     <>
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2 text-foreground">
-          <Icon className="h-4 w-4 text-primary" /> {isEdit ? "Edit" : "Add"} {singularName}
+          <Icon className="h-4 w-4 text-primary" /> {isEdit ? "Edit" : "Add"}
         </DialogTitle>
         <DialogDescription>{desc}</DialogDescription>
       </DialogHeader>

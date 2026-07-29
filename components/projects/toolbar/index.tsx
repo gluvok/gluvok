@@ -12,7 +12,6 @@ import { BulkActions } from "./bulk-actions"
 import { ProjectFilters } from "@/components/projects/filters"
 
 import { useAuthStore, getPermissions } from "@/lib/store"
-import { getSingularName } from "@/lib/fields"
 
 interface ProjectToolbarProps<TData> {
   table: Table<TData>; projectSlug: string; projectName: string
@@ -84,7 +83,7 @@ export function ProjectToolbar<TData>({
               {canCreate && (
                 <Button onClick={() => setCreating(true)} size="sm" className="h-9 gap-1.5 shadow-sm">
                   <Plus className="h-4 w-4" />
-                  Add {getSingularName(projectName)}
+                  Add
                 </Button>
               )}
               <DataTableViewOptions table={table} />

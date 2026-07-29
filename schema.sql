@@ -4,6 +4,27 @@
 -- ==========================================
 
 
+-- 0. ROLES & AUTH SCHEMA STUBS (Safe Execution on Standard Postgres)
+-- ------------------------------------------------------------------
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    CREATE ROLE authenticated NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    CREATE ROLE anon NOLOGIN;
+  END IF;
+END $$;
+
+CREATE SCHEMA IF NOT EXISTS auth;
+
+CREATE OR REPLACE FUNCTION auth.uid()
+RETURNS uuid AS $$
+BEGIN
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+
 -- 1. CUSTOM ENUM TYPES (Safe Creation)
 -- -------------------------------------
 DO $$ BEGIN
@@ -538,38 +559,3 @@ CREATE POLICY "configs_update" ON public.configs FOR UPDATE TO authenticated USI
 
 DROP POLICY IF EXISTS "configs_delete" ON public.configs;
 CREATE POLICY "configs_delete" ON public.configs FOR DELETE TO authenticated USING (public.get_user_role() IN ('super_admin', 'admin'));
-
-
--- J. Supabase Storage Bucket and RLS Policies (for 'gluvok' bucket)
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('gluvok', 'gluvok', true)
-ON CONFLICT (id) DO UPDATE SET public = true;
-
-DROP POLICY IF EXISTS "Public Read Access for gluvok bucket" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated Read Access for gluvok bucket" ON storage.objects;
-DROP POLICY IF EXISTS "Allow read access for gluvok bucket" ON storage.objects;
-CREATE POLICY "Allow read access for gluvok bucket"
-ON storage.objects FOR SELECT TO anon, authenticated
-USING (bucket_id = 'gluvok');
-
-DROP POLICY IF EXISTS "Public Insert Access for gluvok bucket" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated Insert Access for gluvok bucket" ON storage.objects;
-DROP POLICY IF EXISTS "Allow insert access for gluvok bucket" ON storage.objects;
-CREATE POLICY "Allow insert access for gluvok bucket"
-ON storage.objects FOR INSERT TO anon, authenticated
-WITH CHECK (bucket_id = 'gluvok');
-
-DROP POLICY IF EXISTS "Public Update Access for gluvok bucket" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated Update Access for gluvok bucket" ON storage.objects;
-DROP POLICY IF EXISTS "Allow update access for gluvok bucket" ON storage.objects;
-CREATE POLICY "Allow update access for gluvok bucket"
-ON storage.objects FOR UPDATE TO anon, authenticated
-USING (bucket_id = 'gluvok')
-WITH CHECK (bucket_id = 'gluvok');
-
-DROP POLICY IF EXISTS "Public Delete Access for gluvok bucket" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated Delete Access for gluvok bucket" ON storage.objects;
-DROP POLICY IF EXISTS "Allow delete access for gluvok bucket" ON storage.objects;
-CREATE POLICY "Allow delete access for gluvok bucket"
-ON storage.objects FOR DELETE TO anon, authenticated
-USING (bucket_id = 'gluvok');

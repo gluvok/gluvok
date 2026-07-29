@@ -88,7 +88,7 @@ export function BaseCombobox({
       >
         <ComboboxInput
           placeholder={searchPlaceholder || `Search ${type}...`}
-          className="h-8 text-xs w-0 min-w-full"
+          className="h-8 text-xs"
         />
         <ComboboxList className="max-h-64 overflow-y-auto">
           <ComboboxEmpty className="py-2 text-center text-xs text-muted-foreground">{emptyText || `No ${type} found.`}</ComboboxEmpty>

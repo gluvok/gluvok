@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { FormFieldInput } from "@/components/form"
 import { type EntityDialogContentProps } from "./types"
-import { FieldType, Role, FieldSpan } from "@/lib/constants/enums"
+import { FieldType, Role, FieldSpan, EntityKey } from "@/lib/constants/enums"
 import { type FieldConfig, getSingularName } from "@/lib/fields"
 import { useAuthStore, isFieldVisible } from "@/lib/store"
 
@@ -53,16 +53,29 @@ export function EntityDialogContent({
             </div>
           </div>
         )
-      default:
+      default: {
+        const isPasswordInEdit = isEdit && (field.key === EntityKey.PASSWORD || field.key === EntityKey.CONFIRM_PASSWORD)
+        const displayLabel = isPasswordInEdit
+          ? (field.key === EntityKey.PASSWORD ? "New Password" : "Confirm New Password")
+          : field.label
+        const displayPlaceholder = isPasswordInEdit ? "Leave blank to keep unchanged" : field.placeholder
+        const showAsterisk = field.required && !isPasswordInEdit
+
+        const effectiveField = {
+          ...field,
+          label: displayLabel,
+          placeholder: displayPlaceholder,
+        }
+
         return (
           <div key={field.key} className="flex flex-col gap-1.5 min-w-0 flex-1">
             <label htmlFor={`field-${field.key}`} className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
               {field.icon && <field.icon className="h-3.5 w-3.5 text-muted-foreground/75" />}
-              {field.label}
-              {field.required && <span className="text-destructive leading-none" aria-hidden>*</span>}
+              {displayLabel}
+              {showAsterisk && <span className="text-destructive leading-none" aria-hidden>*</span>}
             </label>
             <FormFieldInput
-              field={field}
+              field={effectiveField}
               form={form}
               idPrefix={`${mode}-entity`}
               disabled={disabled}
@@ -73,6 +86,7 @@ export function EntityDialogContent({
             )}
           </div>
         )
+      }
     }
   }
 

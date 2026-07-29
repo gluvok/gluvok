@@ -14,16 +14,15 @@ interface RoleComboboxProps {
   value: string
   onChange: (value: string) => void
   id?: string
+  disabled?: boolean
 }
 
 /**
  * RoleCombobox Component
- * Renders a dropdown to select a role. Ensures SUPER_ADMIN is only selectable
- * if the user being edited is already a SUPER_ADMIN.
+ * Renders a dropdown to select a role. Disables selection if value is SUPER_ADMIN.
  */
-export function RoleCombobox({ value, onChange, id }: RoleComboboxProps) {
+export function RoleCombobox({ value, onChange, id, disabled }: RoleComboboxProps) {
   const data = [
-    ...(value === Role.SUPER_ADMIN ? [{ value: Role.SUPER_ADMIN, label: RoleLabel.SUPER_ADMIN }] : []),
     { value: Role.ADMIN, label: RoleLabel.ADMIN },
     { value: Role.MANAGER, label: RoleLabel.MANAGER },
     { value: Role.OPERATOR, label: RoleLabel.OPERATOR },
@@ -31,6 +30,7 @@ export function RoleCombobox({ value, onChange, id }: RoleComboboxProps) {
   ]
 
   const ActiveIcon = getRoleIcon(value)
+  const isSuperAdmin = value === Role.SUPER_ADMIN
 
   return (
     <BaseCombobox
@@ -39,8 +39,9 @@ export function RoleCombobox({ value, onChange, id }: RoleComboboxProps) {
       data={data}
       type="role"
       icon={ActiveIcon}
-      placeholder="Select role..."
+      placeholder={isSuperAdmin ? RoleLabel.SUPER_ADMIN : "Select role..."}
       id={id}
+      disabled={disabled || isSuperAdmin}
     />
   )
 }

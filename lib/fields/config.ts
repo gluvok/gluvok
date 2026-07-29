@@ -46,9 +46,9 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     { key: EntityKey.NAME, label: ColumnLabel.NAME, placeholder: "e.g. Ajay Kumar", type: FieldType.TEXT, required: true, icon: Tag, span: FieldSpan.HALF },
     { key: EntityKey.FATHER_NAME, label: ColumnLabel.FATHER_NAME, placeholder: "e.g. Vijay Kumar", type: FieldType.TEXT, required: true, icon: User, span: FieldSpan.HALF },
     { key: EntityKey.USERNAME, label: ColumnLabel.USERNAME, placeholder: "e.g. ajay123 (optional)", type: FieldType.TEXT, icon: AtSign, span: FieldSpan.HALF },
-    { key: EntityKey.PASSWORD, label: ColumnLabel.PASSWORD, placeholder: "Optional login password", type: FieldType.PASSWORD, icon: KeyRound, createOnly: true, span: FieldSpan.HALF },
-    { key: EntityKey.CONFIRM_PASSWORD, label: ColumnLabel.CONFIRM_PASSWORD, placeholder: "Repeat password", type: FieldType.PASSWORD, icon: KeyRound, createOnly: true, span: FieldSpan.HALF },
-    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.HALF },
+    { key: EntityKey.PASSWORD, label: ColumnLabel.PASSWORD, placeholder: "Optional login password", type: FieldType.PASSWORD, icon: KeyRound, span: FieldSpan.HALF },
+    { key: EntityKey.CONFIRM_PASSWORD, label: ColumnLabel.CONFIRM_PASSWORD, placeholder: "Repeat password", type: FieldType.PASSWORD, icon: KeyRound, span: FieldSpan.HALF },
+    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.FULL },
   ],
   [ProjectSlug.WEIGHMENTS]: [
     {
@@ -107,10 +107,10 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     { key: EntityKey.NAME, label: ColumnLabel.NAME, placeholder: "e.g. Amit Sharma", type: FieldType.TEXT, required: true, icon: Tag, span: FieldSpan.HALF },
     { key: EntityKey.USERNAME, label: ColumnLabel.USERNAME, placeholder: "e.g. amits123", type: FieldType.TEXT, required: true, icon: AtSign, span: FieldSpan.HALF },
-    { key: EntityKey.PASSWORD, label: ColumnLabel.PASSWORD, placeholder: "Account password", type: FieldType.PASSWORD, required: true, icon: KeyRound, createOnly: true, span: FieldSpan.HALF },
-    { key: EntityKey.CONFIRM_PASSWORD, label: ColumnLabel.CONFIRM_PASSWORD, placeholder: "Repeat password", type: FieldType.PASSWORD, required: true, icon: KeyRound, createOnly: true, span: FieldSpan.HALF },
     { key: EntityKey.ROLE, label: ColumnLabel.ROLE, placeholder: "Select role...", type: FieldType.ROLE, required: true, icon: ShieldCheck, span: FieldSpan.HALF },
-    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.HALF },
+    { key: EntityKey.PASSWORD, label: ColumnLabel.PASSWORD, placeholder: "Account password", type: FieldType.PASSWORD, required: true, icon: KeyRound, span: FieldSpan.HALF },
+    { key: EntityKey.CONFIRM_PASSWORD, label: ColumnLabel.CONFIRM_PASSWORD, placeholder: "Repeat password", type: FieldType.PASSWORD, required: true, icon: KeyRound, span: FieldSpan.HALF },
+    { key: EntityKey.FACTORY_ID, label: ColumnLabel.FACTORY, placeholder: getSelectPlaceholder(SingularEntityName.FACTORY), type: FieldType.TEXT, icon: Factory, editableRoles: [Role.SUPER_ADMIN], span: FieldSpan.FULL },
   ],
 }
 

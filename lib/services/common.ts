@@ -55,10 +55,10 @@ export async function fetchEntityPaginatedFromApi<T = EntityRecord>(
   params: PaginatedParams
 ): Promise<{ data: T[]; count: number }> {
   const endpoint = getEndpoint(slug)
-  const { page, pageSize, search } = params
+  const { page, pageSize, search, filters } = params
   return apiRequest(async () => {
     const res = await axios.get<{ data: T[]; pagination: { total: number } }>(endpoint, {
-      params: { page: page + 1, limit: pageSize, search },
+      params: { page: page + 1, limit: pageSize, search, ...filters },
     })
     return { data: res.data.data, count: res.data.pagination.total }
   })

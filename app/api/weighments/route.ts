@@ -3,14 +3,22 @@ import { eq, ilike, count, and, desc, or } from "drizzle-orm"
 import { db } from "@/db"
 import { weighments, rates, commodities, centers, profiles, customers } from "@/db/schema"
 import { withAuth, getPaginationParams, validateRequiredFields, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
-import { Role, ProjectSlug, PermissionKey, QueryParam, Unit, WeighmentType } from "@/lib/constants/enums"
+import { Role, ProjectSlug, PermissionKey, QueryParam, Unit, WeighmentType, EntityKey, FilterValue } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user) => {
   const { page, limit, offset } = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
+  const centerIdParam = req.nextUrl.searchParams.get(EntityKey.CENTER_ID)
+  const commodityIdParam = req.nextUrl.searchParams.get(EntityKey.COMMODITY_ID)
+  const typeParam = req.nextUrl.searchParams.get(EntityKey.TYPE)
+  const isActiveParam = req.nextUrl.searchParams.get(EntityKey.IS_ACTIVE)
 
   const conditions = []
   if (user.role !== Role.SUPER_ADMIN) conditions.push(eq(centers.factoryId, user.factory_id))
+  if (centerIdParam && centerIdParam !== FilterValue.ALL) conditions.push(eq(weighments.centerId, Number(centerIdParam)))
+  if (commodityIdParam && commodityIdParam !== FilterValue.ALL) conditions.push(eq(rates.commodityId, Number(commodityIdParam)))
+  if (typeParam && typeParam !== FilterValue.ALL) conditions.push(eq(weighments.type, typeParam as WeighmentType))
+  if (isActiveParam && isActiveParam !== FilterValue.ALL) conditions.push(eq(weighments.isActive, isActiveParam === "true"))
   if (search) {
     conditions.push(
       or(

@@ -60,6 +60,7 @@ export function FormFieldInput({ field, form, idPrefix, disabled, projectSlug }:
           id={`${idPrefix}-role-trigger`}
           value={typeof value === "string" ? value : ""}
           onChange={(val) => form.setValue(field.key, val, { shouldValidate: true })}
+          disabled={disabled}
         />
       )
     case FieldType.UNIT:

@@ -282,3 +282,8 @@ export enum InputStep {
   ANY = "any",
 }
 
+export enum FilterValue {
+  ALL = "all",
+}
+
+

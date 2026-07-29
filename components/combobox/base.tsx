@@ -32,6 +32,7 @@ interface BaseComboboxProps {
   id?: string
   className?: string
   contentClassName?: string
+  disabled?: boolean
 }
 
 /**
@@ -50,6 +51,7 @@ export function BaseCombobox({
   id,
   className,
   contentClassName,
+  disabled,
 }: BaseComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const selectedItem = React.useMemo(() => {
@@ -62,6 +64,7 @@ export function BaseCombobox({
     <Combobox data={data} type={type} value={value} onValueChange={onChange} open={open} onOpenChange={setOpen} modal={true}>
       <ComboboxTrigger
         id={id || `${type}-combobox-trigger`}
+        disabled={disabled}
         className={cn(
           "h-9 w-full max-w-full flex items-center justify-between text-xs font-normal border border-input bg-background hover:bg-muted/50 transition-colors min-w-0 shrink overflow-hidden truncate shadow-sm",
           className

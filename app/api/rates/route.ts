@@ -3,12 +3,14 @@ import { eq, count, and, desc } from "drizzle-orm"
 import { db } from "@/db"
 import { rates, commodities, factories } from "@/db/schema"
 import { withAuth, getPaginationParams, validateRequiredFields, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
-import { Role, ProjectSlug, PermissionKey } from "@/lib/constants/enums"
+import { Role, ProjectSlug, PermissionKey, EntityKey, FilterValue } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user) => {
   const { page, limit, offset } = getPaginationParams(req.nextUrl)
+  const commodityIdParam = req.nextUrl.searchParams.get(EntityKey.COMMODITY_ID)
   const conditions = []
   if (user.role !== Role.SUPER_ADMIN) conditions.push(eq(rates.factoryId, user.factory_id))
+  if (commodityIdParam && commodityIdParam !== FilterValue.ALL) conditions.push(eq(rates.commodityId, Number(commodityIdParam)))
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
   const [totalCountResult, rows] = await Promise.all([

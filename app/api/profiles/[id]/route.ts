@@ -3,25 +3,49 @@ import { eq } from "drizzle-orm"
 import { db } from "@/db"
 import { profiles, users } from "@/db/schema"
 import { withAuth, apiError, isFKViolation, StatusCodes } from "@/db/helpers"
+import { hashPassword } from "@/lib/auth/password"
+import { Role } from "@/lib/constants/enums"
 
 export const PUT = withAuth(async (req, _user, ctx) => {
   const { id } = await ctx.params
   const profileId = parseInt(id, 10)
-  const { name, is_active } = await req.json()
+  const body = await req.json()
+  const { name, password, confirmPassword, confirm_password, role, is_active } = body
+  const targetConfirmPassword = confirmPassword ?? confirm_password
+
+  if (password) {
+    if (!targetConfirmPassword || password !== targetConfirmPassword) {
+      return apiError("Passwords do not match", StatusCodes.BAD_REQUEST)
+    }
+  }
+
+  const validRole = role && Object.values(Role).includes(role as Role) ? (role as Role) : undefined
 
   const [updated] = await db
     .update(profiles)
-    .set({ ...(name ? { name } : {}), updatedAt: new Date() })
+    .set({
+      ...(name ? { name } : {}),
+      ...(validRole ? { role: validRole } : {}),
+      updatedAt: new Date(),
+    })
     .where(eq(profiles.id, profileId))
     .returning()
 
   if (!updated) return apiError("Profile not found", StatusCodes.NOT_FOUND)
 
+  const userUpdates: Record<string, unknown> = { updatedAt: new Date() }
+  if (password) {
+    userUpdates.passwordHash = await hashPassword(password)
+  }
+  if (validRole) {
+    userUpdates.role = validRole
+  }
   if (is_active !== undefined) {
-    await db
-      .update(users)
-      .set({ isActive: Boolean(is_active), updatedAt: new Date() })
-      .where(eq(users.id, updated.userId))
+    userUpdates.isActive = Boolean(is_active)
+  }
+
+  if (Object.keys(userUpdates).length > 1) {
+    await db.update(users).set(userUpdates).where(eq(users.id, updated.userId))
   }
 
   return NextResponse.json({

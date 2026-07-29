@@ -29,7 +29,7 @@ export const GET = withAuth(async (req) => {
   const total = Number(totalCountResult[0]?.count || 0)
   return NextResponse.json({
     data: rows,
-    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    pagination: { page, limit, total },
   })
 })
 

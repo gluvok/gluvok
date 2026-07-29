@@ -83,6 +83,7 @@ export const ColumnLabel = {
   USER_EMAIL: "User Email",
   USERNAME: "Username",
   PASSWORD: "Password",
+  CONFIRM_PASSWORD: "Confirm Password",
 } as const
 export type ColumnLabel = typeof ColumnLabel[keyof typeof ColumnLabel]
 
@@ -133,6 +134,7 @@ export enum ProjectSlug {
 export enum FieldType {
   TEXT = "text",
   NUMBER = "number",
+  PASSWORD = "password",
   IMAGES = "images",
   ROLE = "role",
   UNIT = "unit",
@@ -181,6 +183,7 @@ export enum EntityKey {
   CENTER = "center",
   PROFILE = "profile",
   CUSTOMER = "customer",
+  CONFIRM_PASSWORD = "confirmPassword",
 }
 
 export enum InputMode {
@@ -268,5 +271,14 @@ export enum QueryParam {
   SEARCH = "search",
   PAGE = "page",
   LIMIT = "limit",
+}
+
+export enum AutoComplete {
+  NEW_PASSWORD = "new-password",
+  OFF = "off",
+}
+
+export enum InputStep {
+  ANY = "any",
 }
 

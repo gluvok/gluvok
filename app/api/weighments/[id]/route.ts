@@ -7,16 +7,14 @@ import { withAuth, apiError, isFKViolation, StatusCodes } from "@/db/helpers"
 export const PUT = withAuth(async (req, _user, ctx) => {
   const { id } = await ctx.params
   const weighmentId = parseInt(id, 10)
-  const { vehicleNumber, vehicle_number, weight, isActive, is_active } = await req.json()
-  const targetVehicleNumber = vehicleNumber ?? vehicle_number
-  const targetIsActive = isActive ?? is_active
+  const { vehicle_number, weight, is_active } = await req.json()
 
   const [updated] = await db
     .update(weighments)
     .set({
-      ...(targetVehicleNumber ? { vehicleNumber: targetVehicleNumber } : {}),
+      ...(vehicle_number ? { vehicleNumber: vehicle_number } : {}),
       ...(weight ? { weight: String(weight) } : {}),
-      ...(targetIsActive !== undefined ? { isActive: Boolean(targetIsActive) } : {}),
+      ...(is_active !== undefined ? { isActive: Boolean(is_active) } : {}),
       updatedAt: new Date(),
     })
     .where(eq(weighments.id, weighmentId))

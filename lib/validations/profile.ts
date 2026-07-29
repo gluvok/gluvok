@@ -9,10 +9,15 @@ import { Role } from "@/lib/constants/enums"
 export const createProfileSchema = z
   .object({
     name: z.string().min(2, "Name must be at least 2 characters"),
-    aadharNumber: z
+    aadhar_number: z
       .string()
-      .length(12, "Aadhar number must be exactly 12 digits")
-      .regex(/^\d+$/, "Aadhar number must contain only digits"),
+      .transform((val) => val.replace(/\s+/g, ""))
+      .pipe(
+        z
+          .string()
+          .length(12, "Aadhar number must be exactly 12 digits")
+          .regex(/^\d+$/, "Aadhar number must contain only digits")
+      ),
     username: z
       .string()
       .min(3, "Username must be at least 3 characters")
@@ -24,7 +29,6 @@ export const createProfileSchema = z
       .regex(/[0-9]/, "Password must contain at least one number"),
     confirmPassword: z.string(),
     role: z.nativeEnum(Role).optional().default(Role.BASE),
-    factoryId: z.number().int().optional(),
     factory_id: z.number().int().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {

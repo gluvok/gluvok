@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm"
 import { verifyJWT, JWTPayload } from "@/lib/auth/jwt"
 import { Role, RequestHeader, ProjectSlug, PermissionKey, QueryParam } from "@/lib/constants/enums"
 import { RBAC_MATRIX, type Permission } from "@/lib/store/access"
+import { REQUIRED_CREATE_FIELDS } from "@/lib/fields/config"
 import { db } from "@/db"
 
 export interface PaginationParams {
@@ -24,6 +25,25 @@ export { StatusCodes }
 export function apiError(message: string, status: StatusCodes): NextResponse {
   return NextResponse.json({ error: message }, { status })
 }
+
+// ─── Centralized Required Field Validation ────────────────────────────────────
+export function validateRequiredFields(
+  body: Record<string, unknown>,
+  slug: ProjectSlug
+): NextResponse | null {
+  const requiredKeys = REQUIRED_CREATE_FIELDS[slug] || []
+  const missing = requiredKeys.filter(
+    (key) => body[key] === undefined || body[key] === null || body[key] === ""
+  )
+  if (missing.length > 0) {
+    return apiError(
+      `${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} required`,
+      StatusCodes.BAD_REQUEST
+    )
+  }
+  return null
+}
+
 
 // ─── RBAC permission check ────────────────────────────────────────────────────
 export function hasPermission(

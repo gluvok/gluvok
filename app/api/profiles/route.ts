@@ -68,16 +68,15 @@ export const POST = withAuth(async (req, user) => {
     return apiError(firstIssue.message, StatusCodes.BAD_REQUEST)
   }
 
-  const { name, aadharNumber, username, password, role, factoryId, factory_id } = parsed.data
-  const rawFactoryId = factoryId ?? factory_id
-  const targetFactoryId = user.role === Role.SUPER_ADMIN && rawFactoryId ? rawFactoryId : user.factory_id
+  const { name, aadhar_number, username, password, role, factory_id } = parsed.data
+  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? factory_id : user.factory_id
 
   // Check username uniqueness
   const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.username, username))
   if (existingUser) return apiError("Username is already taken", StatusCodes.BAD_REQUEST)
 
   // Check aadhar uniqueness
-  const [existingProfile] = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.aadharNumber, aadharNumber))
+  const [existingProfile] = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.aadharNumber, aadhar_number))
   if (existingProfile) return apiError("Aadhar number is already registered", StatusCodes.BAD_REQUEST)
 
   const passwordHash = await hashPassword(password)
@@ -89,7 +88,7 @@ export const POST = withAuth(async (req, user) => {
 
   const [newProfile] = await db
     .insert(profiles)
-    .values({ userId: newUser.id, name, aadharNumber, role })
+    .values({ userId: newUser.id, name, aadharNumber: aadhar_number, role })
     .returning()
 
   return NextResponse.json({

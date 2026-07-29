@@ -59,6 +59,7 @@ export function EntityDialogContent({
             <label htmlFor={`field-${field.key}`} className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
               {field.icon && <field.icon className="h-3.5 w-3.5 text-muted-foreground/75" />}
               {field.label}
+              {field.required && <span className="text-destructive leading-none" aria-hidden>*</span>}
             </label>
             <FormFieldInput
               field={field}
@@ -84,6 +85,10 @@ export function EntityDialogContent({
       return false
     }
     if (isEdit && field.editVisibleRoles && !field.editVisibleRoles.includes(role)) {
+      return false
+    }
+    // Hide createOnly fields (e.g. password, confirmPassword) when editing
+    if (isEdit && field.createOnly) {
       return false
     }
     return true

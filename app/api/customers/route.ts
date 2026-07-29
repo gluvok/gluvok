@@ -2,8 +2,9 @@ import { NextResponse } from "next/server"
 import { eq, ilike, count, and, desc, or } from "drizzle-orm"
 import { db } from "@/db"
 import { customers, users, factories } from "@/db/schema"
-import { withAuth, getPaginationParams } from "@/db/helpers"
-import { Role, QueryParam } from "@/lib/constants/enums"
+import { withAuth, getPaginationParams, validateRequiredFields, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import { Role, ProjectSlug, PermissionKey, QueryParam } from "@/lib/constants/enums"
+import { hashPassword } from "@/lib/auth/password"
 
 export const GET = withAuth(async (req, user) => {
   const { page, limit, offset } = getPaginationParams(req.nextUrl)
@@ -49,3 +50,48 @@ export const GET = withAuth(async (req, user) => {
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   })
 })
+
+export const POST = withAuth(async (req, user) => {
+  if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.CREATE)) return forbiddenError()
+  const body = await req.json()
+  const err = validateRequiredFields(body, ProjectSlug.CUSTOMERS)
+  if (err) return err
+
+  const { govt_id, name, father_name, username, password, factory_id } = body
+  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : user.factory_id
+
+  let createdUserId: string | null = null
+  if (username && password) {
+    const passwordHash = await hashPassword(password)
+    const [newUser] = await db
+      .insert(users)
+      .values({ username, passwordHash, role: Role.BASE, factoryId: targetFactoryId })
+      .returning()
+    createdUserId = newUser.id
+  }
+
+  const [newCustomer] = await db
+    .insert(customers)
+    .values({
+      govtId: Number(govt_id),
+      name,
+      fatherName: father_name,
+      userId: createdUserId,
+      factoryId: targetFactoryId,
+    })
+    .returning()
+
+  return NextResponse.json({
+    data: {
+      id: newCustomer.id,
+      govt_id: newCustomer.govtId,
+      name: newCustomer.name,
+      father_name: newCustomer.fatherName,
+      user_id: newCustomer.userId,
+      factory_id: newCustomer.factoryId,
+      created_at: newCustomer.createdAt,
+      updated_at: newCustomer.updatedAt,
+    },
+  }, { status: StatusCodes.CREATED })
+})
+

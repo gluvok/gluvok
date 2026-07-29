@@ -2,8 +2,8 @@ import { NextResponse } from "next/server"
 import { eq, ilike, count, and, desc, or } from "drizzle-orm"
 import { db } from "@/db"
 import { weighments, rates, commodities, centers, profiles, customers } from "@/db/schema"
-import { withAuth, getPaginationParams } from "@/db/helpers"
-import { Role, QueryParam } from "@/lib/constants/enums"
+import { withAuth, getPaginationParams, validateRequiredFields, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import { Role, ProjectSlug, PermissionKey, QueryParam, Unit, WeighmentType } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user) => {
   const { page, limit, offset } = getPaginationParams(req.nextUrl)
@@ -69,3 +69,53 @@ export const GET = withAuth(async (req, user) => {
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   })
 })
+
+export const POST = withAuth(async (req, user) => {
+  if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.CREATE)) return forbiddenError()
+  const body = await req.json()
+  const err = validateRequiredFields(body, ProjectSlug.WEIGHMENTS)
+  if (err) return err
+
+  const { vehicle_number, weight, unit, type, rate_id, center_id, profile_id, customer_id, images } = body
+
+  // Ensure center belongs to user's factory if non-super_admin
+  const [center] = await db.select({ factoryId: centers.factoryId }).from(centers).where(eq(centers.id, Number(center_id)))
+  if (!center) return apiError("Selected center not found", StatusCodes.NOT_FOUND)
+  if (user.role !== Role.SUPER_ADMIN && center.factoryId !== user.factory_id) {
+    return forbiddenError()
+  }
+
+  const [newWeighment] = await db
+    .insert(weighments)
+    .values({
+      vehicleNumber: vehicle_number,
+      weight: String(weight),
+      unit: unit || Unit.KG,
+      type: type || WeighmentType.IN,
+      rateId: Number(rate_id),
+      centerId: Number(center_id),
+      profileId: Number(profile_id),
+      customerId: Number(customer_id),
+      images: images || [],
+    })
+    .returning()
+
+  return NextResponse.json({
+    data: {
+      id: newWeighment.id,
+      vehicle_number: newWeighment.vehicleNumber,
+      weight: newWeighment.weight,
+      unit: newWeighment.unit,
+      type: newWeighment.type,
+      rate_id: newWeighment.rateId,
+      center_id: newWeighment.centerId,
+      profile_id: newWeighment.profileId,
+      customer_id: newWeighment.customerId,
+      images: newWeighment.images,
+      is_active: newWeighment.isActive,
+      created_at: newWeighment.createdAt,
+      updated_at: newWeighment.updatedAt,
+    },
+  }, { status: StatusCodes.CREATED })
+})
+

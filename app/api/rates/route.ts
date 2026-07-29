@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { eq, count, and, desc } from "drizzle-orm"
 import { db } from "@/db"
 import { rates, commodities, factories } from "@/db/schema"
-import { withAuth, getPaginationParams, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import { withAuth, getPaginationParams, validateRequiredFields, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
 import { Role, ProjectSlug, PermissionKey } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user) => {
@@ -42,20 +42,15 @@ export const GET = withAuth(async (req, user) => {
 export const POST = withAuth(async (req, user) => {
   if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.CREATE)) return forbiddenError()
   const body = await req.json()
-  const { commodityId, commodity_id, unitPrice, unit_price, unit, factoryId, factory_id } = body
+  const err = validateRequiredFields(body, ProjectSlug.RATES)
+  if (err) return err
 
-  const targetCommodityId = commodityId ?? commodity_id
-  const targetUnitPrice = unitPrice ?? unit_price
-  if (!targetCommodityId || !targetUnitPrice || !unit) {
-    return apiError("commodity_id, unit_price, and unit are required", StatusCodes.BAD_REQUEST)
-  }
-
-  const rawFactoryId = factoryId ?? factory_id
-  const targetFactoryId = user.role === Role.SUPER_ADMIN && rawFactoryId ? Number(rawFactoryId) : user.factory_id
+  const { commodity_id, unit_price, unit, factory_id } = body
+  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : user.factory_id
 
   const [newRate] = await db
     .insert(rates)
-    .values({ commodityId: Number(targetCommodityId), unitPrice: String(targetUnitPrice), unit, factoryId: targetFactoryId })
+    .values({ commodityId: Number(commodity_id), unitPrice: String(unit_price), unit, factoryId: targetFactoryId })
     .returning()
 
   return NextResponse.json({

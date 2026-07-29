@@ -8,13 +8,12 @@ import { ProjectSlug, PermissionKey } from "@/lib/constants/enums"
 export const PUT = withAuth(async (req, user, ctx) => {
   if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.WRITE)) return forbiddenError()
   const { id } = await ctx.params
-  const { unitPrice, unit_price, unit } = await req.json()
-  const targetUnitPrice = unitPrice ?? unit_price
+  const { unit_price, unit } = await req.json()
 
   const [updated] = await db
     .update(rates)
     .set({
-      ...(targetUnitPrice ? { unitPrice: String(targetUnitPrice) } : {}),
+      ...(unit_price ? { unitPrice: String(unit_price) } : {}),
       ...(unit ? { unit } : {}),
       updatedAt: new Date(),
     })

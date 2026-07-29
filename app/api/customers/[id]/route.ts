@@ -16,14 +16,13 @@ export const PUT = withAuth(async (req, user, ctx) => {
   // Self-update allowed even without write permission; otherwise check RBAC
   if (!isOwn && !hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.WRITE)) return forbiddenError()
 
-  const { name, fatherName, father_name, is_active } = await req.json()
-  const targetFatherName = fatherName ?? father_name
+  const { name, father_name, is_active } = await req.json()
 
   const [updated] = await db
     .update(customers)
     .set({
       ...(name ? { name } : {}),
-      ...(targetFatherName ? { fatherName: targetFatherName } : {}),
+      ...(father_name ? { fatherName: father_name } : {}),
       updatedAt: new Date(),
     })
     .where(eq(customers.id, customerId))

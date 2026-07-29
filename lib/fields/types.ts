@@ -13,6 +13,8 @@ export interface FieldConfig {
   label: string
   placeholder: string
   type: FieldType
+  required?: boolean
+  createOnly?: boolean
   className?: string
   transformOnChange?: (value: string) => string
   inputMode?: InputMode

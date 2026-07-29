@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { ilike, count, desc } from "drizzle-orm"
 import { db } from "@/db"
 import { commodities } from "@/db/schema"
-import { withAuth, getPaginationParams, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import { withAuth, getPaginationParams, validateRequiredFields, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
 import { ProjectSlug, QueryParam, PermissionKey } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req) => {
@@ -33,9 +33,11 @@ export const GET = withAuth(async (req) => {
 
 export const POST = withAuth(async (req, user) => {
   if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.CREATE)) return forbiddenError()
-  const { name } = await req.json()
-  if (!name || typeof name !== "string") return apiError("Name is required", StatusCodes.BAD_REQUEST)
+  const body = await req.json()
+  const err = validateRequiredFields(body, ProjectSlug.COMMODITIES)
+  if (err) return err
 
+  const { name } = body
   const [newCommodity] = await db.insert(commodities).values({ name }).returning()
 
   return NextResponse.json({

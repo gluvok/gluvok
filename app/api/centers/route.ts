@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { eq, ilike, count, and, desc } from "drizzle-orm"
 import { db } from "@/db"
 import { centers, factories } from "@/db/schema"
-import { withAuth, getPaginationParams, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import { withAuth, getPaginationParams, validateRequiredFields, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
 import { Role, ProjectSlug, QueryParam, PermissionKey } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user) => {
@@ -42,11 +42,11 @@ export const GET = withAuth(async (req, user) => {
 export const POST = withAuth(async (req, user) => {
   if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.CREATE)) return forbiddenError()
   const body = await req.json()
-  const { name, factoryId, factory_id } = body
-  if (!name || typeof name !== "string") return apiError("Name is required", StatusCodes.BAD_REQUEST)
+  const err = validateRequiredFields(body, ProjectSlug.CENTERS)
+  if (err) return err
 
-  const rawFactoryId = factoryId ?? factory_id
-  const targetFactoryId = user.role === Role.SUPER_ADMIN && rawFactoryId ? Number(rawFactoryId) : user.factory_id
+  const { name, factory_id } = body
+  const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : user.factory_id
 
   const [newCenter] = await db.insert(centers).values({ name, factoryId: targetFactoryId }).returning()
 

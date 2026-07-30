@@ -37,7 +37,11 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
         )
       : eq(profiles.id, profileId);
   const [existing] = await db
-    .select({ id: profiles.id, userId: profiles.userId })
+    .select({
+      id: profiles.id,
+      userId: profiles.userId,
+      isActive: users.isActive,
+    })
     .from(profiles)
     .innerJoin(users, eq(profiles.userId, users.id))
     .where(profileWhereClause)
@@ -83,7 +87,7 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
     userUpdates.isActive = Boolean(is_active)
   }
 
-  let updatedUserIsActive = is_active ?? true;
+  let updatedUserIsActive = existing.isActive;
   if (Object.keys(userUpdates).length > 1) {
     const [updatedUser] = await db
       .update(users)

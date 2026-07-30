@@ -2,8 +2,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { renderHook, act } from "@testing-library/react"
 import { useProjectTable } from "./use-table"
 import { fetchEntityListPaginated } from "@/lib/services"
+import { getProjectColumns } from "@/components/projects/columns"
 
 const mockTriggerEntitiesUpdate = vi.fn()
+const mockPreferencesState = {
+  columns: {} as Record<string, string[]>,
+  filters: {} as Record<string, Record<string, unknown>>,
+  setColumnPreferences: vi.fn(),
+  setFilterPreferences: vi.fn(),
+}
 
 interface MockAuthStoreState {
   user: {
@@ -46,12 +53,7 @@ vi.mock("@/lib/store", () => {
   }
 
   const mockPreferencesStore = {
-    getState: () => ({
-      columns: {},
-      filters: {},
-      setColumnPreferences: () => {},
-      setFilterPreferences: () => {},
-    }),
+    getState: () => mockPreferencesState,
     subscribe: () => () => {},
   }
 
@@ -95,6 +97,9 @@ vi.mock("@/components/projects/columns", () => ({
 describe("useProjectTable Hook", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockPreferencesState.columns = {}
+    mockPreferencesState.filters = {}
+    vi.mocked(getProjectColumns).mockReturnValue([])
     vi.useFakeTimers()
   })
 
@@ -209,4 +214,31 @@ describe("useProjectTable Hook", () => {
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBe("Network unavailable");
   });
+
+  it("should apply column preferences that hydrate after the initial render", () => {
+    vi.mocked(getProjectColumns).mockReturnValue([
+      { id: "id" },
+      { id: "name" },
+      { id: "actions" },
+    ])
+
+    const { result, rerender } = renderHook(() =>
+      useProjectTable({
+        projectSlug: "centers",
+        primaryIdKey: "id",
+        projectName: "Centers",
+      }),
+    )
+
+    expect(result.current.table.getState().columnVisibility).toEqual({})
+
+    mockPreferencesState.columns = { centers: ["id"] }
+    rerender()
+
+    expect(result.current.table.getState().columnVisibility).toEqual({
+      id: true,
+      name: false,
+      actions: true,
+    })
+  })
 })

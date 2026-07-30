@@ -6,7 +6,7 @@
 
 import React from "react"
 import { type EntityRecord } from "@/types"
-import { ColumnDef, ColumnFiltersState, SortingState, VisibilityState, getCoreRowModel } from "@tanstack/react-table"
+import { ColumnDef, ColumnFiltersState, OnChangeFn, SortingState, VisibilityState, getCoreRowModel } from "@tanstack/react-table"
 import { useReactTable } from "@/lib/utils"
 import { getProjectColumns } from "@/components/projects/columns"
 import { ProjectSlug } from "@/lib/constants/enums"
@@ -102,7 +102,21 @@ export function useProjectTable({
   )
 
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>(initialColumnVisibility);
+    React.useState<VisibilityState | null>(null);
+  const effectiveColumnVisibility =
+    columnVisibility ?? initialColumnVisibility
+  const handleColumnVisibilityChange = React.useCallback<
+    OnChangeFn<VisibilityState>
+  >(
+    (updater) => {
+      setColumnVisibility(
+        typeof updater === "function"
+          ? (current) => updater(current ?? initialColumnVisibility)
+          : updater,
+      )
+    },
+    [initialColumnVisibility],
+  )
 
   // Data fetching & search debouncing
   const [localData, setLocalData] = React.useState<EntityRecord[]>([])
@@ -185,7 +199,7 @@ export function useProjectTable({
     getPaginationRowModel: undefined,
     getSortedRowModel: undefined,
     getFilteredRowModel: undefined,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: handleColumnVisibilityChange,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
     manualPagination: true,
@@ -195,7 +209,7 @@ export function useProjectTable({
     state: {
       sorting,
       columnFilters,
-      columnVisibility,
+      columnVisibility: effectiveColumnVisibility,
       rowSelection,
       globalFilter,
       pagination,
@@ -208,7 +222,7 @@ export function useProjectTable({
     if (!isStringArrayEqual(savedVisibleColumns, visibleColumnsList)) {
       setColumnPreferences(projectSlug, visibleColumnsList, username)
     }
-  }, [columnVisibility, projectSlug, savedVisibleColumns, table, setColumnPreferences, username])
+  }, [effectiveColumnVisibility, projectSlug, savedVisibleColumns, table, setColumnPreferences, username])
 
   const handleReload = React.useCallback(() => {
     useEntitiesStore.getState().triggerEntitiesUpdate()

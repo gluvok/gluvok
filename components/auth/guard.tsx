@@ -69,7 +69,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         useConfigStore.getState().fetchConfig()
       }
       if (!filtersInitialized) {
-        useEntitiesStore.getState().preloadAllFilters()
+        useEntitiesStore.getState().preloadAllFilters({ silent: true })
       }
     }
   }, [user, configInitialized, filtersInitialized])

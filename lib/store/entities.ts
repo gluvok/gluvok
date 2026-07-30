@@ -43,7 +43,7 @@ interface EntitiesState {
   } | null
   filtersLoading: boolean
   filtersInitialized: boolean
-  preloadAllFilters: () => Promise<void>
+  preloadAllFilters: (options?: { silent?: boolean }) => Promise<void>
 }
 
 export const useEntitiesStore = create<EntitiesState>((set, get) => ({
@@ -56,9 +56,11 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
   factories: [],
   weighmentFiltersData: null,
 
-  preloadAllFilters: async () => {
+  preloadAllFilters: async (options) => {
+    if (get().filtersLoading) return
     set({ filtersLoading: true })
-    const toastId = typeof toast?.loading === "function" ? toast.loading("Syncing data...") : undefined
+    const isSilent = options?.silent ?? false
+    const toastId = !isSilent && typeof toast?.loading === "function" ? toast.loading("Syncing data...", { id: "sync-data-toast" }) : undefined
     try {
       const res = await axios.get<PreloadPayload>(ApiRoutes.FILTERS_PRELOAD)
       const payload = res.data
@@ -81,17 +83,21 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
           rates: rateOpts,
         },
       })
-      if (toastId) {
-        toast.success("Data synced successfully", { id: toastId })
-      } else {
-        toast.success?.("Data synced successfully")
+      if (!isSilent) {
+        if (toastId) {
+          toast.success("Data synced successfully", { id: toastId })
+        } else {
+          toast.success?.("Data synced successfully", { id: "sync-data-toast" })
+        }
       }
     } catch (err) {
       console.error("Failed to preload filter entities:", err)
-      if (toastId) {
-        toast.error("Failed to sync data", { id: toastId })
-      } else {
-        toast.error?.("Failed to sync data")
+      if (!isSilent) {
+        if (toastId) {
+          toast.error("Failed to sync data", { id: toastId })
+        } else {
+          toast.error?.("Failed to sync data", { id: "sync-data-toast" })
+        }
       }
     } finally {
       set({ filtersLoading: false, filtersInitialized: true })

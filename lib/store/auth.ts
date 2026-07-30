@@ -66,7 +66,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             profileLoading: false,
           })
           useConfigStore.getState().fetchConfig()
-          useEntitiesStore.getState().preloadAllFilters()
+          useEntitiesStore.getState().preloadAllFilters({ silent: true })
         } else {
           set({ user: null, initialized: true, profileLoading: false })
         }
@@ -102,7 +102,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       })
 
       useConfigStore.getState().fetchConfig()
-      useEntitiesStore.getState().preloadAllFilters()
+      useEntitiesStore.getState().preloadAllFilters({ silent: true })
 
       toast.success(`Welcome back, ${data.user.name || data.user.username}!`)
       return true

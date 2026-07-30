@@ -1,6 +1,6 @@
 /**
  * @file scripts/seed-dedicated.ts
- * @description Seeds a fresh dedicated client database with the initial admin user.
+ * @description Seeds a fresh dedicated client database with the initial super admin user and default commodities catalog.
  * Optional `--reset` flag or `RESET_DB=true` environment variable will drop all existing
  * tables and public schema first to ensure a clean slate when switching schemas.
  *
@@ -25,7 +25,7 @@ if (!connectionString) {
 const client = postgres(connectionString, { ssl: "require", max: 1 })
 const db = drizzle(client, { schema })
 
-const ADMIN_USER_ID = "00000000-0000-0000-0000-000000000001"
+const SUPER_ADMIN_USER_ID = "00000000-0000-0000-0000-000000000000"
 const FIXED_PASSWORD_HASH = "$argon2id$v=19$m=19456,t=2,p=1$AAAAAAAAAAAAAAAAAAAAAA$n4ztyxZUUav+lfVPUwJkTgU+AmLLtrEvClLpKXNnhyQ"
 
 async function main() {
@@ -47,36 +47,55 @@ async function main() {
 
   console.log("Seeding dedicated database...")
 
-  // Upsert Admin User
+  // Upsert Super Admin User
   const [existingUser] = await db
     .select()
     .from(schema.users)
-    .where(eq(schema.users.id, ADMIN_USER_ID))
+    .where(eq(schema.users.id, SUPER_ADMIN_USER_ID))
     .limit(1)
 
   if (existingUser) {
-    console.log(`Admin user '${existingUser.username}' already exists. Updating password, role & status...`)
+    console.log(`Super admin user '${existingUser.username}' already exists. Updating password, role & status...`)
     await db
       .update(schema.users)
       .set({
-        username: "admin",
+        username: "super",
         passwordHash: FIXED_PASSWORD_HASH,
-        role: Role.ADMIN,
+        role: Role.SUPER_ADMIN,
         isActive: true,
         updatedAt: new Date(),
       })
-      .where(eq(schema.users.id, ADMIN_USER_ID))
+      .where(eq(schema.users.id, SUPER_ADMIN_USER_ID))
   } else {
-    console.log("Inserting admin user ('admin')...")
+    console.log("Inserting super admin user ('super')...")
     await db
       .insert(schema.users)
       .values({
-        id: ADMIN_USER_ID,
-        username: "admin",
+        id: SUPER_ADMIN_USER_ID,
+        username: "super",
         passwordHash: FIXED_PASSWORD_HASH,
-        role: Role.ADMIN,
+        role: Role.SUPER_ADMIN,
         isActive: true,
       })
+  }
+
+  // Seed Commodities Catalog
+  console.log("Seeding default commodities catalog...")
+  const defaultCommodities = [
+    { name: "Wheat" },
+    { name: "Scrap Copper" },
+    { name: "Corn" },
+    { name: "Crude Oil" },
+    { name: "Barley" },
+    { name: "Wine" },
+    { name: "Cable" },
+  ]
+
+  for (const item of defaultCommodities) {
+    await db
+      .insert(schema.commodities)
+      .values(item)
+      .onConflictDoNothing()
   }
 
   console.log("Seeding completed successfully!")

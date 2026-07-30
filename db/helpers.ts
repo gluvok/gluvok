@@ -174,6 +174,24 @@ type AuthedHandler<P extends Record<string, string> = Record<string, string>> = 
   ctx: RouteContext<P>
 ) => Promise<NextResponse>
 
+type EntityIdHandler<P extends Record<string, string>> = (
+  req: NextRequest,
+  user: JWTPayload,
+  db: ReturnType<typeof getDb>,
+  mode: TenantMode,
+  ctx: RouteContext<P>,
+  entityId: number,
+) => Promise<NextResponse>;
+
+type ScopedEntityHandler<P extends Record<string, string>> = (
+  req: NextRequest,
+  user: JWTPayload,
+  db: ReturnType<typeof getDb>,
+  mode: TenantMode,
+  ctx: RouteContext<P>,
+  scope: { entityId: number; whereClause: SQL },
+) => Promise<NextResponse>;
+
 export function withAuth<P extends Record<string, string> = Record<string, string>>(
   handler: AuthedHandler<P>,
   requiredRole?: Role
@@ -187,6 +205,47 @@ export function withAuth<P extends Record<string, string> = Record<string, strin
     const tenantDb = getDb(tenant)
     return handler(req, user, tenantDb, tenant.mode, ctx)
   }
+}
+
+/**
+ * Resolves and validates a numeric ID from a dynamic item route.
+ */
+export function withEntityId<P extends Record<string, string> = Record<string, string>>(
+  handler: EntityIdHandler<P>,
+): AuthedHandler<P> {
+  return async (req, user, tenantDb, mode, ctx) => {
+    const { id } = await ctx.params
+    const entityId = Number(id)
+    if (!Number.isSafeInteger(entityId) || entityId <= 0) {
+      return apiError("Invalid entity ID", StatusCodes.BAD_REQUEST)
+    }
+
+    return handler(req, user, tenantDb, mode, ctx, entityId)
+  }
+}
+
+/**
+ * Resolves an item ID and applies a factory ownership predicate before calling
+ * an item route handler. The factory column may belong to the entity table or
+ * to a table joined by the handler (for example `users` or `centers`).
+ */
+export function withEntityScope<P extends Record<string, string> = Record<string, string>>(
+  getTable: (mode: TenantMode) => { id: Column },
+  factoryIdColumn: Column,
+  handler: ScopedEntityHandler<P>,
+): AuthedHandler<P> {
+  return withEntityId(async (req, user, tenantDb, mode, ctx, entityId) => {
+
+    const whereClause = getScopedEntityWhereClause(
+      user,
+      mode,
+      eq(getTable(mode).id, entityId),
+      factoryIdColumn,
+    )
+    if (!whereClause) return forbiddenError()
+
+    return handler(req, user, tenantDb, mode, ctx, { entityId, whereClause })
+  })
 }
 // ─── DB Session Context — set before queries so RLS policies can read them ────
 // Call this inside withAuth handler (or any authed route) before DB queries.

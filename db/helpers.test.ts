@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { sharedSchema } from "@/db/schema";
 import { TenantMode } from "@/lib/constants/enums";
@@ -7,39 +7,40 @@ import {
   formatEntityResponse,
   getScopedEntityWhereClause,
   parseBulkIds,
+  withEntityScope,
 } from "./helpers";
 
 describe("fetchPaginatedResult", () => {
   it("applies ordering before pagination", async () => {
-    const calls: string[] = []
-    const rows = [{ id: 2 }, { id: 1 }]
-    const orderByClause = { name: "name" }
+    const calls: string[] = [];
+    const rows = [{ id: 2 }, { id: 1 }];
+    const orderByClause = { name: "name" };
 
     const baseQuery = {
       orderBy: (clause: unknown) => {
-        calls.push(`orderBy:${clause === orderByClause}`)
+        calls.push(`orderBy:${clause === orderByClause}`);
         return {
           where: () => {
-            calls.push("where")
+            calls.push("where");
             return {
               limit: (limit: number) => {
-                calls.push(`limit:${limit}`)
+                calls.push(`limit:${limit}`);
                 return {
                   offset: async (offset: number) => {
-                    calls.push(`offset:${offset}`)
-                    return rows
+                    calls.push(`offset:${offset}`);
+                    return rows;
                   },
-                }
+                };
               },
-            }
+            };
           },
-        }
+        };
       },
-    }
+    };
 
     const countQuery = {
       where: async () => [{ count: 2 }],
-    }
+    };
 
     const response = await fetchPaginatedResult(
       {} as never,
@@ -48,15 +49,53 @@ describe("fetchPaginatedResult", () => {
       undefined,
       { page: 1, limit: 10, offset: 0 },
       orderByClause,
-    )
+    );
 
-    expect(calls).toEqual(["orderBy:true", "where", "limit:10", "offset:0"])
+    expect(calls).toEqual(["orderBy:true", "where", "limit:10", "offset:0"]);
     expect(await response.json()).toEqual({
       data: rows,
       pagination: { page: 1, limit: 10, total: 2 },
-    })
-  })
-})
+    });
+  });
+});
+
+describe("withEntityScope", () => {
+  const sharedUser = {
+    sub: "1",
+    username: "admin",
+    role: "admin",
+    factory_id: 1,
+    tenant_mode: TenantMode.SHARED,
+  };
+
+  it("rejects invalid IDs and shared users without a factory before calling the handler", async () => {
+    const handler = vi.fn();
+    const scopedHandler = withEntityScope(
+      () => sharedSchema.centers,
+      sharedSchema.centers.factoryId,
+      handler,
+    );
+
+    const invalidResponse = await scopedHandler(
+      new Request("http://localhost") as never,
+      sharedUser,
+      {} as never,
+      TenantMode.SHARED,
+      { params: Promise.resolve({ id: "invalid" }) },
+    );
+    const forbiddenResponse = await scopedHandler(
+      new Request("http://localhost") as never,
+      { ...sharedUser, factory_id: null },
+      {} as never,
+      TenantMode.SHARED,
+      { params: Promise.resolve({ id: "1" }) },
+    );
+
+    expect(invalidResponse.status).toBe(400);
+    expect(forbiddenResponse.status).toBe(403);
+    expect(handler).not.toHaveBeenCalled();
+  });
+});
 
 describe("getScopedEntityWhereClause", () => {
   const entityWhereClause = eq(sharedSchema.centers.id, 1);
@@ -111,7 +150,7 @@ describe("formatEntityResponse", () => {
         passwordHash: "secret",
       },
       TenantMode.SHARED,
-    )
+    );
 
     expect(await response.json()).toEqual({
       data: {
@@ -121,9 +160,9 @@ describe("formatEntityResponse", () => {
         factory_id: 7,
         is_active: false,
       },
-    })
-  })
-})
+    });
+  });
+});
 
 describe("parseBulkIds", () => {
   it("accepts bounded, unique positive integer ID batches", () => {

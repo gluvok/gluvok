@@ -3,16 +3,16 @@
  * @description API route for authenticating user credentials with Argon2 and Drizzle ORM.
  */
 
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
-import { getTables } from "@/db/schema"
+import { getTables, sharedSchema } from "@/db/schema"
 import { verifyPassword } from "@/lib/auth/password"
 import { signJWT } from "@/lib/auth/jwt"
 import { TenantMode } from "@/lib/constants/enums"
 import { getWorkspace } from "@/lib/tenant/workspace"
 import { resolveTenant } from "@/lib/tenant"
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { username, password } = body
@@ -24,10 +24,11 @@ export async function POST(request: Request) {
       )
     }
 
-    // Resolve tenant from request (login runs before withAuth)
-    const workspace = getWorkspace(request as Parameters<typeof getWorkspace>[0])
+    // Resolve tenant from request subdomain
+    const workspace = getWorkspace(request)
     const tenant = resolveTenant(workspace)
     const { users, profiles, customers } = getTables(tenant.mode)
+
     // Import getDb lazily to avoid circular issues — db/index exports it
     const { getDb } = await import("@/db")
     const tenantDb = getDb(tenant)
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
 
     // 4. Sign JWT — factory_id is null in dedicated mode (no factory column)
     const factoryId = tenant.mode === TenantMode.SHARED
-      ? (("factoryId" in user ? (user as { factoryId: number | null }).factoryId : null) ?? null)
+      ? (("factoryId" in user ? (user as typeof sharedSchema.users.$inferSelect).factoryId : null) ?? null)
       : null
 
     const token = await signJWT({
@@ -81,7 +82,6 @@ export async function POST(request: Request) {
       tenant_mode: tenant.mode,
     })
 
-    // 5. Construct response with HttpOnly cookie
     const userPayload = {
       id: user.id,
       username: user.username,

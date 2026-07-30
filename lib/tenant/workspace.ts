@@ -24,9 +24,15 @@ const IGNORED_SUBDOMAINS = new Set(["www", "api", ""])
  *   "localhost"            → null
  *   "neon.localhost"       → "neon"  (when APP_DOMAIN=localhost)
  */
-export function getWorkspace(req: NextRequest): string | null {
+export function getWorkspace(req: Request | NextRequest): string | null {
   const rootDomain = process.env.APP_DOMAIN ?? ""
-  const hostname = req.headers.get("host") ?? req.nextUrl.hostname
+
+  // Prefer Host header (works in Next.js runtime and plain Request).
+  // Fall back to nextUrl.host for NextRequest in test environments where
+  // the Host header may not be forwarded.
+  const hostHeader = req.headers.get("host") ?? ""
+  const nextUrlHost = "nextUrl" in req ? (req as NextRequest).nextUrl.host : ""
+  const hostname = hostHeader || nextUrlHost
 
   // Strip port
   const host = hostname.split(":")[0]

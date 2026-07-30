@@ -1,9 +1,12 @@
 /**
  * @file scripts/clear-db.ts
- * @description Forcefully clears/drops all database tables/schema CASCADE and re-applies the standalone Drizzle schema.
+ * @description Forcefully clears/drops all database tables/schema CASCADE and re-applies the Drizzle schema.
+ *
+ * Pass --shared flag (or set SCHEMA=shared) to push shared schema instead of standalone.
  *
  * Usage:
- *   DATABASE_URL=postgresql://... pnpm tsx scripts/clear-db.ts
+ *   DATABASE_URL=postgresql://... pnpm tsx scripts/clear-db.ts           # standalone (dedicated)
+ *   DATABASE_URL=postgresql://... pnpm tsx scripts/clear-db.ts --shared   # shared (SaaS)
  */
 
 import postgres from "postgres"
@@ -16,17 +19,21 @@ if (!connectionString) {
   process.exit(1)
 }
 
+const isShared = process.env.SCHEMA === "shared" || process.argv.includes("--shared")
+const drizzleConfig = isShared ? "drizzle.config.ts" : "drizzle.standalone.config.ts"
+const schemaLabel = isShared ? "shared" : "standalone"
+
 const client = postgres(connectionString, { ssl: "require", max: 1 })
 
 async function main() {
-  console.log("Dropping all existing tables & schema CASCADE for a clean setup...")
+  console.log(`Dropping all existing tables & schema CASCADE for a clean ${schemaLabel} setup...`)
   await client`DROP SCHEMA IF EXISTS public CASCADE`
   await client`CREATE SCHEMA public`
   await client`GRANT ALL ON SCHEMA public TO public`
   console.log("Database schema reset cleanly.")
 
-  console.log("Pushing standalone Drizzle schema to database...")
-  execSync("pnpm drizzle-kit push --config=drizzle.standalone.config.ts --force", {
+  console.log(`Pushing ${schemaLabel} Drizzle schema to database...`)
+  execSync(`pnpm drizzle-kit push --config=${drizzleConfig} --force`, {
     stdio: "inherit",
     env: { ...process.env, DATABASE_URL: connectionString },
   })

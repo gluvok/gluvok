@@ -1,6 +1,7 @@
 /**
  * @file scripts/seed-users.ts
- * @description Seeds initial super admin user into database by truncating existing users table and inserting 'super'.
+ * @description Seeds initial super admin user + linked profile into database.
+ * Truncates existing users and profiles before inserting fresh records.
  *
  * Usage:
  *   DATABASE_URL=postgresql://... pnpm tsx scripts/seed-users.ts
@@ -23,14 +24,16 @@ const client = postgres(connectionString, { ssl: "require", max: 1 })
 const db = drizzle(client, { schema })
 
 async function main() {
-  console.log("Truncating users table...")
+  console.log("Truncating profiles & users tables...")
+  // profiles first (FK dependency on users)
+  await client`TRUNCATE TABLE profiles CASCADE`
   await client`TRUNCATE TABLE users CASCADE`
 
   console.log("Hashing password for super admin user...")
   const passwordHash = await hashPassword("super123")
 
   console.log("Inserting super admin user ('super')...")
-  await db
+  const [superUser] = await db
     .insert(schema.users)
     .values({
       username: "super",
@@ -38,8 +41,20 @@ async function main() {
       role: Role.SUPER_ADMIN,
       isActive: true,
     })
+    .returning({ id: schema.users.id })
 
-  console.log("Super admin user seeded successfully!")
+  console.log(`Super admin user inserted with id=${superUser.id}`)
+
+  console.log("Inserting linked profile for super admin...")
+  await db
+    .insert(schema.profiles)
+    .values({
+      userId: superUser.id,
+      name: "Super Admin",
+      role: Role.SUPER_ADMIN,
+    })
+
+  console.log("Super admin profile seeded successfully!")
   await client.end()
 }
 

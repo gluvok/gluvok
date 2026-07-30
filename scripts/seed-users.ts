@@ -24,11 +24,6 @@ const client = postgres(connectionString, { ssl: "require", max: 1 })
 const db = drizzle(client, { schema })
 
 async function main() {
-  console.log("Truncating profiles & users tables...")
-  // profiles first (FK dependency on users)
-  await client`TRUNCATE TABLE profiles CASCADE`
-  await client`TRUNCATE TABLE users CASCADE`
-
   console.log("Hashing password for super admin user...")
   const passwordHash = await hashPassword("super123")
 

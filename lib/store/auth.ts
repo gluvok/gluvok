@@ -12,7 +12,6 @@ import { type Profile, type Customer } from "@/types"
 
 import { useConfigStore } from "./config"
 import { useEntitiesStore } from "./entities"
-import { usePreferencesStore } from "./preferences"
 
 export const PROFILE_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.USER_ID}, ${EntityKey.NAME}, ${EntityKey.ROLE}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`
 export const CUSTOMER_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.NAME}, ${EntityKey.GOVT_ID}, ${EntityKey.FATHER_NAME}, ${EntityKey.FACTORY_ID}, ${EntityKey.USER_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`
@@ -122,8 +121,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       console.error("Logout request error:", err)
     } finally {
       set({ user: null })
-      usePreferencesStore.persist.clearStorage()
-      usePreferencesStore.setState({ columns: {}, filters: {} })
       toast.success("Successfully logged out")
     }
   },

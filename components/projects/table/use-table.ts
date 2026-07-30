@@ -48,9 +48,12 @@ export function useProjectTable({
   const dialogStates = useProjectDialogStates()
   const user = useAuthStore((state) => state.user)
 
-  // Preferences state & selectors from Zustand localStorage-backed store
-  const savedFilters = usePreferencesStore((state) => state.filters[projectSlug] ?? EMPTY_FILTERS)
-  const savedVisibleColumns = usePreferencesStore((state) => state.columns[projectSlug])
+  const username = user?.username
+  const prefKey = username ? `${username}:${projectSlug}` : projectSlug
+
+  // Preferences state & selectors from Zustand localStorage-backed store (username-scoped)
+  const savedFilters = usePreferencesStore((state) => state.filters[prefKey] ?? state.filters[projectSlug] ?? EMPTY_FILTERS)
+  const savedVisibleColumns = usePreferencesStore((state) => state.columns[prefKey] ?? state.columns[projectSlug])
   const setColumnPreferences = usePreferencesStore((state) => state.setColumnPreferences)
   const setFilterPreferences = usePreferencesStore((state) => state.setFilterPreferences)
 
@@ -78,9 +81,9 @@ export function useProjectTable({
   React.useEffect(() => {
     const filtersObj = parseColumnFilters(columnFilters)
     if (!areFiltersEqual(filtersObj, savedFilters)) {
-      setFilterPreferences(projectSlug, filtersObj)
+      setFilterPreferences(projectSlug, filtersObj, username)
     }
-  }, [columnFilters, projectSlug, savedFilters, setFilterPreferences])
+  }, [columnFilters, projectSlug, savedFilters, setFilterPreferences, username])
 
   // Table columns & permissions calculation
   const permissions = React.useMemo(() => getPermissions(user?.role, projectSlug), [user?.role, projectSlug])
@@ -187,9 +190,9 @@ export function useProjectTable({
   React.useEffect(() => {
     const visibleColumnsList = getVisibleColumnsList(table)
     if (!isStringArrayEqual(savedVisibleColumns, visibleColumnsList)) {
-      setColumnPreferences(projectSlug, visibleColumnsList)
+      setColumnPreferences(projectSlug, visibleColumnsList, username)
     }
-  }, [columnVisibility, projectSlug, savedVisibleColumns, table, setColumnPreferences])
+  }, [columnVisibility, projectSlug, savedVisibleColumns, table, setColumnPreferences, username])
 
   const handleReload = React.useCallback(() => {
     useEntitiesStore.getState().triggerEntitiesUpdate()

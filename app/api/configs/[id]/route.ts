@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server"
 import { eq, and } from "drizzle-orm"
-import { configs } from "@/db/schema"
+import { sharedSchema, standaloneSchema } from "@/db/schema"
 import { withAuth, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
 import { Role, TenantMode, ProjectSlug, PermissionKey, FieldRequirementMode } from "@/lib/constants/enums"
 
+/**
+ * PATCH /api/configs/[id]
+ * Partially updates an existing configuration resource by ID.
+ */
 export const PATCH = withAuth(async (req, user, db, mode, context) => {
   if (!hasPermission(user, ProjectSlug.CONFIGS, PermissionKey.WRITE)) return forbiddenError()
 
@@ -13,26 +17,12 @@ export const PATCH = withAuth(async (req, user, db, mode, context) => {
     if (!configId) return apiError("Config not found", StatusCodes.NOT_FOUND)
 
     const body = await req.json()
-    const { aadhar_number_mode, govt_id_mode } = body
+    const { aadhar_number_mode, govt_id_mode, factory_id } = body
 
-    const conditions = [eq(configs.id, configId)]
-    if (mode === TenantMode.SHARED && user.role !== Role.SUPER_ADMIN && user.factory_id != null) {
-      conditions.push(eq(configs.factoryId, user.factory_id))
-    }
-
-    const [existing] = await db
-      .select()
-      .from(configs)
-      .where(and(...conditions))
-      .limit(1)
-
-    if (!existing) return apiError("Config not found", StatusCodes.NOT_FOUND)
-
+    const validModes = Object.values(FieldRequirementMode)
     const updates: Record<string, unknown> = {
       updatedAt: new Date(),
     }
-
-    const validModes = Object.values(FieldRequirementMode)
     if (aadhar_number_mode && validModes.includes(aadhar_number_mode)) {
       updates.aadharNumberMode = aadhar_number_mode
     }
@@ -40,16 +30,63 @@ export const PATCH = withAuth(async (req, user, db, mode, context) => {
       updates.govtIdMode = govt_id_mode
     }
 
+    if (mode === TenantMode.DEDICATED) {
+      const [existing] = await db
+        .select()
+        .from(standaloneSchema.configs)
+        .where(eq(standaloneSchema.configs.id, configId))
+        .limit(1)
+
+      if (!existing) return apiError("Config not found", StatusCodes.NOT_FOUND)
+
+      const [updated] = await db
+        .update(standaloneSchema.configs)
+        .set(updates)
+        .where(eq(standaloneSchema.configs.id, configId))
+        .returning()
+
+      return NextResponse.json({
+        data: {
+          id: updated.id,
+          aadhar_number_mode: updated.aadharNumberMode,
+          govt_id_mode: updated.govtIdMode,
+          created_at: updated.createdAt,
+          updated_at: updated.updatedAt,
+        },
+      })
+    }
+
+    // Shared Mode
+    const sharedConfigs = sharedSchema.configs
+    const isSuperAdmin = user.role === Role.SUPER_ADMIN
+
+    if (isSuperAdmin && factory_id && Number(factory_id) > 0) {
+      updates.factoryId = Number(factory_id)
+    }
+
+    const conditions = [eq(sharedConfigs.id, configId)]
+    if (!isSuperAdmin && user.factory_id != null) {
+      conditions.push(eq(sharedConfigs.factoryId, user.factory_id))
+    }
+
+    const [existing] = await db
+      .select()
+      .from(sharedConfigs)
+      .where(and(...conditions))
+      .limit(1)
+
+    if (!existing) return apiError("Config not found", StatusCodes.NOT_FOUND)
+
     const [updated] = await db
-      .update(configs)
+      .update(sharedConfigs)
       .set(updates)
-      .where(eq(configs.id, configId))
+      .where(eq(sharedConfigs.id, configId))
       .returning()
 
     return NextResponse.json({
       data: {
         id: updated.id,
-        ...(mode === TenantMode.SHARED ? { factory_id: updated.factoryId } : {}),
+        factory_id: updated.factoryId,
         aadhar_number_mode: updated.aadharNumberMode,
         govt_id_mode: updated.govtIdMode,
         created_at: updated.createdAt,
@@ -62,6 +99,8 @@ export const PATCH = withAuth(async (req, user, db, mode, context) => {
   }
 })
 
+export const PUT = PATCH
+
 export const DELETE = withAuth(async (_req, user, db, mode, context) => {
   if (!hasPermission(user, ProjectSlug.CONFIGS, PermissionKey.DELETE)) return forbiddenError()
 
@@ -70,20 +109,26 @@ export const DELETE = withAuth(async (_req, user, db, mode, context) => {
     const configId = Number(params.id)
     if (!configId) return apiError("Config not found", StatusCodes.NOT_FOUND)
 
-    const conditions = [eq(configs.id, configId)]
-    if (mode === TenantMode.SHARED && user.role !== Role.SUPER_ADMIN && user.factory_id != null) {
-      conditions.push(eq(configs.factoryId, user.factory_id))
+    if (mode === TenantMode.DEDICATED) {
+      await db.delete(standaloneSchema.configs).where(eq(standaloneSchema.configs.id, configId))
+      return NextResponse.json({ success: true, message: "Config deleted successfully" })
+    }
+
+    const sharedConfigs = sharedSchema.configs
+    const conditions = [eq(sharedConfigs.id, configId)]
+    if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) {
+      conditions.push(eq(sharedConfigs.factoryId, user.factory_id))
     }
 
     const [existing] = await db
       .select()
-      .from(configs)
+      .from(sharedConfigs)
       .where(and(...conditions))
       .limit(1)
 
     if (!existing) return apiError("Config not found", StatusCodes.NOT_FOUND)
 
-    await db.delete(configs).where(eq(configs.id, configId))
+    await db.delete(sharedConfigs).where(eq(sharedConfigs.id, configId))
 
     return NextResponse.json({ success: true, message: "Config deleted successfully" })
   } catch (err) {

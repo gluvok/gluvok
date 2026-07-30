@@ -81,7 +81,7 @@ export async function insertRow(slug: ProjectSlug, record: Record<string, unknow
 export async function updateRow(slug: ProjectSlug, id: number, record: Record<string, unknown>): Promise<EntityRecord> {
   const endpoint = getEndpoint(slug)
   return apiRequest(async () => {
-    const res = await axios.put<{ data: EntityRecord }>(`${endpoint}/${id}`, record)
+    const res = await axios.patch<{ data: EntityRecord }>(`${endpoint}/${id}`, record)
     return res.data.data
   })
 }

@@ -68,14 +68,14 @@ export const GET = withAuth(async (req, user, db, mode) => {
 })
 
 /**
- * PUT /api/configs
- * Upserts configuration resource.
+ * POST /api/configs
+ * Creates configuration resource.
  * Rules:
  * - Dedicated mode: no factory_id needed.
  * - Shared mode + Super Admin: factory_id is REQUIRED in request body.
  * - Shared mode + Regular User: factory_id is derived automatically from user.factory_id.
  */
-export const PUT = withAuth(async (req, user, db, mode) => {
+export const POST = withAuth(async (req, user, db, mode) => {
   if (!hasPermission(user, ProjectSlug.CONFIGS, PermissionKey.CREATE) && !hasPermission(user, ProjectSlug.CONFIGS, PermissionKey.WRITE)) {
     return forbiddenError()
   }
@@ -107,7 +107,7 @@ export const PUT = withAuth(async (req, user, db, mode) => {
           .values({ aadharNumberMode: aMode, govtIdMode: gMode })
           .returning()
       }
-      return formatEntityResponse(newConfig, mode, StatusCodes.OK)
+      return formatEntityResponse(newConfig, mode, StatusCodes.CREATED)
     }
 
     // 2. Shared Mode
@@ -136,11 +136,11 @@ export const PUT = withAuth(async (req, user, db, mode) => {
       })
       .returning()
 
-    return formatEntityResponse(newConfig, mode, StatusCodes.OK)
+    return formatEntityResponse(newConfig, mode, StatusCodes.CREATED)
   } catch (err) {
     console.error("Failed to save config:", err)
     return apiError("Failed to save configuration in database. Ensure the configs table exists.", StatusCodes.INTERNAL_SERVER_ERROR)
   }
 })
 
-export const POST = PUT
+export const PUT = POST

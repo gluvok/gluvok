@@ -54,19 +54,23 @@ export function ProjectToolbar<TData>({
                   id={`search-input-${projectSlug}`}
                   placeholder="Search..."
                   value={(table.getState().globalFilter as string) ?? ""}
-                  onChange={(event) => table.setGlobalFilter(event.target.value)}
+                  onChange={(event) =>
+                    table.setGlobalFilter(event.target.value)
+                  }
                   className="pl-9 pr-4 h-9 text-xs bg-background border border-input focus-visible:ring-1 focus-visible:ring-primary/50 transition-shadow"
                 />
               </div>
             )}
 
-            <div className="flex items-center gap-2 justify-end">
+            <div
+              className={`flex items-center gap-2 justify-end${isConfigTable ? " self-end sm:ml-auto" : ""}`}
+            >
               {isFiltered && (
                 <Button
                   variant="ghost"
                   onClick={() => {
-                    table.setColumnFilters([])
-                    table.setGlobalFilter("")
+                    table.setColumnFilters([]);
+                    table.setGlobalFilter("");
                   }}
                   className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors gap-1.5"
                   title="Clear all active filters and search"
@@ -85,7 +89,11 @@ export function ProjectToolbar<TData>({
                 <RotateCw className="h-4 w-4" />
               </Button>
               {canCreate && (
-                <Button onClick={() => setCreating(true)} size="sm" className="h-9 gap-1.5 shadow-sm">
+                <Button
+                  onClick={() => setCreating(true)}
+                  size="sm"
+                  className="h-9 gap-1.5 shadow-sm"
+                >
                   <Plus className="h-4 w-4" />
                   Add
                 </Button>
@@ -95,7 +103,9 @@ export function ProjectToolbar<TData>({
           </div>
 
           {/* Bottom Row: Filter Controls */}
-          {!isConfigTable && permissions.filter && <ProjectFilters projectSlug={projectSlug} table={table} />}
+          {!isConfigTable && permissions.filter && (
+            <ProjectFilters projectSlug={projectSlug} table={table} />
+          )}
         </>
       )}
     </div>

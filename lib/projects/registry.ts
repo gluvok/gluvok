@@ -8,7 +8,6 @@ import {
   IndianRupee,
   Users,
   ClipboardList,
-  Factory,
   UserCog,
   Tag,
   Settings,
@@ -26,7 +25,6 @@ export const PROJECT_REGISTRY: Record<string, ProjectConfig> = {
   [ProjectSlug.RATES]: { name: ProjectName.RATES, icon: IndianRupee },
   [ProjectSlug.CUSTOMERS]: { name: ProjectName.CUSTOMERS, icon: Users },
   [ProjectSlug.WEIGHMENTS]: { name: ProjectName.WEIGHMENTS, icon: ClipboardList },
-  [ProjectSlug.FACTORIES]: { name: ProjectName.FACTORIES, icon: Factory },
   [ProjectSlug.PROFILES]: { name: ProjectName.PROFILES, icon: UserCog },
   [ProjectSlug.CONFIGS]: { name: ProjectName.CONFIGS, icon: Settings },
 };

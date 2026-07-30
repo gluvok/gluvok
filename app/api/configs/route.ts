@@ -2,11 +2,9 @@ import { NextResponse } from "next/server"
 import { eq, and, desc } from "drizzle-orm"
 import { sharedSchema, standaloneSchema } from "@/db/schema"
 import { withAuth, validateRequiredFields, forbiddenError, hasPermission, StatusCodes, apiError, formatEntityResponse, getFactoryWhereClause } from "@/db/helpers"
-import { Role, TenantMode, ProjectSlug, PermissionKey, FieldRequirementMode } from "@/lib/constants/enums"
+import { TenantMode, ProjectSlug, PermissionKey, FieldRequirementMode } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user, db, mode) => {
-  const factories = mode === TenantMode.SHARED ? sharedSchema.factories : undefined
-
   try {
     if (mode === TenantMode.DEDICATED) {
       // Single global config — no factory scoping
@@ -29,13 +27,12 @@ export const GET = withAuth(async (req, user, db, mode) => {
 
     // Shared mode — factory-scoped
     const sharedConfigs = sharedSchema.configs
-    const factoryCond = getFactoryWhereClause(user, mode, sharedConfigs.factoryId, req.nextUrl.searchParams)
+    const factoryCond = getFactoryWhereClause(user, mode, sharedConfigs.factoryId)
     const conditions = []
     if (factoryCond) conditions.push(factoryCond)
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined
-    const isSuperAdmin = user.role === Role.SUPER_ADMIN
 
-    let baseQuery = db
+    const rows = await db
       .select({
         id: sharedConfigs.id,
         factory_id: sharedConfigs.factoryId,
@@ -43,16 +40,10 @@ export const GET = withAuth(async (req, user, db, mode) => {
         govt_id_mode: sharedConfigs.govtIdMode,
         created_at: sharedConfigs.createdAt,
         updated_at: sharedConfigs.updatedAt,
-        ...(isSuperAdmin && factories ? { factory_name: factories.name } : {}),
       })
       .from(sharedConfigs)
-      .$dynamic()
-
-    if (isSuperAdmin && factories) {
-      baseQuery = baseQuery.leftJoin(factories, eq(sharedConfigs.factoryId, factories.id)) as typeof baseQuery
-    }
-
-    const rows = await baseQuery.where(whereClause).orderBy(desc(sharedConfigs.createdAt))
+      .where(whereClause)
+      .orderBy(desc(sharedConfigs.createdAt))
 
     return NextResponse.json({
       data: rows,
@@ -72,8 +63,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
  * Creates configuration resource.
  * Rules:
  * - Dedicated mode: no factory_id needed.
- * - Shared mode + Super Admin: factory_id is REQUIRED in request body.
- * - Shared mode + Regular User: factory_id is derived automatically from user.factory_id.
+ * - Shared mode: factory_id is derived automatically from user.factory_id.
  */
 export const POST = withAuth(async (req, user, db, mode) => {
   if (!hasPermission(user, ProjectSlug.CONFIGS, PermissionKey.CREATE) && !hasPermission(user, ProjectSlug.CONFIGS, PermissionKey.WRITE)) {
@@ -85,7 +75,7 @@ export const POST = withAuth(async (req, user, db, mode) => {
     const err = validateRequiredFields(body, ProjectSlug.CONFIGS)
     if (err) return err
 
-    const { aadhar_number_mode, govt_id_mode, factory_id } = body
+    const { aadhar_number_mode, govt_id_mode } = body
 
     const validModes = Object.values(FieldRequirementMode)
     const aMode = validModes.includes(aadhar_number_mode) ? aadhar_number_mode : FieldRequirementMode.MANDATORY
@@ -111,20 +101,9 @@ export const POST = withAuth(async (req, user, db, mode) => {
     }
 
     // 2. Shared Mode
-    const isSuperAdmin = user.role === Role.SUPER_ADMIN
-    let targetFactoryId: number
-
-    if (isSuperAdmin) {
-      const parsed = Number(factory_id)
-      if (!factory_id || Number.isNaN(parsed) || parsed <= 0) {
-        return apiError("Factory is required", StatusCodes.BAD_REQUEST)
-      }
-      targetFactoryId = parsed
-    } else {
-      targetFactoryId = user.factory_id ?? 0
-      if (!targetFactoryId || targetFactoryId <= 0) {
-        return apiError("User is not associated with a factory", StatusCodes.BAD_REQUEST)
-      }
+    const targetFactoryId = user.factory_id ?? 0
+    if (!targetFactoryId || targetFactoryId <= 0) {
+      return apiError("User is not associated with a factory", StatusCodes.BAD_REQUEST)
     }
 
     const [newConfig] = await db

@@ -12,8 +12,7 @@ import { toast } from "sonner"
 import { Dropzone, DropzoneEmptyState } from "@/components/kibo-ui/dropzone"
 import { ImagePreviewCarousel } from "@/components/form/image/preview-carousel"
 import { supabase } from "@/lib/supabase"
-import { useAuthStore } from "@/lib/store"
-import { Role } from "@/lib/constants/enums"
+import { useAuthStore } from "@/lib/store/auth"
 
 const BUCKET_NAME = "gluvok"
 const CACHE_CONTROL = "3600"
@@ -47,8 +46,7 @@ export async function processImageUploadsAndDeletions(
 ): Promise<string[]> {
   const currentUser = useAuthStore.getState().user
   const factoryId = currentUser?.profile?.factory_id ?? currentUser?.customer?.factory_id
-  const isSuperAdmin = currentUser?.role === Role.SUPER_ADMIN
-  const factoryPrefix = isSuperAdmin ? "global" : String(factoryId ?? "unknown")
+  const factoryPrefix = String(factoryId ?? "default")
 
   // 1. Identify which images to delete (present in original, but not in submitted)
   const imagesToDelete = originalImages.filter((img) => !submittedImages.includes(img))

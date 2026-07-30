@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { StatusCodes, ReasonPhrases } from "http-status-codes"
 import { verifyJWT } from "@/lib/auth/jwt"
-import { AppRoutes, Role, ApiPrefix, RequestHeader, TenantMode } from "@/lib/constants/enums"
+import { AppRoutes, ApiPrefix, RequestHeader, TenantMode } from "@/lib/constants/enums"
 import { PUBLIC_ROUTES, AUTH_ROUTES, PUBLIC_API_ROUTES } from "@/lib/constants/routes"
 import { getWorkspace } from "@/lib/tenant/workspace"
 import { resolveTenant } from "@/lib/tenant"
@@ -55,15 +55,6 @@ export async function proxy(request: NextRequest) {
   const workspace = getWorkspace(request)
   const tenant = resolveTenant(workspace)
 
-  // Centralized Super Admin check for factory mutations (shared mode only)
-  if (
-    tenant.mode === TenantMode.SHARED &&
-    pathname.startsWith(ApiPrefix.FACTORIES_API) &&
-    request.method !== "GET" &&
-    payload.role !== Role.SUPER_ADMIN
-  ) {
-    return NextResponse.json({ error: ReasonPhrases.FORBIDDEN }, { status: StatusCodes.FORBIDDEN })
-  }
 
   // Forward verified user context as headers for API route handlers
   const requestHeaders = new Headers(request.headers)

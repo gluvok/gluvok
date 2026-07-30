@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { eq, asc } from "drizzle-orm"
 import { getTables, sharedSchema } from "@/db/schema"
 import { withAuth, StatusCodes } from "@/db/helpers"
-import { Role, TenantMode } from "@/lib/constants/enums"
+import { TenantMode } from "@/lib/constants/enums"
 
 /**
  * @file app/api/filters/preload/route.ts
@@ -11,12 +11,10 @@ import { Role, TenantMode } from "@/lib/constants/enums"
  */
 
 export const GET = withAuth(async (_req, user, db, mode) => {
-  const isSuperAdmin = user.role === Role.SUPER_ADMIN
   const isShared = mode === TenantMode.SHARED
-  const factoryFilter = isShared && !isSuperAdmin && user.factory_id != null ? user.factory_id : null
+  const factoryFilter = isShared && user.factory_id != null ? user.factory_id : null
 
   const { centers, profiles, customers, rates, commodities, users } = getTables(mode)
-  const factories = isShared ? sharedSchema.factories : undefined
 
   let centersQuery = db.select({ id: centers.id, name: centers.name }).from(centers).$dynamic()
   if (isShared && factoryFilter && sharedSchema.centers.factoryId) {
@@ -41,24 +39,17 @@ export const GET = withAuth(async (_req, user, db, mode) => {
       unit_price: rates.unitPrice,
       unit: rates.unit,
       commodity_name: commodities.name,
-      ...(isShared && isSuperAdmin && factories ? { factory_name: factories.name } : {}),
     })
     .from(rates)
     .leftJoin(commodities, eq(rates.commodityId, commodities.id))
     .$dynamic()
 
-  if (isShared && isSuperAdmin && factories) {
-    ratesQuery = ratesQuery.leftJoin(factories, eq(sharedSchema.rates.factoryId, factories.id)) as typeof ratesQuery
-  }
   if (isShared && factoryFilter && sharedSchema.rates.factoryId) {
     ratesQuery = ratesQuery.where(eq(sharedSchema.rates.factoryId, factoryFilter)) as typeof ratesQuery
   }
 
-  const [commodityRows, factoryRows, centerRows, profileRows, customerRows, rateRows] = await Promise.all([
+  const [commodityRows, centerRows, profileRows, customerRows, rateRows] = await Promise.all([
     db.select({ id: commodities.id, name: commodities.name }).from(commodities).orderBy(asc(commodities.name)),
-    isShared && isSuperAdmin && factories
-      ? db.select({ id: factories.id, name: factories.name }).from(factories).orderBy(asc(factories.name))
-      : Promise.resolve([]),
     centersQuery.orderBy(asc(centers.name)),
     profilesQuery.orderBy(asc(profiles.name)),
     customersQuery.orderBy(asc(customers.name)),
@@ -68,7 +59,7 @@ export const GET = withAuth(async (_req, user, db, mode) => {
   return NextResponse.json(
     {
       commodities: commodityRows,
-      factories: factoryRows,
+      factories: [],
       centers: centerRows,
       profiles: profileRows,
       customers: customerRows,

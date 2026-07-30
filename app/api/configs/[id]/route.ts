@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { eq, and } from "drizzle-orm"
 import { sharedSchema, standaloneSchema } from "@/db/schema"
 import { withAuth, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
-import { Role, TenantMode, ProjectSlug, PermissionKey, FieldRequirementMode } from "@/lib/constants/enums"
+import { TenantMode, ProjectSlug, PermissionKey, FieldRequirementMode } from "@/lib/constants/enums"
 
 /**
  * PATCH /api/configs/[id]
@@ -17,7 +17,7 @@ export const PATCH = withAuth(async (req, user, db, mode, context) => {
     if (!configId) return apiError("Config not found", StatusCodes.NOT_FOUND)
 
     const body = await req.json()
-    const { aadhar_number_mode, govt_id_mode, factory_id } = body
+    const { aadhar_number_mode, govt_id_mode } = body
 
     const validModes = Object.values(FieldRequirementMode)
     const updates: Record<string, unknown> = {
@@ -58,14 +58,8 @@ export const PATCH = withAuth(async (req, user, db, mode, context) => {
 
     // Shared Mode
     const sharedConfigs = sharedSchema.configs
-    const isSuperAdmin = user.role === Role.SUPER_ADMIN
-
-    if (isSuperAdmin && factory_id && Number(factory_id) > 0) {
-      updates.factoryId = Number(factory_id)
-    }
-
     const conditions = [eq(sharedConfigs.id, configId)]
-    if (!isSuperAdmin && user.factory_id != null) {
+    if (user.factory_id != null) {
       conditions.push(eq(sharedConfigs.factoryId, user.factory_id))
     }
 
@@ -116,7 +110,7 @@ export const DELETE = withAuth(async (_req, user, db, mode, context) => {
 
     const sharedConfigs = sharedSchema.configs
     const conditions = [eq(sharedConfigs.id, configId)]
-    if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) {
+    if (user.factory_id != null) {
       conditions.push(eq(sharedConfigs.factoryId, user.factory_id))
     }
 

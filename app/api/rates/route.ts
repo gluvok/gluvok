@@ -1,7 +1,7 @@
 import { eq, and, desc, gte, lte, ilike, or, count } from "drizzle-orm"
 import { getTables, sharedSchema } from "@/db/schema"
 import { withAuth, getPaginationParams, validateRequiredFields, apiError, forbiddenError, hasPermission, StatusCodes, getFactoryWhereClause, fetchPaginatedResult, formatEntityResponse } from "@/db/helpers"
-import { Role, TenantMode, ProjectSlug, PermissionKey, EntityKey, FilterValue, Unit, QueryParam } from "@/lib/constants/enums"
+import { TenantMode, ProjectSlug, PermissionKey, EntityKey, FilterValue, Unit, QueryParam } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user, db, mode) => {
   const pagination = getPaginationParams(req.nextUrl)
@@ -12,10 +12,8 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE)
 
   const { rates, commodities } = getTables(mode)
-  const factories = mode === TenantMode.SHARED ? sharedSchema.factories : undefined
-  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
 
-  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.rates.factoryId, req.nextUrl.searchParams)
+  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.rates.factoryId)
   const conditions = []
   if (factoryCond) conditions.push(factoryCond)
   if (commodityIdParam && commodityIdParam !== FilterValue.ALL) conditions.push(eq(rates.commodityId, Number(commodityIdParam)))
@@ -29,17 +27,11 @@ export const GET = withAuth(async (req, user, db, mode) => {
     if (!isNaN(searchNum)) {
       searchConds.push(eq(rates.id, searchNum))
     }
-    if (isSuperAdminShared && factories) {
-      searchConds.push(ilike(factories.name, `%${search}%`))
-      if (!isNaN(searchNum)) {
-        searchConds.push(eq(sharedSchema.rates.factoryId, searchNum))
-      }
-    }
     conditions.push(or(...searchConds))
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  let baseQuery = db
+  const baseQuery = db
     .select({
       id: rates.id,
       commodity_id: rates.commodityId,
@@ -49,25 +41,16 @@ export const GET = withAuth(async (req, user, db, mode) => {
       created_at: rates.createdAt,
       updated_at: rates.updatedAt,
       commodity_name: commodities.name,
-      ...(isSuperAdminShared && factories ? { factory_name: factories.name } : {}),
     })
     .from(rates)
     .leftJoin(commodities, eq(rates.commodityId, commodities.id))
     .$dynamic()
 
-  if (isSuperAdminShared && factories) {
-    baseQuery = baseQuery.leftJoin(factories, eq(sharedSchema.rates.factoryId, factories.id)) as typeof baseQuery
-  }
-
-  let countQuery = db
+  const countQuery = db
     .select({ count: count() })
     .from(rates)
     .leftJoin(commodities, eq(rates.commodityId, commodities.id))
     .$dynamic()
-
-  if (isSuperAdminShared && factories) {
-    countQuery = countQuery.leftJoin(factories, eq(sharedSchema.rates.factoryId, factories.id)) as typeof countQuery
-  }
 
   return fetchPaginatedResult(db, countQuery, baseQuery, whereClause, pagination, desc(rates.createdAt))
 })
@@ -78,7 +61,7 @@ export const POST = withAuth(async (req, user, db, mode) => {
   const err = validateRequiredFields(body, ProjectSlug.RATES)
   if (err) return err
 
-  const { commodity_id, unit_price, unit, factory_id } = body
+  const { commodity_id, unit_price, unit } = body
   const { rates } = getTables(mode) as unknown as { rates: Parameters<typeof db.insert>[0] }
 
   const insertValues: Record<string, unknown> = {
@@ -88,9 +71,9 @@ export const POST = withAuth(async (req, user, db, mode) => {
   }
 
   if (mode === TenantMode.SHARED) {
-    const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : user.factory_id
+    const targetFactoryId = user.factory_id
     if (targetFactoryId == null) {
-      return apiError("Factory ID is required for rates", StatusCodes.BAD_REQUEST)
+      return apiError("User is not associated with a factory", StatusCodes.BAD_REQUEST)
     }
     insertValues.factoryId = targetFactoryId
   }

@@ -11,13 +11,11 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const roleParam = req.nextUrl.searchParams.get(EntityKey.ROLE)
 
   const { profiles, users } = getTables(mode)
-  const factories = mode === TenantMode.SHARED ? sharedSchema.factories : undefined
-  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
 
   const activeConfig = await getFactoryConfig(user.factory_id, db, mode)
   const isAadharNotRequired = activeConfig?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED
 
-  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.users.factoryId, req.nextUrl.searchParams)
+  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.users.factoryId)
   const conditions = []
   if (factoryCond) conditions.push(factoryCond)
   if (roleParam && roleParam !== FilterValue.ALL) conditions.push(eq(profiles.role, roleParam as Role))
@@ -32,17 +30,11 @@ export const GET = withAuth(async (req, user, db, mode) => {
     if (!isNaN(searchNum)) {
       searchConds.push(eq(profiles.id, searchNum))
     }
-    if (isSuperAdminShared && factories) {
-      searchConds.push(ilike(factories.name, `%${search}%`))
-      if (!isNaN(searchNum)) {
-        searchConds.push(eq(sharedSchema.users.factoryId, searchNum))
-      }
-    }
     conditions.push(or(...searchConds))
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  let baseQuery = db
+  const baseQuery = db
     .select({
       id: profiles.id,
       user_id: profiles.userId,
@@ -54,34 +46,23 @@ export const GET = withAuth(async (req, user, db, mode) => {
       username: users.username,
       ...(mode === TenantMode.SHARED ? { factory_id: sharedSchema.users.factoryId } : {}),
       is_active: users.isActive,
-      ...(isSuperAdminShared && factories ? { factory_name: factories.name } : {}),
     })
     .from(profiles)
     .innerJoin(users, eq(profiles.userId, users.id))
     .$dynamic()
 
-  if (isSuperAdminShared && factories) {
-    baseQuery = baseQuery.leftJoin(factories, eq(sharedSchema.users.factoryId, factories.id)) as typeof baseQuery
-  }
-
-  let countQuery = db
+  const countQuery = db
     .select({ count: count() })
     .from(profiles)
     .innerJoin(users, eq(profiles.userId, users.id))
     .$dynamic()
-
-  if (isSuperAdminShared && factories) {
-    countQuery = countQuery.leftJoin(factories, eq(sharedSchema.users.factoryId, factories.id)) as typeof countQuery
-  }
 
   return fetchPaginatedResult(db, countQuery, baseQuery, whereClause, pagination, desc(profiles.createdAt))
 })
 
 export const POST = withAuth(async (req, user, db, mode) => {
   const body = await req.json()
-  const targetFactoryId = (mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN && body.factory_id)
-    ? body.factory_id
-    : user.factory_id
+  const targetFactoryId = user.factory_id
   const activeConfig = await getFactoryConfig(targetFactoryId, db, mode)
 
   const dynamicSchema = getDynamicProfileSchema(activeConfig)

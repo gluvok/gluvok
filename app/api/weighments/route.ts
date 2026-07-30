@@ -1,7 +1,7 @@
 import { eq, ilike, and, desc, or, gte, lte, count } from "drizzle-orm"
 import { weighments, rates, commodities, centers, profiles, customers, sharedSchema } from "@/db/schema"
 import { withAuth, getPaginationParams, validateRequiredFields, apiError, forbiddenError, hasPermission, StatusCodes, getFactoryWhereClause, fetchPaginatedResult, formatEntityResponse } from "@/db/helpers"
-import { Role, TenantMode, ProjectSlug, PermissionKey, QueryParam, Unit, WeighmentType, EntityKey, FilterValue } from "@/lib/constants/enums"
+import { TenantMode, ProjectSlug, PermissionKey, QueryParam, Unit, WeighmentType, EntityKey, FilterValue } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user, db, mode) => {
   const pagination = getPaginationParams(req.nextUrl)
@@ -14,10 +14,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE)
   const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE)
 
-  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
-  const factories = mode === TenantMode.SHARED ? sharedSchema.factories : undefined
-
-  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.centers.factoryId, req.nextUrl.searchParams)
+  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.centers.factoryId)
   const conditions = []
   if (factoryCond) conditions.push(factoryCond)
   if (unitParam && unitParam !== FilterValue.ALL) conditions.push(eq(weighments.unit, unitParam as Unit))
@@ -29,24 +26,17 @@ export const GET = withAuth(async (req, user, db, mode) => {
   if (endDateParam) conditions.push(lte(weighments.createdAt, new Date(endDateParam)))
 
   if (search) {
-    const searchNum = parseInt(search, 10)
     const searchConds = [
       ilike(weighments.vehicleNumber, `%${search}%`),
       ilike(customers.name, `%${search}%`),
       ilike(profiles.name, `%${search}%`),
       ilike(centers.name, `%${search}%`),
     ]
-    if (isSuperAdminShared && factories) {
-      searchConds.push(ilike(factories.name, `%${search}%`))
-      if (!isNaN(searchNum)) {
-        searchConds.push(eq(sharedSchema.centers.factoryId, searchNum))
-      }
-    }
     conditions.push(or(...searchConds))
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  let countQuery = db
+  const countQuery = db
     .select({ count: count() })
     .from(weighments)
     .leftJoin(centers, eq(weighments.centerId, centers.id))
@@ -54,11 +44,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
     .leftJoin(profiles, eq(weighments.profileId, profiles.id))
     .$dynamic()
 
-  if (isSuperAdminShared && factories) {
-    countQuery = countQuery.leftJoin(factories, eq(sharedSchema.centers.factoryId, factories.id)) as typeof countQuery
-  }
-
-  let baseQuery = db
+  const baseQuery = db
     .select({
       id: weighments.id,
       vehicle_number: weighments.vehicleNumber,
@@ -77,7 +63,6 @@ export const GET = withAuth(async (req, user, db, mode) => {
       center_name: centers.name,
       profile_name: profiles.name,
       customer_name: customers.name,
-      ...(isSuperAdminShared && factories ? { factory_name: factories.name } : {}),
     })
     .from(weighments)
     .leftJoin(rates, eq(weighments.rateId, rates.id))
@@ -86,10 +71,6 @@ export const GET = withAuth(async (req, user, db, mode) => {
     .leftJoin(profiles, eq(weighments.profileId, profiles.id))
     .leftJoin(customers, eq(weighments.customerId, customers.id))
     .$dynamic()
-
-  if (isSuperAdminShared && factories) {
-    baseQuery = baseQuery.leftJoin(factories, eq(sharedSchema.centers.factoryId, factories.id)) as typeof baseQuery
-  }
 
   return fetchPaginatedResult(db, countQuery, baseQuery, whereClause, pagination, desc(weighments.createdAt))
 })
@@ -102,13 +83,13 @@ export const POST = withAuth(async (req, user, db, mode) => {
 
   const { vehicle_number, weight, unit, type, rate_id, center_id, profile_id, customer_id, images } = body
 
-  // Ensure center belongs to user's factory if non-super_admin in shared mode
+  // Ensure center belongs to user's factory in shared mode
   const [center] = await db
     .select(mode === TenantMode.SHARED ? { factoryId: sharedSchema.centers.factoryId } : { id: centers.id })
     .from(centers)
     .where(eq(centers.id, Number(center_id)))
   if (!center) return apiError("Selected center not found", StatusCodes.NOT_FOUND)
-  if (mode === TenantMode.SHARED && user.role !== Role.SUPER_ADMIN) {
+  if (mode === TenantMode.SHARED) {
     const c = center as { factoryId: number }
     if (c.factoryId !== user.factory_id) return forbiddenError()
   }

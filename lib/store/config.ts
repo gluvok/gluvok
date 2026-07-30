@@ -5,9 +5,7 @@
 
 import { create } from "zustand"
 import axios from "axios"
-import { FieldRequirementMode, Role, TenantMode } from "@/lib/constants/enums"
-import { useAuthStore } from "./auth"
-import { getActiveTenantMode } from "./access"
+import { FieldRequirementMode } from "@/lib/constants/enums"
 
 export interface FactoryConfig {
   id?: number
@@ -38,14 +36,8 @@ export const useConfigStore = create<ConfigStore>((set) => ({
   configInitialized: false,
   fetchConfig: async () => {
     set({ configLoading: true })
-    const currentUser = useAuthStore.getState().user
-    const tenantMode = getActiveTenantMode()
 
-    // Super Admin in Shared SaaS mode manages multiple factories — skip initial single config fetch
-    if (tenantMode === TenantMode.SHARED && currentUser?.role === Role.SUPER_ADMIN) {
-      set({ config: null, configLoading: false, configInitialized: true })
-      return
-    }
+
 
     try {
       const res = await axios.get<{ data: ConfigResponseData[] }>("/api/configs")

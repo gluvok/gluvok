@@ -4,7 +4,7 @@
  */
 
 import { ProjectSlug, EntityKey, CommodityName, ProjectName, SystemSlug, SingularEntityName, Role, RoleLabel, WeighmentType, FieldRequirementMode } from "@/lib/constants/enums"
-import { Sprout, Wheat, Droplet, Hammer, Package, Leaf, Wine, Cable, Crown, ShieldCheck, Briefcase, HardHat, User, Cpu, Shield, ArrowDownLeft, ArrowUpRight, ArrowUpDown, CheckCircle2, HelpCircle, Ban, SlidersHorizontal, type LucideIcon } from "lucide-react"
+import { Sprout, Wheat, Droplet, Hammer, Package, Leaf, Wine, Cable, ShieldCheck, Briefcase, HardHat, User, Cpu, Shield, ArrowDownLeft, ArrowUpRight, ArrowUpDown, CheckCircle2, HelpCircle, Ban, SlidersHorizontal, type LucideIcon } from "lucide-react"
 
 export function getPrimaryIdKey(slug: string | ProjectSlug): EntityKey {
   switch (slug) {
@@ -16,8 +16,6 @@ export function getPrimaryIdKey(slug: string | ProjectSlug): EntityKey {
 
 export function getReferencedEntitySlug(key: string | EntityKey): string | null {
   switch (key) {
-    case EntityKey.FACTORY_ID:
-      return ProjectSlug.FACTORIES
     case EntityKey.COMMODITY_ID:
     case EntityKey.COMMODITY_NAME:
       return ProjectSlug.COMMODITIES
@@ -60,9 +58,6 @@ export function getRoleIcon(role?: string): LucideIcon {
   if (!role) return Shield
   const normalized = role.toLowerCase().replace(/[\s_-]+/g, "_").trim()
   switch (normalized) {
-    case Role.SUPER_ADMIN:
-    case RoleLabel.SUPER_ADMIN.toLowerCase().replace(/\s+/g, "_"):
-      return Crown
     case Role.ADMIN:
     case RoleLabel.ADMIN.toLowerCase():
       return ShieldCheck

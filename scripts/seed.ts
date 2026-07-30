@@ -1,14 +1,16 @@
 /**
  * @file scripts/seed.ts
- * @description Master database seed script — seeds initial super admin user + linked profile and default commodities catalog.
+ * @description Master database seed script — seeds initial tenant admin user + linked profile and default commodities catalog.
  *
  * Usage:
- *   DATABASE_URL=postgresql://... pnpm seed
+ *   DATABASE_URL=postgresql://... pnpm seed                     # standalone (dedicated)
+ *   DATABASE_URL=postgresql://... FACTORY_ID=1 pnpm seed --shared # shared (SaaS)
  */
 
 import { drizzle } from "drizzle-orm/postgres-js"
 import postgres from "postgres"
-import * as schema from "../db/schema/standalone"
+import * as standaloneSchema from "../db/schema/standalone"
+import * as sharedSchema from "../db/schema/shared"
 import { Role } from "../lib/constants/enums"
 import { hashPassword } from "../lib/auth/password"
 
@@ -19,7 +21,15 @@ if (!connectionString) {
   process.exit(1)
 }
 
+const isShared = process.env.SCHEMA === "shared" || process.argv.includes("--shared")
+const factoryIdRaw = process.env.FACTORY_ID
+if (isShared && (!factoryIdRaw || isNaN(Number(factoryIdRaw)) || Number(factoryIdRaw) <= 0)) {
+  console.error("Error: FACTORY_ID environment variable is required when seeding in Shared mode (e.g. FACTORY_ID=1 pnpm seed --shared).")
+  process.exit(1)
+}
+const factoryIdArg = factoryIdRaw ? Number(factoryIdRaw) : 0
 const client = postgres(connectionString, { ssl: "require", max: 1 })
+const schema = isShared ? sharedSchema : standaloneSchema
 const db = drizzle(client, { schema })
 
 const DEFAULT_COMMODITIES = [
@@ -33,41 +43,44 @@ const DEFAULT_COMMODITIES = [
 ]
 
 async function main() {
-  console.log("Seeding database...")
+  const schemaLabel = isShared ? `shared (Factory ID: ${factoryIdArg})` : "standalone"
+  console.log(`Seeding database for ${schemaLabel}...`)
 
-  // 1. Seed Super Admin User & Linked Profile
-  console.log("Hashing password for super admin user...")
-  const passwordHash = await hashPassword("super123")
+  console.log("Hashing password for admin user...")
+  const passwordHash = await hashPassword("admin123")
 
-  console.log("Inserting super admin user ('super')...")
-  const [superUser] = await db
+  console.log("Inserting admin user ('admin')...")
+  const userValues: Record<string, unknown> = {
+    username: "admin",
+    passwordHash,
+    role: Role.ADMIN,
+    isActive: true,
+    ...(isShared ? { factoryId: factoryIdArg } : {}),
+  }
+
+  const [adminUser] = await db
     .insert(schema.users)
-    .values({
-      username: "super",
-      passwordHash,
-      role: Role.SUPER_ADMIN,
-      isActive: true,
-    })
+    .values(userValues as typeof standaloneSchema.users.$inferInsert)
     .onConflictDoNothing()
     .returning({ id: schema.users.id })
 
-  if (superUser) {
-    console.log(`Super admin user inserted with id=${superUser.id}`)
-    console.log("Inserting linked profile for super admin...")
+  if (adminUser) {
+    console.log(`Admin user inserted with id=${adminUser.id}`)
+    console.log("Inserting linked profile for admin...")
     await db
       .insert(schema.profiles)
       .values({
-        userId: superUser.id,
-        name: "Super Admin",
-        role: Role.SUPER_ADMIN,
+        userId: adminUser.id,
+        name: "Admin User",
+        role: Role.ADMIN,
       })
       .onConflictDoNothing()
-    console.log("Super admin profile seeded successfully!")
+    console.log("Admin profile seeded successfully!")
   } else {
-    console.log("Super admin user already exists.")
+    console.log("Admin user already exists.")
   }
 
-  // 2. Seed Default Commodities Catalog
+  // Seed Default Commodities Catalog
   console.log("Seeding default commodities catalog...")
   for (const item of DEFAULT_COMMODITIES) {
     await db

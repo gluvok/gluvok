@@ -32,7 +32,6 @@ export const ENTITY_EXTRACTORS: Record<
   [ProjectSlug.PROFILES]: (item) => extractByIdAndName(item as { id: number; name: string }),
   [ProjectSlug.CENTERS]: (item) => extractByIdAndName(item as { id: number; name: string }),
   [ProjectSlug.COMMODITIES]: (item) => extractByIdAndName(item as { id: number; name: string }),
-  [ProjectSlug.FACTORIES]: (item) => extractByIdAndName(item as { id: number; name: string }),
   [ProjectSlug.CONFIGS]: (item) => {
     const c = item as unknown as { id: number; factory_name?: string }
     return {

@@ -4,7 +4,6 @@
  */
 
 export enum Role {
-  SUPER_ADMIN = "super_admin",
   ADMIN = "admin",
   MANAGER = "manager",
   OPERATOR = "operator",
@@ -30,7 +29,6 @@ export enum WeighmentType {
 }
 
 export enum RoleLabel {
-  SUPER_ADMIN = "SUPER ADMIN",
   ADMIN = "ADMIN",
   MANAGER = "MANAGER",
   OPERATOR = "OPERATOR",
@@ -117,7 +115,6 @@ export enum ApiRoutes {
   AUTH_ME = "/api/auth/me",
   PROFILES = "/api/profiles",
   CUSTOMERS = "/api/customers",
-  FACTORIES = "/api/factories",
   CENTERS = "/api/centers",
   RATES = "/api/rates",
   WEIGHMENTS = "/api/weighments",
@@ -133,7 +130,6 @@ export enum ProjectSlug {
   RATES = "rates",
   CUSTOMERS = "customers",
   WEIGHMENTS = "weighments",
-  FACTORIES = "factories",
   PROFILES = "profiles",
   CONFIGS = "configs",
 }

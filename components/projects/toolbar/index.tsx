@@ -10,9 +10,8 @@ import { Search, Plus, RotateCw, X } from "lucide-react"
 import { DataTableViewOptions } from "@/components/data-table"
 import { BulkActions } from "./bulk-actions"
 import { ProjectFilters } from "@/components/projects/filters"
-import { ProjectSlug, Role, TenantMode } from "@/lib/constants/enums"
-
-import { useAuthStore, getPermissions, getActiveTenantMode } from "@/lib/store"
+import { ProjectSlug } from "@/lib/constants/enums"
+import { useAuthStore, getPermissions } from "@/lib/store"
 
 interface ProjectToolbarProps<TData> {
   table: Table<TData>; projectSlug: string; projectName: string
@@ -22,7 +21,6 @@ interface ProjectToolbarProps<TData> {
 /**
  * ProjectToolbar Component
  * Renders search bar, reload, bulk actions (if rows selected), view options, and creation triggers based on user permissions.
- * For Configs table, keeps the Add button available for Super Admin in Shared SaaS mode, but hides it when a config record exists for single-tenant users.
  */
 export function ProjectToolbar<TData>({
   table, projectSlug, projectName, primaryIdKey, setCreating, onReload
@@ -30,11 +28,8 @@ export function ProjectToolbar<TData>({
   const selectedRows = table.getFilteredSelectedRowModel().rows
   const user = useAuthStore((state) => state.user)
   const permissions = getPermissions(user?.role, projectSlug)
-  const activeTenantMode = getActiveTenantMode()
-  const isSuperAdminShared = activeTenantMode === TenantMode.SHARED && user?.role === Role.SUPER_ADMIN
-
   const isConfigTable = projectSlug === ProjectSlug.CONFIGS
-  const hideAddForConfig = isConfigTable && !isSuperAdminShared && table.getPreFilteredRowModel().rows.length > 0
+  const hideAddForConfig = isConfigTable && table.getPreFilteredRowModel().rows.length > 0
   const canCreate = permissions.create && !hideAddForConfig
 
   const isFiltered = table.getState().columnFilters.length > 0 || !!table.getState().globalFilter

@@ -8,10 +8,8 @@
 
 import { create } from "zustand"
 import axios from "axios"
-import { ProjectSlug, ApiRoutes, Role, TenantMode } from "@/lib/constants/enums"
+import { ProjectSlug, ApiRoutes } from "@/lib/constants/enums"
 import { toast } from "sonner"
-import { useAuthStore } from "./auth"
-import { getActiveTenantMode } from "./access"
 import {
   insertRow,
   updateRow,
@@ -23,11 +21,10 @@ export interface RateOption { id: number; label: string }
 
 interface PreloadPayload {
   commodities: { id: number; name: string }[]
-  factories: { id: number; name: string }[]
   centers: { id: number; name: string }[]
   profiles: { id: number; name: string }[]
   customers: { id: number; name: string }[]
-  rates: { id: number; unit_price: string; unit: string; commodity_name?: string; factory_name?: string }[]
+  rates: { id: number; unit_price: string; unit: string; commodity_name?: string }[]
 }
 
 interface EntitiesState {
@@ -37,7 +34,6 @@ interface EntitiesState {
   entitiesUpdatedTrigger: number
   triggerEntitiesUpdate: () => void
   commodities: { id: number; name: string }[]
-  factories: IdNamePair[]
   weighmentFiltersData: {
     centers: IdNamePair[]
     profiles: IdNamePair[]
@@ -56,7 +52,6 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
   filtersInitialized: false,
 
   commodities: [],
-  factories: [],
   weighmentFiltersData: null,
 
   preloadAllFilters: async (options) => {
@@ -68,21 +63,19 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
       const res = await axios.get<PreloadPayload>(ApiRoutes.FILTERS_PRELOAD)
       const payload = res.data
 
-      const rateOpts: RateOption[] = payload.rates.map((rate) => {
-        const factoryInfo = rate.factory_name ? ` (${rate.factory_name})` : ""
+      const rateOpts: RateOption[] = (payload?.rates || []).map((rate) => {
         return {
           id: rate.id,
-          label: `${rate.commodity_name ?? "Rate"}${factoryInfo} · ₹${rate.unit_price}/${rate.unit} (ID: ${rate.id})`,
+          label: `${rate.commodity_name ?? "Rate"} · ₹${rate.unit_price}/${rate.unit} (ID: ${rate.id})`,
         }
       })
 
       set({
-        commodities: payload.commodities,
-        factories: payload.factories || [],
+        commodities: payload?.commodities || [],
         weighmentFiltersData: {
-          centers: payload.centers,
-          profiles: payload.profiles,
-          customers: payload.customers,
+          centers: payload?.centers || [],
+          profiles: payload?.profiles || [],
+          customers: payload?.customers || [],
           rates: rateOpts,
         },
       })
@@ -90,7 +83,7 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
         if (toastId) {
           toast.success("Data synced successfully", { id: toastId })
         } else {
-          toast.success?.("Data synced successfully", { id: "sync-data-toast" })
+          toast.success("Data synced successfully")
         }
       }
     } catch (err) {
@@ -99,7 +92,7 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
         if (toastId) {
           toast.error("Failed to sync data", { id: toastId })
         } else {
-          toast.error?.("Failed to sync data", { id: "sync-data-toast" })
+          toast.error("Failed to sync data")
         }
       }
     } finally {
@@ -110,9 +103,6 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
   addEntity: async (slug, newE) => {
     const created = (await insertRow(slug, newE)) as unknown as Record<string, unknown> | undefined
     const state = get()
-    const currentUser = useAuthStore.getState().user
-    const tenantMode = getActiveTenantMode()
-    const isSuperAdminShared = tenantMode === TenantMode.SHARED && currentUser?.role === Role.SUPER_ADMIN
 
     if (created && typeof created === "object") {
       const createdId = Number(created.id)
@@ -122,11 +112,6 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
         case ProjectSlug.COMMODITIES:
           if (createdId) {
             set({ commodities: [...state.commodities.filter((c) => c.id !== createdId), { id: createdId, name }] })
-          }
-          break
-        case ProjectSlug.FACTORIES:
-          if (createdId && isSuperAdminShared) {
-            set({ factories: [...state.factories.filter((f) => f.id !== createdId), { id: createdId, name }] })
           }
           break
         case ProjectSlug.CENTERS:
@@ -164,18 +149,9 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
             const commodityId = Number(created.commodity_id || created.commodityId || newE.commodity_id)
             const foundCommodity = state.commodities.find((c) => c.id === commodityId)
             const commodityName = String(created.commodity_name || foundCommodity?.name || "Rate")
-
-            let factoryInfo = ""
-            if (isSuperAdminShared) {
-              const factoryId = Number(created.factory_id || created.factoryId || newE.factory_id)
-              const foundFactory = state.factories.find((f) => f.id === factoryId)
-              const factoryName = String(created.factory_name || foundFactory?.name || "")
-              if (factoryName) factoryInfo = ` (${factoryName})`
-            }
-
             const unitPrice = String(created.unit_price || created.unitPrice || newE.unit_price || "")
             const unit = String(created.unit || newE.unit || "")
-            const label = `${commodityName}${factoryInfo} · ₹${unitPrice}/${unit} (ID: ${createdId})`
+            const label = `${commodityName} · ₹${unitPrice}/${unit} (ID: ${createdId})`
 
             set({
               weighmentFiltersData: {
@@ -198,9 +174,6 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
     const updated = (await updateRow(slug, Number(id), fields)) as unknown as Record<string, unknown> | undefined
     const targetId = Number(id)
     const state = get()
-    const currentUser = useAuthStore.getState().user
-    const tenantMode = getActiveTenantMode()
-    const isSuperAdminShared = tenantMode === TenantMode.SHARED && currentUser?.role === Role.SUPER_ADMIN
 
     if (updated && typeof updated === "object") {
       const name = String(updated.name || fields.name || "")
@@ -208,11 +181,6 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
       switch (slug) {
         case ProjectSlug.COMMODITIES:
           set({ commodities: state.commodities.map((c) => (c.id === targetId ? { id: targetId, name } : c)) })
-          break
-        case ProjectSlug.FACTORIES:
-          if (isSuperAdminShared) {
-            set({ factories: state.factories.map((f) => (f.id === targetId ? { id: targetId, name } : f)) })
-          }
           break
         case ProjectSlug.CENTERS:
           if (state.weighmentFiltersData) {
@@ -249,18 +217,9 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
             const commodityId = Number(updated.commodity_id || updated.commodityId || fields.commodity_id)
             const foundCommodity = state.commodities.find((c) => c.id === commodityId)
             const commodityName = String(updated.commodity_name || foundCommodity?.name || "Rate")
-
-            let factoryInfo = ""
-            if (isSuperAdminShared) {
-              const factoryId = Number(updated.factory_id || updated.factoryId || fields.factory_id)
-              const foundFactory = state.factories.find((f) => f.id === factoryId)
-              const factoryName = String(updated.factory_name || foundFactory?.name || "")
-              if (factoryName) factoryInfo = ` (${factoryName})`
-            }
-
             const unitPrice = String(updated.unit_price || updated.unitPrice || fields.unit_price || "")
             const unit = String(updated.unit || fields.unit || "")
-            const label = `${commodityName}${factoryInfo} · ₹${unitPrice}/${unit} (ID: ${targetId})`
+            const label = `${commodityName} · ₹${unitPrice}/${unit} (ID: ${targetId})`
 
             set({
               weighmentFiltersData: {
@@ -287,9 +246,6 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
     switch (slug) {
       case ProjectSlug.COMMODITIES:
         set({ commodities: state.commodities.filter((c) => c.id !== targetId) })
-        break
-      case ProjectSlug.FACTORIES:
-        set({ factories: state.factories.filter((f) => f.id !== targetId) })
         break
       case ProjectSlug.CENTERS:
         if (state.weighmentFiltersData) {

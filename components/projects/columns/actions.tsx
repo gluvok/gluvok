@@ -28,7 +28,7 @@ function hasRowModifyPermission(
   currentUser: AuthUser | null
 ): boolean {
   if (!currentUser) return false
-  if (currentUser.role === Role.SUPER_ADMIN) return true
+
 
   switch (projectSlug) {
     case ProjectSlug.PROFILES: {
@@ -46,13 +46,7 @@ function hasRowModifyPermission(
       )
     }
 
-    case ProjectSlug.FACTORIES: {
-      const itemId = getField(item, EntityKey.ID)
-      const isAdmin = currentUser.role === Role.ADMIN
-      const userFactoryId = currentUser.profile?.factory_id || currentUser.customer?.factory_id
 
-      return isAdmin && Number(itemId) === Number(userFactoryId)
-    }
 
     default:
       return true

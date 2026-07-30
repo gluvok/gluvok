@@ -23,6 +23,12 @@ Always use **pnpm** (never raw npm or yarn) for all CLI checks, test executions,
 2. **NO FACTORY COLUMNS OR FACTORY FILTERS IN UI**:
    - No `Factory ID` or `Factory Name` columns in any DataTables (`configs`, `centers`, `profiles`, `customers`, `rates`, `weighments`).
    - No factory comboboxes ("All Factories") or factory filter dropdowns in table toolbars.
-3. **STRICT SHARED VS DEDICATED ARCHITECTURE**:
+3. **NO FACTORIES ROUTE, API ENDPOINTS, OR STORE STATE**:
+   - Factory creation/management is an out-of-band onboarding responsibility performed directly in DB tools (DataGrip/Supabase).
+   - No `/api/factories` endpoints exist. `ProjectSlug.FACTORIES` is removed.
+   - No `factories` array exists in the Zustand entity store, option extractors, or preloaded filters payload.
+4. **MANDATORY FACTORY_ID FOR SEEDING**:
+   - `scripts/seed.ts` strictly requires `FACTORY_ID` when seeding in Shared mode (`FACTORY_ID=1 pnpm seed --shared`).
+5. **STRICT SHARED VS DEDICATED ARCHITECTURE**:
    - **Shared Mode**: Queries use `sharedSchema` and automatically filter by `user.factory_id` (`where(eq(schema.factoryId, user.factory_id))`).
    - **Dedicated Mode**: Queries use `standaloneSchema` operating without `factory_id` conditions or joins.

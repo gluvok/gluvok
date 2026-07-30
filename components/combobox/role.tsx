@@ -3,7 +3,6 @@
 /**
  * @file components/combobox/role.tsx
  * @description Combobox selector specifically built for selecting user roles.
- * Limits option lists depending on the current user's role/value.
  */
 
 import { BaseCombobox } from "./base"
@@ -17,10 +16,6 @@ interface RoleComboboxProps {
   disabled?: boolean
 }
 
-/**
- * RoleCombobox Component
- * Renders a dropdown to select a role. Disables selection if value is SUPER_ADMIN.
- */
 export function RoleCombobox({ value, onChange, id, disabled }: RoleComboboxProps) {
   const data = [
     { value: Role.ADMIN, label: RoleLabel.ADMIN },
@@ -30,7 +25,6 @@ export function RoleCombobox({ value, onChange, id, disabled }: RoleComboboxProp
   ]
 
   const ActiveIcon = getRoleIcon(value)
-  const isSuperAdmin = value === Role.SUPER_ADMIN
 
   return (
     <BaseCombobox
@@ -39,10 +33,9 @@ export function RoleCombobox({ value, onChange, id, disabled }: RoleComboboxProp
       data={data}
       type="role"
       icon={ActiveIcon}
-      placeholder={isSuperAdmin ? RoleLabel.SUPER_ADMIN : "Select role..."}
+      placeholder="Select role..."
       id={id}
-      disabled={disabled || isSuperAdmin}
+      disabled={disabled}
     />
   )
 }
-

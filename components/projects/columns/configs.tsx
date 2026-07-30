@@ -5,10 +5,10 @@
 
 import * as React from "react"
 import { ColumnDef } from "@tanstack/react-table"
-import { Fingerprint, ShieldCheck, Factory } from "lucide-react"
+import { Fingerprint, ShieldCheck } from "lucide-react"
 import { EntityKey, FieldRequirementMode, ColumnLabel } from "@/lib/constants/enums"
 import { getModeIcon, getModeColorClass, getFieldRequirementModeLabel } from "@/lib/fields"
-import { createCustomColumn, createIdColumn, createTextColumn } from "./helpers"
+import { createCustomColumn } from "./helpers"
 
 function ModeBadgeCell({ mode }: { mode: string }) {
   const modeVal = String(mode || FieldRequirementMode.MANDATORY)
@@ -37,16 +37,6 @@ export function getConfigsColumns<T>(): ColumnDef<T>[] {
       ColumnLabel.GOVT_ID_MODE,
       ShieldCheck,
       (val) => <ModeBadgeCell mode={val} />
-    ),
-    createIdColumn<T>(
-      EntityKey.FACTORY_ID,
-      ColumnLabel.FACTORY_ID,
-      Factory
-    ),
-    createTextColumn<T>(
-      EntityKey.FACTORY_NAME,
-      ColumnLabel.FACTORY_NAME,
-      Factory
     ),
   ]
 }

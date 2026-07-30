@@ -22,7 +22,6 @@ export function useEntityOptions(
   currentValue?: string
 ) {
   const storeCommodities = useEntitiesStore((state) => state.commodities)
-  const storeFactories = useEntitiesStore((state) => state.factories)
   const weighmentFiltersData = useEntitiesStore((state) => state.weighmentFiltersData)
 
   const preloadedOptions = React.useMemo(() => {
@@ -32,14 +31,6 @@ export function useEntityOptions(
           return storeCommodities.map((c) => ({
             value: String(c.id),
             label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
-          }))
-        }
-        break
-      case ProjectSlug.FACTORIES:
-        if (storeFactories && storeFactories.length > 0) {
-          return storeFactories.map((f) => ({
-            value: String(f.id),
-            label: f.name ? `${f.name} (ID: ${f.id})` : String(f.id),
           }))
         }
         break
@@ -79,7 +70,7 @@ export function useEntityOptions(
         break
     }
     return null
-  }, [entitySlug, storeCommodities, storeFactories, weighmentFiltersData])
+  }, [entitySlug, storeCommodities, weighmentFiltersData])
 
   const [apiOptions, setApiOptions] = React.useState<{ value: string; label: string }[]>([])
   const [apiLoading, setApiLoading] = React.useState(false)

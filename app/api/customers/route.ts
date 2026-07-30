@@ -10,13 +10,11 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
 
   const { customers, users } = getTables(mode)
-  const factories = mode === TenantMode.SHARED ? sharedSchema.factories : undefined
-  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
 
   const activeConfig = await getFactoryConfig(user.factory_id, db, mode)
   const isGovtIdNotRequired = activeConfig?.govtIdMode === FieldRequirementMode.NOT_REQUIRED
 
-  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.customers.factoryId, req.nextUrl.searchParams)
+  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.customers.factoryId)
   const conditions = []
   if (factoryCond) conditions.push(factoryCond)
 
@@ -32,17 +30,11 @@ export const GET = withAuth(async (req, user, db, mode) => {
         searchConds.push(eq(customers.govtId, searchNum))
       }
     }
-    if (isSuperAdminShared && factories) {
-      searchConds.push(ilike(factories.name, `%${search}%`))
-      if (!isNaN(searchNum)) {
-        searchConds.push(eq(sharedSchema.customers.factoryId, searchNum))
-      }
-    }
     conditions.push(or(...searchConds))
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  let baseQuery = db
+  const baseQuery = db
     .select({
       id: customers.id,
       ...(isGovtIdNotRequired ? {} : { govt_id: customers.govtId }),
@@ -54,25 +46,16 @@ export const GET = withAuth(async (req, user, db, mode) => {
       updated_at: customers.updatedAt,
       username: users.username,
       is_active: users.isActive,
-      ...(isSuperAdminShared && factories ? { factory_name: factories.name } : {}),
     })
     .from(customers)
     .leftJoin(users, eq(customers.userId, users.id))
     .$dynamic()
 
-  if (isSuperAdminShared && factories) {
-    baseQuery = baseQuery.leftJoin(factories, eq(sharedSchema.customers.factoryId, factories.id)) as typeof baseQuery
-  }
-
-  let countQuery = db
+  const countQuery = db
     .select({ count: count() })
     .from(customers)
     .leftJoin(users, eq(customers.userId, users.id))
     .$dynamic()
-
-  if (isSuperAdminShared && factories) {
-    countQuery = countQuery.leftJoin(factories, eq(sharedSchema.customers.factoryId, factories.id)) as typeof countQuery
-  }
 
   return fetchPaginatedResult(db, countQuery, baseQuery, whereClause, pagination, desc(customers.createdAt))
 })
@@ -81,9 +64,7 @@ export const POST = withAuth(async (req, user, db, mode) => {
   if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.CREATE)) return forbiddenError()
   const body = await req.json()
 
-  const targetFactoryId = (mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN && body.factory_id)
-    ? Number(body.factory_id)
-    : (user.factory_id ?? 0)
+  const targetFactoryId = user.factory_id ?? 0
   const activeConfig = await getFactoryConfig(targetFactoryId, db, mode)
 
   const dynamicSchema = getDynamicCustomerSchema(activeConfig)

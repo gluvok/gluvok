@@ -72,9 +72,9 @@ describe("Auth Store (Zustand with custom JWT API via Axios)", () => {
     it("should call /api/auth/login with username & password and set user on success", async () => {
       const mockUser = {
         id: "user-456",
-        username: "superadmin",
-        name: "Super Admin",
-        role: Role.SUPER_ADMIN,
+        username: "admin",
+        name: "Admin User",
+        role: Role.ADMIN,
         factory_id: 2,
       }
 
@@ -83,16 +83,16 @@ describe("Auth Store (Zustand with custom JWT API via Axios)", () => {
         data: { success: true, user: mockUser },
       })
 
-      const success = await useAuthStore.getState().login("superadmin", "secretpass")
+      const success = await useAuthStore.getState().login("admin", "secretpass")
 
       expect(success).toBe(true)
       expect(axios.post).toHaveBeenCalledWith(
         "/api/auth/login",
-        { username: "superadmin", password: "secretpass" },
+        { username: "admin", password: "secretpass" },
         expect.any(Object)
       )
-      expect(useAuthStore.getState().user?.username).toBe("superadmin")
-      expect(toast.success).toHaveBeenCalledWith("Welcome back, Super Admin!")
+      expect(useAuthStore.getState().user?.username).toBe("admin")
+      expect(toast.success).toHaveBeenCalledWith("Welcome back, Admin User!")
     })
 
     it("should toast error and return false on invalid credentials", async () => {

@@ -21,7 +21,6 @@ export const timestamps = {
 // ---------------------------------------------------------------------------
 
 export const roleEnum = pgEnum(DbEnum.ROLE, [
-  Role.SUPER_ADMIN,
   Role.ADMIN,
   Role.MANAGER,
   Role.OPERATOR,

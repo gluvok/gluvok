@@ -69,14 +69,16 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
   return (
     <div className="space-y-4">
       {isConfigTable ? (
-        <ConfigSummary
-          config={table.getRowModel().rows[0]?.original as Config | undefined}
-          isLoading={isLoading}
-          canCreate={permissions.create}
-          canEdit={permissions.write}
-          onCreate={() => setCreating(true)}
-          onEdit={setEditingItem}
-        />
+        <div className="flex min-h-[calc(100vh-14rem)] items-center justify-center">
+          <ConfigSummary
+            config={table.getRowModel().rows[0]?.original as Config | undefined}
+            isLoading={isLoading}
+            canCreate={permissions.create}
+            canEdit={permissions.write}
+            onCreate={() => setCreating(true)}
+            onEdit={setEditingItem}
+          />
+        </div>
       ) : (
         <>
           {/* Search, filters, reload and creation controls */}

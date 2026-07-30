@@ -5,6 +5,7 @@
  * @description Single-record configuration summary with contextual create and edit actions.
  */
 
+import * as React from "react";
 import { Pencil, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,17 +29,21 @@ interface ConfigSettingProps {
 }
 
 function ConfigSetting({ label, mode }: ConfigSettingProps) {
-  const ModeIcon = getModeIcon(mode)
+  const modeIcon = React.createElement(getModeIcon(mode), {
+    className: "h-3.5 w-3.5",
+  });
 
   return (
     <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/30 px-4 py-2">
       <span className="text-xs font-medium text-foreground">{label}</span>
-      <span className={`inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold ${getModeColorClass(mode)}`}>
-        <ModeIcon className="h-3.5 w-3.5" />
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold ${getModeColorClass(mode)}`}
+      >
+        {modeIcon}
         {getFieldRequirementModeLabel(mode)}
       </span>
     </div>
-  )
+  );
 }
 
 /** Displays the single configuration record for the active tenant scope. */
@@ -69,13 +74,20 @@ export function ConfigSummary({ config, isLoading, canCreate, canEdit, onCreate,
   const govtIdMode = config[EntityKey.GOVT_ID_MODE] ?? FieldRequirementMode.MANDATORY
 
   return (
-    <Card className="max-w-2xl">
+    <Card className="w-full max-w-2xl">
       <CardHeader>
         <CardTitle>Identification requirements</CardTitle>
-        <CardDescription>Manage which identification details are collected for this tenant.</CardDescription>
+        <CardDescription>
+          Manage which identification details are collected for this tenant.
+        </CardDescription>
         {canEdit && (
           <CardAction>
-            <Button onClick={() => onEdit(config)} size="sm" variant="outline" className="gap-1.5">
+            <Button
+              onClick={() => onEdit(config)}
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+            >
               <Pencil className="h-4 w-4" />
               Edit
             </Button>
@@ -87,5 +99,5 @@ export function ConfigSummary({ config, isLoading, canCreate, canEdit, onCreate,
         <ConfigSetting label="Government ID" mode={govtIdMode} />
       </CardContent>
     </Card>
-  )
+  );
 }

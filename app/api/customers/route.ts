@@ -18,6 +18,7 @@ import {
   ProjectSlug,
   PermissionKey,
   QueryParam,
+  EntityKey,
   FieldRequirementMode,
 } from "@/lib/constants/enums";
 import { hashPassword } from "@/lib/auth/password";

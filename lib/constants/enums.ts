@@ -211,6 +211,7 @@ export enum CommodityName {
   SCRAP_COPPER = "Scrap Copper",
   BARLEY = "Barley",
   WINE = "Wine",
+  CABLE = "Cable",
 }
 
 export enum ProjectName {

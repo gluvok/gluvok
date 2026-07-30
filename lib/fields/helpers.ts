@@ -4,7 +4,7 @@
  */
 
 import { ProjectSlug, EntityKey, CommodityName, ProjectName, SystemSlug, SingularEntityName, Role, RoleLabel, WeighmentType, FieldRequirementMode } from "@/lib/constants/enums"
-import { Sprout, Wheat, Droplet, Hammer, Package, Leaf, Wine, Crown, ShieldCheck, Briefcase, HardHat, User, Cpu, Shield, ArrowDownLeft, ArrowUpRight, ArrowUpDown, CheckCircle2, HelpCircle, Ban, SlidersHorizontal, type LucideIcon } from "lucide-react"
+import { Sprout, Wheat, Droplet, Hammer, Package, Leaf, Wine, Cable, Crown, ShieldCheck, Briefcase, HardHat, User, Cpu, Shield, ArrowDownLeft, ArrowUpRight, ArrowUpDown, CheckCircle2, HelpCircle, Ban, SlidersHorizontal, type LucideIcon } from "lucide-react"
 
 export function getPrimaryIdKey(slug: string | ProjectSlug): EntityKey {
   switch (slug) {
@@ -47,6 +47,7 @@ const COMMODITY_ICON_MAP: Record<CommodityName, LucideIcon> = {
   [CommodityName.SCRAP_COPPER]: Hammer,
   [CommodityName.BARLEY]: Leaf,
   [CommodityName.WINE]: Wine,
+  [CommodityName.CABLE]: Cable,
 }
 
 export function getCommodityIcon(name: string): LucideIcon {

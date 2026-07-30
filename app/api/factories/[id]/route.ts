@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
-import { db } from "@/db"
 import { factories } from "@/db/schema"
 import { withAuth, apiError, isFKViolation, StatusCodes } from "@/db/helpers"
-import { Role } from "@/lib/constants/enums"
+import { Role, TenantMode } from "@/lib/constants/enums"
 
-export const PUT = withAuth(async (req, _user, ctx) => {
+export const PUT = withAuth(async (req, _user, db, mode, ctx) => {
+  if (mode === TenantMode.DEDICATED) {
+    return NextResponse.json({ error: "Not available in dedicated mode" }, { status: 405 })
+  }
   const { id } = await ctx.params
   const factoryId = parseInt(id, 10)
   const body = await req.json()
@@ -29,7 +31,10 @@ export const PUT = withAuth(async (req, _user, ctx) => {
   })
 }, Role.SUPER_ADMIN)
 
-export const DELETE = withAuth(async (_req, _user, ctx) => {
+export const DELETE = withAuth(async (_req, _user, db, mode, ctx) => {
+  if (mode === TenantMode.DEDICATED) {
+    return NextResponse.json({ error: "Not available in dedicated mode" }, { status: 405 })
+  }
   try {
     const { id } = await ctx.params
     await db.delete(factories).where(eq(factories.id, parseInt(id, 10)))

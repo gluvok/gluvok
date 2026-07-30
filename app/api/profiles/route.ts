@@ -1,22 +1,24 @@
-import { NextResponse } from "next/server"
-import { eq, ilike, count, and, desc, or } from "drizzle-orm"
-import { db } from "@/db"
-import { profiles, users, factories } from "@/db/schema"
-import { withAuth, getPaginationParams, apiError, StatusCodes, getFactoryConfig } from "@/db/helpers"
-import { Role, QueryParam, EntityKey, FilterValue, FieldRequirementMode } from "@/lib/constants/enums"
+import { eq, ilike, and, desc, or, count } from "drizzle-orm"
+import { getTables, sharedSchema } from "@/db/schema"
+import { withAuth, getPaginationParams, apiError, StatusCodes, getFactoryConfig, getFactoryWhereClause, fetchPaginatedResult, formatEntityResponse } from "@/db/helpers"
+import { Role, TenantMode, QueryParam, EntityKey, FilterValue, FieldRequirementMode } from "@/lib/constants/enums"
 import { getDynamicProfileSchema } from "@/lib/validation"
 import { hashPassword } from "@/lib/auth/password"
 
-export const GET = withAuth(async (req, user) => {
-  const { page, limit, offset } = getPaginationParams(req.nextUrl)
+export const GET = withAuth(async (req, user, db, mode) => {
+  const pagination = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
   const roleParam = req.nextUrl.searchParams.get(EntityKey.ROLE)
 
-  const activeConfig = await getFactoryConfig(user.factory_id)
+  const { profiles, users } = getTables(mode)
+  const factories = mode === TenantMode.SHARED ? sharedSchema.factories : undefined
+
+  const activeConfig = await getFactoryConfig(user.factory_id, db, mode)
   const isAadharNotRequired = activeConfig?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED
 
+  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.users.factoryId)
   const conditions = []
-  if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) conditions.push(eq(users.factoryId, user.factory_id))
+  if (factoryCond) conditions.push(factoryCond)
   if (roleParam && roleParam !== FilterValue.ALL) conditions.push(eq(profiles.role, roleParam as Role))
   if (search) {
     conditions.push(
@@ -28,9 +30,8 @@ export const GET = withAuth(async (req, user) => {
     )
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
-  const isSuperAdmin = user.role === Role.SUPER_ADMIN
+  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
 
-  // Dynamic Drizzle query building: omit aadhar_number if mode is NOT_REQUIRED
   let baseQuery = db
     .select({
       id: profiles.id,
@@ -41,40 +42,33 @@ export const GET = withAuth(async (req, user) => {
       created_at: profiles.createdAt,
       updated_at: profiles.updatedAt,
       username: users.username,
-      factory_id: users.factoryId,
+      ...(mode === TenantMode.SHARED ? { factory_id: sharedSchema.users.factoryId } : {}),
       is_active: users.isActive,
-      ...(isSuperAdmin ? { factory_name: factories.name } : {}),
+      ...(isSuperAdminShared && factories ? { factory_name: factories.name } : {}),
     })
     .from(profiles)
     .innerJoin(users, eq(profiles.userId, users.id))
     .$dynamic()
 
-  if (isSuperAdmin) {
-    baseQuery = baseQuery.leftJoin(factories, eq(users.factoryId, factories.id)) as typeof baseQuery
+  if (isSuperAdminShared && factories) {
+    baseQuery = baseQuery.leftJoin(factories, eq(sharedSchema.users.factoryId, factories.id)) as typeof baseQuery
   }
 
-  const [totalCountResult, rows] = await Promise.all([
-    db
-      .select({ count: count() })
-      .from(profiles)
-      .innerJoin(users, eq(profiles.userId, users.id))
-      .where(whereClause),
-    baseQuery.where(whereClause).orderBy(desc(profiles.createdAt)).limit(limit).offset(offset),
-  ])
+  const countQuery = db
+    .select({ count: count() })
+    .from(profiles)
+    .innerJoin(users, eq(profiles.userId, users.id))
 
-  const total = Number(totalCountResult[0]?.count || 0)
-  return NextResponse.json({
-    data: rows,
-    pagination: { page, limit, total },
-  })
+  return fetchPaginatedResult(db, countQuery, baseQuery, whereClause, pagination, desc(profiles.createdAt))
 })
 
-export const POST = withAuth(async (req, user) => {
+export const POST = withAuth(async (req, user, db, mode) => {
   const body = await req.json()
-  const targetFactoryId = user.role === Role.SUPER_ADMIN && body.factory_id ? body.factory_id : user.factory_id
-  const activeConfig = await getFactoryConfig(targetFactoryId)
+  const targetFactoryId = (mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN && body.factory_id)
+    ? body.factory_id
+    : user.factory_id
+  const activeConfig = await getFactoryConfig(targetFactoryId, db, mode)
 
-  // Dynamic Drizzle validation schema
   const dynamicSchema = getDynamicProfileSchema(activeConfig)
   const parsed = dynamicSchema.safeParse(body)
 
@@ -91,53 +85,46 @@ export const POST = withAuth(async (req, user) => {
     role: Role
   }
 
-  // Check username uniqueness
-  const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.username, username))
+  const { profiles, users } = getTables(mode)
+
+  const [existingUser] = await db.select({ id: sharedSchema.users.id }).from(users).where(eq(sharedSchema.users.username, username))
   if (existingUser) return apiError("Username is already taken", StatusCodes.BAD_REQUEST)
 
-  // Check aadhar uniqueness per factory if provided
   if (aadhar_number) {
-    const aadharConditions = [eq(profiles.aadharNumber, aadhar_number)]
-    if (targetFactoryId) {
-      aadharConditions.push(eq(users.factoryId, targetFactoryId))
+    const aadharConditions = [eq(sharedSchema.profiles.aadharNumber, aadhar_number)]
+    if (mode === TenantMode.SHARED && targetFactoryId) {
+      aadharConditions.push(eq(sharedSchema.users.factoryId, targetFactoryId))
     }
     const [existingProfile] = await db
-      .select({ id: profiles.id })
+      .select({ id: sharedSchema.profiles.id })
       .from(profiles)
-      .innerJoin(users, eq(profiles.userId, users.id))
+      .innerJoin(users, eq(sharedSchema.profiles.userId, sharedSchema.users.id))
       .where(and(...aadharConditions))
-    if (existingProfile) return apiError("Aadhar number is already registered in this factory", StatusCodes.BAD_REQUEST)
+    if (existingProfile) return apiError(mode === TenantMode.SHARED ? "Aadhar number is already registered in this factory" : "Aadhar number is already registered", StatusCodes.BAD_REQUEST)
   }
 
   const passwordHash = await hashPassword(password)
-
-  const [newUser] = await db
-    .insert(users)
-    .values({ username, passwordHash, role, factoryId: targetFactoryId })
-    .returning()
+  const userValues = { username, passwordHash, role, ...(mode === TenantMode.SHARED ? { factoryId: targetFactoryId } : {}) }
+  const [newUser] = await db.insert(users as typeof sharedSchema.users).values(userValues as typeof sharedSchema.users.$inferInsert).returning()
 
   const [newProfile] = await db
-    .insert(profiles)
+    .insert(profiles as typeof sharedSchema.profiles)
     .values({
       userId: newUser.id,
       name,
       ...(aadhar_number ? { aadharNumber: aadhar_number } : {}),
       role,
-    })
+    } as typeof sharedSchema.profiles.$inferInsert)
     .returning()
 
-  return NextResponse.json({
-    data: {
-      id: newProfile.id,
-      user_id: newProfile.userId,
-      name: newProfile.name,
-      aadhar_number: newProfile.aadharNumber,
-      role: newProfile.role,
+  return formatEntityResponse(
+    {
+      ...(newProfile as Record<string, unknown>),
       username: newUser.username,
-      factory_id: newUser.factoryId,
-      is_active: newUser.isActive,
-      created_at: newProfile.createdAt,
-      updated_at: newProfile.updatedAt,
+      isActive: newUser.isActive,
+      ...(mode === TenantMode.SHARED ? { factoryId: targetFactoryId } : {}),
     },
-  }, { status: StatusCodes.CREATED })
+    mode,
+    StatusCodes.CREATED
+  )
 })

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Role, ProjectSlug, EntityKey } from "@/lib/constants/enums"
+import { Role, ProjectSlug, EntityKey, TenantMode } from "@/lib/constants/enums"
 import { getPermissions, hasPageAccess, hasCreateAccess, hasDeleteAccess, isColumnVisible, isFieldVisible } from "./access"
 
 describe("RBAC Access Controls", () => {
@@ -115,6 +115,18 @@ describe("RBAC Access Controls", () => {
         })
       }
       expect(getPermissions(Role.BASE, ProjectSlug.CONFIGS).read).toBe(false)
+    })
+
+    it("should strip factory hidden fields and hide factories page in TenantMode.DEDICATED", () => {
+      const dedicatedAdmin = getPermissions(Role.ADMIN, ProjectSlug.CENTERS, TenantMode.DEDICATED)
+      expect(dedicatedAdmin.hiddenColumns).not.toContain(EntityKey.FACTORY_ID)
+      expect(dedicatedAdmin.hiddenColumns).not.toContain(EntityKey.FACTORY_NAME)
+      expect(dedicatedAdmin.hiddenFields).not.toContain(EntityKey.FACTORY_ID)
+      expect(dedicatedAdmin.hiddenFilters).not.toContain(EntityKey.FACTORY_ID)
+
+      const dedicatedFactories = getPermissions(Role.SUPER_ADMIN, ProjectSlug.FACTORIES, TenantMode.DEDICATED)
+      expect(dedicatedFactories.show).toBe(false)
+      expect(dedicatedFactories.read).toBe(false)
     })
   })
 

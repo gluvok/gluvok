@@ -266,6 +266,13 @@ export enum RequestHeader {
   USERNAME = "x-user-username",
   ROLE = "x-user-role",
   FACTORY_ID = "x-user-factory-id",
+  TENANT_MODE = "x-tenant-mode",
+  WORKSPACE = "x-workspace",
+}
+
+export enum TenantMode {
+  SHARED = "shared",
+  DEDICATED = "dedicated",
 }
 
 export enum PermissionKey {

@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
-import { db } from "@/db"
 import { centers } from "@/db/schema"
-import { withAuth, apiError, isFKViolation, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import { withAuth, apiError, isFKViolation, forbiddenError, hasPermission, StatusCodes, formatEntityResponse } from "@/db/helpers"
 import { ProjectSlug, PermissionKey } from "@/lib/constants/enums"
 
-export const PUT = withAuth(async (req, user, ctx) => {
+export const PUT = withAuth(async (req, user, db, mode, ctx) => {
   if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.WRITE)) return forbiddenError()
   const { id } = await ctx.params
   const centerId = parseInt(id, 10)
@@ -19,18 +18,10 @@ export const PUT = withAuth(async (req, user, ctx) => {
 
   if (!updated) return apiError("Center not found", StatusCodes.NOT_FOUND)
 
-  return NextResponse.json({
-    data: {
-      id: updated.id,
-      name: updated.name,
-      factory_id: updated.factoryId,
-      created_at: updated.createdAt,
-      updated_at: updated.updatedAt,
-    },
-  })
+  return formatEntityResponse(updated, mode)
 })
 
-export const DELETE = withAuth(async (_req, user, ctx) => {
+export const DELETE = withAuth(async (_req, user, db, _mode, ctx) => {
   if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.DELETE)) return forbiddenError()
   try {
     const { id } = await ctx.params

@@ -4,6 +4,7 @@
  */
 
 import { SignJWT, jwtVerify } from "jose"
+import { TenantMode } from "@/lib/constants/enums"
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "gluvok_jwt_secret_key_change_in_production_32bytes_long"
@@ -13,7 +14,8 @@ export interface JWTPayload {
   sub: string
   username: string
   role: string
-  factory_id?: number | null
+  factory_id: number | null
+  tenant_mode: TenantMode
 }
 
 /**
@@ -24,6 +26,7 @@ export async function signJWT(payload: JWTPayload): Promise<string> {
     username: payload.username,
     role: payload.role,
     factory_id: payload.factory_id ?? null,
+    tenant_mode: payload.tenant_mode,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
@@ -47,6 +50,7 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
       username: payload.username,
       role: payload.role,
       factory_id: typeof payload.factory_id === "number" ? payload.factory_id : null,
+      tenant_mode: payload.tenant_mode === TenantMode.DEDICATED ? TenantMode.DEDICATED : TenantMode.SHARED,
     }
   } catch {
     return null

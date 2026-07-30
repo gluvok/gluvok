@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server"
 import { eq, and } from "drizzle-orm"
-import { db } from "@/db"
 import { configs } from "@/db/schema"
 import { withAuth, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
-import { Role, ProjectSlug, PermissionKey, FieldRequirementMode } from "@/lib/constants/enums"
+import { Role, TenantMode, ProjectSlug, PermissionKey, FieldRequirementMode } from "@/lib/constants/enums"
 
-export const PATCH = withAuth(async (req, user, context) => {
+export const PATCH = withAuth(async (req, user, db, mode, context) => {
   if (!hasPermission(user, ProjectSlug.CONFIGS, PermissionKey.WRITE)) return forbiddenError()
 
   try {
@@ -17,7 +16,7 @@ export const PATCH = withAuth(async (req, user, context) => {
     const { aadhar_number_mode, govt_id_mode } = body
 
     const conditions = [eq(configs.id, configId)]
-    if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) {
+    if (mode === TenantMode.SHARED && user.role !== Role.SUPER_ADMIN && user.factory_id != null) {
       conditions.push(eq(configs.factoryId, user.factory_id))
     }
 
@@ -50,7 +49,7 @@ export const PATCH = withAuth(async (req, user, context) => {
     return NextResponse.json({
       data: {
         id: updated.id,
-        factory_id: updated.factoryId,
+        ...(mode === TenantMode.SHARED ? { factory_id: updated.factoryId } : {}),
         aadhar_number_mode: updated.aadharNumberMode,
         govt_id_mode: updated.govtIdMode,
         created_at: updated.createdAt,
@@ -63,7 +62,7 @@ export const PATCH = withAuth(async (req, user, context) => {
   }
 })
 
-export const DELETE = withAuth(async (_req, user, context) => {
+export const DELETE = withAuth(async (_req, user, db, mode, context) => {
   if (!hasPermission(user, ProjectSlug.CONFIGS, PermissionKey.DELETE)) return forbiddenError()
 
   try {
@@ -72,7 +71,7 @@ export const DELETE = withAuth(async (_req, user, context) => {
     if (!configId) return apiError("Config not found", StatusCodes.NOT_FOUND)
 
     const conditions = [eq(configs.id, configId)]
-    if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) {
+    if (mode === TenantMode.SHARED && user.role !== Role.SUPER_ADMIN && user.factory_id != null) {
       conditions.push(eq(configs.factoryId, user.factory_id))
     }
 

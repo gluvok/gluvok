@@ -74,7 +74,7 @@ export default function Page() {
               ) : (
                 <RefreshCw className="h-3.5 w-3.5" />
               )}
-              Sync Data
+              {filtersLoading ? "Syncing..." : "Sync Data"}
             </Button>
           </div>
           <p className="text-muted-foreground text-sm max-w-xl">

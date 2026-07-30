@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { StatusCodes, ReasonPhrases } from "http-status-codes"
-import { sql, eq } from "drizzle-orm"
+import { sql, eq, count, type Column, type SQL } from "drizzle-orm"
 import { verifyJWT, JWTPayload } from "@/lib/auth/jwt"
-import { Role, RequestHeader, ProjectSlug, PermissionKey, QueryParam } from "@/lib/constants/enums"
+import { Role, RequestHeader, TenantMode, ProjectSlug, PermissionKey, QueryParam } from "@/lib/constants/enums"
 import { RBAC_MATRIX, type Permission } from "@/lib/store/access"
 import { REQUIRED_CREATE_FIELDS } from "@/lib/fields/config"
-import { db } from "@/db"
+import { db, getDb } from "@/db"
 import { configs } from "@/db/schema"
+import { getWorkspace } from "@/lib/tenant/workspace"
+import { resolveTenant, type TenantContext } from "@/lib/tenant"
 
 export interface PaginationParams {
   page: number
@@ -86,13 +88,15 @@ export async function getAuthUser(req: NextRequest | Request): Promise<JWTPayloa
   const username = req.headers.get(RequestHeader.USERNAME)
   const role = req.headers.get(RequestHeader.ROLE)
   const factoryIdStr = req.headers.get(RequestHeader.FACTORY_ID)
+  const tenantModeHeader = req.headers.get(RequestHeader.TENANT_MODE)
 
-  if (userId && username && role && factoryIdStr) {
+  if (userId && username && role) {
     return {
       sub: userId,
       username,
       role: role as Role,
-      factory_id: parseInt(factoryIdStr, 10),
+      factory_id: factoryIdStr ? parseInt(factoryIdStr, 10) : null,
+      tenant_mode: tenantModeHeader === TenantMode.DEDICATED ? TenantMode.DEDICATED : TenantMode.SHARED,
     }
   }
 
@@ -136,10 +140,12 @@ export async function requireAuth(
   return { user }
 }
 
-// ─── withAuth: HOF — declare role at the export site, not in the handler ─────
+// ─── withAuth: HOF — injects (req, user, db, mode, ctx) into every handler ──
 type AuthedHandler<P extends Record<string, string> = Record<string, string>> = (
   req: NextRequest,
   user: JWTPayload,
+  db: ReturnType<typeof getDb>,
+  mode: TenantMode,
   ctx: RouteContext<P>
 ) => Promise<NextResponse>
 
@@ -150,28 +156,61 @@ export function withAuth<P extends Record<string, string> = Record<string, strin
   return async (req: NextRequest, ctx: RouteContext<P>): Promise<NextResponse> => {
     const { user, errorResponse } = await requireAuth(req, requiredRole)
     if (errorResponse) return errorResponse
-    return handler(req, user, ctx)
+    // Resolve tenant context from the request (subdomain → env var look-up)
+    const workspace = getWorkspace(req)
+    const tenant: TenantContext = resolveTenant(workspace)
+    const tenantDb = getDb(tenant)
+    return handler(req, user, tenantDb, tenant.mode, ctx)
   }
 }
 // ─── DB Session Context — set before queries so RLS policies can read them ────
 // Call this inside withAuth handler (or any authed route) before DB queries.
 // Uses SET LOCAL so values are scoped to the current transaction only.
-export async function setDbSessionContext(user: JWTPayload): Promise<void> {
-  await db.execute(sql`
-    SELECT
-      set_config('app.current_role',       ${user.role},              true),
-      set_config('app.current_factory_id', ${String(user.factory_id)}, true),
-      set_config('app.current_user_id',    ${user.sub},               true)
-  `)
+export async function setDbSessionContext(
+  user: JWTPayload,
+  tenantDb: ReturnType<typeof getDb> = db
+): Promise<void> {
+  if (user.tenant_mode === TenantMode.DEDICATED) {
+    await tenantDb.execute(sql`
+      SELECT
+        set_config('app.current_role',    ${user.role}, true),
+        set_config('app.current_user_id', ${user.sub},  true)
+    `)
+  } else {
+    await tenantDb.execute(sql`
+      SELECT
+        set_config('app.current_role',       ${user.role},              true),
+        set_config('app.current_factory_id', ${String(user.factory_id)}, true),
+        set_config('app.current_user_id',    ${user.sub},               true)
+    `)
+  }
 }
 
 /**
- * Reusable helper to fetch factory field requirement configuration (Aadhaar & Govt ID modes).
+ * Reusable helper to fetch field requirement configuration.
+ *
+ * - Shared mode: looks up the config row for the given factoryId.
+ * - Dedicated mode: always returns the single global config row.
  */
-export async function getFactoryConfig(factoryId: number | null | undefined) {
-  if (!factoryId) return null
+export async function getFactoryConfig(
+  factoryId: number | null | undefined,
+  tenantDb: ReturnType<typeof getDb> = db,
+  mode: TenantMode = TenantMode.SHARED
+) {
   try {
-    const [c] = await db
+    if (mode === TenantMode.DEDICATED) {
+      // Dedicated: single global config row, ignore factoryId
+      const [c] = await tenantDb
+        .select({
+          aadharNumberMode: configs.aadharNumberMode,
+          govtIdMode: configs.govtIdMode,
+        })
+        .from(configs)
+        .limit(1)
+      return c || null
+    }
+    if (!factoryId) return null
+    const [c] = await tenantDb
       .select({
         factoryId: configs.factoryId,
         aadharNumberMode: configs.aadharNumberMode,
@@ -184,4 +223,94 @@ export async function getFactoryConfig(factoryId: number | null | undefined) {
   } catch {
     return null
   }
+}
+
+/**
+ * Returns a factory scoping condition `eq(factoryIdColumn, user.factory_id)` when in SHARED mode for non-super-admin users.
+ */
+export function getFactoryWhereClause(
+  user: JWTPayload,
+  mode: TenantMode,
+  factoryIdColumn: Column
+): SQL | undefined {
+  if (mode === TenantMode.SHARED && user.role !== Role.SUPER_ADMIN && user.factory_id != null) {
+    return eq(factoryIdColumn, user.factory_id)
+  }
+  return undefined
+}
+
+/**
+ * Executes count and data queries in parallel with pagination and returns a standardized JSON response.
+ */
+export async function fetchPaginatedResult<T = unknown>(
+  tenantDb: ReturnType<typeof getDb>,
+  countTableOrQuery: unknown,
+  baseQuery: unknown,
+  whereClause: SQL | undefined,
+  pagination: PaginationParams,
+  orderByClause?: unknown
+) {
+  const { page, limit, offset } = pagination
+  const bQuery = baseQuery as {
+    where: (clause: unknown) => {
+      limit: (l: number) => {
+        offset: (o: number) => {
+          orderBy?: (ob: unknown) => Promise<unknown[]>
+        } & Promise<unknown[]>
+      }
+    }
+  }
+
+  const limitedQuery = bQuery.where(whereClause).limit(limit).offset(offset)
+  const dataQuery = orderByClause && typeof limitedQuery.orderBy === "function"
+    ? limitedQuery.orderBy(orderByClause)
+    : limitedQuery
+
+  const cObj = countTableOrQuery as { where?: (w: unknown) => Promise<{ count: number | string }[]> }
+  const countQuery = typeof cObj?.where === "function"
+    ? cObj.where(whereClause)
+    : (tenantDb as unknown as { select: (fields: unknown) => { from: (table: unknown) => { where: (clause: unknown) => Promise<{ count: number | string }[]> } } })
+        .select({ count: count() })
+        .from(countTableOrQuery)
+        .where(whereClause)
+
+  const [countResult, rows] = await Promise.all([
+    countQuery,
+    dataQuery,
+  ])
+
+  const total = Number((countResult as { count: number | string }[])[0]?.count || 0)
+  return NextResponse.json({
+    data: rows as T[],
+    pagination: { page, limit, total },
+  })
+}
+
+/**
+ * Formats a DB entity record into standardized JSON API response:
+ * - Converts camelCase DB fields (createdAt, fatherName) to snake_case (created_at, father_name)
+ * - Omit sensitive internal fields (passwordHash)
+ * - Conditionally includes factory_id based on TenantMode
+ */
+export function formatEntityResponse<T extends Record<string, unknown>>(
+  record: T,
+  mode: TenantMode = TenantMode.SHARED,
+  status: number = StatusCodes.OK
+) {
+  const formatted: Record<string, unknown> = {}
+
+  for (const [key, value] of Object.entries(record)) {
+    if (key === "factoryId") {
+      if (mode === TenantMode.SHARED && value != null) {
+        formatted.factory_id = value
+      }
+    } else if (key === "passwordHash") {
+      continue
+    } else {
+      const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+      formatted[snakeKey] = value
+    }
+  }
+
+  return NextResponse.json({ data: formatted }, { status })
 }

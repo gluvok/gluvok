@@ -2,8 +2,10 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { StatusCodes, ReasonPhrases } from "http-status-codes"
 import { verifyJWT } from "@/lib/auth/jwt"
-import { AppRoutes, Role, ApiPrefix, RequestHeader } from "@/lib/constants/enums"
+import { AppRoutes, Role, ApiPrefix, RequestHeader, TenantMode } from "@/lib/constants/enums"
 import { PUBLIC_ROUTES, AUTH_ROUTES, PUBLIC_API_ROUTES } from "@/lib/constants/routes"
+import { getWorkspace } from "@/lib/tenant/workspace"
+import { resolveTenant } from "@/lib/tenant"
 
 const PUBLIC_PATHNAMES = new Set<string>([
   ...AUTH_ROUTES,
@@ -49,8 +51,13 @@ export async function proxy(request: NextRequest) {
       : NextResponse.redirect(new URL(AppRoutes.LOGIN, request.url))
   }
 
-  // Centralized Super Admin check for factory mutations
+  // Resolve tenant from subdomain
+  const workspace = getWorkspace(request)
+  const tenant = resolveTenant(workspace)
+
+  // Centralized Super Admin check for factory mutations (shared mode only)
   if (
+    tenant.mode === TenantMode.SHARED &&
     pathname.startsWith(ApiPrefix.FACTORIES_API) &&
     request.method !== "GET" &&
     payload.role !== Role.SUPER_ADMIN
@@ -63,7 +70,13 @@ export async function proxy(request: NextRequest) {
   requestHeaders.set(RequestHeader.USER_ID, payload.sub)
   requestHeaders.set(RequestHeader.USERNAME, payload.username)
   requestHeaders.set(RequestHeader.ROLE, payload.role)
-  requestHeaders.set(RequestHeader.FACTORY_ID, String(payload.factory_id))
+  requestHeaders.set(RequestHeader.TENANT_MODE, tenant.mode)
+  requestHeaders.set(RequestHeader.WORKSPACE, workspace ?? "")
+
+  // factory_id only meaningful in shared mode
+  if (tenant.mode === TenantMode.SHARED && payload.factory_id != null) {
+    requestHeaders.set(RequestHeader.FACTORY_ID, String(payload.factory_id))
+  }
 
   return NextResponse.next({ request: { headers: requestHeaders } })
 }

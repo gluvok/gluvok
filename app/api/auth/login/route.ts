@@ -5,10 +5,12 @@
 
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
-import { db } from "@/db"
 import { users, profiles, customers } from "@/db/schema"
 import { verifyPassword } from "@/lib/auth/password"
 import { signJWT } from "@/lib/auth/jwt"
+import { TenantMode } from "@/lib/constants/enums"
+import { getWorkspace } from "@/lib/tenant/workspace"
+import { resolveTenant } from "@/lib/tenant"
 
 export async function POST(request: Request) {
   try {
@@ -22,8 +24,15 @@ export async function POST(request: Request) {
       )
     }
 
-    // 1. Query user by username using Drizzle ORM
-    const [user] = await db
+    // Resolve tenant from request (login runs before withAuth)
+    const workspace = getWorkspace(request as Parameters<typeof getWorkspace>[0])
+    const tenant = resolveTenant(workspace)
+    // Import getDb lazily to avoid circular issues — db/index exports it
+    const { getDb } = await import("@/db")
+    const tenantDb = getDb(tenant)
+
+    // 1. Query user by username
+    const [user] = await tenantDb
       .select()
       .from(users)
       .where(eq(users.username, username))
@@ -45,25 +54,30 @@ export async function POST(request: Request) {
       )
     }
 
-    // 3. Immediate permissions & metadata check using Drizzle ORM
-    const [profile] = await db
+    // 3. Load profile/customer metadata
+    const [profile] = await tenantDb
       .select()
       .from(profiles)
       .where(eq(profiles.userId, user.id))
       .limit(1)
 
-    const [customer] = await db
+    const [customer] = await tenantDb
       .select()
       .from(customers)
       .where(eq(customers.userId, user.id))
       .limit(1)
 
-    // 4. Sign JWT session token
+    // 4. Sign JWT — factory_id is null in dedicated mode (no factory column)
+    const factoryId = tenant.mode === TenantMode.SHARED
+      ? (("factoryId" in user ? (user as { factoryId: number | null }).factoryId : null) ?? null)
+      : null
+
     const token = await signJWT({
       sub: user.id,
       username: user.username,
       role: user.role,
-      factory_id: user.factoryId,
+      factory_id: factoryId,
+      tenant_mode: tenant.mode,
     })
 
     // 5. Construct response with HttpOnly cookie
@@ -72,30 +86,24 @@ export async function POST(request: Request) {
       username: user.username,
       name: profile?.name || customer?.name || user.username,
       role: user.role,
-      factory_id: user.factoryId,
+      factory_id: factoryId,
+      tenant_mode: tenant.mode,
       profile: profile || undefined,
       customer: customer || undefined,
     }
 
     const response = NextResponse.json({ success: true, user: userPayload })
-
-    const cookieOptions = {
+    response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax" as const,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24,
       path: "/",
-      maxAge: 60 * 60 * 24, // 24 hours
-    }
-
-    response.cookies.set("token", token, cookieOptions)
-    response.cookies.set("auth_token", token, cookieOptions)
+    })
 
     return response
-  } catch (error) {
-    console.error("Login API error:", error)
-    return NextResponse.json(
-      { error: "An unexpected error occurred during login" },
-      { status: 500 }
-    )
+  } catch (err) {
+    console.error("Login error:", err)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

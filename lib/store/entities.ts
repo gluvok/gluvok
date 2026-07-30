@@ -8,6 +8,7 @@
 import { create } from "zustand"
 import axios from "axios"
 import { ProjectSlug, ApiRoutes } from "@/lib/constants/enums"
+import { toast } from "sonner"
 import {
   insertRow,
   updateRow,
@@ -57,6 +58,7 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
 
   preloadAllFilters: async () => {
     set({ filtersLoading: true })
+    const toastId = typeof toast?.loading === "function" ? toast.loading("Syncing data...") : undefined
     try {
       const res = await axios.get<PreloadPayload>(ApiRoutes.FILTERS_PRELOAD)
       const payload = res.data
@@ -79,8 +81,18 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
           rates: rateOpts,
         },
       })
+      if (toastId) {
+        toast.success("Data synced successfully", { id: toastId })
+      } else {
+        toast.success?.("Data synced successfully")
+      }
     } catch (err) {
       console.error("Failed to preload filter entities:", err)
+      if (toastId) {
+        toast.error("Failed to sync data", { id: toastId })
+      } else {
+        toast.error?.("Failed to sync data")
+      }
     } finally {
       set({ filtersLoading: false, filtersInitialized: true })
     }

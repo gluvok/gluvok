@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
-import { db } from "@/db"
 import { commodities } from "@/db/schema"
 import { withAuth, apiError, isFKViolation, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
 import { ProjectSlug, PermissionKey } from "@/lib/constants/enums"
 
-export const PUT = withAuth(async (req, user, ctx) => {
+export const PUT = withAuth(async (req, user, db, _mode, ctx) => {
   if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.WRITE)) return forbiddenError()
   const { id } = await ctx.params
   const { name } = await req.json()
@@ -28,7 +27,7 @@ export const PUT = withAuth(async (req, user, ctx) => {
   })
 })
 
-export const DELETE = withAuth(async (_req, user, ctx) => {
+export const DELETE = withAuth(async (_req, user, db, _mode, ctx) => {
   if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.DELETE)) return forbiddenError()
   try {
     const { id } = await ctx.params

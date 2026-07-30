@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "seed:superadmin": "tsx --env-file=.env.local scripts/seed-superadmin.ts"
+    "seed:superadmin": "tsx --env-file=.env.local scripts/seed-superadmin.ts",
+    "seed:dedicated": "tsx --env-file=.env.local scripts/seed-dedicated.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

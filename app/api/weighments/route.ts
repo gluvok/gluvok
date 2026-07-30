@@ -1,12 +1,10 @@
-import { NextResponse } from "next/server"
-import { eq, ilike, count, and, desc, or, gte, lte } from "drizzle-orm"
-import { db } from "@/db"
-import { weighments, rates, commodities, centers, profiles, customers } from "@/db/schema"
-import { withAuth, getPaginationParams, validateRequiredFields, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
-import { Role, ProjectSlug, PermissionKey, QueryParam, Unit, WeighmentType, EntityKey, FilterValue } from "@/lib/constants/enums"
+import { eq, ilike, and, desc, or, gte, lte, count } from "drizzle-orm"
+import { weighments, rates, commodities, centers, profiles, customers, sharedSchema } from "@/db/schema"
+import { withAuth, getPaginationParams, validateRequiredFields, apiError, forbiddenError, hasPermission, StatusCodes, getFactoryWhereClause, fetchPaginatedResult, formatEntityResponse } from "@/db/helpers"
+import { Role, TenantMode, ProjectSlug, PermissionKey, QueryParam, Unit, WeighmentType, EntityKey, FilterValue } from "@/lib/constants/enums"
 
-export const GET = withAuth(async (req, user) => {
-  const { page, limit, offset } = getPaginationParams(req.nextUrl)
+export const GET = withAuth(async (req, user, db, mode) => {
+  const pagination = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
   const unitParam = req.nextUrl.searchParams.get(EntityKey.UNIT)
   const centerIdParam = req.nextUrl.searchParams.get(EntityKey.CENTER_ID)
@@ -16,8 +14,9 @@ export const GET = withAuth(async (req, user) => {
   const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE)
   const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE)
 
+  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.centers.factoryId)
   const conditions = []
-  if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) conditions.push(eq(centers.factoryId, user.factory_id))
+  if (factoryCond) conditions.push(factoryCond)
   if (unitParam && unitParam !== FilterValue.ALL) conditions.push(eq(weighments.unit, unitParam as Unit))
   if (centerIdParam && centerIdParam !== FilterValue.ALL) conditions.push(eq(weighments.centerId, Number(centerIdParam)))
   if (commodityIdParam && commodityIdParam !== FilterValue.ALL) conditions.push(eq(rates.commodityId, Number(commodityIdParam)))
@@ -37,55 +36,44 @@ export const GET = withAuth(async (req, user) => {
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  const [totalCountResult, rows] = await Promise.all([
-    db
-      .select({ count: count() })
-      .from(weighments)
-      .leftJoin(centers, eq(weighments.centerId, centers.id))
-      .leftJoin(customers, eq(weighments.customerId, customers.id))
-      .leftJoin(profiles, eq(weighments.profileId, profiles.id))
-      .where(whereClause),
-    db
-      .select({
-        id: weighments.id,
-        vehicle_number: weighments.vehicleNumber,
-        weight: weighments.weight,
-        images: weighments.images,
-        unit: weighments.unit,
-        type: weighments.type,
-        rate_id: weighments.rateId,
-        center_id: weighments.centerId,
-        profile_id: weighments.profileId,
-        customer_id: weighments.customerId,
-        is_active: weighments.isActive,
-        created_at: weighments.createdAt,
-        updated_at: weighments.updatedAt,
-        center_name: centers.name,
-        profile_name: profiles.name,
-        customer_name: customers.name,
-        commodity_name: commodities.name,
-        unit_price: rates.unitPrice,
-      })
-      .from(weighments)
-      .leftJoin(rates, eq(weighments.rateId, rates.id))
-      .leftJoin(commodities, eq(rates.commodityId, commodities.id))
-      .leftJoin(centers, eq(weighments.centerId, centers.id))
-      .leftJoin(profiles, eq(weighments.profileId, profiles.id))
-      .leftJoin(customers, eq(weighments.customerId, customers.id))
-      .where(whereClause)
-      .orderBy(desc(weighments.createdAt))
-      .limit(limit)
-      .offset(offset),
-  ])
+  const countQuery = db
+    .select({ count: count() })
+    .from(weighments)
+    .leftJoin(centers, eq(weighments.centerId, centers.id))
+    .leftJoin(customers, eq(weighments.customerId, customers.id))
+    .leftJoin(profiles, eq(weighments.profileId, profiles.id))
 
-  const total = Number(totalCountResult[0]?.count || 0)
-  return NextResponse.json({
-    data: rows,
-    pagination: { page, limit, total },
-  })
+  const baseQuery = db
+    .select({
+      id: weighments.id,
+      vehicle_number: weighments.vehicleNumber,
+      weight: weighments.weight,
+      unit: weighments.unit,
+      type: weighments.type,
+      rate_id: weighments.rateId,
+      center_id: weighments.centerId,
+      profile_id: weighments.profileId,
+      customer_id: weighments.customerId,
+      is_active: weighments.isActive,
+      images: weighments.images,
+      created_at: weighments.createdAt,
+      updated_at: weighments.updatedAt,
+      commodity_name: commodities.name,
+      center_name: centers.name,
+      profile_name: profiles.name,
+      customer_name: customers.name,
+    })
+    .from(weighments)
+    .leftJoin(rates, eq(weighments.rateId, rates.id))
+    .leftJoin(commodities, eq(rates.commodityId, commodities.id))
+    .leftJoin(centers, eq(weighments.centerId, centers.id))
+    .leftJoin(profiles, eq(weighments.profileId, profiles.id))
+    .leftJoin(customers, eq(weighments.customerId, customers.id))
+
+  return fetchPaginatedResult(db, countQuery, baseQuery, whereClause, pagination, desc(weighments.createdAt))
 })
 
-export const POST = withAuth(async (req, user) => {
+export const POST = withAuth(async (req, user, db, mode) => {
   if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.CREATE)) return forbiddenError()
   const body = await req.json()
   const err = validateRequiredFields(body, ProjectSlug.WEIGHMENTS)
@@ -93,11 +81,15 @@ export const POST = withAuth(async (req, user) => {
 
   const { vehicle_number, weight, unit, type, rate_id, center_id, profile_id, customer_id, images } = body
 
-  // Ensure center belongs to user's factory if non-super_admin
-  const [center] = await db.select({ factoryId: centers.factoryId }).from(centers).where(eq(centers.id, Number(center_id)))
+  // Ensure center belongs to user's factory if non-super_admin in shared mode
+  const [center] = await db
+    .select(mode === TenantMode.SHARED ? { factoryId: sharedSchema.centers.factoryId } : { id: centers.id })
+    .from(centers)
+    .where(eq(centers.id, Number(center_id)))
   if (!center) return apiError("Selected center not found", StatusCodes.NOT_FOUND)
-  if (user.role !== Role.SUPER_ADMIN && center.factoryId !== user.factory_id) {
-    return forbiddenError()
+  if (mode === TenantMode.SHARED && user.role !== Role.SUPER_ADMIN) {
+    const c = center as { factoryId: number }
+    if (c.factoryId !== user.factory_id) return forbiddenError()
   }
 
   const [newWeighment] = await db
@@ -115,22 +107,5 @@ export const POST = withAuth(async (req, user) => {
     })
     .returning()
 
-  return NextResponse.json({
-    data: {
-      id: newWeighment.id,
-      vehicle_number: newWeighment.vehicleNumber,
-      weight: newWeighment.weight,
-      unit: newWeighment.unit,
-      type: newWeighment.type,
-      rate_id: newWeighment.rateId,
-      center_id: newWeighment.centerId,
-      profile_id: newWeighment.profileId,
-      customer_id: newWeighment.customerId,
-      images: newWeighment.images,
-      is_active: newWeighment.isActive,
-      created_at: newWeighment.createdAt,
-      updated_at: newWeighment.updatedAt,
-    },
-  }, { status: StatusCodes.CREATED })
+  return formatEntityResponse(newWeighment, mode, StatusCodes.CREATED)
 })
-

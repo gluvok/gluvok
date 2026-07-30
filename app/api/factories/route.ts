@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server"
-import { eq, ilike, count, desc } from "drizzle-orm"
-import { db } from "@/db"
+import { eq, ilike, desc } from "drizzle-orm"
 import { factories } from "@/db/schema"
-import { withAuth, getPaginationParams, forbiddenError, hasPermission, validateRequiredFields, StatusCodes } from "@/db/helpers"
-import { Role, ProjectSlug, PermissionKey, QueryParam } from "@/lib/constants/enums"
+import { withAuth, getPaginationParams, forbiddenError, hasPermission, validateRequiredFields, StatusCodes, fetchPaginatedResult, formatEntityResponse } from "@/db/helpers"
+import { Role, TenantMode, ProjectSlug, PermissionKey, QueryParam } from "@/lib/constants/enums"
 
-export const GET = withAuth(async (req, user) => {
-  const { page, limit, offset } = getPaginationParams(req.nextUrl)
+export const GET = withAuth(async (req, user, db, mode) => {
+  // Dedicated mode: no factories table
+  if (mode === TenantMode.DEDICATED) {
+    return NextResponse.json({ data: [], pagination: { page: 1, limit: 10, total: 0 } })
+  }
+
+  const pagination = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
 
   const whereClause =
@@ -16,31 +20,22 @@ export const GET = withAuth(async (req, user) => {
         ? ilike(factories.name, `%${search}%`)
         : undefined
 
-  const [totalCountResult, rows] = await Promise.all([
-    db.select({ count: count() }).from(factories).where(whereClause),
-    db
-      .select({
-        id: factories.id,
-        name: factories.name,
-        created_at: factories.createdAt,
-        updated_at: factories.updatedAt,
-      })
-      .from(factories)
-      .where(whereClause)
-      .orderBy(desc(factories.createdAt))
-      .limit(limit)
-      .offset(offset),
-  ])
+  const baseQuery = db
+    .select({
+      id: factories.id,
+      name: factories.name,
+      created_at: factories.createdAt,
+      updated_at: factories.updatedAt,
+    })
+    .from(factories)
 
-  const total = Number(totalCountResult[0]?.count || 0)
-
-  return NextResponse.json({
-    data: rows,
-    pagination: { page, limit, total },
-  })
+  return fetchPaginatedResult(db, factories, baseQuery, whereClause, pagination, desc(factories.createdAt))
 })
 
-export const POST = withAuth(async (req, user) => {
+export const POST = withAuth(async (req, user, db, mode) => {
+  if (mode === TenantMode.DEDICATED) {
+    return NextResponse.json({ error: "Not available in dedicated mode" }, { status: 405 })
+  }
   if (!hasPermission(user, ProjectSlug.FACTORIES, PermissionKey.CREATE)) return forbiddenError()
   const body = await req.json()
   const err = validateRequiredFields(body, ProjectSlug.FACTORIES)
@@ -53,12 +48,5 @@ export const POST = withAuth(async (req, user) => {
     .values({ name })
     .returning()
 
-  return NextResponse.json({
-    data: {
-      id: newFactory.id,
-      name: newFactory.name,
-      created_at: newFactory.createdAt,
-      updated_at: newFactory.updatedAt,
-    },
-  }, { status: StatusCodes.CREATED })
+  return formatEntityResponse(newFactory, mode, StatusCodes.CREATED)
 })

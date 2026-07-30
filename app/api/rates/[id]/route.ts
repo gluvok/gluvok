@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
-import { db } from "@/db"
 import { rates } from "@/db/schema"
 import { withAuth, apiError, isFKViolation, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
-import { ProjectSlug, PermissionKey } from "@/lib/constants/enums"
+import { ProjectSlug, PermissionKey, TenantMode } from "@/lib/constants/enums"
 
-export const PUT = withAuth(async (req, user, ctx) => {
+export const PUT = withAuth(async (req, user, db, mode, ctx) => {
   if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.WRITE)) return forbiddenError()
   const { id } = await ctx.params
   const { unit_price, unit } = await req.json()
@@ -28,14 +27,14 @@ export const PUT = withAuth(async (req, user, ctx) => {
       commodity_id: updated.commodityId,
       unit_price: updated.unitPrice,
       unit: updated.unit,
-      factory_id: updated.factoryId,
+      ...(mode === TenantMode.SHARED ? { factory_id: (updated as { factoryId?: number }).factoryId } : {}),
       created_at: updated.createdAt,
       updated_at: updated.updatedAt,
     },
   })
 })
 
-export const DELETE = withAuth(async (_req, user, ctx) => {
+export const DELETE = withAuth(async (_req, user, db, _mode, ctx) => {
   if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.DELETE)) return forbiddenError()
   try {
     const { id } = await ctx.params

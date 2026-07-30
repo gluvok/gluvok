@@ -3,7 +3,7 @@
  * @description Role-based access control (RBAC) matrix and permission helper functions.
  */
 
-import { Role, ProjectSlug, EntityKey, FieldRequirementMode } from "@/lib/constants/enums"
+import { Role, ProjectSlug, EntityKey, FieldRequirementMode, TenantMode } from "@/lib/constants/enums"
 import { useConfigStore } from "./config"
 
 export interface Permission {
@@ -103,7 +103,7 @@ export const RBAC_MATRIX: RbacMatrix = {
   },
 }
 
-export function getPermissions(role: Role | null | undefined, projectSlug: string): Permission {
+export function getPermissions(role: Role | null | undefined, projectSlug: string, mode?: TenantMode): Permission {
   if (!role) {
     return { read: false, write: false, delete: false, create: false, show: false, filter: false }
   }
@@ -111,7 +111,24 @@ export function getPermissions(role: Role | null | undefined, projectSlug: strin
   if (!roleMatrix) {
     return { read: false, write: false, delete: false, create: false, show: false, filter: false }
   }
-  return roleMatrix[projectSlug as ProjectSlug] || { read: false, write: false, delete: false, create: false, show: false, filter: false }
+  const basePerm = roleMatrix[projectSlug as ProjectSlug] || { read: false, write: false, delete: false, create: false, show: false, filter: false }
+
+  if (mode === TenantMode.DEDICATED) {
+    if (projectSlug === ProjectSlug.FACTORIES) {
+      return { read: false, write: false, delete: false, create: false, show: false, filter: false }
+    }
+    const filterFactoryKeys = (list?: string[]) =>
+      list?.filter((k) => k !== EntityKey.FACTORY_ID && k !== EntityKey.FACTORY_NAME)
+
+    return {
+      ...basePerm,
+      hiddenColumns: filterFactoryKeys(basePerm.hiddenColumns),
+      hiddenFields: filterFactoryKeys(basePerm.hiddenFields),
+      hiddenFilters: filterFactoryKeys(basePerm.hiddenFilters),
+    }
+  }
+
+  return basePerm
 }
 
 /**

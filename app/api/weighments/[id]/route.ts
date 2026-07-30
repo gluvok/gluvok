@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
-import { db } from "@/db"
 import { weighments } from "@/db/schema"
 import { withAuth, apiError, isFKViolation, StatusCodes } from "@/db/helpers"
 
-export const PUT = withAuth(async (req, _user, ctx) => {
+export const PUT = withAuth(async (req, _user, db, _mode, ctx) => {
   const { id } = await ctx.params
   const weighmentId = parseInt(id, 10)
   const { vehicle_number, weight, is_active } = await req.json()
@@ -41,7 +40,7 @@ export const PUT = withAuth(async (req, _user, ctx) => {
   })
 })
 
-export const DELETE = withAuth(async (_req, _user, ctx) => {
+export const DELETE = withAuth(async (_req, _user, db, _mode, ctx) => {
   try {
     const { id } = await ctx.params
     await db.delete(weighments).where(eq(weighments.id, parseInt(id, 10)))

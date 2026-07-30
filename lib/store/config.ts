@@ -9,7 +9,7 @@ import { FieldRequirementMode } from "@/lib/constants/enums"
 
 export interface FactoryConfig {
   id?: number
-  factoryId: number
+  factoryId?: number | null
   aadharNumberMode: FieldRequirementMode
   govtIdMode: FieldRequirementMode
 }

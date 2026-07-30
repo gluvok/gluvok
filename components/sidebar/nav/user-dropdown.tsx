@@ -74,7 +74,7 @@ export function NavUserDropdown({ user, isMobile }: NavUserDropdownProps) {
           ) : (
             <RefreshCw className="mr-2 h-4 w-4" />
           )}
-          Sync Data
+          {filtersLoading ? "Syncing..." : "Sync Data"}
         </DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />

@@ -1,21 +1,24 @@
-import { NextResponse } from "next/server"
-import { eq, ilike, count, and, desc, or } from "drizzle-orm"
-import { db } from "@/db"
-import { customers, users, factories } from "@/db/schema"
-import { withAuth, getPaginationParams, apiError, forbiddenError, hasPermission, StatusCodes, getFactoryConfig } from "@/db/helpers"
-import { Role, ProjectSlug, PermissionKey, QueryParam, FieldRequirementMode } from "@/lib/constants/enums"
+import { eq, ilike, and, desc, or } from "drizzle-orm"
+import { getTables, sharedSchema } from "@/db/schema"
+import { withAuth, getPaginationParams, apiError, forbiddenError, hasPermission, StatusCodes, getFactoryConfig, getFactoryWhereClause, fetchPaginatedResult, formatEntityResponse } from "@/db/helpers"
+import { Role, TenantMode, ProjectSlug, PermissionKey, QueryParam, FieldRequirementMode } from "@/lib/constants/enums"
 import { hashPassword } from "@/lib/auth/password"
 import { getDynamicCustomerSchema } from "@/lib/validation"
 
-export const GET = withAuth(async (req, user) => {
-  const { page, limit, offset } = getPaginationParams(req.nextUrl)
+export const GET = withAuth(async (req, user, db, mode) => {
+  const pagination = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
 
-  const activeConfig = await getFactoryConfig(user.factory_id)
+  const { customers, users } = getTables(mode)
+  const factories = mode === TenantMode.SHARED ? sharedSchema.factories : undefined
+
+  const activeConfig = await getFactoryConfig(user.factory_id, db, mode)
   const isGovtIdNotRequired = activeConfig?.govtIdMode === FieldRequirementMode.NOT_REQUIRED
 
+  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.customers.factoryId)
   const conditions = []
-  if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) conditions.push(eq(customers.factoryId, user.factory_id))
+  if (factoryCond) conditions.push(factoryCond)
+
   if (search) {
     const searchNum = parseInt(search, 10)
     const searchConds = isNaN(searchNum)
@@ -28,9 +31,8 @@ export const GET = withAuth(async (req, user) => {
     if (searchConds) conditions.push(searchConds)
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
-  const isSuperAdmin = user.role === Role.SUPER_ADMIN
+  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
 
-  // Dynamic Drizzle query building: omit govt_id if mode is NOT_REQUIRED
   let baseQuery = db
     .select({
       id: customers.id,
@@ -38,41 +40,33 @@ export const GET = withAuth(async (req, user) => {
       name: customers.name,
       father_name: customers.fatherName,
       user_id: customers.userId,
-      factory_id: customers.factoryId,
+      ...(mode === TenantMode.SHARED ? { factory_id: sharedSchema.customers.factoryId } : {}),
       created_at: customers.createdAt,
       updated_at: customers.updatedAt,
       username: users.username,
       is_active: users.isActive,
-      ...(isSuperAdmin ? { factory_name: factories.name } : {}),
+      ...(isSuperAdminShared && factories ? { factory_name: factories.name } : {}),
     })
     .from(customers)
     .leftJoin(users, eq(customers.userId, users.id))
     .$dynamic()
 
-  if (isSuperAdmin) {
-    baseQuery = baseQuery.leftJoin(factories, eq(customers.factoryId, factories.id)) as typeof baseQuery
+  if (isSuperAdminShared && factories) {
+    baseQuery = baseQuery.leftJoin(factories, eq(sharedSchema.customers.factoryId, factories.id)) as typeof baseQuery
   }
 
-  const [totalCountResult, rows] = await Promise.all([
-    db.select({ count: count() }).from(customers).where(whereClause),
-    baseQuery.where(whereClause).orderBy(desc(customers.createdAt)).limit(limit).offset(offset),
-  ])
-
-  const total = Number(totalCountResult[0]?.count || 0)
-  return NextResponse.json({
-    data: rows,
-    pagination: { page, limit, total },
-  })
+  return fetchPaginatedResult(db, customers, baseQuery, whereClause, pagination, desc(customers.createdAt))
 })
 
-export const POST = withAuth(async (req, user) => {
+export const POST = withAuth(async (req, user, db, mode) => {
   if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.CREATE)) return forbiddenError()
   const body = await req.json()
 
-  const targetFactoryId = user.role === Role.SUPER_ADMIN && body.factory_id ? Number(body.factory_id) : (user.factory_id ?? 0)
-  const activeConfig = await getFactoryConfig(targetFactoryId)
+  const targetFactoryId = (mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN && body.factory_id)
+    ? Number(body.factory_id)
+    : (user.factory_id ?? 0)
+  const activeConfig = await getFactoryConfig(targetFactoryId, db, mode)
 
-  // Dynamic Drizzle validation schema
   const dynamicSchema = getDynamicCustomerSchema(activeConfig)
   const parsed = dynamicSchema.safeParse(body)
   if (!parsed.success) {
@@ -87,47 +81,33 @@ export const POST = withAuth(async (req, user) => {
     password?: string
   }
 
+  const { customers, users } = getTables(mode)
+
   if (govt_id != null) {
-    const [existingCustomer] = await db
-      .select({ id: customers.id })
-      .from(customers)
-      .where(and(eq(customers.govtId, Number(govt_id)), eq(customers.factoryId, targetFactoryId)))
+    const existingConds = [eq(sharedSchema.customers.govtId, Number(govt_id))]
+    if (mode === TenantMode.SHARED) existingConds.push(eq(sharedSchema.customers.factoryId, targetFactoryId))
+    const [existingCustomer] = await db.select({ id: sharedSchema.customers.id }).from(customers).where(and(...existingConds))
     if (existingCustomer) {
-      return apiError("Govt ID already exists in this factory", StatusCodes.BAD_REQUEST)
+      return apiError(mode === TenantMode.SHARED ? "Govt ID already exists in this factory" : "Govt ID already exists", StatusCodes.BAD_REQUEST)
     }
   }
 
   let createdUserId: string | null = null
   if (username && password) {
     const passwordHash = await hashPassword(password)
-    const [newUser] = await db
-      .insert(users)
-      .values({ username, passwordHash, role: Role.BASE, factoryId: targetFactoryId })
-      .returning()
+    const userValues = { username, passwordHash, role: Role.BASE, ...(mode === TenantMode.SHARED ? { factoryId: targetFactoryId } : {}) }
+    const [newUser] = await db.insert(users as typeof sharedSchema.users).values(userValues as typeof sharedSchema.users.$inferInsert).returning()
     createdUserId = newUser.id
   }
 
-  const [newCustomer] = await db
-    .insert(customers)
-    .values({
-      ...(govt_id != null ? { govtId: Number(govt_id) } : {}),
-      name,
-      fatherName: father_name,
-      userId: createdUserId,
-      factoryId: targetFactoryId,
-    })
-    .returning()
+  const customerValues = {
+    ...(govt_id != null ? { govtId: Number(govt_id) } : {}),
+    name,
+    fatherName: father_name,
+    userId: createdUserId,
+    ...(mode === TenantMode.SHARED ? { factoryId: targetFactoryId } : {}),
+  }
 
-  return NextResponse.json({
-    data: {
-      id: newCustomer.id,
-      govt_id: newCustomer.govtId,
-      name: newCustomer.name,
-      father_name: newCustomer.fatherName,
-      user_id: newCustomer.userId,
-      factory_id: newCustomer.factoryId,
-      created_at: newCustomer.createdAt,
-      updated_at: newCustomer.updatedAt,
-    },
-  }, { status: StatusCodes.CREATED })
+  const [newCustomer] = await db.insert(customers as typeof sharedSchema.customers).values(customerValues as typeof sharedSchema.customers.$inferInsert).returning()
+  return formatEntityResponse(newCustomer, mode, StatusCodes.CREATED)
 })

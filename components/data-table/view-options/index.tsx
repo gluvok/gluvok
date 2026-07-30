@@ -34,7 +34,7 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
           <Settings2 className="h-4 w-4" /> View
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[160px]">
+      <DropdownMenuContent align="end" className="w-[220px]">
         <DropdownMenuLabel className="text-xs">Toggle columns</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {table
@@ -52,8 +52,8 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
                 onCheckedChange={(value) => column.toggleVisibility(!!value)}
                 onSelect={(e) => e.preventDefault()}
               >
-                <Icon className="h-3.5 w-3.5 text-muted-foreground/70" />
-                <span>{label}</span>
+                <Icon className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />
+                <span className="truncate">{label}</span>
               </DropdownMenuCheckboxItem>
             )
           })}

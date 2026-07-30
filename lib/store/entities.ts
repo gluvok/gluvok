@@ -1,14 +1,17 @@
 /**
  * @file lib/store/entities.ts
  * @description Zustand state store for managing entities data via axios and API routes.
+ * Maintains filter entities in local Zustand state memory without fetching from database on CUD.
  */
 
 "use client"
 
 import { create } from "zustand"
 import axios from "axios"
-import { ProjectSlug, ApiRoutes } from "@/lib/constants/enums"
+import { ProjectSlug, ApiRoutes, Role, TenantMode } from "@/lib/constants/enums"
 import { toast } from "sonner"
+import { useAuthStore } from "./auth"
+import { getActiveTenantMode } from "./access"
 import {
   insertRow,
   updateRow,
@@ -75,7 +78,7 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
 
       set({
         commodities: payload.commodities,
-        factories: payload.factories,
+        factories: payload.factories || [],
         weighmentFiltersData: {
           centers: payload.centers,
           profiles: payload.profiles,
@@ -105,17 +108,233 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
   },
 
   addEntity: async (slug, newE) => {
-    await insertRow(slug, newE)
+    const created = (await insertRow(slug, newE)) as unknown as Record<string, unknown> | undefined
+    const state = get()
+    const currentUser = useAuthStore.getState().user
+    const tenantMode = getActiveTenantMode()
+    const isSuperAdminShared = tenantMode === TenantMode.SHARED && currentUser?.role === Role.SUPER_ADMIN
+
+    if (created && typeof created === "object") {
+      const createdId = Number(created.id)
+      const name = String(created.name || newE.name || "")
+
+      switch (slug) {
+        case ProjectSlug.COMMODITIES:
+          if (createdId) {
+            set({ commodities: [...state.commodities.filter((c) => c.id !== createdId), { id: createdId, name }] })
+          }
+          break
+        case ProjectSlug.FACTORIES:
+          if (createdId && isSuperAdminShared) {
+            set({ factories: [...state.factories.filter((f) => f.id !== createdId), { id: createdId, name }] })
+          }
+          break
+        case ProjectSlug.CENTERS:
+          if (createdId && state.weighmentFiltersData) {
+            set({
+              weighmentFiltersData: {
+                ...state.weighmentFiltersData,
+                centers: [...state.weighmentFiltersData.centers.filter((c) => c.id !== createdId), { id: createdId, name }],
+              },
+            })
+          }
+          break
+        case ProjectSlug.PROFILES:
+          if (createdId && state.weighmentFiltersData) {
+            set({
+              weighmentFiltersData: {
+                ...state.weighmentFiltersData,
+                profiles: [...state.weighmentFiltersData.profiles.filter((p) => p.id !== createdId), { id: createdId, name }],
+              },
+            })
+          }
+          break
+        case ProjectSlug.CUSTOMERS:
+          if (createdId && state.weighmentFiltersData) {
+            set({
+              weighmentFiltersData: {
+                ...state.weighmentFiltersData,
+                customers: [...state.weighmentFiltersData.customers.filter((c) => c.id !== createdId), { id: createdId, name }],
+              },
+            })
+          }
+          break
+        case ProjectSlug.RATES: {
+          if (createdId && state.weighmentFiltersData) {
+            const commodityId = Number(created.commodity_id || created.commodityId || newE.commodity_id)
+            const foundCommodity = state.commodities.find((c) => c.id === commodityId)
+            const commodityName = String(created.commodity_name || foundCommodity?.name || "Rate")
+
+            let factoryInfo = ""
+            if (isSuperAdminShared) {
+              const factoryId = Number(created.factory_id || created.factoryId || newE.factory_id)
+              const foundFactory = state.factories.find((f) => f.id === factoryId)
+              const factoryName = String(created.factory_name || foundFactory?.name || "")
+              if (factoryName) factoryInfo = ` (${factoryName})`
+            }
+
+            const unitPrice = String(created.unit_price || created.unitPrice || newE.unit_price || "")
+            const unit = String(created.unit || newE.unit || "")
+            const label = `${commodityName}${factoryInfo} · ₹${unitPrice}/${unit} (ID: ${createdId})`
+
+            set({
+              weighmentFiltersData: {
+                ...state.weighmentFiltersData,
+                rates: [...state.weighmentFiltersData.rates.filter((r) => r.id !== createdId), { id: createdId, label }],
+              },
+            })
+          }
+          break
+        }
+        default:
+          break
+      }
+    }
+
     get().triggerEntitiesUpdate()
   },
 
   updateEntity: async (slug, id, fields) => {
-    await updateRow(slug, Number(id), fields)
+    const updated = (await updateRow(slug, Number(id), fields)) as unknown as Record<string, unknown> | undefined
+    const targetId = Number(id)
+    const state = get()
+    const currentUser = useAuthStore.getState().user
+    const tenantMode = getActiveTenantMode()
+    const isSuperAdminShared = tenantMode === TenantMode.SHARED && currentUser?.role === Role.SUPER_ADMIN
+
+    if (updated && typeof updated === "object") {
+      const name = String(updated.name || fields.name || "")
+
+      switch (slug) {
+        case ProjectSlug.COMMODITIES:
+          set({ commodities: state.commodities.map((c) => (c.id === targetId ? { id: targetId, name } : c)) })
+          break
+        case ProjectSlug.FACTORIES:
+          if (isSuperAdminShared) {
+            set({ factories: state.factories.map((f) => (f.id === targetId ? { id: targetId, name } : f)) })
+          }
+          break
+        case ProjectSlug.CENTERS:
+          if (state.weighmentFiltersData) {
+            set({
+              weighmentFiltersData: {
+                ...state.weighmentFiltersData,
+                centers: state.weighmentFiltersData.centers.map((c) => (c.id === targetId ? { id: targetId, name } : c)),
+              },
+            })
+          }
+          break
+        case ProjectSlug.PROFILES:
+          if (state.weighmentFiltersData) {
+            set({
+              weighmentFiltersData: {
+                ...state.weighmentFiltersData,
+                profiles: state.weighmentFiltersData.profiles.map((p) => (p.id === targetId ? { id: targetId, name } : p)),
+              },
+            })
+          }
+          break
+        case ProjectSlug.CUSTOMERS:
+          if (state.weighmentFiltersData) {
+            set({
+              weighmentFiltersData: {
+                ...state.weighmentFiltersData,
+                customers: state.weighmentFiltersData.customers.map((c) => (c.id === targetId ? { id: targetId, name } : c)),
+              },
+            })
+          }
+          break
+        case ProjectSlug.RATES: {
+          if (state.weighmentFiltersData) {
+            const commodityId = Number(updated.commodity_id || updated.commodityId || fields.commodity_id)
+            const foundCommodity = state.commodities.find((c) => c.id === commodityId)
+            const commodityName = String(updated.commodity_name || foundCommodity?.name || "Rate")
+
+            let factoryInfo = ""
+            if (isSuperAdminShared) {
+              const factoryId = Number(updated.factory_id || updated.factoryId || fields.factory_id)
+              const foundFactory = state.factories.find((f) => f.id === factoryId)
+              const factoryName = String(updated.factory_name || foundFactory?.name || "")
+              if (factoryName) factoryInfo = ` (${factoryName})`
+            }
+
+            const unitPrice = String(updated.unit_price || updated.unitPrice || fields.unit_price || "")
+            const unit = String(updated.unit || fields.unit || "")
+            const label = `${commodityName}${factoryInfo} · ₹${unitPrice}/${unit} (ID: ${targetId})`
+
+            set({
+              weighmentFiltersData: {
+                ...state.weighmentFiltersData,
+                rates: state.weighmentFiltersData.rates.map((r) => (r.id === targetId ? { id: targetId, label } : r)),
+              },
+            })
+          }
+          break
+        }
+        default:
+          break
+      }
+    }
+
     get().triggerEntitiesUpdate()
   },
 
   deleteEntity: async (slug, id) => {
-    await deleteRow(slug, Number(id))
+    const targetId = Number(id)
+    await deleteRow(slug, targetId)
+    const state = get()
+
+    switch (slug) {
+      case ProjectSlug.COMMODITIES:
+        set({ commodities: state.commodities.filter((c) => c.id !== targetId) })
+        break
+      case ProjectSlug.FACTORIES:
+        set({ factories: state.factories.filter((f) => f.id !== targetId) })
+        break
+      case ProjectSlug.CENTERS:
+        if (state.weighmentFiltersData) {
+          set({
+            weighmentFiltersData: {
+              ...state.weighmentFiltersData,
+              centers: state.weighmentFiltersData.centers.filter((c) => c.id !== targetId),
+            },
+          })
+        }
+        break
+      case ProjectSlug.PROFILES:
+        if (state.weighmentFiltersData) {
+          set({
+            weighmentFiltersData: {
+              ...state.weighmentFiltersData,
+              profiles: state.weighmentFiltersData.profiles.filter((p) => p.id !== targetId),
+            },
+          })
+        }
+        break
+      case ProjectSlug.CUSTOMERS:
+        if (state.weighmentFiltersData) {
+          set({
+            weighmentFiltersData: {
+              ...state.weighmentFiltersData,
+              customers: state.weighmentFiltersData.customers.filter((c) => c.id !== targetId),
+            },
+          })
+        }
+        break
+      case ProjectSlug.RATES:
+        if (state.weighmentFiltersData) {
+          set({
+            weighmentFiltersData: {
+              ...state.weighmentFiltersData,
+              rates: state.weighmentFiltersData.rates.filter((r) => r.id !== targetId),
+            },
+          })
+        }
+        break
+      default:
+        break
+    }
+
     get().triggerEntitiesUpdate()
   },
 }))

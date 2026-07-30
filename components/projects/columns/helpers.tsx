@@ -20,7 +20,7 @@ export function createBaseColumn<T>(
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
-        title={<span className="flex items-center gap-1"><Icon className="h-3.5 w-3.5 text-muted-foreground/70" />{label}</span>}
+        title={<span className="flex items-center gap-1.5"><Icon className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />{label}</span>}
       />
     ),
     cell,
@@ -29,12 +29,12 @@ export function createBaseColumn<T>(
 }
 
 export function createCustomColumn<T>(
-  key: EntityKey | string, label: ColumnLabel | string, Icon: React.ComponentType<{ className?: string }>, renderCell: (value: string) => React.ReactNode, id?: string
+  key: EntityKey | string, label: ColumnLabel | string, Icon: React.ComponentType<{ className?: string }>, renderCell: (value: string, row: T) => React.ReactNode, id?: string
 ): ColumnDef<T> {
   const colId = id || (key as string)
   return createBaseColumn(key, label, Icon, ({ row }) => {
     const val = (row.original as Record<string, unknown>)[key as string]
-    return renderCell(String(val ?? ""))
+    return renderCell(String(val ?? ""), row.original)
   }, colId)
 }
 
@@ -65,7 +65,7 @@ export function createIdColumn<T>(
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
-        title={<span className="flex items-center gap-1"><Icon className="h-3.5 w-3.5 text-muted-foreground/70" />{label}</span>}
+        title={<span className="flex items-center gap-1.5"><Icon className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />{label}</span>}
       />
     ),
     cell: ({ row }) => {

@@ -3,12 +3,12 @@
  * @description Helpers for mapping column IDs to human-readable names and display icons.
  */
 
-import { Hash, Calendar, CalendarClock, Image, Tag, Factory } from "lucide-react"
+import { Hash, Calendar, CalendarClock, Image, Tag, Factory, Fingerprint, ShieldCheck, User, AtSign, IndianRupee, Ruler } from "lucide-react"
 import { ColumnLabel, EntityKey } from "@/lib/constants/enums"
 
 /**
  * COLUMN_ICONS mapping
- * Icons associated with common column keys (id, name, dates, etc.).
+ * Icons associated with common column keys (id, name, dates, requirement modes, etc.).
  */
 export const COLUMN_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   [EntityKey.ID]: Hash,
@@ -18,11 +18,19 @@ export const COLUMN_ICONS: Record<string, React.ComponentType<{ className?: stri
   [EntityKey.IMAGES]: Image,
   [EntityKey.FACTORY_ID]: Factory,
   [EntityKey.FACTORY_NAME]: Factory,
+  [EntityKey.AADHAR_NUMBER_MODE]: Fingerprint,
+  [EntityKey.GOVT_ID_MODE]: ShieldCheck,
+  [EntityKey.AADHAR_NUMBER]: Fingerprint,
+  [EntityKey.GOVT_ID]: ShieldCheck,
+  [EntityKey.USERNAME]: AtSign,
+  [EntityKey.USER_ID]: User,
+  [EntityKey.UNIT_PRICE]: IndianRupee,
+  [EntityKey.UNIT]: Ruler,
 }
 
 /**
  * getColumnLabel utility
- * Maps an database entity key/column ID to its corresponding UI label string.
+ * Maps a database entity key/column ID to its corresponding UI label string.
  */
 export function getColumnLabel(id: string): string {
   switch (id) {
@@ -61,6 +69,8 @@ export function getColumnLabel(id: string): string {
     case EntityKey.CENTER: return ColumnLabel.CENTER
     case EntityKey.PROFILE: return ColumnLabel.PROFILE
     case EntityKey.CUSTOMER: return ColumnLabel.CUSTOMER
+    case EntityKey.AADHAR_NUMBER_MODE: return ColumnLabel.AADHAR_NUMBER_MODE
+    case EntityKey.GOVT_ID_MODE: return ColumnLabel.GOVT_ID_MODE
     default:
       return id
   }

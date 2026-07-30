@@ -134,6 +134,24 @@ export function getModeColorClass(modeVal?: string): string {
   }
 }
 
+export function getFieldRequirementModeLabel(modeVal?: string): string {
+  if (!modeVal) return "Optional"
+  const normalized = modeVal.toLowerCase().trim()
+  switch (normalized) {
+    case FieldRequirementMode.MANDATORY:
+    case "mandatory":
+      return "Mandatory"
+    case FieldRequirementMode.NOT_REQUIRED:
+    case "not required":
+    case "not_required":
+      return "Not Required"
+    case FieldRequirementMode.OPTIONAL:
+    case "optional":
+    default:
+      return "Optional"
+  }
+}
+
 export function getItemIcon(type: string | ProjectSlug, label: string): LucideIcon | null {
   switch (type) {
     case ProjectSlug.COMMODITIES:

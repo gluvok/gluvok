@@ -12,8 +12,6 @@ import { DataTablePagination } from "@/components/data-table"
 import { ProjectToolbar, ProjectDialogs, ProjectTable, useProjectTable } from "@/components/projects"
 import { Spinner } from "@/components/kibo-ui/spinner"
 import { useEntitiesStore } from "@/lib/store"
-import { ProjectSlug } from "@/lib/constants/enums"
-import { ConfigSettingsView } from "@/components/projects/config-settings"
 
 interface ProjectClientProps {
   projectName: string;
@@ -90,9 +88,5 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
  * Serves as the main orchestrator for a project's data management UI.
  */
 export function ProjectClient({ projectName, projectSlug }: ProjectClientProps) {
-  if (projectSlug === ProjectSlug.CONFIGS) {
-    return <ConfigSettingsView />
-  }
-
   return <StandardProjectClient projectName={projectName} projectSlug={projectSlug} />
 }

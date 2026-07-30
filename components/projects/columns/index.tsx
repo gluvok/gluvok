@@ -19,6 +19,7 @@ import { getCustomersColumns } from "./customers"
 import { getWeighmentsColumns } from "./weighments"
 import { getFactoriesColumns } from "./factories"
 import { getProfilesColumns } from "./profiles"
+import { getConfigsColumns } from "./configs"
 
 export interface ColumnActionsCallbacks<T = EntityRecord> {
   onEdit: (item: T) => void
@@ -34,6 +35,7 @@ function getSpecificColumns<T>(projectSlug: string): ColumnDef<T>[] {
     case ProjectSlug.WEIGHMENTS: return getWeighmentsColumns<T>()
     case ProjectSlug.FACTORIES: return getFactoriesColumns<T>()
     case ProjectSlug.PROFILES: return getProfilesColumns<T>()
+    case ProjectSlug.CONFIGS: return getConfigsColumns<T>()
 
     default: return []
   }

@@ -41,6 +41,10 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
       id: profiles.id,
       userId: profiles.userId,
       isActive: users.isActive,
+      username: users.username,
+      ...(mode === TenantMode.SHARED
+        ? { factoryId: sharedSchema.users.factoryId }
+        : {}),
     })
     .from(profiles)
     .innerJoin(users, eq(profiles.userId, users.id))
@@ -98,7 +102,12 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
   }
 
   return formatEntityResponse(
-    { ...updated, isActive: updatedUserIsActive },
+    {
+      ...updated,
+      isActive: updatedUserIsActive,
+      username: existing.username,
+      ...(mode === TenantMode.SHARED ? { factoryId: existing.factoryId } : {}),
+    },
     mode,
   );
 })

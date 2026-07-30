@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest"
 import { eq } from "drizzle-orm";
 import { sharedSchema } from "@/db/schema";
 import { TenantMode } from "@/lib/constants/enums";
-import { fetchPaginatedResult, getScopedEntityWhereClause } from "./helpers";
+import {
+  fetchPaginatedResult,
+  formatEntityResponse,
+  getScopedEntityWhereClause,
+} from "./helpers";
 
 describe("fetchPaginatedResult", () => {
   it("applies ordering before pagination", async () => {
@@ -93,3 +97,29 @@ describe("getScopedEntityWhereClause", () => {
     ).toBe(entityWhereClause);
   });
 });
+
+describe("formatEntityResponse", () => {
+  it("preserves profile response fields, converts database keys, and omits password hashes", async () => {
+    const response = formatEntityResponse(
+      {
+        id: 1,
+        userId: "user-1",
+        username: "operator",
+        factoryId: 7,
+        isActive: false,
+        passwordHash: "secret",
+      },
+      TenantMode.SHARED,
+    )
+
+    expect(await response.json()).toEqual({
+      data: {
+        id: 1,
+        user_id: "user-1",
+        username: "operator",
+        factory_id: 7,
+        is_active: false,
+      },
+    })
+  })
+})

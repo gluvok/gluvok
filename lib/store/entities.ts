@@ -61,7 +61,7 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
     const toastId = !isSilent && typeof toast?.loading === "function" ? toast.loading("Syncing data...", { id: "sync-data-toast" }) : undefined
     try {
       const res = await axios.get<PreloadPayload>(ApiRoutes.FILTERS_PRELOAD)
-      const payload = res.data
+      const payload = res?.data
 
       const rateOpts: RateOption[] = (payload?.rates || []).map((rate) => {
         return {

@@ -19,6 +19,9 @@ vi.mock("axios")
 describe("Auth Store (Zustand with custom JWT API via Axios)", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(axios.get).mockResolvedValue({
+      data: { commodities: [], centers: [], profiles: [], customers: [], rates: [] },
+    })
     useAuthStore.setState({
       user: null,
       hydrated: false,

@@ -8,7 +8,7 @@
 
 import { BaseCombobox } from "./base"
 import { FieldRequirementMode } from "@/lib/constants/enums"
-import { getModeIcon } from "@/lib/fields"
+import { getModeIcon, getModeColorClass } from "@/lib/fields"
 
 interface ModeComboboxProps {
   value: string
@@ -25,10 +25,11 @@ const MODE_OPTIONS = [
 /**
  * ModeCombobox Component
  * Renders a dropdown to select field requirement mode (Mandatory, Optional, Not Required).
- * Each option shows a contextual icon: CheckCircle2, HelpCircle, or Ban.
+ * Each option shows a contextual colored icon: CheckCircle2 (emerald), HelpCircle (amber), or Ban (rose).
  */
 export function ModeCombobox({ value, onChange, id }: ModeComboboxProps) {
   const selectedIcon = getModeIcon(value)
+  const iconColorClass = getModeColorClass(value)
 
   return (
     <BaseCombobox
@@ -37,6 +38,7 @@ export function ModeCombobox({ value, onChange, id }: ModeComboboxProps) {
       data={MODE_OPTIONS}
       type="mode"
       icon={selectedIcon}
+      iconColorClass={iconColorClass}
       placeholder="Select mode..."
       id={id}
     />

@@ -9,7 +9,7 @@
 import React from "react"
 import { ChevronsUpDown, Check, LucideIcon } from "lucide-react"
 import { Combobox, ComboboxTrigger, ComboboxContent, ComboboxInput, ComboboxList, ComboboxEmpty, ComboboxGroup, ComboboxItem } from "@/components/kibo-ui/combobox"
-import { getItemIcon } from "@/lib/fields"
+import { getItemIcon, getModeColorClass } from "@/lib/fields"
 import { useCommodityIcon } from "@/hooks/use-commodity-icon"
 
 import { cn } from "@/lib/utils"
@@ -26,6 +26,7 @@ interface BaseComboboxProps {
   data: ComboboxOption[]
   type: string
   icon?: LucideIcon
+  iconColorClass?: string
   placeholder?: string
   searchPlaceholder?: string
   emptyText?: string
@@ -45,6 +46,7 @@ export function BaseCombobox({
   data,
   type,
   icon: Icon,
+  iconColorClass,
   placeholder,
   searchPlaceholder,
   emptyText,
@@ -74,7 +76,7 @@ export function BaseCombobox({
           {commodityIcon ? (
             React.createElement(commodityIcon, { className: "h-3.5 w-3.5 text-muted-foreground shrink-0" })
           ) : Icon ? (
-            <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <Icon className={cn("h-3.5 w-3.5 shrink-0", iconColorClass || "text-muted-foreground")} />
           ) : null}
           <span className="truncate">{selectedItem ? selectedItem.label : placeholder || `Select ${type}...`}</span>
         </span>
@@ -95,6 +97,11 @@ export function BaseCombobox({
           <ComboboxGroup>
             {data.map((item) => {
               const itemIcon = getItemIcon(type, item.label)
+              const isModeType = type === "mode" || type === "modes" || type === "field_requirement_mode"
+              const itemIconColor = isModeType
+                ? getModeColorClass(item.value)
+                : "text-muted-foreground/80"
+
               return (
                 <ComboboxItem
                   key={item.value}
@@ -104,7 +111,7 @@ export function BaseCombobox({
                   className="text-xs cursor-pointer py-2 hover:bg-muted transition-colors flex items-center justify-between whitespace-nowrap gap-2"
                 >
                   <span className="flex items-center gap-2 font-medium text-foreground whitespace-nowrap">
-                    {itemIcon && React.createElement(itemIcon, { className: "h-3.5 w-3.5 text-muted-foreground/80" })}
+                    {itemIcon && React.createElement(itemIcon, { className: cn("h-3.5 w-3.5 shrink-0", itemIconColor) })}
                     <span className="whitespace-nowrap">{item.label}</span>
                   </span>
                   {item.rightLabel && (

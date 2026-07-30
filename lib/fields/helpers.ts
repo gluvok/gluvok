@@ -115,6 +115,25 @@ export function getModeIcon(modeVal?: string): LucideIcon {
   }
 }
 
+export function getModeColorClass(modeVal?: string): string {
+  if (!modeVal) return "text-muted-foreground"
+  const normalized = modeVal.toLowerCase().trim()
+  switch (normalized) {
+    case FieldRequirementMode.MANDATORY:
+    case "mandatory":
+      return "text-emerald-600 dark:text-emerald-400"
+    case FieldRequirementMode.OPTIONAL:
+    case "optional":
+      return "text-amber-500 dark:text-amber-400"
+    case FieldRequirementMode.NOT_REQUIRED:
+    case "not required":
+    case "not_required":
+      return "text-rose-500 dark:text-rose-400"
+    default:
+      return "text-muted-foreground"
+  }
+}
+
 export function getItemIcon(type: string | ProjectSlug, label: string): LucideIcon | null {
   switch (type) {
     case ProjectSlug.COMMODITIES:

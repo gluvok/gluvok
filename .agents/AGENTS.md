@@ -16,3 +16,13 @@ Always use **pnpm** (never raw npm or yarn) for all CLI checks, test executions,
    - **Form & Input Attributes**: Use `FieldType`, `AutoComplete`, and `InputStep` enums.
    - **NEVER** pass or compare raw string literals for any schema key, API parameter, header, or filter in backend routes or frontend components.
 
+## Streamlined Tenant Architecture & No Super Admin
+1. **NO SUPER ADMIN ROLE**:
+   - `Role.SUPER_ADMIN` is strictly forbidden and removed across the entire codebase. `Role.ADMIN` is the top-level role for a tenant.
+   - Do NOT write `user.role === Role.SUPER_ADMIN` or `isSuperAdmin` anywhere in backend routes, components, or stores.
+2. **NO FACTORY COLUMNS OR FACTORY FILTERS IN UI**:
+   - No `Factory ID` or `Factory Name` columns in any DataTables (`configs`, `centers`, `profiles`, `customers`, `rates`, `weighments`).
+   - No factory comboboxes ("All Factories") or factory filter dropdowns in table toolbars.
+3. **STRICT SHARED VS DEDICATED ARCHITECTURE**:
+   - **Shared Mode**: Queries use `sharedSchema` and automatically filter by `user.factory_id` (`where(eq(schema.factoryId, user.factory_id))`).
+   - **Dedicated Mode**: Queries use `standaloneSchema` operating without `factory_id` conditions or joins.

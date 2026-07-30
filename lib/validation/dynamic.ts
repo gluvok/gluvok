@@ -46,26 +46,57 @@ function buildAadharSchema(config: FactoryConfig | null): z.ZodTypeAny {
 }
 
 /**
- * Shared password refinement validation for add and edit forms.
+ * Shared username/password refinement validation for add and edit forms.
+ *
+ * Rules:
+ * - In ADD mode (isEdit=false):
+ *   - username >= 3 chars
+ *   - password >= 6 chars (required)
+ *   - confirmPassword required and must match password
+ *
+ * - In EDIT mode (isEdit=true):
+ *   - If new password is blank -> valid (keep unchanged)
+ *   - If new password is provided -> must be >= 6 chars, confirmPassword required, and must match
  */
-function validatePasswordRefinement(
-  data: { [EntityKey.PASSWORD]?: string; [EntityKey.CONFIRM_PASSWORD]?: string },
+export function validatePasswordRefinement(
+  data: { [EntityKey.USERNAME]?: string; [EntityKey.PASSWORD]?: string; [EntityKey.CONFIRM_PASSWORD]?: string; confirm_password?: string },
   ctx: z.RefinementCtx,
-  isEdit: boolean
+  isEdit: boolean,
+  requireUsername = true
 ) {
+  const rawUsername = data[EntityKey.USERNAME]
   const rawPassword = data[EntityKey.PASSWORD]
-  const rawConfirm = data[EntityKey.CONFIRM_PASSWORD]
+  const rawConfirm = data[EntityKey.CONFIRM_PASSWORD] ?? data.confirm_password
+
+  const hasUsername = Boolean(rawUsername && rawUsername.trim().length > 0)
   const hasPassword = Boolean(rawPassword && rawPassword.trim().length > 0)
   const hasConfirm = Boolean(rawConfirm && rawConfirm.trim().length > 0)
 
+  // 1. Username validation
+  if (requireUsername && !hasUsername && !isEdit) {
+    ctx.addIssue({
+      code: "custom",
+      message: `${ColumnLabel.USERNAME} is required`,
+      path: [EntityKey.USERNAME],
+    })
+  } else if (hasUsername && rawUsername!.trim().length < 3) {
+    ctx.addIssue({
+      code: "custom",
+      message: `${ColumnLabel.USERNAME} must be at least 3 characters`,
+      path: [EntityKey.USERNAME],
+    })
+  }
+
+  // 2. Password presence check
   if (!isEdit && !hasPassword) {
     ctx.addIssue({
       code: "custom",
-      message: `${ColumnLabel.PASSWORD} must be at least 6 characters`,
+      message: `${ColumnLabel.PASSWORD} is required`,
       path: [EntityKey.PASSWORD],
     })
   }
 
+  // 3. Password length check (if provided)
   if (hasPassword && rawPassword!.trim().length < 6) {
     ctx.addIssue({
       code: "custom",
@@ -74,6 +105,7 @@ function validatePasswordRefinement(
     })
   }
 
+  // 4. Confirm password check & equality check
   if ((!isEdit || hasPassword) && !hasConfirm) {
     ctx.addIssue({
       code: "custom",
@@ -89,7 +121,7 @@ function validatePasswordRefinement(
   }
 }
 
-export function getDynamicCustomerSchema(config: FactoryConfig | null) {
+export function getDynamicCustomerSchema(config: FactoryConfig | null, isEdit = false) {
   const govtIdMode = config?.govtIdMode ?? FieldRequirementMode.OPTIONAL
 
   let govtIdSchema: z.ZodTypeAny
@@ -141,7 +173,7 @@ export function getDynamicCustomerSchema(config: FactoryConfig | null) {
         })
       }
 
-      if (hasUsername && !hasPassword) {
+      if (hasUsername && !hasPassword && !isEdit) {
         ctx.addIssue({
           code: "custom",
           message: `${ColumnLabel.PASSWORD} is required when providing a username`,
@@ -149,15 +181,7 @@ export function getDynamicCustomerSchema(config: FactoryConfig | null) {
         })
       }
 
-      if (hasUsername && rawUsername!.trim().length < 3) {
-        ctx.addIssue({
-          code: "custom",
-          message: `${ColumnLabel.USERNAME} must be at least 3 characters`,
-          path: [EntityKey.USERNAME],
-        })
-      }
-
-      validatePasswordRefinement(data, ctx, true)
+      validatePasswordRefinement(data, ctx, isEdit, false)
     })
 }
 
@@ -174,9 +198,9 @@ export function getDynamicProfileSchema(config: FactoryConfig | null, isEdit = f
 
   return z
     .object({
-      [EntityKey.USERNAME]: z
-        .string()
-        .min(3, `${ColumnLabel.USERNAME} must be at least 3 characters`),
+      [EntityKey.USERNAME]: isEdit
+        ? z.string().min(3, `${ColumnLabel.USERNAME} must be at least 3 characters`).optional().or(z.literal(""))
+        : z.string().min(3, `${ColumnLabel.USERNAME} must be at least 3 characters`),
       [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
       [EntityKey.ROLE]: z.nativeEnum(Role, {
         message: "Please select a valid role",
@@ -187,5 +211,5 @@ export function getDynamicProfileSchema(config: FactoryConfig | null, isEdit = f
       [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
       ...(isEdit ? { [EntityKey.IS_ACTIVE]: z.boolean().optional() } : {}),
     })
-    .superRefine((data, ctx) => validatePasswordRefinement(data, ctx, isEdit))
+    .superRefine((data, ctx) => validatePasswordRefinement(data, ctx, isEdit, true))
 }

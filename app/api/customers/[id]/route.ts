@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 import { getTables } from "@/db/schema"
-import { withAuth, apiError, isFKViolation, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import { withAuth, apiError, isFKViolation, forbiddenError, hasPermission, StatusCodes, getFactoryConfig } from "@/db/helpers"
 import { ProjectSlug, PermissionKey, TenantMode } from "@/lib/constants/enums"
+import { getDynamicCustomerSchema } from "@/lib/validation"
+import { hashPassword } from "@/lib/auth/password"
 
 export const PUT = withAuth(async (req, user, db, mode, ctx) => {
   const { customers, users } = getTables(mode)
@@ -16,7 +18,16 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
   // Self-update allowed even without write permission; otherwise check RBAC
   if (!isOwn && !hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.WRITE)) return forbiddenError()
 
-  const { name, father_name, is_active } = await req.json()
+  const body = await req.json()
+  const activeConfig = await getFactoryConfig(user.factory_id, db, mode)
+  const dynamicSchema = getDynamicCustomerSchema(activeConfig, true)
+  const parsed = dynamicSchema.safeParse(body)
+
+  if (!parsed.success) {
+    return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST)
+  }
+
+  const { name, father_name, password, is_active } = body
 
   const [updated] = await db
     .update(customers)
@@ -30,11 +41,17 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
 
   if (!updated) return apiError("Customer not found", StatusCodes.NOT_FOUND)
 
-  if (is_active !== undefined && updated.userId) {
-    await db
-      .update(users)
-      .set({ isActive: Boolean(is_active), updatedAt: new Date() })
-      .where(eq(users.id, updated.userId))
+  if (updated.userId) {
+    const userUpdates: Record<string, unknown> = { updatedAt: new Date() }
+    if (password && typeof password === "string" && password.trim().length > 0) {
+      userUpdates.passwordHash = await hashPassword(password.trim())
+    }
+    if (is_active !== undefined) {
+      userUpdates.isActive = Boolean(is_active)
+    }
+    if (Object.keys(userUpdates).length > 1) {
+      await db.update(users).set(userUpdates).where(eq(users.id, updated.userId))
+    }
   }
 
   return NextResponse.json({

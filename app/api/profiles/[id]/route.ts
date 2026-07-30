@@ -1,24 +1,26 @@
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 import { getTables } from "@/db/schema"
-import { withAuth, apiError, isFKViolation, StatusCodes } from "@/db/helpers"
+import { withAuth, apiError, isFKViolation, StatusCodes, getFactoryConfig } from "@/db/helpers"
+import { getDynamicProfileSchema } from "@/lib/validation"
 import { hashPassword } from "@/lib/auth/password"
 import { Role } from "@/lib/constants/enums"
 
-export const PUT = withAuth(async (req, _user, db, mode, ctx) => {
+export const PUT = withAuth(async (req, user, db, mode, ctx) => {
   const { profiles, users } = getTables(mode)
   const { id } = await ctx.params
   const profileId = parseInt(id, 10)
   const body = await req.json()
-  const { name, password, confirmPassword, confirm_password, role, is_active } = body
-  const targetConfirmPassword = confirmPassword ?? confirm_password
 
-  if (password) {
-    if (!targetConfirmPassword || password !== targetConfirmPassword) {
-      return apiError("Passwords do not match", StatusCodes.BAD_REQUEST)
-    }
+  const activeConfig = await getFactoryConfig(user.factory_id, db, mode)
+  const dynamicSchema = getDynamicProfileSchema(activeConfig, true)
+  const parsed = dynamicSchema.safeParse(body)
+
+  if (!parsed.success) {
+    return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST)
   }
 
+  const { name, password, role, is_active } = body
   const validRole = role && Object.values(Role).includes(role as Role) ? (role as Role) : undefined
 
   const [updated] = await db
@@ -34,8 +36,8 @@ export const PUT = withAuth(async (req, _user, db, mode, ctx) => {
   if (!updated) return apiError("Profile not found", StatusCodes.NOT_FOUND)
 
   const userUpdates: Record<string, unknown> = { updatedAt: new Date() }
-  if (password) {
-    userUpdates.passwordHash = await hashPassword(password)
+  if (password && typeof password === "string" && password.trim().length > 0) {
+    userUpdates.passwordHash = await hashPassword(password.trim())
   }
   if (validRole) {
     userUpdates.role = validRole

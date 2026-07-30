@@ -117,12 +117,16 @@ describe("RBAC Access Controls", () => {
       expect(getPermissions(Role.BASE, ProjectSlug.CONFIGS).read).toBe(false)
     })
 
-    it("should strip factory hidden fields and hide factories page in TenantMode.DEDICATED", () => {
+    it("should hide factory fields, columns, and filters and hide factories page in TenantMode.DEDICATED", () => {
       const dedicatedAdmin = getPermissions(Role.ADMIN, ProjectSlug.CENTERS, TenantMode.DEDICATED)
-      expect(dedicatedAdmin.hiddenColumns).not.toContain(EntityKey.FACTORY_ID)
-      expect(dedicatedAdmin.hiddenColumns).not.toContain(EntityKey.FACTORY_NAME)
-      expect(dedicatedAdmin.hiddenFields).not.toContain(EntityKey.FACTORY_ID)
-      expect(dedicatedAdmin.hiddenFilters).not.toContain(EntityKey.FACTORY_ID)
+      expect(dedicatedAdmin.hiddenColumns).toContain(EntityKey.FACTORY_ID)
+      expect(dedicatedAdmin.hiddenColumns).toContain(EntityKey.FACTORY_NAME)
+      expect(dedicatedAdmin.hiddenFields).toContain(EntityKey.FACTORY_ID)
+      expect(dedicatedAdmin.hiddenFilters).toContain(EntityKey.FACTORY_ID)
+
+      expect(isColumnVisible(Role.ADMIN, ProjectSlug.CENTERS, EntityKey.FACTORY_ID, TenantMode.DEDICATED)).toBe(false)
+      expect(isColumnVisible(Role.SUPER_ADMIN, ProjectSlug.CENTERS, EntityKey.FACTORY_NAME, TenantMode.DEDICATED)).toBe(false)
+      expect(isFieldVisible(Role.ADMIN, ProjectSlug.CENTERS, EntityKey.FACTORY_ID, TenantMode.DEDICATED)).toBe(false)
 
       const dedicatedFactories = getPermissions(Role.SUPER_ADMIN, ProjectSlug.FACTORIES, TenantMode.DEDICATED)
       expect(dedicatedFactories.show).toBe(false)

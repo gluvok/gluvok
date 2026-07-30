@@ -6,7 +6,7 @@
 import { create } from "zustand"
 import axios from "axios"
 import { toast } from "sonner"
-import { Role, EntityKey } from "@/lib/constants/enums"
+import { Role, EntityKey, TenantMode } from "@/lib/constants/enums"
 import { DEFAULT_AVATAR } from "@/lib/constants"
 import { type Profile, type Customer } from "@/types"
 
@@ -22,7 +22,8 @@ export interface AuthUser {
   name: string
   avatar?: string
   role: Role
-  factory_id: number
+  factory_id: number | null
+  tenant_mode?: TenantMode
   profile?: Profile
   customer?: Customer
 }

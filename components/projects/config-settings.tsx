@@ -11,14 +11,14 @@ import { SlidersHorizontal, Fingerprint, ShieldCheck, Save, Loader2, Factory } f
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ModeCombobox, EntityCombobox } from "@/components/combobox"
-import { useConfigStore, useAuthStore, type FactoryConfig } from "@/lib/store"
-import { FieldRequirementMode, Role, ApiRoutes } from "@/lib/constants/enums"
+import { useConfigStore, useAuthStore, getActiveTenantMode, type FactoryConfig } from "@/lib/store"
+import { FieldRequirementMode, Role, TenantMode, ApiRoutes } from "@/lib/constants/enums"
 import axios from "axios"
 
 interface ConfigFormContentProps {
   initialConfig: FactoryConfig | null
   initialFactoryId: string
-  isSuperAdmin: boolean
+  showFactorySelector: boolean
   onFactoryChange: (factoryIdStr: string) => void
   isLoadingConfig: boolean
 }
@@ -26,7 +26,7 @@ interface ConfigFormContentProps {
 function ConfigFormContent({
   initialConfig,
   initialFactoryId,
-  isSuperAdmin,
+  showFactorySelector,
   onFactoryChange,
   isLoadingConfig,
 }: ConfigFormContentProps) {
@@ -44,7 +44,7 @@ function ConfigFormContent({
   const isUnchanged =
     aadharMode === (initialConfig?.aadharNumberMode || FieldRequirementMode.OPTIONAL) &&
     govtIdMode === (initialConfig?.govtIdMode || FieldRequirementMode.OPTIONAL) &&
-    selectedFactoryId === initialFactoryId
+    (!showFactorySelector || selectedFactoryId === initialFactoryId)
 
   const handleSave = async () => {
     if (isUnchanged) {
@@ -54,7 +54,7 @@ function ConfigFormContent({
     setIsSaving(true)
     try {
       const payload = {
-        factory_id: selectedFactoryId ? Number(selectedFactoryId) : 0,
+        factory_id: showFactorySelector && selectedFactoryId ? Number(selectedFactoryId) : 0,
         aadhar_number_mode: aadharMode,
         govt_id_mode: govtIdMode,
       }
@@ -72,7 +72,7 @@ function ConfigFormContent({
           govtIdMode: updated.govt_id_mode,
         }
         setConfig(newConfigObj)
-        toast.success("Factory configuration updated successfully")
+        toast.success("Configuration updated successfully")
       }
     } catch (err) {
       console.error("Save config error:", err)
@@ -84,8 +84,8 @@ function ConfigFormContent({
 
   return (
     <CardContent className="space-y-6 pt-2">
-      {/* Factory Selector for Super Admin */}
-      {isSuperAdmin && (
+      {/* Factory Selector for Super Admin in Shared SaaS mode only */}
+      {showFactorySelector && (
         <div className="space-y-2 p-3.5 bg-muted/30 border rounded-xl">
           <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
             <Factory className="h-3.5 w-3.5 text-muted-foreground" />
@@ -106,7 +106,7 @@ function ConfigFormContent({
       {isLoadingConfig ? (
         <div className="py-8 flex justify-center items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">Loading factory settings...</span>
+          <span className="text-xs text-muted-foreground">Loading settings...</span>
         </div>
       ) : (
         <>
@@ -188,7 +188,9 @@ function ConfigFormContent({
 
 export function ConfigSettingsView() {
   const currentUser = useAuthStore((state) => state.user)
+  const activeTenantMode = getActiveTenantMode()
   const isSuperAdmin = currentUser?.role === Role.SUPER_ADMIN
+  const showFactorySelector = isSuperAdmin && activeTenantMode === TenantMode.SHARED
   const activeConfig = useConfigStore((state) => state.config)
 
   const [overrideConfig, setOverrideConfig] = React.useState<FactoryConfig | null>(null)
@@ -199,7 +201,7 @@ export function ConfigSettingsView() {
 
   const effectiveConfig = overrideConfig || activeConfig
 
-  // If Super Admin changes target factory, load that factory's config
+  // If Super Admin changes target factory in shared mode, load that factory's config
   const handleFactoryChange = async (factoryIdStr: string) => {
     setSelectedFactoryId(factoryIdStr)
     if (!factoryIdStr) return
@@ -240,7 +242,7 @@ export function ConfigSettingsView() {
               <SlidersHorizontal className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-lg font-bold">Factory Field Requirements</CardTitle>
+              <CardTitle className="text-lg font-bold">Field Requirements Configuration</CardTitle>
               <CardDescription className="text-xs">
                 Manage identification field behaviors across forms, validation, and table displays.
               </CardDescription>
@@ -252,7 +254,7 @@ export function ConfigSettingsView() {
           key={formKey}
           initialConfig={effectiveConfig}
           initialFactoryId={selectedFactoryId}
-          isSuperAdmin={isSuperAdmin}
+          showFactorySelector={showFactorySelector}
           onFactoryChange={handleFactoryChange}
           isLoadingConfig={isLoadingConfig}
         />

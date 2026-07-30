@@ -12,8 +12,7 @@
     "test:coverage": "vitest run --coverage",
     "db:clear": "tsx --env-file=.env.local scripts/clear-db.ts",
     "db:clear:shared": "tsx --env-file=.env.local scripts/clear-db.ts --shared",
-    "seed:commodities": "tsx --env-file=.env.local scripts/seed-commodities.ts",
-    "seed:users": "tsx --env-file=.env.local scripts/seed-users.ts"
+    "seed": "tsx --env-file=.env.local scripts/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

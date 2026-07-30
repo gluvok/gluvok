@@ -12,7 +12,7 @@ import { integerIdSchema, nameSchema } from "./helpers"
  * Dynamic Aadhaar schema generator based on active configuration mode.
  */
 function buildAadharSchema(config: FactoryConfig | null): z.ZodTypeAny {
-  const aadharMode = config?.aadharNumberMode ?? FieldRequirementMode.OPTIONAL
+  const aadharMode = config?.aadharNumberMode ?? FieldRequirementMode.MANDATORY
 
   if (aadharMode === FieldRequirementMode.MANDATORY) {
     return z
@@ -122,7 +122,7 @@ export function validatePasswordRefinement(
 }
 
 export function getDynamicCustomerSchema(config: FactoryConfig | null, isEdit = false) {
-  const govtIdMode = config?.govtIdMode ?? FieldRequirementMode.OPTIONAL
+  const govtIdMode = config?.govtIdMode ?? FieldRequirementMode.MANDATORY
 
   let govtIdSchema: z.ZodTypeAny
   if (govtIdMode === FieldRequirementMode.MANDATORY) {

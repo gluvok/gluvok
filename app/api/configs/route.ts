@@ -67,8 +67,18 @@ export const GET = withAuth(async (req, user, db, mode) => {
   }
 })
 
-export const POST = withAuth(async (req, user, db, mode) => {
-  if (!hasPermission(user, ProjectSlug.CONFIGS, PermissionKey.CREATE)) return forbiddenError()
+/**
+ * PUT /api/configs
+ * Upserts configuration resource.
+ * Rules:
+ * - Dedicated mode: no factory_id needed.
+ * - Shared mode + Super Admin: factory_id is REQUIRED in request body.
+ * - Shared mode + Regular User: factory_id is derived automatically from user.factory_id.
+ */
+export const PUT = withAuth(async (req, user, db, mode) => {
+  if (!hasPermission(user, ProjectSlug.CONFIGS, PermissionKey.CREATE) && !hasPermission(user, ProjectSlug.CONFIGS, PermissionKey.WRITE)) {
+    return forbiddenError()
+  }
 
   try {
     const body = await req.json()
@@ -78,9 +88,10 @@ export const POST = withAuth(async (req, user, db, mode) => {
     const { aadhar_number_mode, govt_id_mode, factory_id } = body
 
     const validModes = Object.values(FieldRequirementMode)
-    const aMode = validModes.includes(aadhar_number_mode) ? aadhar_number_mode : FieldRequirementMode.OPTIONAL
-    const gMode = validModes.includes(govt_id_mode) ? govt_id_mode : FieldRequirementMode.OPTIONAL
+    const aMode = validModes.includes(aadhar_number_mode) ? aadhar_number_mode : FieldRequirementMode.MANDATORY
+    const gMode = validModes.includes(govt_id_mode) ? govt_id_mode : FieldRequirementMode.MANDATORY
 
+    // 1. Dedicated Mode
     if (mode === TenantMode.DEDICATED) {
       const [existing] = await db.select({ id: standaloneSchema.configs.id }).from(standaloneSchema.configs).limit(1)
       let newConfig
@@ -96,12 +107,24 @@ export const POST = withAuth(async (req, user, db, mode) => {
           .values({ aadharNumberMode: aMode, govtIdMode: gMode })
           .returning()
       }
-      return formatEntityResponse(newConfig, mode, StatusCodes.CREATED)
+      return formatEntityResponse(newConfig, mode, StatusCodes.OK)
     }
 
-    const targetFactoryId = user.role === Role.SUPER_ADMIN && factory_id ? Number(factory_id) : (user.factory_id ?? 0)
-    if (!targetFactoryId) {
-      return NextResponse.json({ error: "Factory ID is required" }, { status: StatusCodes.BAD_REQUEST })
+    // 2. Shared Mode
+    const isSuperAdmin = user.role === Role.SUPER_ADMIN
+    let targetFactoryId: number
+
+    if (isSuperAdmin) {
+      const parsed = Number(factory_id)
+      if (!factory_id || Number.isNaN(parsed) || parsed <= 0) {
+        return apiError("Factory is required", StatusCodes.BAD_REQUEST)
+      }
+      targetFactoryId = parsed
+    } else {
+      targetFactoryId = user.factory_id ?? 0
+      if (!targetFactoryId || targetFactoryId <= 0) {
+        return apiError("User is not associated with a factory", StatusCodes.BAD_REQUEST)
+      }
     }
 
     const [newConfig] = await db
@@ -113,9 +136,11 @@ export const POST = withAuth(async (req, user, db, mode) => {
       })
       .returning()
 
-    return formatEntityResponse(newConfig, mode, StatusCodes.CREATED)
+    return formatEntityResponse(newConfig, mode, StatusCodes.OK)
   } catch (err) {
     console.error("Failed to save config:", err)
     return apiError("Failed to save configuration in database. Ensure the configs table exists.", StatusCodes.INTERNAL_SERVER_ERROR)
   }
 })
+
+export const POST = PUT

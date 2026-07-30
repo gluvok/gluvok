@@ -5,7 +5,9 @@
 
 import { create } from "zustand"
 import axios from "axios"
-import { FieldRequirementMode } from "@/lib/constants/enums"
+import { FieldRequirementMode, Role, TenantMode } from "@/lib/constants/enums"
+import { useAuthStore } from "./auth"
+import { getActiveTenantMode } from "./access"
 
 export interface FactoryConfig {
   id?: number
@@ -36,6 +38,15 @@ export const useConfigStore = create<ConfigStore>((set) => ({
   configInitialized: false,
   fetchConfig: async () => {
     set({ configLoading: true })
+    const currentUser = useAuthStore.getState().user
+    const tenantMode = getActiveTenantMode()
+
+    // Super Admin in Shared SaaS mode manages multiple factories — skip initial single config fetch
+    if (tenantMode === TenantMode.SHARED && currentUser?.role === Role.SUPER_ADMIN) {
+      set({ config: null, configLoading: false, configInitialized: true })
+      return
+    }
+
     try {
       const res = await axios.get<{ data: ConfigResponseData[] }>("/api/configs")
       const row = res.data?.data?.[0]
@@ -47,15 +58,15 @@ export const useConfigStore = create<ConfigStore>((set) => ({
             govtIdMode: row.govt_id_mode,
           }
         : {
-            aadharNumberMode: FieldRequirementMode.OPTIONAL,
-            govtIdMode: FieldRequirementMode.OPTIONAL,
+            aadharNumberMode: FieldRequirementMode.MANDATORY,
+            govtIdMode: FieldRequirementMode.MANDATORY,
           }
       set({ config, configLoading: false, configInitialized: true })
     } catch {
       set({
         config: {
-          aadharNumberMode: FieldRequirementMode.OPTIONAL,
-          govtIdMode: FieldRequirementMode.OPTIONAL,
+          aadharNumberMode: FieldRequirementMode.MANDATORY,
+          govtIdMode: FieldRequirementMode.MANDATORY,
         },
         configLoading: false,
         configInitialized: true,

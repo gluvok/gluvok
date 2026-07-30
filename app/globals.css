@@ -55,6 +55,8 @@
   --radius-4xl: calc(var(--radius) * 2.6);
   --spacing-100: 25rem;
   --spacing-104: 26rem;
+  --spacing-108: 27rem;
+  --spacing-112: 28rem;
   --text-2xs: 0.625rem;
   --text-2xs--line-height: calc(1 / 0.625);
 }
@@ -137,9 +139,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply font-sans;
   }

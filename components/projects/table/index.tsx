@@ -26,9 +26,9 @@ export function ProjectTable<TData>({ table, isLoading }: ProjectTableProps<TDat
 
 
   return (
-    <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden transition-all duration-300">
+    <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden transition-all duration-300 [&_[data-slot=table-container]]:max-h-104">
       <TableGrid>
-        <TableHeader className="bg-muted/30">
+        <TableHeader className="bg-card sticky top-0 z-10 border-b">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="hover:bg-transparent border-b">
               {headerGroup.headers.map((header) => (

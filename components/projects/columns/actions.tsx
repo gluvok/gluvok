@@ -85,7 +85,7 @@ function ActionCell<T extends EntityRecord>({
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[160px]">
+        <DropdownMenuContent align="end" className="w-40">
           <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground px-2 py-1.5">Actions</DropdownMenuLabel>
           <DropdownMenuItem
             id={`actions-copy-${projectSlug}-${itemId}`} className="text-xs cursor-pointer gap-2 py-2"

@@ -12,6 +12,7 @@ import { DataTablePagination } from "@/components/data-table"
 import { ProjectToolbar, ProjectDialogs, ProjectTable, useProjectTable } from "@/components/projects"
 import { Spinner } from "@/components/kibo-ui/spinner"
 import { useEntitiesStore } from "@/lib/store"
+import { ProjectSlug } from "@/lib/constants/enums"
 
 interface ProjectClientProps {
   projectName: string;
@@ -38,7 +39,7 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
 
   if (!isReady || !hasLoadedOnce) {
     return (
-      <div className="min-h-96 flex flex-col items-center justify-center gap-3 bg-card border rounded-xl shadow-sm">
+      <div className="min-h-96 flex flex-col items-center justify-center gap-3">
         <Spinner />
         <span className="text-xs font-medium text-muted-foreground/70">Loading {projectName.toLowerCase()}...</span>
       </div>
@@ -61,7 +62,7 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
       <ProjectTable table={table} isLoading={isLoading} />
 
       {/* Pagination controls */}
-      {table.getRowModel().rows?.length > 0 && (
+      {projectSlug !== ProjectSlug.CONFIGS && table.getRowModel().rows?.length > 0 && (
         <div className="pt-2">
           <DataTablePagination table={table} />
         </div>

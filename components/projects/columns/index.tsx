@@ -61,5 +61,9 @@ export function getProjectColumns<T extends EntityRecord = EntityRecord>(
   return columns.filter((col) => {
     const colKey = (col.id || (col as { accessorKey?: string }).accessorKey) as string
     return isColumnVisible(userRole, projectSlug, colKey)
-  })
+  }).map((column) => (
+    projectSlug === ProjectSlug.CONFIGS
+      ? { ...column, enableSorting: false }
+      : column
+  ))
 }

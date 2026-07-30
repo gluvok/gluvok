@@ -6,7 +6,7 @@
  */
 
 import * as React from "react";
-import { Pencil, Plus } from "lucide-react"
+import { Pencil, Plus, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/kibo-ui/spinner"
@@ -15,12 +15,14 @@ import { EntityKey, FieldRequirementMode } from "@/lib/constants/enums"
 import { type Config, type EntityRecord } from "@/types"
 
 interface ConfigSummaryProps {
-  config?: Config
-  isLoading: boolean
-  canCreate: boolean
-  canEdit: boolean
-  onCreate: () => void
-  onEdit: (config: EntityRecord) => void
+  config?: Config;
+  isLoading: boolean;
+  error?: string | null;
+  canCreate: boolean;
+  canEdit: boolean;
+  onCreate: () => void;
+  onEdit: (config: EntityRecord) => void;
+  onRetry: () => void;
 }
 
 interface ConfigSettingProps {
@@ -47,19 +49,47 @@ function ConfigSetting({ label, mode }: ConfigSettingProps) {
 }
 
 /** Displays the single configuration record for the active tenant scope. */
-export function ConfigSummary({ config, isLoading, canCreate, canEdit, onCreate, onEdit }: ConfigSummaryProps) {
+export function ConfigSummary({
+  config,
+  isLoading,
+  error,
+  canCreate,
+  canEdit,
+  onCreate,
+  onEdit,
+  onRetry,
+}: ConfigSummaryProps) {
   if (isLoading) {
     return (
       <div className="flex min-h-48 items-center justify-center">
         <Spinner />
       </div>
-    )
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center">
+        <p className="text-sm text-destructive">{error}</p>
+        <Button
+          onClick={onRetry}
+          size="sm"
+          variant="outline"
+          className="gap-1.5"
+        >
+          <RotateCw className="h-4 w-4" />
+          Retry
+        </Button>
+      </div>
+    );
   }
 
   if (!config) {
     return (
       <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center">
-        <p className="text-sm text-muted-foreground">No configuration has been created yet.</p>
+        <p className="text-sm text-muted-foreground">
+          No configuration has been created yet.
+        </p>
         {canCreate && (
           <Button onClick={onCreate} size="sm" className="gap-1.5">
             <Plus className="h-4 w-4" />
@@ -67,11 +97,13 @@ export function ConfigSummary({ config, isLoading, canCreate, canEdit, onCreate,
           </Button>
         )}
       </div>
-    )
+    );
   }
 
-  const aadharNumberMode = config[EntityKey.AADHAR_NUMBER_MODE] ?? FieldRequirementMode.MANDATORY
-  const govtIdMode = config[EntityKey.GOVT_ID_MODE] ?? FieldRequirementMode.MANDATORY
+  const aadharNumberMode =
+    config[EntityKey.AADHAR_NUMBER_MODE] ?? FieldRequirementMode.MANDATORY;
+  const govtIdMode =
+    config[EntityKey.GOVT_ID_MODE] ?? FieldRequirementMode.MANDATORY;
 
   return (
     <Card className="w-full max-w-2xl">

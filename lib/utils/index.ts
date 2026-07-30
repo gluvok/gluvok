@@ -5,6 +5,7 @@
 
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { QueryParam } from "@/lib/constants/enums";
 
 /**
  * cn utility
@@ -66,7 +67,10 @@ export function splitFileName(filename: string): [string, string] {
 export function getNextParam(): string | null {
   if (typeof window === "undefined") return null
   const searchParams = new URLSearchParams(window.location.search)
-  return searchParams.get("next")
+  const nextParam = searchParams.get(QueryParam.NEXT);
+  return nextParam?.startsWith("/") && !nextParam.startsWith("//")
+    ? nextParam
+    : null;
 }
 
 /**
@@ -76,7 +80,7 @@ export function getNextParam(): string | null {
 export function getNextRedirectUrl(baseUrl: string, pathname: string): string {
   if (typeof window === "undefined" || !pathname) return baseUrl
   const nextParamValue = pathname + window.location.search
-  return `${baseUrl}?next=${encodeURIComponent(nextParamValue)}`
+  return `${baseUrl}?${QueryParam.NEXT}=${encodeURIComponent(nextParamValue)}`;
 }
 
 /**
@@ -87,7 +91,7 @@ export function appendNextParam(baseUrl: string): string {
   const nextParam = getNextParam()
   if (!nextParam) return baseUrl
   const separator = baseUrl.includes("?") ? "&" : "?"
-  return `${baseUrl}${separator}next=${encodeURIComponent(nextParam)}`
+  return `${baseUrl}${separator}${QueryParam.NEXT}=${encodeURIComponent(nextParam)}`;
 }
 
 export { getSingularName } from "@/lib/fields"

@@ -6,9 +6,13 @@
 import { SignJWT, jwtVerify } from "jose"
 import { TenantMode } from "@/lib/constants/enums"
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "gluvok_jwt_secret_key_change_in_production_32bytes_long"
-)
+function getJwtSecret(): Uint8Array {
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret && process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET must be configured in production");
+  }
+  return new TextEncoder().encode(jwtSecret || "development-only-jwt-secret");
+}
 
 export interface JWTPayload {
   sub: string
@@ -32,15 +36,16 @@ export async function signJWT(payload: JWTPayload): Promise<string> {
     .setSubject(payload.sub)
     .setIssuedAt()
     .setExpirationTime("24h")
-    .sign(JWT_SECRET)
+    .sign(getJwtSecret());
 }
 
 /**
  * Verifies a JWT session token.
  */
 export async function verifyJWT(token: string): Promise<JWTPayload | null> {
+  const jwtSecret = getJwtSecret();
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET)
+    const { payload } = await jwtVerify(token, jwtSecret);
     if (!payload.sub || typeof payload.username !== "string" || typeof payload.role !== "string") {
       return null
     }

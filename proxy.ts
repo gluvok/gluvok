@@ -2,7 +2,13 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { StatusCodes, ReasonPhrases } from "http-status-codes"
 import { verifyJWT } from "@/lib/auth/jwt"
-import { AppRoutes, ApiPrefix, RequestHeader, TenantMode } from "@/lib/constants/enums"
+import {
+  AppRoutes,
+  ApiPrefix,
+  CookieName,
+  RequestHeader,
+  TenantMode,
+} from "@/lib/constants/enums";
 import { PUBLIC_ROUTES, AUTH_ROUTES, PUBLIC_API_ROUTES } from "@/lib/constants/routes"
 import { getWorkspace } from "@/lib/tenant/workspace"
 import { resolveTenant } from "@/lib/tenant"
@@ -33,8 +39,8 @@ export async function proxy(request: NextRequest) {
   }
 
   const token =
-    request.cookies.get("token")?.value ||
-    request.cookies.get("auth_token")?.value
+    request.cookies.get(CookieName.TOKEN)?.value ||
+    request.cookies.get(CookieName.AUTH_TOKEN)?.value;
 
   const isApiRoute = pathname.startsWith(ApiPrefix.API)
 

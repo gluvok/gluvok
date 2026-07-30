@@ -1,15 +1,48 @@
 import { NextResponse } from "next/server"
-import { eq } from "drizzle-orm"
-import { getTables } from "@/db/schema"
-import { withAuth, apiError, isFKViolation, StatusCodes, getFactoryConfig } from "@/db/helpers"
+import { and, eq } from "drizzle-orm";
+import { getTables, sharedSchema } from "@/db/schema";
+import {
+  withAuth,
+  apiError,
+  formatEntityResponse,
+  forbiddenError,
+  hasPermission,
+  isFKViolation,
+  StatusCodes,
+  getFactoryConfig,
+} from "@/db/helpers";
 import { getDynamicProfileSchema } from "@/lib/validation"
 import { hashPassword } from "@/lib/auth/password"
-import { Role } from "@/lib/constants/enums"
+import {
+  PermissionKey,
+  DatabasePropertyKey,
+  ProjectSlug,
+  Role,
+  TenantMode,
+} from "@/lib/constants/enums";
 
 export const PUT = withAuth(async (req, user, db, mode, ctx) => {
+  if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.WRITE))
+    return forbiddenError();
   const { profiles, users } = getTables(mode)
   const { id } = await ctx.params
   const profileId = parseInt(id, 10)
+  if (mode === TenantMode.SHARED && user.factory_id == null)
+    return forbiddenError();
+  const profileWhereClause =
+    mode === TenantMode.SHARED
+      ? and(
+          eq(profiles.id, profileId),
+          eq(sharedSchema.users.factoryId, user.factory_id as number),
+        )
+      : eq(profiles.id, profileId);
+  const [existing] = await db
+    .select({ id: profiles.id, userId: profiles.userId })
+    .from(profiles)
+    .innerJoin(users, eq(profiles.userId, users.id))
+    .where(profileWhereClause)
+    .limit(1);
+  if (!existing) return apiError("Profile not found", StatusCodes.NOT_FOUND);
   const body = await req.json()
 
   const activeConfig = await getFactoryConfig(user.factory_id, db, mode)
@@ -30,14 +63,18 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
       ...(validRole ? { role: validRole } : {}),
       updatedAt: new Date(),
     })
-    .where(eq(profiles.id, profileId))
-    .returning()
+    .where(
+      and(eq(profiles.id, existing.id), eq(profiles.userId, existing.userId)),
+    )
+    .returning();
 
   if (!updated) return apiError("Profile not found", StatusCodes.NOT_FOUND)
 
   const userUpdates: Record<string, unknown> = { updatedAt: new Date() }
   if (password && typeof password === "string" && password.trim().length > 0) {
-    userUpdates.passwordHash = await hashPassword(password.trim())
+    userUpdates[DatabasePropertyKey.PASSWORD_HASH] = await hashPassword(
+      password.trim(),
+    );
   }
   if (validRole) {
     userUpdates.role = validRole
@@ -46,37 +83,58 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
     userUpdates.isActive = Boolean(is_active)
   }
 
+  let updatedUserIsActive = is_active ?? true;
   if (Object.keys(userUpdates).length > 1) {
-    await db.update(users).set(userUpdates).where(eq(users.id, updated.userId))
+    const [updatedUser] = await db
+      .update(users)
+      .set(userUpdates)
+      .where(eq(users.id, updated.userId))
+      .returning({ isActive: users.isActive });
+    updatedUserIsActive = updatedUser?.isActive ?? updatedUserIsActive;
   }
 
-  return NextResponse.json({
-    data: {
-      id: updated.id,
-      user_id: updated.userId,
-      name: updated.name,
-      aadhar_number: updated.aadharNumber,
-      role: updated.role,
-      is_active: is_active ?? true,
-      created_at: updated.createdAt,
-      updated_at: updated.updatedAt,
-    },
-  })
+  return formatEntityResponse(
+    { ...updated, isActive: updatedUserIsActive },
+    mode,
+  );
 })
 
-export const DELETE = withAuth(async (_req, _user, db, mode, ctx) => {
+export const DELETE = withAuth(async (_req, user, db, mode, ctx) => {
+  if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.DELETE))
+    return forbiddenError();
   try {
-    const { profiles } = getTables(mode)
-    const { id } = await ctx.params
-    await db.delete(profiles).where(eq(profiles.id, parseInt(id, 10)))
-    return NextResponse.json({ success: true })
+    const { profiles, users } = getTables(mode);
+    const { id } = await ctx.params;
+    const profileId = parseInt(id, 10);
+    if (mode === TenantMode.SHARED && user.factory_id == null)
+      return forbiddenError();
+    const profileWhereClause =
+      mode === TenantMode.SHARED
+        ? and(
+            eq(profiles.id, profileId),
+            eq(sharedSchema.users.factoryId, user.factory_id as number),
+          )
+        : eq(profiles.id, profileId);
+    const [existing] = await db
+      .select({ id: profiles.id, userId: profiles.userId })
+      .from(profiles)
+      .innerJoin(users, eq(profiles.userId, users.id))
+      .where(profileWhereClause)
+      .limit(1);
+    if (!existing) return apiError("Profile not found", StatusCodes.NOT_FOUND);
+    await db
+      .delete(profiles)
+      .where(
+        and(eq(profiles.id, existing.id), eq(profiles.userId, existing.userId)),
+      );
+    return NextResponse.json({ success: true });
   } catch (error) {
     if (isFKViolation(error)) {
       return apiError(
         "Cannot delete this profile because it is referenced by existing weighments. Please reassign or delete dependent records first.",
-        StatusCodes.BAD_REQUEST
-      )
+        StatusCodes.BAD_REQUEST,
+      );
     }
-    throw error
+    throw error;
   }
-})
+});

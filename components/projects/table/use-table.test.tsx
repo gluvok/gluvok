@@ -188,4 +188,25 @@ describe("useProjectTable Hook", () => {
 
     expect(mockTriggerEntitiesUpdate).toHaveBeenCalled()
   })
+
+  it("should expose an error when loading data fails", async () => {
+    vi.mocked(fetchEntityListPaginated).mockRejectedValue(
+      new Error("Network unavailable"),
+    );
+
+    const { result } = renderHook(() =>
+      useProjectTable({
+        projectSlug: "centers",
+        primaryIdKey: "id",
+        projectName: "Centers",
+      }),
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.error).toBe("Network unavailable");
+  });
 })

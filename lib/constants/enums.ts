@@ -265,6 +265,7 @@ export enum ApiPrefix {
 }
 
 export enum RequestHeader {
+  HOST = "host",
   USER_ID = "x-user-id",
   USERNAME = "x-user-username",
   ROLE = "x-user-role",
@@ -288,6 +289,7 @@ export enum PermissionKey {
 }
 
 export enum QueryParam {
+  NEXT = "next",
   SEARCH = "search",
   PAGE = "page",
   LIMIT = "limit",
@@ -295,6 +297,11 @@ export enum QueryParam {
   SORT_DESC = "sort_desc",
   START_DATE = "start_date",
   END_DATE = "end_date",
+}
+
+export enum CookieName {
+  TOKEN = "token",
+  AUTH_TOKEN = "auth_token",
 }
 
 export enum AutoComplete {

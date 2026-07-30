@@ -9,14 +9,20 @@ import { eq } from "drizzle-orm"
 import { getDb } from "@/db"
 import { getTables } from "@/db/schema"
 import { verifyJWT } from "@/lib/auth/jwt"
-import { DatabasePropertyKey, TenantMode } from "@/lib/constants/enums";
+import {
+  CookieName,
+  DatabasePropertyKey,
+  TenantMode,
+} from "@/lib/constants/enums";
 import { getWorkspace } from "@/lib/tenant/workspace"
 import { resolveTenant } from "@/lib/tenant"
 
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get("token")?.value || cookieStore.get("auth_token")?.value
+    const token =
+      cookieStore.get(CookieName.TOKEN)?.value ||
+      cookieStore.get(CookieName.AUTH_TOKEN)?.value;
 
     if (!token) {
       return NextResponse.json({ user: null })

@@ -101,18 +101,14 @@ export function useProjectTable({
     [savedVisibleColumns, columns]
   )
 
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(initialColumnVisibility)
-  const [prevSavedColumns, setPrevSavedColumns] = React.useState(savedVisibleColumns)
-
-  if (savedVisibleColumns !== prevSavedColumns) {
-    setPrevSavedColumns(savedVisibleColumns)
-    setColumnVisibility(initialColumnVisibility)
-  }
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>(initialColumnVisibility);
 
   // Data fetching & search debouncing
   const [localData, setLocalData] = React.useState<EntityRecord[]>([])
   const [localCount, setLocalCount] = React.useState(0)
   const [localLoading, setLocalLoading] = React.useState(true)
+  const [localError, setLocalError] = React.useState<string | null>(null);
   const [debouncedFilter, setDebouncedFilter] = React.useState(globalFilter)
 
   const entitiesUpdatedTrigger = useEntitiesStore((state) => state.entitiesUpdatedTrigger)
@@ -127,35 +123,55 @@ export function useProjectTable({
   }, [globalFilter])
 
   React.useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
     async function load() {
       try {
-        setLocalLoading(true)
-        const filtersObj = parseColumnFilters(columnFilters)
+        setLocalLoading(true);
+        setLocalError(null);
+        const filtersObj = parseColumnFilters(columnFilters);
 
-        const result = await fetchEntityListPaginated(projectSlug as ProjectSlug, {
-          page: pagination.pageIndex,
-          pageSize: pagination.pageSize,
-          sortColumn: sorting[0]?.id,
-          sortDesc: sorting[0]?.desc,
-          search: debouncedFilter,
-          filters: filtersObj,
-        })
+        const result = await fetchEntityListPaginated(
+          projectSlug as ProjectSlug,
+          {
+            page: pagination.pageIndex,
+            pageSize: pagination.pageSize,
+            sortColumn: sorting[0]?.id,
+            sortDesc: sorting[0]?.desc,
+            search: debouncedFilter,
+            filters: filtersObj,
+          },
+        );
         if (!cancelled) {
-          setLocalData(result.data)
-          setLocalCount(result.count)
+          setLocalData(result.data);
+          setLocalCount(result.count);
         }
       } catch (err) {
-        console.error(`Failed to load paginated ${projectSlug}:`, err)
+        console.error(`Failed to load paginated ${projectSlug}:`, err);
+        if (!cancelled) {
+          setLocalError(
+            err instanceof Error
+              ? err.message
+              : `Failed to load ${projectName}`,
+          );
+        }
       } finally {
-        if (!cancelled) setLocalLoading(false)
+        if (!cancelled) setLocalLoading(false);
       }
     }
-    load()
+    load();
     return () => {
-      cancelled = true
-    }
-  }, [projectSlug, pagination.pageIndex, pagination.pageSize, sorting, debouncedFilter, columnFilters, entitiesUpdatedTrigger])
+      cancelled = true;
+    };
+  }, [
+    projectSlug,
+    projectName,
+    pagination.pageIndex,
+    pagination.pageSize,
+    sorting,
+    debouncedFilter,
+    columnFilters,
+    entitiesUpdatedTrigger,
+  ]);
 
   // TanStack Table Instance
   const table = useReactTable({
@@ -208,10 +224,11 @@ export function useProjectTable({
   return {
     table,
     isLoading: localLoading,
+    error: localError,
     isReady,
     permissions,
     handleReload,
     ...dialogStates,
-  }
+  };
 }
 

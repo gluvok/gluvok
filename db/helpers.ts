@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { StatusCodes, ReasonPhrases } from "http-status-codes"
-import { sql, eq, count, type Column, type SQL } from "drizzle-orm"
+import { sql, and, eq, count, type Column, type SQL } from "drizzle-orm";
 import { verifyJWT, JWTPayload } from "@/lib/auth/jwt"
 import {
   Role,
@@ -9,6 +9,7 @@ import {
   ProjectSlug,
   PermissionKey,
   QueryParam,
+  CookieName,
   DatabasePropertyKey,
   EntityKey,
 } from "@/lib/constants/enums";
@@ -113,8 +114,8 @@ export async function getAuthUser(req: NextRequest | Request): Promise<JWTPayloa
 
   if ("cookies" in req && typeof (req as NextRequest).cookies?.get === "function") {
     token =
-      (req as NextRequest).cookies.get("token")?.value ||
-      (req as NextRequest).cookies.get("auth_token")?.value
+      (req as NextRequest).cookies.get(CookieName.TOKEN)?.value ||
+      (req as NextRequest).cookies.get(CookieName.AUTH_TOKEN)?.value;
   }
 
   if (!token) {
@@ -247,6 +248,21 @@ export function getFactoryWhereClause(
     return eq(factoryIdColumn, user.factory_id)
   }
   return undefined
+}
+
+/**
+ * Combines an entity predicate with the authenticated user's factory scope.
+ * Returns null when a shared-mode request has no factory assignment.
+ */
+export function getScopedEntityWhereClause(
+  user: JWTPayload,
+  mode: TenantMode,
+  entityWhereClause: SQL,
+  factoryIdColumn: Column
+): SQL | null {
+  if (mode === TenantMode.DEDICATED) return entityWhereClause
+  if (user.factory_id == null) return null
+  return and(entityWhereClause, eq(factoryIdColumn, user.factory_id)) ?? null
 }
 
 /**

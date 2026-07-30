@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from "next/server"
+import { CookieName } from "@/lib/constants/enums";
 
 export async function POST() {
   const response = NextResponse.json({ success: true })
@@ -16,7 +17,7 @@ export async function POST() {
     expires: new Date(0),
   }
 
-  response.cookies.set("token", "", cookieOptions)
-  response.cookies.set("auth_token", "", cookieOptions)
+  response.cookies.set(CookieName.TOKEN, "", cookieOptions);
+  response.cookies.set(CookieName.AUTH_TOKEN, "", cookieOptions);
   return response
 }

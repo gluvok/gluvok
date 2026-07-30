@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server"
-import { eq, and } from "drizzle-orm"
+import { eq } from "drizzle-orm";
 import { sharedSchema, standaloneSchema } from "@/db/schema"
-import { withAuth, apiError, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
+import {
+  withAuth,
+  apiError,
+  forbiddenError,
+  getScopedEntityWhereClause,
+  hasPermission,
+  StatusCodes,
+} from "@/db/helpers";
 import { TenantMode, ProjectSlug, PermissionKey, FieldRequirementMode } from "@/lib/constants/enums"
 
 /**
@@ -58,24 +65,27 @@ export const PATCH = withAuth(async (req, user, db, mode, context) => {
 
     // Shared Mode
     const sharedConfigs = sharedSchema.configs
-    const conditions = [eq(sharedConfigs.id, configId)]
-    if (user.factory_id != null) {
-      conditions.push(eq(sharedConfigs.factoryId, user.factory_id))
-    }
+    const whereClause = getScopedEntityWhereClause(
+      user,
+      mode,
+      eq(sharedConfigs.id, configId),
+      sharedConfigs.factoryId,
+    );
+    if (!whereClause) return forbiddenError();
 
     const [existing] = await db
       .select()
       .from(sharedConfigs)
-      .where(and(...conditions))
-      .limit(1)
+      .where(whereClause)
+      .limit(1);
 
     if (!existing) return apiError("Config not found", StatusCodes.NOT_FOUND)
 
     const [updated] = await db
       .update(sharedConfigs)
       .set(updates)
-      .where(eq(sharedConfigs.id, configId))
-      .returning()
+      .where(whereClause)
+      .returning();
 
     return NextResponse.json({
       data: {
@@ -109,20 +119,23 @@ export const DELETE = withAuth(async (_req, user, db, mode, context) => {
     }
 
     const sharedConfigs = sharedSchema.configs
-    const conditions = [eq(sharedConfigs.id, configId)]
-    if (user.factory_id != null) {
-      conditions.push(eq(sharedConfigs.factoryId, user.factory_id))
-    }
+    const whereClause = getScopedEntityWhereClause(
+      user,
+      mode,
+      eq(sharedConfigs.id, configId),
+      sharedConfigs.factoryId,
+    );
+    if (!whereClause) return forbiddenError();
 
     const [existing] = await db
       .select()
       .from(sharedConfigs)
-      .where(and(...conditions))
-      .limit(1)
+      .where(whereClause)
+      .limit(1);
 
     if (!existing) return apiError("Config not found", StatusCodes.NOT_FOUND)
 
-    await db.delete(sharedConfigs).where(eq(sharedConfigs.id, configId))
+    await db.delete(sharedConfigs).where(whereClause);
 
     return NextResponse.json({ success: true, message: "Config deleted successfully" })
   } catch (err) {

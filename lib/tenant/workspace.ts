@@ -10,6 +10,7 @@
  */
 
 import type { NextRequest } from "next/server"
+import { RequestHeader } from "@/lib/constants/enums";
 
 /** Labels that should be treated as the root (not a workspace). */
 const IGNORED_SUBDOMAINS = new Set(["www", "api", ""])
@@ -30,7 +31,7 @@ export function getWorkspace(req: Request | NextRequest): string | null {
   // Prefer Host header (works in Next.js runtime and plain Request).
   // Fall back to nextUrl.host for NextRequest in test environments where
   // the Host header may not be forwarded.
-  const hostHeader = req.headers.get("host") ?? ""
+  const hostHeader = req.headers.get(RequestHeader.HOST) ?? "";
   const nextUrlHost = "nextUrl" in req ? (req as NextRequest).nextUrl.host : ""
   const hostname = hostHeader || nextUrlHost
 

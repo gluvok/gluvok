@@ -32,6 +32,7 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
   const {
     table,
     isLoading,
+    error,
     isReady,
     permissions,
     creating,
@@ -73,10 +74,12 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
           <ConfigSummary
             config={table.getRowModel().rows[0]?.original as Config | undefined}
             isLoading={isLoading}
+            error={error}
             canCreate={permissions.create}
             canEdit={permissions.write}
             onCreate={() => setCreating(true)}
             onEdit={setEditingItem}
+            onRetry={handleReload}
           />
         </div>
       ) : (
@@ -92,7 +95,12 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
           />
 
           {/* Main data representation grid/table */}
-          <ProjectTable table={table} isLoading={isLoading} />
+          <ProjectTable
+            table={table}
+            isLoading={isLoading}
+            error={error}
+            onRetry={handleReload}
+          />
 
           {/* Pagination controls */}
           {table.getRowModel().rows?.length > 0 && (

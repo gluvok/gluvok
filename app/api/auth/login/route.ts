@@ -8,7 +8,11 @@ import { eq } from "drizzle-orm"
 import { getTables, sharedSchema } from "@/db/schema"
 import { verifyPassword } from "@/lib/auth/password"
 import { signJWT } from "@/lib/auth/jwt"
-import { DatabasePropertyKey, TenantMode } from "@/lib/constants/enums";
+import {
+  CookieName,
+  DatabasePropertyKey,
+  TenantMode,
+} from "@/lib/constants/enums";
 import { getWorkspace } from "@/lib/tenant/workspace"
 import { resolveTenant } from "@/lib/tenant"
 
@@ -102,13 +106,13 @@ export async function POST(request: NextRequest) {
     }
 
     const response = NextResponse.json({ success: true, user: userPayload })
-    response.cookies.set("token", token, {
+    response.cookies.set(CookieName.TOKEN, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 60 * 60 * 24,
       path: "/",
-    })
+    });
 
     return response
   } catch (err) {

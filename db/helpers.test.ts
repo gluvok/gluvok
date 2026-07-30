@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest"
-import { fetchPaginatedResult } from "./helpers"
+import { eq } from "drizzle-orm";
+import { sharedSchema } from "@/db/schema";
+import { TenantMode } from "@/lib/constants/enums";
+import { fetchPaginatedResult, getScopedEntityWhereClause } from "./helpers";
 
 describe("fetchPaginatedResult", () => {
   it("applies ordering before pagination", async () => {
@@ -49,3 +52,44 @@ describe("fetchPaginatedResult", () => {
     })
   })
 })
+
+describe("getScopedEntityWhereClause", () => {
+  const entityWhereClause = eq(sharedSchema.centers.id, 1);
+  const sharedUser = {
+    sub: "1",
+    username: "admin",
+    role: "admin",
+    factory_id: 1,
+    tenant_mode: TenantMode.SHARED,
+  };
+
+  it("requires a factory assignment in shared mode", () => {
+    expect(
+      getScopedEntityWhereClause(
+        { ...sharedUser, factory_id: null },
+        TenantMode.SHARED,
+        entityWhereClause,
+        sharedSchema.centers.factoryId,
+      ),
+    ).toBeNull();
+  });
+
+  it("adds factory scope in shared mode and preserves dedicated mode predicates", () => {
+    expect(
+      getScopedEntityWhereClause(
+        sharedUser,
+        TenantMode.SHARED,
+        entityWhereClause,
+        sharedSchema.centers.factoryId,
+      ),
+    ).not.toBeNull();
+    expect(
+      getScopedEntityWhereClause(
+        sharedUser,
+        TenantMode.DEDICATED,
+        entityWhereClause,
+        sharedSchema.centers.factoryId,
+      ),
+    ).toBe(entityWhereClause);
+  });
+});

@@ -81,6 +81,7 @@ export const editProfileSchema = z
     const rawPassword = data[EntityKey.PASSWORD]
     const rawConfirm = data[EntityKey.CONFIRM_PASSWORD]
     const hasPassword = Boolean(rawPassword && rawPassword.trim().length > 0)
+    const hasConfirm = Boolean(rawConfirm && rawConfirm.trim().length > 0)
 
     if (hasPassword && rawPassword!.trim().length < 6) {
       ctx.addIssue({
@@ -90,7 +91,13 @@ export const editProfileSchema = z
       })
     }
 
-    if (hasPassword && rawPassword !== rawConfirm) {
+    if (hasPassword && !hasConfirm) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Please confirm your password",
+        path: [EntityKey.CONFIRM_PASSWORD],
+      })
+    } else if (hasPassword && rawPassword !== rawConfirm) {
       ctx.addIssue({
         code: "custom",
         message: "Passwords do not match",

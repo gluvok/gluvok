@@ -45,7 +45,7 @@ export function useEntityForm({
       return getDynamicCustomerSchema(activeConfig)
     }
     if (projectSlug === ProjectSlug.PROFILES) {
-      return getDynamicProfileSchema(activeConfig)
+      return getDynamicProfileSchema(activeConfig, isEdit)
     }
     return isEdit 
       ? ENTITY_EDIT_SCHEMAS[projectSlug as ProjectSlug] 
@@ -74,6 +74,8 @@ export function useEntityForm({
         }
         if (field.type === FieldType.CHECKBOX) {
           defaults[field.key] = String(rawVal) === "true" || String(rawVal) === ActiveStatus.ACTIVE
+        } else if (field.key === EntityKey.PASSWORD || field.key === EntityKey.CONFIRM_PASSWORD) {
+          defaults[field.key] = ""
         } else {
           defaults[field.key] = Array.isArray(rawVal) ? rawVal : (rawVal !== undefined && rawVal !== null ? String(rawVal) : "")
         }

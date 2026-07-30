@@ -253,19 +253,24 @@ export async function fetchPaginatedResult<T = unknown>(
 ) {
   const { page, limit, offset } = pagination
   const bQuery = baseQuery as {
+    orderBy?: (ob: unknown) => {
+      where: (clause: unknown) => {
+        limit: (l: number) => {
+          offset: (o: number) => Promise<unknown[]>
+        }
+      }
+    }
     where: (clause: unknown) => {
       limit: (l: number) => {
-        offset: (o: number) => {
-          orderBy?: (ob: unknown) => Promise<unknown[]>
-        } & Promise<unknown[]>
+        offset: (o: number) => Promise<unknown[]>
       }
     }
   }
 
-  const limitedQuery = bQuery.where(whereClause).limit(limit).offset(offset)
-  const dataQuery = orderByClause && typeof limitedQuery.orderBy === "function"
-    ? limitedQuery.orderBy(orderByClause)
-    : limitedQuery
+  const orderedQuery = orderByClause && typeof bQuery.orderBy === "function"
+    ? bQuery.orderBy(orderByClause)
+    : bQuery
+  const dataQuery = orderedQuery.where(whereClause).limit(limit).offset(offset)
 
   const cObj = countTableOrQuery as { where?: (w: unknown) => Promise<{ count: number | string }[]> }
   const countQuery = typeof cObj?.where === "function"

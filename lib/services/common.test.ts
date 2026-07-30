@@ -1,0 +1,51 @@
+import { describe, it, expect, vi, beforeEach } from "vitest"
+import axios from "axios"
+import { fetchEntityPaginatedFromApi } from "./common"
+import { ProjectSlug } from "@/lib/constants/enums"
+
+vi.mock("axios", () => ({
+  default: {
+    get: vi.fn(),
+    isAxiosError: vi.fn(() => false),
+  },
+}))
+
+describe("fetchEntityPaginatedFromApi", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("forwards sort params to API", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        data: [{ id: 1, name: "Alpha" }],
+        pagination: { total: 1 },
+      },
+    })
+
+    const result = await fetchEntityPaginatedFromApi(ProjectSlug.CENTERS, {
+      page: 1,
+      pageSize: 10,
+      search: "al",
+      sortColumn: "name",
+      sortDesc: true,
+      filters: { unit: "kg" },
+    })
+
+    expect(axios.get).toHaveBeenCalledWith("/api/centers", {
+      params: {
+        page: 2,
+        limit: 10,
+        search: "al",
+        sort_column: "name",
+        sort_desc: true,
+        unit: "kg",
+      },
+    })
+
+    expect(result).toEqual({
+      data: [{ id: 1, name: "Alpha" }],
+      count: 1,
+    })
+  })
+})

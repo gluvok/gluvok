@@ -4,7 +4,7 @@
  */
 
 import axios from "axios"
-import { ProjectSlug, ApiRoutes } from "@/lib/constants/enums"
+import { ProjectSlug, ApiRoutes, QueryParam } from "@/lib/constants/enums";
 import { type EntityRecord } from "@/types"
 import { type PaginatedParams } from "./scoping"
 
@@ -48,11 +48,21 @@ export async function fetchEntityPaginatedFromApi<T = EntityRecord>(
   params: PaginatedParams
 ): Promise<{ data: T[]; count: number }> {
   const endpoint = getEndpoint(slug)
-  const { page, pageSize, search, filters } = params
+  const { page, pageSize, search, filters, sortColumn, sortDesc } = params;
   return apiRequest(async () => {
-    const res = await axios.get<{ data: T[]; pagination: { total: number } }>(endpoint, {
-      params: { page: page + 1, limit: pageSize, search, ...filters },
-    })
+    const res = await axios.get<{ data: T[]; pagination: { total: number } }>(
+      endpoint,
+      {
+        params: {
+          [QueryParam.PAGE]: page + 1,
+          [QueryParam.LIMIT]: pageSize,
+          [QueryParam.SEARCH]: search,
+          [QueryParam.SORT_COLUMN]: sortColumn,
+          [QueryParam.SORT_DESC]: sortDesc,
+          ...filters,
+        },
+      },
+    );
     return { data: res.data.data, count: res.data.pagination.total }
   })
 }

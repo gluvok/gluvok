@@ -285,6 +285,8 @@ export enum QueryParam {
   SEARCH = "search",
   PAGE = "page",
   LIMIT = "limit",
+  SORT_COLUMN = "sort_column",
+  SORT_DESC = "sort_desc",
   START_DATE = "start_date",
   END_DATE = "end_date",
 }

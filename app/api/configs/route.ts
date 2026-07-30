@@ -1,13 +1,33 @@
 import { NextResponse } from "next/server"
-import { eq, and, desc } from "drizzle-orm"
+import { eq, and, asc, desc } from "drizzle-orm"
 import { sharedSchema, standaloneSchema } from "@/db/schema"
 import { withAuth, validateRequiredFields, forbiddenError, hasPermission, StatusCodes, apiError, formatEntityResponse, getFactoryWhereClause } from "@/db/helpers"
-import { TenantMode, ProjectSlug, PermissionKey, FieldRequirementMode } from "@/lib/constants/enums"
+import { TenantMode, ProjectSlug, PermissionKey, FieldRequirementMode, EntityKey, QueryParam } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user, db, mode) => {
   try {
+    const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN)
+    const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
+
     if (mode === TenantMode.DEDICATED) {
       // Single global config — no factory scoping
+      const orderByClause = (() => {
+        switch (sortColumn) {
+          case EntityKey.ID:
+            return sortDesc ? desc(standaloneSchema.configs.id) : asc(standaloneSchema.configs.id)
+          case EntityKey.AADHAR_NUMBER_MODE:
+            return sortDesc ? desc(standaloneSchema.configs.aadharNumberMode) : asc(standaloneSchema.configs.aadharNumberMode)
+          case EntityKey.GOVT_ID_MODE:
+            return sortDesc ? desc(standaloneSchema.configs.govtIdMode) : asc(standaloneSchema.configs.govtIdMode)
+          case EntityKey.CREATED_AT:
+            return sortDesc ? desc(standaloneSchema.configs.createdAt) : asc(standaloneSchema.configs.createdAt)
+          case EntityKey.UPDATED_AT:
+            return sortDesc ? desc(standaloneSchema.configs.updatedAt) : asc(standaloneSchema.configs.updatedAt)
+          default:
+            return desc(standaloneSchema.configs.createdAt)
+        }
+      })()
+
       const [row] = await db
         .select({
           id: standaloneSchema.configs.id,
@@ -17,6 +37,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
           updated_at: standaloneSchema.configs.updatedAt,
         })
         .from(standaloneSchema.configs)
+        .orderBy(orderByClause)
         .limit(1)
       const data = row ? [row] : []
       return NextResponse.json({
@@ -32,6 +53,23 @@ export const GET = withAuth(async (req, user, db, mode) => {
     if (factoryCond) conditions.push(factoryCond)
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
+    const orderByClause = (() => {
+      switch (sortColumn) {
+        case EntityKey.ID:
+          return sortDesc ? desc(sharedConfigs.id) : asc(sharedConfigs.id)
+        case EntityKey.AADHAR_NUMBER_MODE:
+          return sortDesc ? desc(sharedConfigs.aadharNumberMode) : asc(sharedConfigs.aadharNumberMode)
+        case EntityKey.GOVT_ID_MODE:
+          return sortDesc ? desc(sharedConfigs.govtIdMode) : asc(sharedConfigs.govtIdMode)
+        case EntityKey.CREATED_AT:
+          return sortDesc ? desc(sharedConfigs.createdAt) : asc(sharedConfigs.createdAt)
+        case EntityKey.UPDATED_AT:
+          return sortDesc ? desc(sharedConfigs.updatedAt) : asc(sharedConfigs.updatedAt)
+        default:
+          return desc(sharedConfigs.createdAt)
+      }
+    })()
+
     const rows = await db
       .select({
         id: sharedConfigs.id,
@@ -42,8 +80,8 @@ export const GET = withAuth(async (req, user, db, mode) => {
         updated_at: sharedConfigs.updatedAt,
       })
       .from(sharedConfigs)
+      .orderBy(orderByClause)
       .where(whereClause)
-      .orderBy(desc(sharedConfigs.createdAt))
 
     return NextResponse.json({
       data: rows,

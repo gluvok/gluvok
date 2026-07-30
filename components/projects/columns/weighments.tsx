@@ -58,6 +58,7 @@ export function getWeighmentsColumns<T>(): ColumnDef<T>[] {
         }
       ),
       enableGlobalFilter: false,
+      enableSorting: false,
     },
     createIdColumn(EntityKey.RATE_ID, ColumnLabel.RATE_ID, Package),
     createIdColumn(EntityKey.CENTER_ID, ColumnLabel.CENTER_ID, Building),

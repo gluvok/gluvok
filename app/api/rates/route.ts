@@ -1,10 +1,11 @@
-import { eq, and, desc, gte, lte } from "drizzle-orm"
+import { eq, and, desc, gte, lte, ilike, or, count } from "drizzle-orm"
 import { getTables, sharedSchema } from "@/db/schema"
 import { withAuth, getPaginationParams, validateRequiredFields, apiError, forbiddenError, hasPermission, StatusCodes, getFactoryWhereClause, fetchPaginatedResult, formatEntityResponse } from "@/db/helpers"
 import { Role, TenantMode, ProjectSlug, PermissionKey, EntityKey, FilterValue, Unit, QueryParam } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user, db, mode) => {
   const pagination = getPaginationParams(req.nextUrl)
+  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
   const commodityIdParam = req.nextUrl.searchParams.get(EntityKey.COMMODITY_ID)
   const unitParam = req.nextUrl.searchParams.get(EntityKey.UNIT)
   const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE)
@@ -12,17 +13,31 @@ export const GET = withAuth(async (req, user, db, mode) => {
 
   const { rates, commodities } = getTables(mode)
   const factories = mode === TenantMode.SHARED ? sharedSchema.factories : undefined
+  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
 
-  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.rates.factoryId)
+  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.rates.factoryId, req.nextUrl.searchParams)
   const conditions = []
   if (factoryCond) conditions.push(factoryCond)
   if (commodityIdParam && commodityIdParam !== FilterValue.ALL) conditions.push(eq(rates.commodityId, Number(commodityIdParam)))
   if (unitParam && unitParam !== FilterValue.ALL) conditions.push(eq(rates.unit, unitParam as Unit))
   if (startDateParam) conditions.push(gte(rates.createdAt, new Date(startDateParam)))
   if (endDateParam) conditions.push(lte(rates.createdAt, new Date(endDateParam)))
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
+  if (search) {
+    const searchNum = parseInt(search, 10)
+    const searchConds = [ilike(commodities.name, `%${search}%`), ilike(rates.unitPrice, `%${search}%`)]
+    if (!isNaN(searchNum)) {
+      searchConds.push(eq(rates.id, searchNum))
+    }
+    if (isSuperAdminShared && factories) {
+      searchConds.push(ilike(factories.name, `%${search}%`))
+      if (!isNaN(searchNum)) {
+        searchConds.push(eq(sharedSchema.rates.factoryId, searchNum))
+      }
+    }
+    conditions.push(or(...searchConds))
+  }
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
   let baseQuery = db
     .select({
@@ -44,7 +59,17 @@ export const GET = withAuth(async (req, user, db, mode) => {
     baseQuery = baseQuery.leftJoin(factories, eq(sharedSchema.rates.factoryId, factories.id)) as typeof baseQuery
   }
 
-  return fetchPaginatedResult(db, rates, baseQuery, whereClause, pagination, desc(rates.createdAt))
+  let countQuery = db
+    .select({ count: count() })
+    .from(rates)
+    .leftJoin(commodities, eq(rates.commodityId, commodities.id))
+    .$dynamic()
+
+  if (isSuperAdminShared && factories) {
+    countQuery = countQuery.leftJoin(factories, eq(sharedSchema.rates.factoryId, factories.id)) as typeof countQuery
+  }
+
+  return fetchPaginatedResult(db, countQuery, baseQuery, whereClause, pagination, desc(rates.createdAt))
 })
 
 export const POST = withAuth(async (req, user, db, mode) => {

@@ -14,6 +14,13 @@ export interface FactoryConfig {
   govtIdMode: FieldRequirementMode
 }
 
+interface ConfigResponseData {
+  id?: number
+  factory_id?: number | null
+  aadhar_number_mode: FieldRequirementMode
+  govt_id_mode: FieldRequirementMode
+}
+
 interface ConfigStore {
   config: FactoryConfig | null
   configLoading: boolean
@@ -30,10 +37,29 @@ export const useConfigStore = create<ConfigStore>((set) => ({
   fetchConfig: async () => {
     set({ configLoading: true })
     try {
-      const res = await axios.get<{ config: FactoryConfig | null }>("/api/configs/active")
-      set({ config: res.data?.config || null, configLoading: false, configInitialized: true })
+      const res = await axios.get<{ data: ConfigResponseData[] }>("/api/configs")
+      const row = res.data?.data?.[0]
+      const config: FactoryConfig = row
+        ? {
+            id: row.id,
+            factoryId: row.factory_id,
+            aadharNumberMode: row.aadhar_number_mode,
+            govtIdMode: row.govt_id_mode,
+          }
+        : {
+            aadharNumberMode: FieldRequirementMode.OPTIONAL,
+            govtIdMode: FieldRequirementMode.OPTIONAL,
+          }
+      set({ config, configLoading: false, configInitialized: true })
     } catch {
-      set({ config: null, configLoading: false, configInitialized: true })
+      set({
+        config: {
+          aadharNumberMode: FieldRequirementMode.OPTIONAL,
+          govtIdMode: FieldRequirementMode.OPTIONAL,
+        },
+        configLoading: false,
+        configInitialized: true,
+      })
     }
   },
   setConfig: (config) => set({ config, configLoading: false, configInitialized: true }),

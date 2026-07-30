@@ -12,25 +12,35 @@ export const GET = withAuth(async (req, user, db, mode) => {
 
   const { profiles, users } = getTables(mode)
   const factories = mode === TenantMode.SHARED ? sharedSchema.factories : undefined
+  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
 
   const activeConfig = await getFactoryConfig(user.factory_id, db, mode)
   const isAadharNotRequired = activeConfig?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED
 
-  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.users.factoryId)
+  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.users.factoryId, req.nextUrl.searchParams)
   const conditions = []
   if (factoryCond) conditions.push(factoryCond)
   if (roleParam && roleParam !== FilterValue.ALL) conditions.push(eq(profiles.role, roleParam as Role))
+
   if (search) {
-    conditions.push(
-      or(
-        ilike(profiles.name, `%${search}%`),
-        ...(isAadharNotRequired ? [] : [ilike(profiles.aadharNumber, `%${search}%`)]),
-        ilike(users.username, `%${search}%`)
-      )
-    )
+    const searchNum = parseInt(search, 10)
+    const searchConds = [
+      ilike(profiles.name, `%${search}%`),
+      ...(isAadharNotRequired ? [] : [ilike(profiles.aadharNumber, `%${search}%`)]),
+      ilike(users.username, `%${search}%`),
+    ]
+    if (!isNaN(searchNum)) {
+      searchConds.push(eq(profiles.id, searchNum))
+    }
+    if (isSuperAdminShared && factories) {
+      searchConds.push(ilike(factories.name, `%${search}%`))
+      if (!isNaN(searchNum)) {
+        searchConds.push(eq(sharedSchema.users.factoryId, searchNum))
+      }
+    }
+    conditions.push(or(...searchConds))
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
-  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
 
   let baseQuery = db
     .select({
@@ -54,10 +64,15 @@ export const GET = withAuth(async (req, user, db, mode) => {
     baseQuery = baseQuery.leftJoin(factories, eq(sharedSchema.users.factoryId, factories.id)) as typeof baseQuery
   }
 
-  const countQuery = db
+  let countQuery = db
     .select({ count: count() })
     .from(profiles)
     .innerJoin(users, eq(profiles.userId, users.id))
+    .$dynamic()
+
+  if (isSuperAdminShared && factories) {
+    countQuery = countQuery.leftJoin(factories, eq(sharedSchema.users.factoryId, factories.id)) as typeof countQuery
+  }
 
   return fetchPaginatedResult(db, countQuery, baseQuery, whereClause, pagination, desc(profiles.createdAt))
 })

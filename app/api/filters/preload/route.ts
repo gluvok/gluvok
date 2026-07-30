@@ -1,139 +1,68 @@
 import { NextResponse } from "next/server"
 import { eq, asc } from "drizzle-orm"
-import { commodities, factories, centers, profiles, customers, rates, users } from "@/db/schema"
+import { getTables, sharedSchema } from "@/db/schema"
 import { withAuth, StatusCodes } from "@/db/helpers"
 import { Role, TenantMode } from "@/lib/constants/enums"
 
 /**
  * @file app/api/filters/preload/route.ts
  * @description Batch endpoint to preload all filter dropdown data in a single HTTP round-trip.
- * Runs all DB queries in parallel via Promise.all on the server, eliminating per-entity HTTP overhead.
+ * Runs all DB queries in parallel via Promise.all on the server, dynamically scoped by TenantMode.
  */
 
 export const GET = withAuth(async (_req, user, db, mode) => {
   const isSuperAdmin = user.role === Role.SUPER_ADMIN
+  const isShared = mode === TenantMode.SHARED
+  const factoryFilter = isShared && !isSuperAdmin && user.factory_id != null ? user.factory_id : null
 
-  if (mode === TenantMode.DEDICATED) {
-    // Dedicated: no factory scoping anywhere
-    const [commodityRows, centerRows, profileRows, customerRows, rateRows] = await Promise.all([
-      db.select({ id: commodities.id, name: commodities.name }).from(commodities).orderBy(asc(commodities.name)),
-      db.select({ id: centers.id, name: centers.name }).from(centers).orderBy(asc(centers.name)),
-      db.select({ id: profiles.id, name: profiles.name }).from(profiles).orderBy(asc(profiles.name)),
-      db.select({ id: customers.id, name: customers.name }).from(customers).orderBy(asc(customers.name)),
-      db
-        .select({
-          id: rates.id,
-          unit_price: rates.unitPrice,
-          unit: rates.unit,
-          commodity_name: commodities.name,
-        })
-        .from(rates)
-        .leftJoin(commodities, eq(rates.commodityId, commodities.id))
-        .orderBy(asc(rates.id)),
-    ])
+  const { centers, profiles, customers, rates, commodities, users } = getTables(mode)
+  const factories = isShared ? sharedSchema.factories : undefined
 
-    return NextResponse.json(
-      {
-        commodities: commodityRows,
-        factories: [],
-        centers: centerRows,
-        profiles: profileRows,
-        customers: customerRows,
-        rates: rateRows,
-      },
-      { status: StatusCodes.OK }
-    )
+  let centersQuery = db.select({ id: centers.id, name: centers.name }).from(centers).$dynamic()
+  if (isShared && factoryFilter && sharedSchema.centers.factoryId) {
+    centersQuery = centersQuery.where(eq(sharedSchema.centers.factoryId, factoryFilter)) as typeof centersQuery
   }
 
-  // Shared mode — factory scoping
-  const factoryFilter = !isSuperAdmin && user.factory_id != null ? user.factory_id : null
+  let profilesQuery = db.select({ id: profiles.id, name: profiles.name }).from(profiles).$dynamic()
+  if (isShared && factoryFilter && sharedSchema.users.factoryId) {
+    profilesQuery = profilesQuery
+      .innerJoin(users, eq(profiles.userId, users.id))
+      .where(eq(sharedSchema.users.factoryId, factoryFilter)) as typeof profilesQuery
+  }
 
-  const [
-    commodityRows,
-    factoryRows,
-    centerRows,
-    profileRows,
-    customerRows,
-    rateRows,
-  ] = await Promise.all([
-    // Commodities — global, no factory scoping
-    db
-      .select({ id: commodities.id, name: commodities.name })
-      .from(commodities)
-      .orderBy(asc(commodities.name)),
+  let customersQuery = db.select({ id: customers.id, name: customers.name }).from(customers).$dynamic()
+  if (isShared && factoryFilter && sharedSchema.customers.factoryId) {
+    customersQuery = customersQuery.where(eq(sharedSchema.customers.factoryId, factoryFilter)) as typeof customersQuery
+  }
 
-    // Factories — only super admin sees all factories
-    isSuperAdmin
-      ? db
-          .select({ id: factories.id, name: factories.name })
-          .from(factories)
-          .orderBy(asc(factories.name))
+  let ratesQuery = db
+    .select({
+      id: rates.id,
+      unit_price: rates.unitPrice,
+      unit: rates.unit,
+      commodity_name: commodities.name,
+      ...(isShared && isSuperAdmin && factories ? { factory_name: factories.name } : {}),
+    })
+    .from(rates)
+    .leftJoin(commodities, eq(rates.commodityId, commodities.id))
+    .$dynamic()
+
+  if (isShared && isSuperAdmin && factories) {
+    ratesQuery = ratesQuery.leftJoin(factories, eq(sharedSchema.rates.factoryId, factories.id)) as typeof ratesQuery
+  }
+  if (isShared && factoryFilter && sharedSchema.rates.factoryId) {
+    ratesQuery = ratesQuery.where(eq(sharedSchema.rates.factoryId, factoryFilter)) as typeof ratesQuery
+  }
+
+  const [commodityRows, factoryRows, centerRows, profileRows, customerRows, rateRows] = await Promise.all([
+    db.select({ id: commodities.id, name: commodities.name }).from(commodities).orderBy(asc(commodities.name)),
+    isShared && isSuperAdmin && factories
+      ? db.select({ id: factories.id, name: factories.name }).from(factories).orderBy(asc(factories.name))
       : Promise.resolve([]),
-
-    // Centers — scoped by factory if not super admin
-    factoryFilter
-      ? db
-          .select({ id: centers.id, name: centers.name })
-          .from(centers)
-          .where(eq(centers.factoryId, factoryFilter))
-          .orderBy(asc(centers.name))
-      : db
-          .select({ id: centers.id, name: centers.name })
-          .from(centers)
-          .orderBy(asc(centers.name)),
-
-    // Profiles — scoped by factory via users join if not super admin
-    factoryFilter
-      ? db
-          .select({ id: profiles.id, name: profiles.name })
-          .from(profiles)
-          .innerJoin(users, eq(profiles.userId, users.id))
-          .where(eq(users.factoryId, factoryFilter))
-          .orderBy(asc(profiles.name))
-      : db
-          .select({ id: profiles.id, name: profiles.name })
-          .from(profiles)
-          .orderBy(asc(profiles.name)),
-
-    // Customers — scoped by factory if not super admin
-    factoryFilter
-      ? db
-          .select({ id: customers.id, name: customers.name })
-          .from(customers)
-          .where(eq(customers.factoryId, factoryFilter))
-          .orderBy(asc(customers.name))
-      : db
-          .select({ id: customers.id, name: customers.name })
-          .from(customers)
-          .orderBy(asc(customers.name)),
-
-    // Rates — scoped by factory, join commodity and optionally factory name
-    factoryFilter
-      ? db
-          .select({
-            id: rates.id,
-            unit_price: rates.unitPrice,
-            unit: rates.unit,
-            commodity_name: commodities.name,
-            factory_name: factories.name,
-          })
-          .from(rates)
-          .leftJoin(commodities, eq(rates.commodityId, commodities.id))
-          .leftJoin(factories, eq(rates.factoryId, factories.id))
-          .where(eq(rates.factoryId, factoryFilter))
-          .orderBy(asc(rates.id))
-      : db
-          .select({
-            id: rates.id,
-            unit_price: rates.unitPrice,
-            unit: rates.unit,
-            commodity_name: commodities.name,
-            factory_name: factories.name,
-          })
-          .from(rates)
-          .leftJoin(commodities, eq(rates.commodityId, commodities.id))
-          .leftJoin(factories, eq(rates.factoryId, factories.id))
-          .orderBy(asc(rates.id)),
+    centersQuery.orderBy(asc(centers.name)),
+    profilesQuery.orderBy(asc(profiles.name)),
+    customersQuery.orderBy(asc(customers.name)),
+    ratesQuery.orderBy(asc(rates.id)),
   ])
 
   return NextResponse.json(

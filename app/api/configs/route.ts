@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server"
-import { eq, count, and, desc } from "drizzle-orm"
+import { eq, and, desc } from "drizzle-orm"
 import { sharedSchema, standaloneSchema } from "@/db/schema"
-import { withAuth, getPaginationParams, validateRequiredFields, forbiddenError, hasPermission, StatusCodes, apiError, formatEntityResponse } from "@/db/helpers"
+import { withAuth, validateRequiredFields, forbiddenError, hasPermission, StatusCodes, apiError, formatEntityResponse, getFactoryWhereClause } from "@/db/helpers"
 import { Role, TenantMode, ProjectSlug, PermissionKey, FieldRequirementMode } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user, db, mode) => {
-  if (!hasPermission(user, ProjectSlug.CONFIGS, PermissionKey.READ)) return forbiddenError()
-
-  const { page, limit, offset } = getPaginationParams(req.nextUrl)
   const factories = mode === TenantMode.SHARED ? sharedSchema.factories : undefined
 
   try {
@@ -23,18 +20,18 @@ export const GET = withAuth(async (req, user, db, mode) => {
         })
         .from(standaloneSchema.configs)
         .limit(1)
+      const data = row ? [row] : []
       return NextResponse.json({
-        data: row ? [row] : [],
-        pagination: { page: 1, limit: 1, total: row ? 1 : 0 },
+        data,
+        pagination: { page: 1, limit: 100, total: data.length },
       })
     }
 
     // Shared mode — factory-scoped
     const sharedConfigs = sharedSchema.configs
+    const factoryCond = getFactoryWhereClause(user, mode, sharedConfigs.factoryId, req.nextUrl.searchParams)
     const conditions = []
-    if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) {
-      conditions.push(eq(sharedConfigs.factoryId, user.factory_id))
-    }
+    if (factoryCond) conditions.push(factoryCond)
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined
     const isSuperAdmin = user.role === Role.SUPER_ADMIN
 
@@ -55,21 +52,17 @@ export const GET = withAuth(async (req, user, db, mode) => {
       baseQuery = baseQuery.leftJoin(factories, eq(sharedConfigs.factoryId, factories.id)) as typeof baseQuery
     }
 
-    const [totalCountResult, rows] = await Promise.all([
-      db.select({ count: count() }).from(sharedConfigs).where(whereClause),
-      baseQuery.where(whereClause).orderBy(desc(sharedConfigs.createdAt)).limit(limit).offset(offset),
-    ])
+    const rows = await baseQuery.where(whereClause).orderBy(desc(sharedConfigs.createdAt))
 
-    const total = Number(totalCountResult[0]?.count || 0)
     return NextResponse.json({
       data: rows,
-      pagination: { page, limit, total },
+      pagination: { page: 1, limit: rows.length || 10, total: rows.length },
     })
   } catch (err) {
     console.error("Failed to query configs table:", err)
     return NextResponse.json({
       data: [],
-      pagination: { page, limit, total: 0 },
+      pagination: { page: 1, limit: 10, total: 0 },
     })
   }
 })

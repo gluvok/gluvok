@@ -1,4 +1,4 @@
-import { eq, ilike, and, desc, or } from "drizzle-orm"
+import { eq, ilike, and, desc, or, count } from "drizzle-orm"
 import { getTables, sharedSchema } from "@/db/schema"
 import { withAuth, getPaginationParams, apiError, forbiddenError, hasPermission, StatusCodes, getFactoryConfig, getFactoryWhereClause, fetchPaginatedResult, formatEntityResponse } from "@/db/helpers"
 import { Role, TenantMode, ProjectSlug, PermissionKey, QueryParam, FieldRequirementMode } from "@/lib/constants/enums"
@@ -11,27 +11,36 @@ export const GET = withAuth(async (req, user, db, mode) => {
 
   const { customers, users } = getTables(mode)
   const factories = mode === TenantMode.SHARED ? sharedSchema.factories : undefined
+  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
 
   const activeConfig = await getFactoryConfig(user.factory_id, db, mode)
   const isGovtIdNotRequired = activeConfig?.govtIdMode === FieldRequirementMode.NOT_REQUIRED
 
-  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.customers.factoryId)
+  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.customers.factoryId, req.nextUrl.searchParams)
   const conditions = []
   if (factoryCond) conditions.push(factoryCond)
 
   if (search) {
     const searchNum = parseInt(search, 10)
-    const searchConds = isNaN(searchNum)
-      ? or(ilike(customers.name, `%${search}%`), ilike(customers.fatherName, `%${search}%`))
-      : or(
-          ilike(customers.name, `%${search}%`),
-          ilike(customers.fatherName, `%${search}%`),
-          ...(isGovtIdNotRequired ? [] : [eq(customers.govtId, searchNum)])
-        )
-    if (searchConds) conditions.push(searchConds)
+    const searchConds = [
+      ilike(customers.name, `%${search}%`),
+      ilike(customers.fatherName, `%${search}%`),
+    ]
+    if (!isNaN(searchNum)) {
+      searchConds.push(eq(customers.id, searchNum))
+      if (!isGovtIdNotRequired) {
+        searchConds.push(eq(customers.govtId, searchNum))
+      }
+    }
+    if (isSuperAdminShared && factories) {
+      searchConds.push(ilike(factories.name, `%${search}%`))
+      if (!isNaN(searchNum)) {
+        searchConds.push(eq(sharedSchema.customers.factoryId, searchNum))
+      }
+    }
+    conditions.push(or(...searchConds))
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
-  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
 
   let baseQuery = db
     .select({
@@ -55,7 +64,17 @@ export const GET = withAuth(async (req, user, db, mode) => {
     baseQuery = baseQuery.leftJoin(factories, eq(sharedSchema.customers.factoryId, factories.id)) as typeof baseQuery
   }
 
-  return fetchPaginatedResult(db, customers, baseQuery, whereClause, pagination, desc(customers.createdAt))
+  let countQuery = db
+    .select({ count: count() })
+    .from(customers)
+    .leftJoin(users, eq(customers.userId, users.id))
+    .$dynamic()
+
+  if (isSuperAdminShared && factories) {
+    countQuery = countQuery.leftJoin(factories, eq(sharedSchema.customers.factoryId, factories.id)) as typeof countQuery
+  }
+
+  return fetchPaginatedResult(db, countQuery, baseQuery, whereClause, pagination, desc(customers.createdAt))
 })
 
 export const POST = withAuth(async (req, user, db, mode) => {

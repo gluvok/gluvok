@@ -1,4 +1,4 @@
-import { ilike, desc } from "drizzle-orm"
+import { eq, ilike, desc, or } from "drizzle-orm"
 import { commodities } from "@/db/schema"
 import { withAuth, getPaginationParams, validateRequiredFields, forbiddenError, hasPermission, StatusCodes, fetchPaginatedResult, formatEntityResponse } from "@/db/helpers"
 import { ProjectSlug, QueryParam, PermissionKey } from "@/lib/constants/enums"
@@ -6,7 +6,13 @@ import { ProjectSlug, QueryParam, PermissionKey } from "@/lib/constants/enums"
 export const GET = withAuth(async (req, _user, db) => {
   const pagination = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
-  const whereClause = search ? ilike(commodities.name, `%${search}%`) : undefined
+  const searchNum = search ? parseInt(search, 10) : NaN
+
+  const whereClause = search
+    ? !isNaN(searchNum)
+      ? or(ilike(commodities.name, `%${search}%`), eq(commodities.id, searchNum))
+      : ilike(commodities.name, `%${search}%`)
+    : undefined
 
   const baseQuery = db
     .select({

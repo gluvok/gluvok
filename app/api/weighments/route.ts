@@ -14,7 +14,10 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE)
   const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE)
 
-  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.centers.factoryId)
+  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
+  const factories = mode === TenantMode.SHARED ? sharedSchema.factories : undefined
+
+  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.centers.factoryId, req.nextUrl.searchParams)
   const conditions = []
   if (factoryCond) conditions.push(factoryCond)
   if (unitParam && unitParam !== FilterValue.ALL) conditions.push(eq(weighments.unit, unitParam as Unit))
@@ -24,26 +27,38 @@ export const GET = withAuth(async (req, user, db, mode) => {
   if (isActiveParam && isActiveParam !== FilterValue.ALL) conditions.push(eq(weighments.isActive, isActiveParam === "true"))
   if (startDateParam) conditions.push(gte(weighments.createdAt, new Date(startDateParam)))
   if (endDateParam) conditions.push(lte(weighments.createdAt, new Date(endDateParam)))
+
   if (search) {
-    conditions.push(
-      or(
-        ilike(weighments.vehicleNumber, `%${search}%`),
-        ilike(customers.name, `%${search}%`),
-        ilike(profiles.name, `%${search}%`),
-        ilike(centers.name, `%${search}%`)
-      )
-    )
+    const searchNum = parseInt(search, 10)
+    const searchConds = [
+      ilike(weighments.vehicleNumber, `%${search}%`),
+      ilike(customers.name, `%${search}%`),
+      ilike(profiles.name, `%${search}%`),
+      ilike(centers.name, `%${search}%`),
+    ]
+    if (isSuperAdminShared && factories) {
+      searchConds.push(ilike(factories.name, `%${search}%`))
+      if (!isNaN(searchNum)) {
+        searchConds.push(eq(sharedSchema.centers.factoryId, searchNum))
+      }
+    }
+    conditions.push(or(...searchConds))
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  const countQuery = db
+  let countQuery = db
     .select({ count: count() })
     .from(weighments)
     .leftJoin(centers, eq(weighments.centerId, centers.id))
     .leftJoin(customers, eq(weighments.customerId, customers.id))
     .leftJoin(profiles, eq(weighments.profileId, profiles.id))
+    .$dynamic()
 
-  const baseQuery = db
+  if (isSuperAdminShared && factories) {
+    countQuery = countQuery.leftJoin(factories, eq(sharedSchema.centers.factoryId, factories.id)) as typeof countQuery
+  }
+
+  let baseQuery = db
     .select({
       id: weighments.id,
       vehicle_number: weighments.vehicleNumber,
@@ -62,6 +77,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
       center_name: centers.name,
       profile_name: profiles.name,
       customer_name: customers.name,
+      ...(isSuperAdminShared && factories ? { factory_name: factories.name } : {}),
     })
     .from(weighments)
     .leftJoin(rates, eq(weighments.rateId, rates.id))
@@ -69,6 +85,11 @@ export const GET = withAuth(async (req, user, db, mode) => {
     .leftJoin(centers, eq(weighments.centerId, centers.id))
     .leftJoin(profiles, eq(weighments.profileId, profiles.id))
     .leftJoin(customers, eq(weighments.customerId, customers.id))
+    .$dynamic()
+
+  if (isSuperAdminShared && factories) {
+    baseQuery = baseQuery.leftJoin(factories, eq(sharedSchema.centers.factoryId, factories.id)) as typeof baseQuery
+  }
 
   return fetchPaginatedResult(db, countQuery, baseQuery, whereClause, pagination, desc(weighments.createdAt))
 })

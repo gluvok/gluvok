@@ -1,4 +1,4 @@
-import { eq, ilike, and, desc } from "drizzle-orm"
+import { eq, ilike, and, desc, or, count } from "drizzle-orm"
 import { getTables, sharedSchema } from "@/db/schema"
 import { withAuth, getPaginationParams, validateRequiredFields, forbiddenError, hasPermission, StatusCodes, getFactoryWhereClause, fetchPaginatedResult, formatEntityResponse } from "@/db/helpers"
 import { Role, TenantMode, ProjectSlug, QueryParam, PermissionKey } from "@/lib/constants/enums"
@@ -9,14 +9,27 @@ export const GET = withAuth(async (req, user, db, mode) => {
 
   const { centers } = getTables(mode)
   const factories = mode === TenantMode.SHARED ? sharedSchema.factories : undefined
+  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
 
-  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.centers.factoryId)
+  const factoryCond = getFactoryWhereClause(user, mode, sharedSchema.centers.factoryId, req.nextUrl.searchParams)
   const conditions = []
   if (factoryCond) conditions.push(factoryCond)
-  if (search) conditions.push(ilike(centers.name, `%${search}%`))
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  const isSuperAdminShared = mode === TenantMode.SHARED && user.role === Role.SUPER_ADMIN
+  if (search) {
+    const searchNum = parseInt(search, 10)
+    const searchConds = [ilike(centers.name, `%${search}%`)]
+    if (!isNaN(searchNum)) {
+      searchConds.push(eq(centers.id, searchNum))
+    }
+    if (isSuperAdminShared && factories) {
+      searchConds.push(ilike(factories.name, `%${search}%`))
+      if (!isNaN(searchNum)) {
+        searchConds.push(eq(sharedSchema.centers.factoryId, searchNum))
+      }
+    }
+    conditions.push(or(...searchConds))
+  }
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
   let baseQuery = db
     .select({
@@ -34,7 +47,12 @@ export const GET = withAuth(async (req, user, db, mode) => {
     baseQuery = baseQuery.leftJoin(factories, eq(sharedSchema.centers.factoryId, factories.id)) as typeof baseQuery
   }
 
-  return fetchPaginatedResult(db, centers, baseQuery, whereClause, pagination, desc(centers.createdAt))
+  let countQuery = db.select({ count: count() }).from(centers).$dynamic()
+  if (isSuperAdminShared && factories) {
+    countQuery = countQuery.leftJoin(factories, eq(sharedSchema.centers.factoryId, factories.id)) as typeof countQuery
+  }
+
+  return fetchPaginatedResult(db, countQuery, baseQuery, whereClause, pagination, desc(centers.createdAt))
 })
 
 export const POST = withAuth(async (req, user, db, mode) => {

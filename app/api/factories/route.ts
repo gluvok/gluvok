@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { eq, ilike, desc } from "drizzle-orm"
+import { eq, ilike, desc, or, and } from "drizzle-orm"
 import { factories } from "@/db/schema"
 import { withAuth, getPaginationParams, forbiddenError, hasPermission, validateRequiredFields, StatusCodes, fetchPaginatedResult, formatEntityResponse } from "@/db/helpers"
 import { Role, TenantMode, ProjectSlug, PermissionKey, QueryParam } from "@/lib/constants/enums"
@@ -12,13 +12,20 @@ export const GET = withAuth(async (req, user, db, mode) => {
 
   const pagination = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
+  const searchNum = search ? parseInt(search, 10) : NaN
+
+  const searchCond = search
+    ? !isNaN(searchNum)
+      ? or(ilike(factories.name, `%${search}%`), eq(factories.id, searchNum))
+      : ilike(factories.name, `%${search}%`)
+    : undefined
 
   const whereClause =
     user.role !== Role.SUPER_ADMIN && user.factory_id != null
-      ? eq(factories.id, user.factory_id)
-      : search
-        ? ilike(factories.name, `%${search}%`)
-        : undefined
+      ? searchCond
+        ? and(eq(factories.id, user.factory_id), searchCond)
+        : eq(factories.id, user.factory_id)
+      : searchCond
 
   const baseQuery = db
     .select({

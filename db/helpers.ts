@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { StatusCodes, ReasonPhrases } from "http-status-codes"
 import { sql, eq, count, type Column, type SQL } from "drizzle-orm"
 import { verifyJWT, JWTPayload } from "@/lib/auth/jwt"
-import { Role, RequestHeader, TenantMode, ProjectSlug, PermissionKey, QueryParam } from "@/lib/constants/enums"
+import { Role, RequestHeader, TenantMode, ProjectSlug, PermissionKey, QueryParam, EntityKey, FilterValue } from "@/lib/constants/enums"
 import { RBAC_MATRIX, type Permission } from "@/lib/store/access"
 import { REQUIRED_CREATE_FIELDS } from "@/lib/fields/config"
 import { db, getDb } from "@/db"
@@ -226,16 +226,32 @@ export async function getFactoryConfig(
 }
 
 /**
- * Returns a factory scoping condition `eq(factoryIdColumn, user.factory_id)` when in SHARED mode for non-super-admin users.
+ * Returns a factory scoping condition when in SHARED mode:
+ * - Non-super-admin users: scopes to user's assigned factory (`eq(factoryIdColumn, user.factory_id)`).
+ * - Super admin users: filters by explicit `factory_id` query param if provided in searchParams.
  */
 export function getFactoryWhereClause(
   user: JWTPayload,
   mode: TenantMode,
-  factoryIdColumn: Column
+  factoryIdColumn: Column,
+  searchParams?: URLSearchParams
 ): SQL | undefined {
-  if (mode === TenantMode.SHARED && user.role !== Role.SUPER_ADMIN && user.factory_id != null) {
+  if (mode !== TenantMode.SHARED) return undefined
+
+  if (user.role !== Role.SUPER_ADMIN && user.factory_id != null) {
     return eq(factoryIdColumn, user.factory_id)
   }
+
+  if (user.role === Role.SUPER_ADMIN && searchParams) {
+    const factoryIdParam = searchParams.get(EntityKey.FACTORY_ID)
+    if (factoryIdParam && factoryIdParam !== FilterValue.ALL) {
+      const parsedId = parseInt(factoryIdParam, 10)
+      if (!isNaN(parsedId)) {
+        return eq(factoryIdColumn, parsedId)
+      }
+    }
+  }
+
   return undefined
 }
 

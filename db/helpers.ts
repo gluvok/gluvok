@@ -2,7 +2,16 @@ import { NextRequest, NextResponse } from "next/server"
 import { StatusCodes, ReasonPhrases } from "http-status-codes"
 import { sql, eq, count, type Column, type SQL } from "drizzle-orm"
 import { verifyJWT, JWTPayload } from "@/lib/auth/jwt"
-import { Role, RequestHeader, TenantMode, ProjectSlug, PermissionKey, QueryParam } from "@/lib/constants/enums"
+import {
+  Role,
+  RequestHeader,
+  TenantMode,
+  ProjectSlug,
+  PermissionKey,
+  QueryParam,
+  DatabasePropertyKey,
+  EntityKey,
+} from "@/lib/constants/enums";
 import { RBAC_MATRIX, type Permission } from "@/lib/store/access"
 import { REQUIRED_CREATE_FIELDS } from "@/lib/fields/config"
 import { db, getDb } from "@/db"
@@ -306,15 +315,18 @@ export function formatEntityResponse<T extends Record<string, unknown>>(
   const formatted: Record<string, unknown> = {}
 
   for (const [key, value] of Object.entries(record)) {
-    if (key === "factoryId") {
+    if (key === DatabasePropertyKey.FACTORY_ID) {
       if (mode === TenantMode.SHARED && value != null) {
-        formatted.factory_id = value
+        formatted[EntityKey.FACTORY_ID] = value;
       }
-    } else if (key === "passwordHash") {
-      continue
+    } else if (key === DatabasePropertyKey.PASSWORD_HASH) {
+      continue;
     } else {
-      const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
-      formatted[snakeKey] = value
+      const snakeKey = key.replace(
+        /[A-Z]/g,
+        (letter) => `_${letter.toLowerCase()}`,
+      );
+      formatted[snakeKey] = value;
     }
   }
 

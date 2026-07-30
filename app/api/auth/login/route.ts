@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm"
 import { getTables, sharedSchema } from "@/db/schema"
 import { verifyPassword } from "@/lib/auth/password"
 import { signJWT } from "@/lib/auth/jwt"
-import { TenantMode } from "@/lib/constants/enums"
+import { DatabasePropertyKey, TenantMode } from "@/lib/constants/enums";
 import { getWorkspace } from "@/lib/tenant/workspace"
 import { resolveTenant } from "@/lib/tenant"
 
@@ -48,7 +48,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Verify password with Argon2id
-    const isValidPassword = await verifyPassword(password, user.passwordHash)
+    const isValidPassword = await verifyPassword(
+      password,
+      user[DatabasePropertyKey.PASSWORD_HASH],
+    );
     if (!isValidPassword) {
       return NextResponse.json(
         { error: "Invalid username or password" },
@@ -70,9 +73,14 @@ export async function POST(request: NextRequest) {
       .limit(1)
 
     // 4. Sign JWT — factory_id is null in dedicated mode (no factory column)
-    const factoryId = tenant.mode === TenantMode.SHARED
-      ? (("factoryId" in user ? (user as typeof sharedSchema.users.$inferSelect).factoryId : null) ?? null)
-      : null
+    const factoryId =
+      tenant.mode === TenantMode.SHARED
+        ? ((DatabasePropertyKey.FACTORY_ID in user
+            ? (user as typeof sharedSchema.users.$inferSelect)[
+                DatabasePropertyKey.FACTORY_ID
+              ]
+            : null) ?? null)
+        : null;
 
     const token = await signJWT({
       sub: String(user.id),

@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm"
 import { getDb } from "@/db"
 import { getTables } from "@/db/schema"
 import { verifyJWT } from "@/lib/auth/jwt"
-import { TenantMode } from "@/lib/constants/enums"
+import { DatabasePropertyKey, TenantMode } from "@/lib/constants/enums";
 import { getWorkspace } from "@/lib/tenant/workspace"
 import { resolveTenant } from "@/lib/tenant"
 
@@ -62,9 +62,14 @@ export async function GET(request: NextRequest) {
       .where(eq(customers.userId, user.id))
       .limit(1)
 
-    const factoryId = tenant.mode === TenantMode.SHARED
-      ? (("factoryId" in user ? (user as { factoryId: number | null }).factoryId : null) ?? null)
-      : null
+    const factoryId =
+      tenant.mode === TenantMode.SHARED
+        ? ((DatabasePropertyKey.FACTORY_ID in user
+            ? (user as { [DatabasePropertyKey.FACTORY_ID]: number | null })[
+                DatabasePropertyKey.FACTORY_ID
+              ]
+            : null) ?? null)
+        : null;
 
     const userPayload = {
       id: user.id,

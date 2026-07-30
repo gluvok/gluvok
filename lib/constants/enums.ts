@@ -190,6 +190,12 @@ export enum EntityKey {
   GOVT_ID_MODE = "govt_id_mode",
 }
 
+/** Camel-case properties on Drizzle database records. */
+export enum DatabasePropertyKey {
+  FACTORY_ID = "factoryId",
+  PASSWORD_HASH = "passwordHash",
+}
+
 export enum InputMode {
   NONE = "none",
   TEXT = "text",

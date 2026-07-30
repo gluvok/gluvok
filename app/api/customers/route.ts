@@ -1,4 +1,5 @@
-import { eq, ilike, and, desc, asc, or, count } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { eq, ilike, and, desc, asc, or, count, inArray } from "drizzle-orm";
 import { getTables, sharedSchema } from "@/db/schema";
 import {
   withAuth,
@@ -11,6 +12,8 @@ import {
   getFactoryWhereClause,
   fetchPaginatedResult,
   formatEntityResponse,
+  isFKViolation,
+  parseBulkIds,
 } from "@/db/helpers";
 import {
   Role,
@@ -192,4 +195,53 @@ export const POST = withAuth(async (req, user, db, mode) => {
     .values(customerValues as typeof sharedSchema.customers.$inferInsert)
     .returning();
   return formatEntityResponse(newCustomer, mode, StatusCodes.CREATED);
+});
+
+export const DELETE = withAuth(async (req, user, db, mode) => {
+  if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.DELETE))
+    return forbiddenError();
+  const ids = parseBulkIds(await req.json());
+  if (!ids)
+    return apiError(
+      "Provide between 1 and 100 valid IDs",
+      StatusCodes.BAD_REQUEST,
+    );
+
+  const { customers } = getTables(mode);
+  const factoryScope = getFactoryWhereClause(
+    user,
+    mode,
+    sharedSchema.customers.factoryId,
+  );
+  if (mode === TenantMode.SHARED && !factoryScope) return forbiddenError();
+  const scopedIds = factoryScope
+    ? and(inArray(customers.id, ids), factoryScope)
+    : inArray(customers.id, ids);
+
+  try {
+    const deletedCount = await db.transaction(async (tx) => {
+      const deleted = await tx
+        .delete(customers)
+        .where(scopedIds)
+        .returning({ id: customers.id });
+      if (deleted.length !== ids.length)
+        throw new Error("BULK_DELETE_INCOMPLETE");
+      return deleted.length;
+    });
+    return NextResponse.json({ success: true, deleted_count: deletedCount });
+  } catch (error) {
+    if (error instanceof Error && error.message === "BULK_DELETE_INCOMPLETE") {
+      return apiError(
+        "One or more customers were not found",
+        StatusCodes.NOT_FOUND,
+      );
+    }
+    if (isFKViolation(error)) {
+      return apiError(
+        "Cannot delete selected customers because they are referenced by existing weighments.",
+        StatusCodes.BAD_REQUEST,
+      );
+    }
+    throw error;
+  }
 });

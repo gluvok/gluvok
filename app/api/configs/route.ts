@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server"
-import { eq, and, asc, desc } from "drizzle-orm"
+import { eq, and, asc, desc, inArray } from "drizzle-orm";
 import { sharedSchema, standaloneSchema } from "@/db/schema"
-import { withAuth, validateRequiredFields, forbiddenError, hasPermission, StatusCodes, apiError, formatEntityResponse, getFactoryWhereClause } from "@/db/helpers"
+import {
+  withAuth,
+  validateRequiredFields,
+  forbiddenError,
+  hasPermission,
+  StatusCodes,
+  apiError,
+  formatEntityResponse,
+  getFactoryWhereClause,
+  parseBulkIds,
+} from "@/db/helpers";
 import { TenantMode, ProjectSlug, PermissionKey, FieldRequirementMode, EntityKey, QueryParam } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user, db, mode) => {
@@ -160,4 +170,53 @@ export const POST = withAuth(async (req, user, db, mode) => {
   }
 })
 
-export const PUT = POST
+export const DELETE = withAuth(async (req, user, db, mode) => {
+  if (!hasPermission(user, ProjectSlug.CONFIGS, PermissionKey.DELETE))
+    return forbiddenError();
+  const ids = parseBulkIds(await req.json());
+  if (!ids)
+    return apiError(
+      "Provide between 1 and 100 valid IDs",
+      StatusCodes.BAD_REQUEST,
+    );
+
+  try {
+    const deletedCount = await db.transaction(async (tx) => {
+      if (mode === TenantMode.DEDICATED) {
+        const deleted = await tx
+          .delete(standaloneSchema.configs)
+          .where(inArray(standaloneSchema.configs.id, ids))
+          .returning({ id: standaloneSchema.configs.id });
+        if (deleted.length !== ids.length)
+          throw new Error("BULK_DELETE_INCOMPLETE");
+        return deleted.length;
+      }
+
+      if (user.factory_id == null) throw new Error("BULK_DELETE_FORBIDDEN");
+      const deleted = await tx
+        .delete(sharedSchema.configs)
+        .where(
+          and(
+            inArray(sharedSchema.configs.id, ids),
+            eq(sharedSchema.configs.factoryId, user.factory_id),
+          ),
+        )
+        .returning({ id: sharedSchema.configs.id });
+      if (deleted.length !== ids.length)
+        throw new Error("BULK_DELETE_INCOMPLETE");
+      return deleted.length;
+    });
+    return NextResponse.json({ success: true, deleted_count: deletedCount });
+  } catch (error) {
+    if (error instanceof Error && error.message === "BULK_DELETE_FORBIDDEN")
+      return forbiddenError();
+    if (error instanceof Error && error.message === "BULK_DELETE_INCOMPLETE") {
+      return apiError(
+        "One or more configurations were not found",
+        StatusCodes.NOT_FOUND,
+      );
+    }
+    throw error;
+  }
+});
+

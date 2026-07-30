@@ -1,7 +1,9 @@
-import { eq, ilike, and, desc, asc, or, count } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { eq, ilike, and, desc, asc, or, count, inArray } from "drizzle-orm";
 import { getTables, sharedSchema } from "@/db/schema";
 import {
   withAuth,
+  apiError,
   getPaginationParams,
   validateRequiredFields,
   forbiddenError,
@@ -10,6 +12,8 @@ import {
   getFactoryWhereClause,
   fetchPaginatedResult,
   formatEntityResponse,
+  isFKViolation,
+  parseBulkIds,
 } from "@/db/helpers";
 import {
   TenantMode,
@@ -108,4 +112,53 @@ export const POST = withAuth(async (req, user, db, mode) => {
     .values(insertValues as typeof sharedSchema.centers.$inferInsert)
     .returning();
   return formatEntityResponse(newCenter, mode, StatusCodes.CREATED);
+});
+
+export const DELETE = withAuth(async (req, user, db, mode) => {
+  if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.DELETE))
+    return forbiddenError();
+  const ids = parseBulkIds(await req.json());
+  if (!ids)
+    return apiError(
+      "Provide between 1 and 100 valid IDs",
+      StatusCodes.BAD_REQUEST,
+    );
+
+  const { centers } = getTables(mode);
+  const whereClause = getFactoryWhereClause(
+    user,
+    mode,
+    sharedSchema.centers.factoryId,
+  );
+  if (mode === TenantMode.SHARED && !whereClause) return forbiddenError();
+  const scopedIds = whereClause
+    ? and(inArray(centers.id, ids), whereClause)
+    : inArray(centers.id, ids);
+
+  try {
+    const deletedCount = await db.transaction(async (tx) => {
+      const deleted = await tx
+        .delete(centers)
+        .where(scopedIds)
+        .returning({ id: centers.id });
+      if (deleted.length !== ids.length)
+        throw new Error("BULK_DELETE_INCOMPLETE");
+      return deleted.length;
+    });
+    return NextResponse.json({ success: true, deleted_count: deletedCount });
+  } catch (error) {
+    if (error instanceof Error && error.message === "BULK_DELETE_INCOMPLETE") {
+      return apiError(
+        "One or more centers were not found",
+        StatusCodes.NOT_FOUND,
+      );
+    }
+    if (isFKViolation(error)) {
+      return apiError(
+        "Cannot delete selected centers because they are referenced by existing weighments.",
+        StatusCodes.BAD_REQUEST,
+      );
+    }
+    throw error;
+  }
 });

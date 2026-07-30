@@ -23,6 +23,7 @@ export function DeleteEntityDialogContent({
   onOpenChange, projectSlug, projectName, primaryIdKey, item, items, onSuccess, customDisplayName, onConfirm
 }: DeleteContentProps) {
   const deleteEntity = useEntitiesStore((state) => state.deleteEntity)
+  const deleteEntities = useEntitiesStore((state) => state.deleteEntities);
   const isBulk = !!items && items.length > 0
   const count = items?.length || 0
   const singularName = getSingularName(projectName || "Item")
@@ -32,10 +33,10 @@ export function DeleteEntityDialogContent({
       if (onConfirm) {
         await onConfirm()
       } else if (isBulk) {
-        await Promise.all(items.map(i => {
-          const idVal = getField(i, primaryIdKey!)
-          return deleteEntity(projectSlug as ProjectSlug, idVal as string | number)
-        }))
+        await deleteEntities(
+          projectSlug as ProjectSlug,
+          items.map((item) => getField(item, primaryIdKey!) as string | number),
+        );
         toast.success(`${projectName} records deleted successfully`)
       } else {
         const idVal = getField(item!, primaryIdKey!)

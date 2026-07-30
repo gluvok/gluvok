@@ -1,18 +1,25 @@
-import { eq, ilike, and, desc, asc, or, count } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { eq, ilike, and, desc, asc, or, count, inArray } from "drizzle-orm";
 import { getTables, sharedSchema } from "@/db/schema";
 import {
   withAuth,
   getPaginationParams,
   apiError,
+  forbiddenError,
+  hasPermission,
   StatusCodes,
   getFactoryConfig,
   getFactoryWhereClause,
   fetchPaginatedResult,
   formatEntityResponse,
+  isFKViolation,
+  parseBulkIds,
 } from "@/db/helpers";
 import {
   Role,
   TenantMode,
+  ProjectSlug,
+  PermissionKey,
   QueryParam,
   EntityKey,
   FilterValue,
@@ -204,4 +211,59 @@ export const POST = withAuth(async (req, user, db, mode) => {
     mode,
     StatusCodes.CREATED,
   );
+});
+
+export const DELETE = withAuth(async (req, user, db, mode) => {
+  if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.DELETE))
+    return forbiddenError();
+  const ids = parseBulkIds(await req.json());
+  if (!ids)
+    return apiError(
+      "Provide between 1 and 100 valid IDs",
+      StatusCodes.BAD_REQUEST,
+    );
+  if (mode === TenantMode.SHARED && user.factory_id == null)
+    return forbiddenError();
+  const factoryId = user.factory_id as number;
+
+  const { profiles, users } = getTables(mode);
+  const ownershipScope =
+    mode === TenantMode.SHARED
+      ? and(
+          inArray(profiles.id, ids),
+          eq(sharedSchema.users.factoryId, factoryId),
+        )
+      : inArray(profiles.id, ids);
+  const scopedProfileIds = db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .innerJoin(users, eq(profiles.userId, users.id))
+    .where(ownershipScope);
+
+  try {
+    const deletedCount = await db.transaction(async (tx) => {
+      const deleted = await tx
+        .delete(profiles)
+        .where(inArray(profiles.id, scopedProfileIds))
+        .returning({ id: profiles.id });
+      if (deleted.length !== ids.length)
+        throw new Error("BULK_DELETE_INCOMPLETE");
+      return deleted.length;
+    });
+    return NextResponse.json({ success: true, deleted_count: deletedCount });
+  } catch (error) {
+    if (error instanceof Error && error.message === "BULK_DELETE_INCOMPLETE") {
+      return apiError(
+        "One or more profiles were not found",
+        StatusCodes.NOT_FOUND,
+      );
+    }
+    if (isFKViolation(error)) {
+      return apiError(
+        "Cannot delete selected profiles because they are referenced by existing weighments.",
+        StatusCodes.BAD_REQUEST,
+      );
+    }
+    throw error;
+  }
 });

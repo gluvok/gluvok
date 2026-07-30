@@ -1,4 +1,16 @@
-import { eq, and, desc, asc, gte, lte, ilike, or, count } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import {
+  eq,
+  and,
+  desc,
+  asc,
+  gte,
+  lte,
+  ilike,
+  or,
+  count,
+  inArray,
+} from "drizzle-orm";
 import { getTables, sharedSchema } from "@/db/schema";
 import {
   withAuth,
@@ -11,6 +23,8 @@ import {
   getFactoryWhereClause,
   fetchPaginatedResult,
   formatEntityResponse,
+  isFKViolation,
+  parseBulkIds,
 } from "@/db/helpers";
 import {
   TenantMode,
@@ -150,4 +164,53 @@ export const POST = withAuth(async (req, user, db, mode) => {
     .values(insertValues as typeof sharedSchema.rates.$inferInsert)
     .returning();
   return formatEntityResponse(newRate, mode, StatusCodes.CREATED);
+});
+
+export const DELETE = withAuth(async (req, user, db, mode) => {
+  if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.DELETE))
+    return forbiddenError();
+  const ids = parseBulkIds(await req.json());
+  if (!ids)
+    return apiError(
+      "Provide between 1 and 100 valid IDs",
+      StatusCodes.BAD_REQUEST,
+    );
+
+  const { rates } = getTables(mode);
+  const factoryScope = getFactoryWhereClause(
+    user,
+    mode,
+    sharedSchema.rates.factoryId,
+  );
+  if (mode === TenantMode.SHARED && !factoryScope) return forbiddenError();
+  const scopedIds = factoryScope
+    ? and(inArray(rates.id, ids), factoryScope)
+    : inArray(rates.id, ids);
+
+  try {
+    const deletedCount = await db.transaction(async (tx) => {
+      const deleted = await tx
+        .delete(rates)
+        .where(scopedIds)
+        .returning({ id: rates.id });
+      if (deleted.length !== ids.length)
+        throw new Error("BULK_DELETE_INCOMPLETE");
+      return deleted.length;
+    });
+    return NextResponse.json({ success: true, deleted_count: deletedCount });
+  } catch (error) {
+    if (error instanceof Error && error.message === "BULK_DELETE_INCOMPLETE") {
+      return apiError(
+        "One or more rates were not found",
+        StatusCodes.NOT_FOUND,
+      );
+    }
+    if (isFKViolation(error)) {
+      return apiError(
+        "Cannot delete selected rates because they are referenced by existing weighments.",
+        StatusCodes.BAD_REQUEST,
+      );
+    }
+    throw error;
+  }
 });

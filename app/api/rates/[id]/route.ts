@@ -13,10 +13,11 @@ import {
 } from "@/db/helpers";
 import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 
-export const PUT = withAuth(async (req, user, db, mode, ctx) => {
-  if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.WRITE)) return forbiddenError()
+export const PATCH = withAuth(async (req, user, db, mode, ctx) => {
+  if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.WRITE))
+    return forbiddenError();
   const { rates } = getTables(mode);
-  const { id } = await ctx.params
+  const { id } = await ctx.params;
   const whereClause = getScopedEntityWhereClause(
     user,
     mode,
@@ -24,7 +25,7 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
     sharedSchema.rates.factoryId,
   );
   if (!whereClause) return forbiddenError();
-  const { unit_price, unit } = await req.json()
+  const { unit_price, unit } = await req.json();
 
   const [updated] = await db
     .update(rates)
@@ -36,10 +37,10 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
     .where(whereClause)
     .returning();
 
-  if (!updated) return apiError("Rate not found", StatusCodes.NOT_FOUND)
+  if (!updated) return apiError("Rate not found", StatusCodes.NOT_FOUND);
 
   return formatEntityResponse(updated, mode);
-})
+});
 
 export const DELETE = withAuth(async (_req, user, db, mode, ctx) => {
   if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.DELETE))

@@ -103,8 +103,6 @@ export const PATCH = withAuth(async (req, user, db, mode, context) => {
   }
 })
 
-export const PUT = PATCH
-
 export const DELETE = withAuth(async (_req, user, db, mode, context) => {
   if (!hasPermission(user, ProjectSlug.CONFIGS, PermissionKey.DELETE)) return forbiddenError()
 

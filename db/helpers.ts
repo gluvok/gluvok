@@ -92,6 +92,21 @@ export function isFKViolation(error: unknown): boolean {
   return e.code === PG_FK_VIOLATION || Boolean(e.message?.includes("foreign key"))
 }
 
+/** Validates a bounded, de-duplicated numeric ID batch for collection mutations. */
+export function parseBulkIds(body: unknown): number[] | null {
+  if (!body || typeof body !== "object" || !Array.isArray((body as { ids?: unknown }).ids)) {
+    return null
+  }
+
+  const ids = (body as { ids: unknown[] }).ids
+  if (ids.length === 0 || ids.length > 100) return null
+
+  const numericIds = ids.map((id) => Number(id))
+  if (!numericIds.every((id) => Number.isSafeInteger(id) && id > 0)) return null
+
+  return [...new Set(numericIds)]
+}
+
 // ─── Auth: resolve user from proxy-forwarded headers or JWT cookie ────────────
 export async function getAuthUser(req: NextRequest | Request): Promise<JWTPayload | null> {
   const userId = req.headers.get(RequestHeader.USER_ID)

@@ -21,12 +21,12 @@ import {
   TenantMode,
 } from "@/lib/constants/enums";
 
-export const PUT = withAuth(async (req, user, db, mode, ctx) => {
+export const PATCH = withAuth(async (req, user, db, mode, ctx) => {
   if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.WRITE))
     return forbiddenError();
-  const { profiles, users } = getTables(mode)
-  const { id } = await ctx.params
-  const profileId = parseInt(id, 10)
+  const { profiles, users } = getTables(mode);
+  const { id } = await ctx.params;
+  const profileId = parseInt(id, 10);
   if (mode === TenantMode.SHARED && user.factory_id == null)
     return forbiddenError();
   const profileWhereClause =
@@ -51,18 +51,21 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
     .where(profileWhereClause)
     .limit(1);
   if (!existing) return apiError("Profile not found", StatusCodes.NOT_FOUND);
-  const body = await req.json()
+  const body = await req.json();
 
-  const activeConfig = await getFactoryConfig(user.factory_id, db, mode)
-  const dynamicSchema = getDynamicProfileSchema(activeConfig, true)
-  const parsed = dynamicSchema.safeParse(body)
+  const activeConfig = await getFactoryConfig(user.factory_id, db, mode);
+  const dynamicSchema = getDynamicProfileSchema(activeConfig, true);
+  const parsed = dynamicSchema.safeParse(body);
 
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST)
+    return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
   }
 
-  const { name, password, role, is_active } = body
-  const validRole = role && Object.values(Role).includes(role as Role) ? (role as Role) : undefined
+  const { name, password, role, is_active } = body;
+  const validRole =
+    role && Object.values(Role).includes(role as Role)
+      ? (role as Role)
+      : undefined;
 
   const [updated] = await db
     .update(profiles)
@@ -76,19 +79,19 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
     )
     .returning();
 
-  if (!updated) return apiError("Profile not found", StatusCodes.NOT_FOUND)
+  if (!updated) return apiError("Profile not found", StatusCodes.NOT_FOUND);
 
-  const userUpdates: Record<string, unknown> = { updatedAt: new Date() }
+  const userUpdates: Record<string, unknown> = { updatedAt: new Date() };
   if (password && typeof password === "string" && password.trim().length > 0) {
     userUpdates[DatabasePropertyKey.PASSWORD_HASH] = await hashPassword(
       password.trim(),
     );
   }
   if (validRole) {
-    userUpdates.role = validRole
+    userUpdates.role = validRole;
   }
   if (is_active !== undefined) {
-    userUpdates.isActive = Boolean(is_active)
+    userUpdates.isActive = Boolean(is_active);
   }
 
   let updatedUserIsActive = existing.isActive;
@@ -110,7 +113,7 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
     },
     mode,
   );
-})
+});
 
 export const DELETE = withAuth(async (_req, user, db, mode, ctx) => {
   if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.DELETE))

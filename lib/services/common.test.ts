@@ -1,14 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import axios from "axios"
-import { fetchEntityPaginatedFromApi } from "./common"
+import { deleteRows, fetchEntityPaginatedFromApi } from "./common";
 import { ProjectSlug } from "@/lib/constants/enums"
 
 vi.mock("axios", () => ({
   default: {
     get: vi.fn(),
+    delete: vi.fn(),
     isAxiosError: vi.fn(() => false),
   },
-}))
+}));
 
 describe("fetchEntityPaginatedFromApi", () => {
   beforeEach(() => {
@@ -49,3 +50,19 @@ describe("fetchEntityPaginatedFromApi", () => {
     })
   })
 })
+
+describe("deleteRows", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("sends one collection DELETE request containing all selected IDs", async () => {
+    vi.mocked(axios.delete).mockResolvedValue({ data: { deleted_count: 3 } });
+
+    await expect(deleteRows(ProjectSlug.CENTERS, [1, 2, 3])).resolves.toBe(3);
+
+    expect(axios.delete).toHaveBeenCalledWith("/api/centers", {
+      data: { ids: [1, 2, 3] },
+    });
+  });
+});

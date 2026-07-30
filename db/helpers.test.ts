@@ -6,6 +6,7 @@ import {
   fetchPaginatedResult,
   formatEntityResponse,
   getScopedEntityWhereClause,
+  parseBulkIds,
 } from "./helpers";
 
 describe("fetchPaginatedResult", () => {
@@ -123,3 +124,20 @@ describe("formatEntityResponse", () => {
     })
   })
 })
+
+describe("parseBulkIds", () => {
+  it("accepts bounded, unique positive integer ID batches", () => {
+    expect(parseBulkIds({ ids: [1, "2", 2, 3] })).toEqual([1, 2, 3]);
+  });
+
+  it.each([
+    undefined,
+    {},
+    { ids: [] },
+    { ids: [0] },
+    { ids: [1.5] },
+    { ids: Array.from({ length: 101 }, (_, index) => index + 1) },
+  ])("rejects invalid batches", (body) => {
+    expect(parseBulkIds(body)).toBeNull();
+  });
+});

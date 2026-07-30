@@ -4,18 +4,19 @@ import { commodities } from "@/db/schema"
 import { withAuth, apiError, isFKViolation, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
 import { ProjectSlug, PermissionKey } from "@/lib/constants/enums"
 
-export const PUT = withAuth(async (req, user, db, _mode, ctx) => {
-  if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.WRITE)) return forbiddenError()
-  const { id } = await ctx.params
-  const { name } = await req.json()
+export const PATCH = withAuth(async (req, user, db, _mode, ctx) => {
+  if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.WRITE))
+    return forbiddenError();
+  const { id } = await ctx.params;
+  const { name } = await req.json();
 
   const [updated] = await db
     .update(commodities)
     .set({ ...(name ? { name } : {}), updatedAt: new Date() })
     .where(eq(commodities.id, parseInt(id, 10)))
-    .returning()
+    .returning();
 
-  if (!updated) return apiError("Commodity not found", StatusCodes.NOT_FOUND)
+  if (!updated) return apiError("Commodity not found", StatusCodes.NOT_FOUND);
 
   return NextResponse.json({
     data: {
@@ -24,8 +25,8 @@ export const PUT = withAuth(async (req, user, db, _mode, ctx) => {
       created_at: updated.createdAt,
       updated_at: updated.updatedAt,
     },
-  })
-})
+  });
+});
 
 export const DELETE = withAuth(async (_req, user, db, _mode, ctx) => {
   if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.DELETE)) return forbiddenError()

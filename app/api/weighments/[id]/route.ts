@@ -12,7 +12,7 @@ import {
 } from "@/db/helpers";
 import { PermissionKey, ProjectSlug, TenantMode } from "@/lib/constants/enums";
 
-export const PUT = withAuth(async (req, user, db, mode, ctx) => {
+export const PATCH = withAuth(async (req, user, db, mode, ctx) => {
   if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.WRITE))
     return forbiddenError();
   const { weighments, centers } = getTables(mode);

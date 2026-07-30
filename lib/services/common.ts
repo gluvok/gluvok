@@ -101,3 +101,16 @@ export async function deleteRow(slug: ProjectSlug, id: number): Promise<void> {
     await axios.delete(`${endpoint}/${id}`)
   })
 }
+
+export async function deleteRows(
+  slug: ProjectSlug,
+  ids: number[],
+): Promise<number> {
+  const endpoint = getEndpoint(slug);
+  return apiRequest(async () => {
+    const response = await axios.delete<{ deleted_count: number }>(endpoint, {
+      data: { ids },
+    });
+    return response.data.deleted_count;
+  });
+}

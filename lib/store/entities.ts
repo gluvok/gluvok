@@ -10,11 +10,7 @@ import { create } from "zustand"
 import axios from "axios"
 import { ProjectSlug, ApiRoutes } from "@/lib/constants/enums"
 import { toast } from "sonner"
-import {
-  insertRow,
-  updateRow,
-  deleteRow,
-} from "@/lib/services"
+import { insertRow, updateRow, deleteRow, deleteRows } from "@/lib/services";
 
 export interface IdNamePair { id: number; name: string }
 export interface RateOption { id: number; label: string }
@@ -28,21 +24,32 @@ interface PreloadPayload {
 }
 
 interface EntitiesState {
-  addEntity: (slug: ProjectSlug, newE: Record<string, unknown>) => Promise<void>
-  updateEntity: (slug: ProjectSlug, id: string | number, fields: Record<string, unknown>) => Promise<void>
-  deleteEntity: (slug: ProjectSlug, id: string | number) => Promise<void>
-  entitiesUpdatedTrigger: number
-  triggerEntitiesUpdate: () => void
-  commodities: { id: number; name: string }[]
+  addEntity: (
+    slug: ProjectSlug,
+    newE: Record<string, unknown>,
+  ) => Promise<void>;
+  updateEntity: (
+    slug: ProjectSlug,
+    id: string | number,
+    fields: Record<string, unknown>,
+  ) => Promise<void>;
+  deleteEntity: (slug: ProjectSlug, id: string | number) => Promise<void>;
+  deleteEntities: (
+    slug: ProjectSlug,
+    ids: Array<string | number>,
+  ) => Promise<void>;
+  entitiesUpdatedTrigger: number;
+  triggerEntitiesUpdate: () => void;
+  commodities: { id: number; name: string }[];
   weighmentFiltersData: {
-    centers: IdNamePair[]
-    profiles: IdNamePair[]
-    customers: IdNamePair[]
-    rates: RateOption[]
-  } | null
-  filtersLoading: boolean
-  filtersInitialized: boolean
-  preloadAllFilters: (options?: { silent?: boolean }) => Promise<void>
+    centers: IdNamePair[];
+    profiles: IdNamePair[];
+    customers: IdNamePair[];
+    rates: RateOption[];
+  } | null;
+  filtersLoading: boolean;
+  filtersInitialized: boolean;
+  preloadAllFilters: (options?: { silent?: boolean }) => Promise<void>;
 }
 
 export const useEntitiesStore = create<EntitiesState>((set, get) => ({
@@ -291,6 +298,13 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
         break
     }
 
+    get().triggerEntitiesUpdate()
+  },
+
+  deleteEntities: async (slug, ids) => {
+    const uniqueIds = [...new Set(ids.map(Number))]
+    await deleteRows(slug, uniqueIds)
+    await get().preloadAllFilters({ silent: true })
     get().triggerEntitiesUpdate()
   },
 }))

@@ -1,4 +1,16 @@
-import { eq, ilike, and, desc, asc, or, gte, lte, count } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import {
+  eq,
+  ilike,
+  and,
+  desc,
+  asc,
+  or,
+  gte,
+  lte,
+  count,
+  inArray,
+} from "drizzle-orm";
 import {
   weighments,
   rates,
@@ -19,6 +31,8 @@ import {
   getFactoryWhereClause,
   fetchPaginatedResult,
   formatEntityResponse,
+  isFKViolation,
+  parseBulkIds,
 } from "@/db/helpers";
 import {
   TenantMode,
@@ -232,4 +246,58 @@ export const POST = withAuth(async (req, user, db, mode) => {
     .returning();
 
   return formatEntityResponse(newWeighment, mode, StatusCodes.CREATED);
+});
+
+export const DELETE = withAuth(async (req, user, db, mode) => {
+  if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.DELETE))
+    return forbiddenError();
+  const ids = parseBulkIds(await req.json());
+  if (!ids)
+    return apiError(
+      "Provide between 1 and 100 valid IDs",
+      StatusCodes.BAD_REQUEST,
+    );
+  if (mode === TenantMode.SHARED && user.factory_id == null)
+    return forbiddenError();
+  const factoryId = user.factory_id as number;
+
+  const ownershipScope =
+    mode === TenantMode.SHARED
+      ? and(
+          inArray(weighments.id, ids),
+          eq(sharedSchema.centers.factoryId, factoryId),
+        )
+      : inArray(weighments.id, ids);
+  const scopedWeighmentIds = db
+    .select({ id: weighments.id })
+    .from(weighments)
+    .innerJoin(centers, eq(weighments.centerId, centers.id))
+    .where(ownershipScope);
+
+  try {
+    const deletedCount = await db.transaction(async (tx) => {
+      const deleted = await tx
+        .delete(weighments)
+        .where(inArray(weighments.id, scopedWeighmentIds))
+        .returning({ id: weighments.id });
+      if (deleted.length !== ids.length)
+        throw new Error("BULK_DELETE_INCOMPLETE");
+      return deleted.length;
+    });
+    return NextResponse.json({ success: true, deleted_count: deletedCount });
+  } catch (error) {
+    if (error instanceof Error && error.message === "BULK_DELETE_INCOMPLETE") {
+      return apiError(
+        "One or more weighments were not found",
+        StatusCodes.NOT_FOUND,
+      );
+    }
+    if (isFKViolation(error)) {
+      return apiError(
+        "Cannot delete selected weighments because they are referenced by other records.",
+        StatusCodes.BAD_REQUEST,
+      );
+    }
+    throw error;
+  }
 });

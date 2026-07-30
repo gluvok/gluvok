@@ -14,7 +14,7 @@ vi.mock("@/db/helpers", async (importOriginal) => {
   }
 })
 
-import { DELETE, PUT } from "./route"
+import { DELETE, PATCH } from "./route";
 
 type RawProfileHandler = (
   request: Request,
@@ -47,35 +47,47 @@ describe("Profile mutation guards", () => {
   })
 
   it.each([
-    ["PUT", PUT as unknown as RawProfileHandler, PermissionKey.WRITE],
+    ["PATCH", PATCH as unknown as RawProfileHandler, PermissionKey.WRITE],
     ["DELETE", DELETE as unknown as RawProfileHandler, PermissionKey.DELETE],
-  ])("rejects %s when the user lacks the required permission", async (_method, handler, permission) => {
-    mockHasPermission.mockReturnValue(false)
+  ])(
+    "rejects %s when the user lacks the required permission",
+    async (_method, handler, permission) => {
+      mockHasPermission.mockReturnValue(false);
 
-    const response = await handler(request, sharedUser, {}, TenantMode.SHARED, context)
+      const response = await handler(
+        request,
+        sharedUser,
+        {},
+        TenantMode.SHARED,
+        context,
+      );
 
-    expect(response.status).toBe(403)
-    expect(mockHasPermission).toHaveBeenCalledWith(
-      sharedUser,
-      ProjectSlug.PROFILES,
-      permission,
-    )
-  })
+      expect(response.status).toBe(403);
+      expect(mockHasPermission).toHaveBeenCalledWith(
+        sharedUser,
+        ProjectSlug.PROFILES,
+        permission,
+      );
+    },
+  );
 
   it.each([
-    ["PUT", PUT as unknown as RawProfileHandler],
+    ["PATCH", PATCH as unknown as RawProfileHandler],
     ["DELETE", DELETE as unknown as RawProfileHandler],
-  ])("rejects %s in shared mode when the user has no factory assignment", async (_method, handler) => {
-    mockHasPermission.mockReturnValue(true)
+  ])(
+    "rejects %s in shared mode when the user has no factory assignment",
+    async (_method, handler) => {
+      mockHasPermission.mockReturnValue(true);
 
-    const response = await handler(
-      request,
-      { ...sharedUser, factory_id: null },
-      {},
-      TenantMode.SHARED,
-      context,
-    )
+      const response = await handler(
+        request,
+        { ...sharedUser, factory_id: null },
+        {},
+        TenantMode.SHARED,
+        context,
+      );
 
-    expect(response.status).toBe(403)
-  })
+      expect(response.status).toBe(403);
+    },
+  );
 })

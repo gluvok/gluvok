@@ -1,7 +1,9 @@
-import { eq, ilike, desc, asc, or } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { eq, ilike, desc, asc, or, inArray } from "drizzle-orm";
 import { commodities } from "@/db/schema";
 import {
   withAuth,
+  apiError,
   getPaginationParams,
   validateRequiredFields,
   forbiddenError,
@@ -9,6 +11,8 @@ import {
   StatusCodes,
   fetchPaginatedResult,
   formatEntityResponse,
+  isFKViolation,
+  parseBulkIds,
 } from "@/db/helpers";
 import {
   ProjectSlug,
@@ -86,4 +90,42 @@ export const POST = withAuth(async (req, user, db, mode) => {
     .returning();
 
   return formatEntityResponse(newCommodity, mode, StatusCodes.CREATED);
+});
+
+export const DELETE = withAuth(async (req, user, db) => {
+  if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.DELETE))
+    return forbiddenError();
+  const ids = parseBulkIds(await req.json());
+  if (!ids)
+    return apiError(
+      "Provide between 1 and 100 valid IDs",
+      StatusCodes.BAD_REQUEST,
+    );
+
+  try {
+    const deletedCount = await db.transaction(async (tx) => {
+      const deleted = await tx
+        .delete(commodities)
+        .where(inArray(commodities.id, ids))
+        .returning({ id: commodities.id });
+      if (deleted.length !== ids.length)
+        throw new Error("BULK_DELETE_INCOMPLETE");
+      return deleted.length;
+    });
+    return NextResponse.json({ success: true, deleted_count: deletedCount });
+  } catch (error) {
+    if (error instanceof Error && error.message === "BULK_DELETE_INCOMPLETE") {
+      return apiError(
+        "One or more commodities were not found",
+        StatusCodes.NOT_FOUND,
+      );
+    }
+    if (isFKViolation(error)) {
+      return apiError(
+        "Cannot delete selected commodities because they are referenced by existing rates or weighments.",
+        StatusCodes.BAD_REQUEST,
+      );
+    }
+    throw error;
+  }
 });

@@ -9,10 +9,17 @@
 import * as React from "react"
 import { getPrimaryIdKey } from "@/lib/fields"
 import { DataTablePagination } from "@/components/data-table"
-import { ProjectToolbar, ProjectDialogs, ProjectTable, useProjectTable } from "@/components/projects"
+import {
+  ConfigSummary,
+  ProjectToolbar,
+  ProjectDialogs,
+  ProjectTable,
+  useProjectTable,
+} from "@/components/projects";
 import { Spinner } from "@/components/kibo-ui/spinner"
 import { useEntitiesStore } from "@/lib/store"
 import { ProjectSlug } from "@/lib/constants/enums"
+import { type Config } from "@/types";
 
 interface ProjectClientProps {
   projectName: string;
@@ -22,7 +29,20 @@ interface ProjectClientProps {
 function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps) {
   const primaryIdKey = getPrimaryIdKey(projectSlug)
   const pt = useProjectTable({ projectSlug, primaryIdKey, projectName })
-  const { table, isLoading, isReady, creating, setCreating, editingItem, setEditingItem, deletingItem, setDeletingItem, handleReload } = pt
+  const {
+    table,
+    isLoading,
+    isReady,
+    permissions,
+    creating,
+    setCreating,
+    editingItem,
+    setEditingItem,
+    deletingItem,
+    setDeletingItem,
+    handleReload,
+  } = pt;
+  const isConfigTable = projectSlug === ProjectSlug.CONFIGS;
 
   const isFiltersLoading = useEntitiesStore((state) => state.filtersLoading)
 
@@ -48,24 +68,37 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
 
   return (
     <div className="space-y-4">
-      {/* Search, filters, reload and creation controls */}
-      <ProjectToolbar
-        table={table}
-        projectSlug={projectSlug}
-        projectName={projectName}
-        primaryIdKey={primaryIdKey}
-        setCreating={setCreating}
-        onReload={handleReload}
-      />
+      {isConfigTable ? (
+        <ConfigSummary
+          config={table.getRowModel().rows[0]?.original as Config | undefined}
+          isLoading={isLoading}
+          canCreate={permissions.create}
+          canEdit={permissions.write}
+          onCreate={() => setCreating(true)}
+          onEdit={setEditingItem}
+        />
+      ) : (
+        <>
+          {/* Search, filters, reload and creation controls */}
+          <ProjectToolbar
+            table={table}
+            projectSlug={projectSlug}
+            projectName={projectName}
+            primaryIdKey={primaryIdKey}
+            setCreating={setCreating}
+            onReload={handleReload}
+          />
 
-      {/* Main data representation grid/table */}
-      <ProjectTable table={table} isLoading={isLoading} />
+          {/* Main data representation grid/table */}
+          <ProjectTable table={table} isLoading={isLoading} />
 
-      {/* Pagination controls */}
-      {projectSlug !== ProjectSlug.CONFIGS && table.getRowModel().rows?.length > 0 && (
-        <div className="pt-2">
-          <DataTablePagination table={table} />
-        </div>
+          {/* Pagination controls */}
+          {table.getRowModel().rows?.length > 0 && (
+            <div className="pt-2">
+              <DataTablePagination table={table} />
+            </div>
+          )}
+        </>
       )}
 
       {/* Dialog overlays for CUD operations (Create, Update, Delete) */}
@@ -81,7 +114,7 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
         primaryIdKey={primaryIdKey}
       />
     </div>
-  )
+  );
 }
 
 /**

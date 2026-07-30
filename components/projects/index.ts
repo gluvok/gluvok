@@ -8,4 +8,5 @@ export { ProjectTitle } from "./title"
 export { ProjectToolbar } from "./toolbar"
 export { ProjectDialogs } from "./dialog"
 export { ProjectTable } from "./table"
+export { ConfigSummary } from "./config-summary";
 export { useProjectTable } from "./table/use-table"

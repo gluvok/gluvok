@@ -103,15 +103,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   // Show loading only during initial rehydration or while profile check is in-flight.
   // Config and filter preloads happen in the background — components handle their own loading states.
   if (!authHydrated || !initialized || (profileLoading && !user)) {
-    return <FullScreenStatus message="Loading..." />
+    return <FullScreenStatus message="Booting up..." />
   }
 
   if (!user && !isAuthPage && !isPublicPage) {
-    return <FullScreenStatus message="Redirecting..." />
+    return <FullScreenStatus message="Taking you places..." />
   }
 
   if (user && isAuthPage) {
-    return <FullScreenStatus message="Redirecting..." />
+    return <FullScreenStatus message="Taking you places..." />
   }
 
   if (user && projectSlug && !isAuthorized) {

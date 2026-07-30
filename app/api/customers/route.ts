@@ -111,7 +111,7 @@ export const POST = withAuth(async (req, user, db, mode) => {
     }
   }
 
-  let createdUserId: string | null = null
+  let createdUserId: number | null = null
   if (username && password) {
     const passwordHash = await hashPassword(password)
     const userValues = { username, passwordHash, role: Role.BASE, ...(mode === TenantMode.SHARED ? { factoryId: targetFactoryId } : {}) }

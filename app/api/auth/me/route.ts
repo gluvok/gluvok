@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const [user] = await tenantDb
       .select()
       .from(users)
-      .where(eq(users.id, payload.sub))
+      .where(eq(users.id, Number(payload.sub)))
       .limit(1)
 
     if (!user || !user.isActive) {

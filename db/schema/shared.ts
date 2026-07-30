@@ -1,13 +1,23 @@
 /**
  * @file db/schema/shared.ts
  * @description Drizzle ORM schema for shared (SaaS) multi-factory database.
+ * Each table spreads its base column group from common.ts and appends factory-scoped FKs.
  */
 
-import { pgTable, uuid, varchar, text, integer, boolean, decimal, uniqueIndex } from "drizzle-orm/pg-core"
+import { pgTable, varchar, integer, uniqueIndex } from "drizzle-orm/pg-core"
 import { relations, sql } from "drizzle-orm"
-import { timestamps } from "../columns.helpers"
-import { Role, EntityKey, TableName, FieldRequirementMode } from "@/lib/constants/enums"
-import { roleEnum, unitEnum, fieldRequirementModeEnum, commodities, profiles, weighments } from "./common"
+import { timestamps } from "./common"
+import { EntityKey, TableName } from "@/lib/constants/enums"
+import {
+  userBaseColumns,
+  customerBaseColumns,
+  centerBaseColumns,
+  configBaseColumns,
+  rateBaseColumns,
+  commodities,
+  profiles,
+  weighments,
+} from "./common"
 
 export * from "./common"
 
@@ -18,47 +28,29 @@ export const factories = pgTable(TableName.FACTORIES, {
 })
 
 export const configs = pgTable(TableName.CONFIGS, {
-  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  ...configBaseColumns,
   factoryId: integer(EntityKey.FACTORY_ID).notNull().unique().references(() => factories.id, { onDelete: "restrict" }),
-  aadharNumberMode: fieldRequirementModeEnum(EntityKey.AADHAR_NUMBER_MODE).notNull().default(FieldRequirementMode.OPTIONAL),
-  govtIdMode: fieldRequirementModeEnum(EntityKey.GOVT_ID_MODE).notNull().default(FieldRequirementMode.OPTIONAL),
-  ...timestamps,
 })
 
 export const centers = pgTable(TableName.CENTERS, {
-  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-  name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
+  ...centerBaseColumns,
   factoryId: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
-  ...timestamps,
 })
 
 export const rates = pgTable(TableName.RATES, {
-  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-  commodityId: integer(EntityKey.COMMODITY_ID).notNull().references(() => commodities.id, { onDelete: "restrict", onUpdate: "cascade" }),
-  unitPrice: decimal(EntityKey.UNIT_PRICE, { precision: 12, scale: 2 }).notNull(),
-  unit: unitEnum(EntityKey.UNIT).notNull(),
+  ...rateBaseColumns(),
   factoryId: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
-  ...timestamps,
 })
 
 export const users = pgTable(TableName.USERS, {
-  id: uuid(EntityKey.ID).defaultRandom().primaryKey(),
-  username: varchar(EntityKey.USERNAME, { length: 255 }).notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  role: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
+  ...userBaseColumns,
   factoryId: integer(EntityKey.FACTORY_ID).references(() => factories.id, { onDelete: "restrict" }),
-  isActive: boolean(EntityKey.IS_ACTIVE).notNull().default(true),
-  ...timestamps,
 })
 
 export const customers = pgTable(TableName.CUSTOMERS, {
-  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-  govtId: integer(EntityKey.GOVT_ID),
-  name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
-  fatherName: varchar(EntityKey.FATHER_NAME, { length: 255 }).notNull(),
-  userId: uuid(EntityKey.USER_ID).unique().references(() => users.id, { onDelete: "restrict" }),
+  ...customerBaseColumns,
+  userId: integer(EntityKey.USER_ID).unique().references(() => users.id, { onDelete: "restrict" }),
   factoryId: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
-  ...timestamps,
 }, (table) => [
   uniqueIndex("customers_govt_id_factory_id_idx")
     .on(table.govtId, table.factoryId)

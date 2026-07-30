@@ -10,7 +10,7 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
 
   // Fetch the record first to check ownership
   const [existing] = await db.select({ userId: customers.userId }).from(customers).where(eq(customers.id, customerId))
-  const isOwn = existing?.userId != null && existing.userId === user.sub
+  const isOwn = existing?.userId != null && String(existing.userId) === String(user.sub)
 
   // Self-update allowed even without write permission; otherwise check RBAC
   if (!isOwn && !hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.WRITE)) return forbiddenError()

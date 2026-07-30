@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       : null
 
     const token = await signJWT({
-      sub: user.id,
+      sub: String(user.id),
       username: user.username,
       role: user.role,
       factory_id: factoryId,

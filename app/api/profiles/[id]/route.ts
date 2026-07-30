@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
-import { profiles, users } from "@/db/schema"
+import { getTables } from "@/db/schema"
 import { withAuth, apiError, isFKViolation, StatusCodes } from "@/db/helpers"
 import { hashPassword } from "@/lib/auth/password"
 import { Role } from "@/lib/constants/enums"
 
-export const PUT = withAuth(async (req, _user, db, _mode, ctx) => {
+export const PUT = withAuth(async (req, _user, db, mode, ctx) => {
+  const { profiles, users } = getTables(mode)
   const { id } = await ctx.params
   const profileId = parseInt(id, 10)
   const body = await req.json()
@@ -61,8 +62,9 @@ export const PUT = withAuth(async (req, _user, db, _mode, ctx) => {
   })
 })
 
-export const DELETE = withAuth(async (_req, _user, db, _mode, ctx) => {
+export const DELETE = withAuth(async (_req, _user, db, mode, ctx) => {
   try {
+    const { profiles } = getTables(mode)
     const { id } = await ctx.params
     await db.delete(profiles).where(eq(profiles.id, parseInt(id, 10)))
     return NextResponse.json({ success: true })

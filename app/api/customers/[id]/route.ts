@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
-import { customers, users } from "@/db/schema"
+import { getTables } from "@/db/schema"
 import { withAuth, apiError, isFKViolation, forbiddenError, hasPermission, StatusCodes } from "@/db/helpers"
 import { ProjectSlug, PermissionKey, TenantMode } from "@/lib/constants/enums"
 
 export const PUT = withAuth(async (req, user, db, mode, ctx) => {
+  const { customers, users } = getTables(mode)
   const { id } = await ctx.params
   const customerId = parseInt(id, 10)
 
@@ -51,9 +52,10 @@ export const PUT = withAuth(async (req, user, db, mode, ctx) => {
   })
 })
 
-export const DELETE = withAuth(async (_req, user, db, _mode, ctx) => {
+export const DELETE = withAuth(async (_req, user, db, mode, ctx) => {
   if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.DELETE)) return forbiddenError()
   try {
+    const { customers } = getTables(mode)
     const { id } = await ctx.params
     await db.delete(customers).where(eq(customers.id, parseInt(id, 10)))
     return NextResponse.json({ success: true })

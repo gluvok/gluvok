@@ -10,6 +10,7 @@ import { drizzle } from "drizzle-orm/postgres-js"
 import postgres from "postgres"
 import * as schema from "../db/schema/standalone"
 import { Role } from "../lib/constants/enums"
+import { hashPassword } from "../lib/auth/password"
 
 const connectionString = process.env.DATABASE_URL
 
@@ -21,18 +22,19 @@ if (!connectionString) {
 const client = postgres(connectionString, { ssl: "require", max: 1 })
 const db = drizzle(client, { schema })
 
-const FIXED_PASSWORD_HASH = "$argon2id$v=19$m=19456,t=2,p=1$AAAAAAAAAAAAAAAAAAAAAA$n4ztyxZUUav+lfVPUwJkTgU+AmLLtrEvClLpKXNnhyQ"
-
 async function main() {
   console.log("Truncating users table...")
   await client`TRUNCATE TABLE users CASCADE`
+
+  console.log("Hashing password for super admin user...")
+  const passwordHash = await hashPassword("super123")
 
   console.log("Inserting super admin user ('super')...")
   await db
     .insert(schema.users)
     .values({
       username: "super",
-      passwordHash: FIXED_PASSWORD_HASH,
+      passwordHash,
       role: Role.SUPER_ADMIN,
       isActive: true,
     })

@@ -7,7 +7,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import { cookies } from "next/headers"
 import { eq } from "drizzle-orm"
 import { getDb } from "@/db"
-import { users, profiles, customers } from "@/db/schema"
+import { getTables } from "@/db/schema"
 import { verifyJWT } from "@/lib/auth/jwt"
 import { TenantMode } from "@/lib/constants/enums"
 import { getWorkspace } from "@/lib/tenant/workspace"
@@ -27,16 +27,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ user: null })
     }
 
+    const userId = parseInt(payload.sub, 10)
+    if (isNaN(userId)) {
+      return NextResponse.json({ user: null })
+    }
+
     // Resolve tenant DB based on request subdomain/workspace
     const workspace = getWorkspace(request)
     const tenant = resolveTenant(workspace)
     const tenantDb = getDb(tenant)
+    const { users, profiles, customers } = getTables(tenant.mode)
 
     // Verify user account is still valid and active in database
     const [user] = await tenantDb
       .select()
       .from(users)
-      .where(eq(users.id, Number(payload.sub)))
+      .where(eq(users.id, userId))
       .limit(1)
 
     if (!user || !user.isActive) {

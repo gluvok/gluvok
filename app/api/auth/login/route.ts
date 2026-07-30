@@ -5,7 +5,7 @@
 
 import { NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
-import { users, profiles, customers } from "@/db/schema"
+import { getTables } from "@/db/schema"
 import { verifyPassword } from "@/lib/auth/password"
 import { signJWT } from "@/lib/auth/jwt"
 import { TenantMode } from "@/lib/constants/enums"
@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     // Resolve tenant from request (login runs before withAuth)
     const workspace = getWorkspace(request as Parameters<typeof getWorkspace>[0])
     const tenant = resolveTenant(workspace)
+    const { users, profiles, customers } = getTables(tenant.mode)
     // Import getDb lazily to avoid circular issues — db/index exports it
     const { getDb } = await import("@/db")
     const tenantDb = getDb(tenant)

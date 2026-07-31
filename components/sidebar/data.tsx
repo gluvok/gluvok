@@ -14,7 +14,7 @@ import { AppRoutes } from "@/lib/constants/enums"
  */
 export const SIDEBAR_DATA = {
   user: {
-    name: "John Doe",
+    username: "admin",
     avatar: DEFAULT_AVATAR,
   },
   navSecondary: [

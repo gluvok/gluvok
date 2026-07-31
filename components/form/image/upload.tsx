@@ -45,7 +45,7 @@ export async function processImageUploadsAndDeletions(
   originalImages: string[] = []
 ): Promise<string[]> {
   const currentUser = useAuthStore.getState().user
-  const factoryId = currentUser?.profile?.factory_id ?? currentUser?.customer?.factory_id
+  const factoryId = currentUser?.factory_id
   const factoryPrefix = String(factoryId ?? "default")
 
   // 1. Identify which images to delete (present in original, but not in submitted)

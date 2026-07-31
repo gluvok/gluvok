@@ -8,7 +8,6 @@ import axios from "axios"
 import { toast } from "sonner"
 import { Role, EntityKey, TenantMode } from "@/lib/constants/enums"
 import { DEFAULT_AVATAR } from "@/lib/constants"
-import { type Profile, type Customer } from "@/types"
 
 import { useConfigStore } from "./config"
 import { useEntitiesStore } from "./entities"
@@ -19,13 +18,10 @@ export const CUSTOMER_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.NAME}, ${Ent
 export interface AuthUser {
   id: string
   username: string
-  name: string
   avatar?: string
   role: Role
   factory_id: number | null
   tenant_mode?: TenantMode
-  profile?: Profile
-  customer?: Customer
 }
 
 interface AuthStore {
@@ -105,7 +101,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       useConfigStore.getState().fetchConfig()
       useEntitiesStore.getState().preloadAllFilters({ silent: true })
 
-      toast.success(`Welcome back, ${data.user.name || data.user.username}!`)
+      toast.success(`Welcome back, ${data.user.username}!`)
       return true
     } catch (err: unknown) {
       console.error("Login request error:", err)

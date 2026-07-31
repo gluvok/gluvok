@@ -57,9 +57,7 @@ export function useEntityForm({
     defaultValues: {} 
   })
 
-  const userProfileId = React.useMemo(() => {
-    return currentUser?.profile?.id ? String(currentUser.profile.id) : ""
-  }, [currentUser])
+  const userFactoryId = currentUser?.factory_id ? String(currentUser.factory_id) : ""
 
   React.useEffect(() => {
     if (!open) return
@@ -84,17 +82,13 @@ export function useEntityForm({
     } else {
       const defaultVals: Record<string, unknown> = { is_active: true }
       
-      const userFactoryId = currentUser?.profile?.factory_id ? String(currentUser.profile.factory_id) : ""
       if (userFactoryId && fields.some(f => f.key === EntityKey.FACTORY_ID)) {
         defaultVals[EntityKey.FACTORY_ID] = userFactoryId
       }
 
-      if (projectSlug as ProjectSlug === ProjectSlug.WEIGHMENTS && userProfileId) {
-        defaultVals[EntityKey.PROFILE_ID] = userProfileId
-      }
       form.reset(defaultVals)
     }
-  }, [open, isEdit, item, fields, form, projectSlug, userProfileId, currentUser])
+  }, [open, isEdit, item, fields, form, projectSlug, userFactoryId, currentUser])
 
   const onSubmit = async (values: FieldValues) => {
     const singularName = getSingularName(projectName)

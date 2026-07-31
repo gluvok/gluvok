@@ -8,10 +8,10 @@ import { TenantMode } from "@/lib/constants/enums"
 
 function getJwtSecret(): Uint8Array {
   const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret && process.env.NODE_ENV === "production") {
-    throw new Error("JWT_SECRET must be configured in production");
+  if (!jwtSecret) {
+    throw new Error("JWT_SECRET environment variable is missing");
   }
-  return new TextEncoder().encode(jwtSecret || "development-only-jwt-secret");
+  return new TextEncoder().encode(jwtSecret);
 }
 
 export interface JWTPayload {
@@ -23,9 +23,11 @@ export interface JWTPayload {
 }
 
 /**
- * Signs a JWT session token valid for 24 hours.
+ * Signs a JWT session token with expiration time from environment variables (defaults to 1 year).
  */
 export async function signJWT(payload: JWTPayload): Promise<string> {
+  const expiresIn = process.env.JWT_EXPIRES_IN || process.env.JWT_EXPIRATION_TIME || "1y";
+
   return new SignJWT({
     username: payload.username,
     role: payload.role,
@@ -35,7 +37,7 @@ export async function signJWT(payload: JWTPayload): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
     .setIssuedAt()
-    .setExpirationTime("24h")
+    .setExpirationTime(expiresIn)
     .sign(getJwtSecret());
 }
 

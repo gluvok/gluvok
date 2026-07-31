@@ -54,24 +54,67 @@ export function getCommodityIcon(name: string): LucideIcon {
   return COMMODITY_ICON_MAP[baseName as CommodityName] ?? Package
 }
 
-export function getRoleIcon(role?: string): LucideIcon {
-  if (!role) return Shield
-  const normalized = role.toLowerCase().replace(/[\s_-]+/g, "_").trim()
-  switch (normalized) {
+export function getRoleLabel(role?: string): string {
+  switch (role) {
     case Role.ADMIN:
-    case RoleLabel.ADMIN.toLowerCase():
+      return RoleLabel.ADMIN
+    case Role.MANAGER:
+      return RoleLabel.MANAGER
+    case Role.OPERATOR:
+      return RoleLabel.OPERATOR
+    case Role.BASE:
+      return RoleLabel.BASE
+    case Role.HARDWARE:
+      return RoleLabel.HARDWARE
+    default:
+      return role ? role.toUpperCase() : ""
+  }
+}
+
+export function getRoleBadgeClass(role?: string): string {
+  switch (role) {
+    case Role.ADMIN:
+      return "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30"
+    case Role.MANAGER:
+      return "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30"
+    case Role.OPERATOR:
+      return "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
+    case Role.BASE:
+      return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+    case Role.HARDWARE:
+      return "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
+    default:
+      return "bg-muted/70 text-foreground border-border/40"
+  }
+}
+
+export function getRoleIndicatorVariant(role?: string): "success" | "warning" | "error" | "info" {
+  switch (role) {
+    case Role.ADMIN:
+    case Role.MANAGER:
+      return "info"
+    case Role.OPERATOR:
+      return "warning"
+    case Role.BASE:
+      return "success"
+    case Role.HARDWARE:
+      return "error"
+    default:
+      return "info"
+  }
+}
+
+export function getRoleIcon(role?: string): LucideIcon {
+  switch (role) {
+    case Role.ADMIN:
       return ShieldCheck
     case Role.MANAGER:
-    case RoleLabel.MANAGER.toLowerCase():
       return Briefcase
     case Role.OPERATOR:
-    case RoleLabel.OPERATOR.toLowerCase():
       return HardHat
     case Role.BASE:
-    case RoleLabel.BASE.toLowerCase():
       return User
     case Role.HARDWARE:
-    case RoleLabel.HARDWARE.toLowerCase():
       return Cpu
     default:
       return Shield

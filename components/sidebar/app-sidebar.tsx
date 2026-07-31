@@ -34,8 +34,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const hydrated = useAuthStore((state) => state.hydrated)
 
   const activeUser = {
-    username: (hydrated && user?.username) || SIDEBAR_DATA.user.username,
-    avatar: (hydrated && user?.avatar) || SIDEBAR_DATA.user.avatar,
+    username: user?.username || SIDEBAR_DATA.user.username,
+    role: user?.role || SIDEBAR_DATA.user.role,
+    avatar: user?.avatar || SIDEBAR_DATA.user.avatar,
   }
 
   const filteredNavMain = React.useMemo(() => {

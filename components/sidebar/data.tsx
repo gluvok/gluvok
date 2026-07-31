@@ -6,7 +6,7 @@
 import { LifeBuoy, Send, Layers } from "lucide-react"
 import { PROJECTS } from "@/lib/projects"
 import { DEFAULT_AVATAR } from "@/lib/constants"
-import { AppRoutes } from "@/lib/constants/enums"
+import { AppRoutes, Role } from "@/lib/constants/enums"
 
 /**
  * SIDEBAR_DATA configuration
@@ -15,6 +15,7 @@ import { AppRoutes } from "@/lib/constants/enums"
 export const SIDEBAR_DATA = {
   user: {
     username: "admin",
+    role: Role.ADMIN,
     avatar: DEFAULT_AVATAR,
   },
   navSecondary: [

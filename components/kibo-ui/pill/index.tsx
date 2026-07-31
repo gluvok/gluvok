@@ -3,7 +3,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/index";
 
 export type PillProps = ComponentProps<typeof Badge>;
 
@@ -161,3 +161,39 @@ export const PillAvatarGroup = ({
     {children}
   </div>
 );
+
+import { getRoleLabel, getRoleIcon, getRoleBadgeClass, getRoleIndicatorVariant } from "@/lib/fields/helpers";
+
+export type RolePillProps = PillProps & {
+  role?: string;
+  showIcon?: boolean;
+  showIndicator?: boolean;
+  pulse?: boolean;
+};
+
+export const RolePill = ({
+  role = "admin",
+  showIcon = true,
+  showIndicator = false,
+  pulse = false,
+  className,
+  children,
+  ...props
+}: RolePillProps) => {
+  const label = getRoleLabel(role);
+  const RoleIcon = getRoleIcon(role);
+  const colorClass = getRoleBadgeClass(role);
+  const indicatorVariant = getRoleIndicatorVariant(role);
+
+  return (
+    <Pill
+      variant="outline"
+      className={cn("gap-1.5 font-medium uppercase tracking-wide", colorClass, className)}
+      {...props}
+    >
+      {showIndicator && <PillIndicator variant={indicatorVariant} pulse={pulse} />}
+      {showIcon && <PillIcon icon={RoleIcon} className="size-3 shrink-0" />}
+      <span>{children || label}</span>
+    </Pill>
+  );
+};

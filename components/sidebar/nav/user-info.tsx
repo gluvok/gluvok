@@ -7,25 +7,22 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuthStore } from "@/lib/store"
+import { RolePill } from "@/components/kibo-ui/pill"
 
 export interface UserInfo {
   username: string
+  role?: string
   avatar: string
-}
-
-function formatRole(role: string | undefined): string {
-  if (!role) return ""
-  return role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 /**
  * UserAvatarInfo Component
- * Renders avatar image with fallback initials, username, and role label.
+ * Renders avatar image with fallback initials, username, and unified role pill with color mapping.
  */
 export function UserAvatarInfo({ user }: { user: UserInfo }) {
   const authUser = useAuthStore((state) => state.user)
   const username = user.username || authUser?.username || ""
-  const roleLabel = formatRole(authUser?.role)
+  const rawRole = user.role || authUser?.role || "admin"
 
   return (
     <>
@@ -35,11 +32,11 @@ export function UserAvatarInfo({ user }: { user: UserInfo }) {
           {username ? username.slice(0, 2).toUpperCase() : "??"}
         </AvatarFallback>
       </Avatar>
-      <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
-        <span className="truncate font-medium">{username ? `@${username}` : "User"}</span>
-        {roleLabel && (
-          <span className="truncate text-[10px] text-muted-foreground font-normal">{roleLabel}</span>
-        )}
+      <div className="grid flex-1 text-left text-xs leading-tight min-w-0 gap-0.5">
+        <span className="truncate font-medium text-sm">{username ? `@${username}` : "User"}</span>
+        <div className="flex items-center">
+          <RolePill role={rawRole} className="h-4 text-[9px] px-1.5 py-0 gap-1 w-fit" />
+        </div>
       </div>
     </>
   )

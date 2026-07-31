@@ -6,8 +6,10 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Fingerprint, Tag, Shield } from "lucide-react"
 import { EntityKey, ColumnLabel } from "@/lib/constants/enums"
-import { getRoleIcon } from "@/lib/fields/helpers"
+import { getRoleIcon, getRoleLabel } from "@/lib/fields/helpers"
 import { createTextColumn, createCustomColumn } from "./helpers"
+
+import { RolePill } from "@/components/kibo-ui/pill"
 
 export function getProfilesColumns<T>(): ColumnDef<T>[] {
   return [
@@ -15,13 +17,7 @@ export function getProfilesColumns<T>(): ColumnDef<T>[] {
     createTextColumn(EntityKey.NAME, ColumnLabel.NAME, Tag),
     createCustomColumn(EntityKey.ROLE, ColumnLabel.ROLE, Shield, (val) => {
       const roleStr = String(val || "")
-      const RoleIcon = getRoleIcon(roleStr)
-      return (
-        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-muted/70 text-foreground border border-border/40 uppercase tracking-wide">
-          <RoleIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <span>{roleStr}</span>
-        </div>
-      )
+      return <RolePill role={roleStr} className="px-2 py-0.5 text-xs" />
     }),
   ]
 }

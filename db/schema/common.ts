@@ -12,8 +12,8 @@ import { Role, Unit, WeighmentType, EntityKey, TableName, DbEnum, FieldRequireme
 
 /** Reusable timestamp columns — previously in db/columns.helpers.ts */
 export const timestamps = {
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp(EntityKey.CREATED_AT, { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp(EntityKey.UPDATED_AT, { withTimezone: true }).defaultNow(),
 } as const
 
 // ---------------------------------------------------------------------------

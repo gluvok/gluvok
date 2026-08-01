@@ -24,6 +24,7 @@ export interface FieldConfig {
   visibleRoles?: Role[]
   editVisibleRoles?: Role[]
   editableRoles?: Role[]
+  requiresEditPermission?: boolean
   halfWidth?: boolean
   span?: FieldSpan
 }

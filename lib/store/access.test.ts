@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
-import { Role, ProjectSlug, EntityKey } from "@/lib/constants/enums"
-import { getPermissions, hasPageAccess, hasCreateAccess, hasDeleteAccess, isColumnVisible, isFieldVisible } from "./access"
+import { Role, ProjectSlug, EntityKey, PermissionKey } from "@/lib/constants/enums"
+import { getPermissions, hasPermission, hasPageAccess, hasCreateAccess, hasDeleteAccess, isColumnVisible, isFieldVisible } from "./access"
 
 describe("RBAC Access Controls", () => {
   describe("getPermissions", () => {
@@ -90,6 +90,15 @@ describe("RBAC Access Controls", () => {
     it("should return delete permission", () => {
       expect(hasDeleteAccess(Role.ADMIN, ProjectSlug.WEIGHMENTS)).toBe(true)
       expect(hasDeleteAccess(Role.MANAGER, ProjectSlug.WEIGHMENTS)).toBe(false)
+    })
+  })
+
+  describe("hasPermission", () => {
+    it("allows only admins to edit weighment weight", () => {
+      expect(hasPermission(Role.ADMIN, ProjectSlug.WEIGHMENTS, PermissionKey.EDIT_FIELD, EntityKey.WEIGHT)).toBe(true)
+      expect(hasPermission(Role.MANAGER, ProjectSlug.WEIGHMENTS, PermissionKey.EDIT_FIELD, EntityKey.WEIGHT)).toBe(false)
+      expect(hasPermission(Role.OPERATOR, ProjectSlug.WEIGHMENTS, PermissionKey.EDIT_FIELD, EntityKey.WEIGHT)).toBe(false)
+      expect(hasPermission(Role.BASE, ProjectSlug.WEIGHMENTS, PermissionKey.EDIT_FIELD, EntityKey.WEIGHT)).toBe(false)
     })
   })
 

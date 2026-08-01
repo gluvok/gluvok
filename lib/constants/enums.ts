@@ -275,6 +275,7 @@ export enum TenantMode {
 export enum PermissionKey {
   READ = "read",
   WRITE = "write",
+  EDIT_FIELD = "edit_field",
   DELETE = "delete",
   CREATE = "create",
   SHOW = "show",

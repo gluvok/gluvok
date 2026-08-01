@@ -140,10 +140,10 @@ export const weighments = pgTable(TableName.WEIGHMENTS, {
   [EntityKey.IMAGES]: jsonb(EntityKey.IMAGES).default([]),
   [EntityKey.UNIT]: unitEnum(EntityKey.UNIT).notNull().default(Unit.KG),
   [EntityKey.TYPE]: weighmentTypeEnum(EntityKey.TYPE).notNull().default(WeighmentType.IN),
-  [EntityKey.RATE_ID]: integer(EntityKey.RATE_ID).notNull(),
+  [EntityKey.RATE_ID]: integer(EntityKey.RATE_ID),
   [EntityKey.CENTER_ID]: integer(EntityKey.CENTER_ID).notNull(),
   [EntityKey.PROFILE_ID]: integer(EntityKey.PROFILE_ID).notNull(),
-  [EntityKey.CUSTOMER_ID]: integer(EntityKey.CUSTOMER_ID).notNull(),
+  [EntityKey.CUSTOMER_ID]: integer(EntityKey.CUSTOMER_ID),
   [EntityKey.IS_ACTIVE]: boolean(EntityKey.IS_ACTIVE).notNull().default(true),
   ...timestamps,
 })

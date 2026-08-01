@@ -10,10 +10,10 @@ import { useForm, type FieldValues, type Path, type Resolver } from "react-hook-
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
 import { toast } from "sonner"
 import { type EntityRecord } from "@/types"
-import { DialogMode, ProjectSlug, FieldType, EntityKey, ActiveStatus } from "@/lib/constants/enums"
+import { DialogMode, ProjectSlug, FieldType, EntityKey, ActiveStatus, PermissionKey } from "@/lib/constants/enums"
 import { PROJECT_FIELDS, getSingularName } from "@/lib/fields"
 import { ENTITY_ADD_SCHEMAS, ENTITY_EDIT_SCHEMAS, checkEditUniqueness, getDynamicCustomerSchema, getDynamicProfileSchema } from "@/lib/validation"
-import { useEntitiesStore, useAuthStore, useConfigStore, getField } from "@/lib/store"
+import { useEntitiesStore, useAuthStore, useConfigStore, getField, hasPermission } from "@/lib/store"
 import { type EntityFormProps } from "./types"
 import { processImageUploadsAndDeletions } from "@/components/form/image/upload"
 
@@ -95,17 +95,23 @@ export function useEntityForm({
     try {
       if (isEdit) {
         if (!item) return
-        const uniquenessError = checkEditUniqueness(projectSlug as ProjectSlug, item, values)
+        const updateValues = { ...values }
+        fields.forEach((field) => {
+          if (field.requiresEditPermission && !hasPermission(currentUser?.role, projectSlug, PermissionKey.EDIT_FIELD, field.key)) {
+            delete updateValues[field.key]
+          }
+        })
+        const uniquenessError = checkEditUniqueness(projectSlug as ProjectSlug, item, updateValues)
         if (uniquenessError) {
           form.setError(uniquenessError.field as Path<FieldValues>, { message: uniquenessError.message })
           return
         }
 
-        if (Array.isArray(values[EntityKey.IMAGES])) {
+        if (Array.isArray(updateValues[EntityKey.IMAGES])) {
           const originalImages = (getField(item, EntityKey.IMAGES) || []) as string[]
-          values[EntityKey.IMAGES] = await processImageUploadsAndDeletions(values[EntityKey.IMAGES], originalImages)
+          updateValues[EntityKey.IMAGES] = await processImageUploadsAndDeletions(updateValues[EntityKey.IMAGES], originalImages)
         }
-        await updateEntity(projectSlug as ProjectSlug, String(getField(item, primaryIdKey)), values)
+        await updateEntity(projectSlug as ProjectSlug, String(getField(item, primaryIdKey)), updateValues)
         toast.success(`${singularName} updated successfully`)
       } else {
         if (Array.isArray(values[EntityKey.IMAGES])) {

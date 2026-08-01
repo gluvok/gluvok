@@ -6,7 +6,7 @@
 import * as z from "zod"
 import { ColumnLabel, Unit, WeighmentType } from "@/lib/constants/enums"
 import { EntityKey } from "@/lib/constants/enums"
-import { integerIdSchema } from "./helpers"
+import { integerIdSchema, optionalIntegerIdSchema } from "./helpers"
 
 // Indian State & Union Territory codes (mirrors constants.py STATE_CODES, excluding BH which is handled separately)
 const STATE_CODES = [
@@ -43,13 +43,16 @@ export const addWeighmentSchema = z.object({
   [EntityKey.WEIGHT]: z.coerce.number({ message: `${ColumnLabel.WEIGHT} must be a number` }).positive(`Measured ${ColumnLabel.WEIGHT.toLowerCase()} must be a positive number`),
   [EntityKey.UNIT]: z.enum(Unit, { message: `${ColumnLabel.UNIT} must be a valid unit (kg, q, or gal)` }),
   [EntityKey.TYPE]: z.enum(WeighmentType, { message: `${ColumnLabel.TYPE} must be a valid type (in or out)` }),
-  [EntityKey.RATE_ID]: integerIdSchema(ColumnLabel.RATE),
+  [EntityKey.RATE_ID]: optionalIntegerIdSchema(ColumnLabel.RATE),
   [EntityKey.CENTER_ID]: integerIdSchema(ColumnLabel.CENTER),
   [EntityKey.PROFILE_ID]: integerIdSchema(ColumnLabel.PROFILE),
-  [EntityKey.CUSTOMER_ID]: integerIdSchema(ColumnLabel.CUSTOMER),
+  [EntityKey.CUSTOMER_ID]: optionalIntegerIdSchema(ColumnLabel.CUSTOMER),
   [EntityKey.IS_ACTIVE]: z.boolean().default(true),
   [EntityKey.IMAGES]: z.array(z.string()).optional(),
 })
 
 export const editWeighmentSchema = addWeighmentSchema
+  .omit({ is_active: true })
+  .partial()
+  .extend({ [EntityKey.IS_ACTIVE]: z.boolean().optional() })
 

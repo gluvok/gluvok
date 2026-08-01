@@ -7,13 +7,12 @@ import {
   RequestHeader,
   TenantMode,
   ProjectSlug,
-  PermissionKey,
   QueryParam,
   CookieName,
   DatabasePropertyKey,
   EntityKey,
 } from "@/lib/constants/enums";
-import { RBAC_MATRIX, type Permission } from "@/lib/store/access"
+export { hasPermission } from "@/lib/store/access"
 import { REQUIRED_CREATE_FIELDS } from "@/lib/fields/config"
 import { db, getDb } from "@/db"
 import { configs } from "@/db/schema"
@@ -57,16 +56,6 @@ export function validateRequiredFields(
   return null
 }
 
-
-// ─── RBAC permission check ────────────────────────────────────────────────────
-export function hasPermission(
-  user: JWTPayload,
-  slug: ProjectSlug,
-  operation: PermissionKey
-): boolean {
-  const perms = RBAC_MATRIX[user.role as Role]?.[slug]
-  return perms ? (perms[operation as keyof Permission] as boolean ?? false) : false
-}
 
 export function forbiddenError(): NextResponse {
   return apiError(ReasonPhrases.FORBIDDEN, StatusCodes.FORBIDDEN)

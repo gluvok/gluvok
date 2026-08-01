@@ -11,7 +11,7 @@ import {
   isFKViolation,
   StatusCodes,
 } from "@/db/helpers";
-import { PermissionKey, ProjectSlug } from "@/lib/constants/enums";
+import { EntityKey, PermissionKey, ProjectSlug } from "@/lib/constants/enums";
 
 export const PATCH = withAuth(
   withEntityScope(
@@ -34,6 +34,9 @@ export const PATCH = withAuth(
         .innerJoin(centers, eq(weighments.center_id, centers.id))
         .where(weighmentWhereClause);
       const { vehicle_number, weight, is_active } = await req.json();
+      if (weight !== undefined && !hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.EDIT_FIELD, EntityKey.WEIGHT)) {
+        return forbiddenError();
+      }
 
       const [updated] = await db
         .update(weighments)

@@ -3,7 +3,7 @@
  * @description Role-based access control (RBAC) matrix and permission helper functions.
  */
 
-import { Role, ProjectSlug, EntityKey, FieldRequirementMode, TenantMode } from "@/lib/constants/enums"
+import { Role, ProjectSlug, EntityKey, FieldRequirementMode, PermissionKey, TenantMode } from "@/lib/constants/enums"
 import { useConfigStore } from "./config"
 import { useAuthStore } from "./auth"
 
@@ -24,8 +24,8 @@ export interface Permission {
   hiddenColumns?: string[]
   /** List of hidden field keys for add/edit form dialogs. If undefined or empty, all fields are shown. */
   hiddenFields?: string[]
-  /** List of hidden filter keys in the table toolbar. If undefined or empty, all filters are shown. */
-  hiddenFilters?: string[]
+  /** Fields this role may modify when a record is being edited. */
+  editableFields?: string[]
 }
 
 export type RoleAccessMatrix = {
@@ -85,6 +85,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       create: true,
       show: true,
       filter: true,
+      editableFields: [EntityKey.WEIGHT],
     },
     [ProjectSlug.CONFIGS]: {
       read: true,
@@ -325,6 +326,21 @@ export function hasDeleteAccess(role: Role | null | undefined, projectSlug: stri
   return getPermissions(role, projectSlug, mode).delete
 }
 
+export function hasPermission(
+  subject: Role | { role: string } | null | undefined,
+  projectSlug: string,
+  operation: PermissionKey,
+  fieldKey?: string,
+  mode?: TenantMode,
+): boolean {
+  const role = typeof subject === "string" ? subject as Role : subject?.role as Role | undefined
+  const permissions = getPermissions(role, projectSlug, mode)
+  if (operation === PermissionKey.EDIT_FIELD) {
+    return fieldKey != null && permissions.editableFields?.includes(fieldKey) === true
+  }
+  return permissions[operation] ?? false
+}
+
 export function isColumnVisible(role: Role | null | undefined, projectSlug: string, columnKey: string, mode?: TenantMode): boolean {
   if (columnKey === EntityKey.FACTORY_ID || columnKey === EntityKey.FACTORY_NAME) {
     return false
@@ -359,26 +375,6 @@ export function isFieldVisible(role: Role | null | undefined, projectSlug: strin
     if (config?.govtIdMode === FieldRequirementMode.NOT_REQUIRED) return false
   }
   if (projectSlug === ProjectSlug.PROFILES && fieldKey === EntityKey.AADHAR_NUMBER) {
-    if (config?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED) return false
-  }
-
-  return true
-}
-
-export function isFilterVisible(role: Role | null | undefined, projectSlug: string, filterKey: string, mode?: TenantMode): boolean {
-  if (filterKey === EntityKey.FACTORY_ID || filterKey === EntityKey.FACTORY_NAME) {
-    return false
-  }
-
-  const effectiveMode = mode || getActiveTenantMode()
-  const perms = getPermissions(role, projectSlug, effectiveMode)
-  if (perms.hiddenFilters && perms.hiddenFilters.includes(filterKey)) return false
-
-  const config = useConfigStore.getState().config
-  if (projectSlug === ProjectSlug.CUSTOMERS && filterKey === EntityKey.GOVT_ID) {
-    if (config?.govtIdMode === FieldRequirementMode.NOT_REQUIRED) return false
-  }
-  if (projectSlug === ProjectSlug.PROFILES && filterKey === EntityKey.AADHAR_NUMBER) {
     if (config?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED) return false
   }
 

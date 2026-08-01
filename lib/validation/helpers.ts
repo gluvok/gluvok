@@ -14,6 +14,16 @@ export const integerIdSchema = (fieldName: string) =>
       .positive(`${fieldName} is required and must be a positive number`)
   )
 
+export const optionalIntegerIdSchema = (fieldName: string) =>
+  z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? null : Number(val)),
+    z
+      .number({ message: `${fieldName} must be an integer` })
+      .int(`${fieldName} must be an integer`)
+      .positive(`${fieldName} must be a positive integer`)
+      .nullable(),
+  )
+
 export const uuidSchema = (fieldName: string) =>z.uuid(`${fieldName} must be a valid UUID`)
 
 export const nameSchema = (fieldName: string, min = 3, max = 255) =>

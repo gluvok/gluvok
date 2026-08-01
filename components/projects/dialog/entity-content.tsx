@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/button"
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { FormFieldInput } from "@/components/form"
 import { type EntityDialogContentProps } from "./types"
-import { FieldType, Role, FieldSpan, EntityKey } from "@/lib/constants/enums"
+import { FieldType, Role, FieldSpan, EntityKey, PermissionKey } from "@/lib/constants/enums"
 import { type FieldConfig, getSingularName } from "@/lib/fields"
-import { useAuthStore, isFieldVisible, isFieldRequired } from "@/lib/store"
+import { useAuthStore, hasPermission, isFieldVisible, isFieldRequired } from "@/lib/store"
 
 export function EntityDialogContent({
   mode, onOpenChange, projectName, projectSlug, isEdit, isUnchanged, fields, form, onSubmit, primaryIdKey
@@ -28,7 +28,8 @@ export function EntityDialogContent({
 
   const renderField = (field: FieldConfig) => {
     const disabled = (isEdit && field.key === primaryIdKey) ||
-                     (field.editableRoles && !field.editableRoles.includes(currentUser?.role as Role))
+                     (field.editableRoles && !field.editableRoles.includes(currentUser?.role as Role)) ||
+                     (isEdit && field.requiresEditPermission && !hasPermission(currentUser?.role, projectSlug, PermissionKey.EDIT_FIELD, field.key))
 
     switch (field.type) {
       case FieldType.CHECKBOX:
@@ -161,11 +162,11 @@ export function EntityDialogContent({
             </div>
           )
         })}
-        <DialogFooter className="bg-transparent border-t-0 p-0 pt-4 mx-0 mb-0 flex flex-row items-center justify-between gap-3">
+        <DialogFooter className="bg-transparent border-t-0 p-0 pt-2 mx-0 mb-0 flex flex-row items-center justify-end gap-2">
           {isEdit && isUnchanged && (
             <span className="text-xs text-muted-foreground italic">No changes to save</span>
           )}
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2">
             <Button id={`${mode}-entity-cancel`} type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5 h-8 px-3 text-xs" disabled={form.formState.isSubmitting}>
               <X className="h-3.5 w-3.5" /> Cancel
             </Button>

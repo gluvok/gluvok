@@ -195,10 +195,10 @@ export const POST = withAuth(async (req, user, db, mode) => {
       weight: String(weight),
       unit: unit || Unit.KG,
       type: type || WeighmentType.IN,
-      rate_id: Number(rate_id),
+      rate_id: rate_id === "" || rate_id === null || rate_id === undefined ? null : Number(rate_id),
       center_id: Number(center_id),
       profile_id: profileId,
-      customer_id: Number(customer_id),
+      customer_id: customer_id === "" || customer_id === null || customer_id === undefined ? null : Number(customer_id),
       images: images || [],
     })
     .returning();

@@ -32,8 +32,8 @@ Always use **pnpm** (never raw npm or yarn) for all CLI checks, test executions,
    - Factory creation/management is an out-of-band onboarding responsibility performed directly in DB tools (DataGrip/Supabase).
    - No `/api/factories` endpoints exist. `ProjectSlug.FACTORIES` is removed.
    - No `factories` array exists in the Zustand entity store, option extractors, or preloaded filters payload.
-4. **MANDATORY FACTORY_ID FOR SEEDING**:
-   - `scripts/seed.ts` strictly requires `FACTORY_ID` when seeding in Shared mode (`FACTORY_ID=1 pnpm seed --shared`).
+4. **AUTOMATIC FACTORY CREATION FOR SEEDING**:
+   - `scripts/seed.ts` automatically creates/fetches a factory by name when seeding in Shared mode (`FACTORY_NAME="Factory A" pnpm seed --shared`). Defaults to `"Default Factory"` if omitted.
 5. **STRICT SHARED VS DEDICATED ARCHITECTURE**:
    - **Shared Mode**: Queries use `sharedSchema` and automatically filter by `user.factory_id` (`where(eq(schema.factoryId, user.factory_id))`).
    - **Dedicated Mode**: Queries use `standaloneSchema` operating without `factory_id` conditions or joins.

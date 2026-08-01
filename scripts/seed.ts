@@ -8,6 +8,7 @@
  */
 
 import { drizzle } from "drizzle-orm/postgres-js"
+import { eq } from "drizzle-orm"
 import postgres from "postgres"
 import * as standaloneSchema from "../db/schema/standalone"
 import * as sharedSchema from "../db/schema/shared"
@@ -22,12 +23,6 @@ if (!connectionString) {
 }
 
 const isShared = process.env.SCHEMA === "shared" || process.argv.includes("--shared")
-const factoryIdRaw = process.env.FACTORY_ID
-if (isShared && (!factoryIdRaw || isNaN(Number(factoryIdRaw)) || Number(factoryIdRaw) <= 0)) {
-  console.error("Error: FACTORY_ID environment variable is required when seeding in Shared mode (e.g. FACTORY_ID=1 pnpm seed --shared).")
-  process.exit(1)
-}
-const factoryIdArg = factoryIdRaw ? Number(factoryIdRaw) : 0
 const client = postgres(connectionString, { ssl: "require", max: 1 })
 const schema = isShared ? sharedSchema : standaloneSchema
 const db = drizzle(client, { schema })
@@ -43,7 +38,34 @@ const DEFAULT_COMMODITIES = [
 ]
 
 async function main() {
-  const schemaLabel = isShared ? `shared (Factory ID: ${factoryIdArg})` : "standalone"
+  let sharedFactoryId: number | null = null
+
+  if (isShared) {
+    const factoryName =
+      process.env.FACTORY_NAME ||
+      (process.env.FACTORY_ID ? `Factory ${process.env.FACTORY_ID}` : "Default Factory")
+    console.log(`Ensuring factory '${factoryName}' exists in Shared mode...`)
+
+    const existingFactories = await db
+      .select({ id: sharedSchema.factories.id })
+      .from(sharedSchema.factories)
+      .where(eq(sharedSchema.factories.name, factoryName))
+      .limit(1)
+
+    if (existingFactories.length > 0) {
+      sharedFactoryId = existingFactories[0].id
+      console.log(`Found existing factory '${factoryName}' with id=${sharedFactoryId}`)
+    } else {
+      const [created] = await db
+        .insert(sharedSchema.factories)
+        .values({ name: factoryName })
+        .returning({ id: sharedSchema.factories.id })
+      sharedFactoryId = created.id
+      console.log(`Created new factory '${factoryName}' with id=${sharedFactoryId}`)
+    }
+  }
+
+  const schemaLabel = isShared ? `shared (Factory ID: ${sharedFactoryId})` : "standalone"
   console.log(`Seeding database for ${schemaLabel}...`)
 
   console.log("Hashing password for admin user...")
@@ -56,7 +78,7 @@ async function main() {
     password_hash: passwordHash,
     role: Role.ADMIN,
     is_active: true,
-    ...(isShared ? { factory_id: factoryIdArg } : {}),
+    ...(isShared && sharedFactoryId ? { factory_id: sharedFactoryId } : {}),
   }
 
   const [adminUser] = await db

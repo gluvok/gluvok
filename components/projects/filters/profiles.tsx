@@ -7,7 +7,7 @@
 
 import * as React from "react"
 import { Table } from "@tanstack/react-table"
-import { Role, RoleLabel, EntityKey } from "@/lib/constants/enums"
+import { Role, EntityKey } from "@/lib/constants/enums";
 import { Shield } from "lucide-react"
 import { BaseCombobox } from "@/components/combobox/base"
 
@@ -16,11 +16,11 @@ interface ProfilesFiltersProps<TData> {
 }
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
-  { value: Role.ADMIN,    label: RoleLabel.ADMIN },
-  { value: Role.MANAGER,  label: RoleLabel.MANAGER },
-  { value: Role.OPERATOR, label: RoleLabel.OPERATOR },
-  { value: Role.BASE,     label: RoleLabel.BASE },
-]
+  { value: Role.ADMIN, label: Role.ADMIN },
+  { value: Role.MANAGER, label: Role.MANAGER },
+  { value: Role.OPERATOR, label: Role.OPERATOR },
+  { value: Role.BASE, label: Role.BASE },
+];
 
 export function ProfilesFilters<TData>({ table }: ProfilesFiltersProps<TData>) {
   const columnFilters = table.getState().columnFilters

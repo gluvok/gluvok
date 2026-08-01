@@ -6,7 +6,7 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Fingerprint, Tag, Shield } from "lucide-react"
 import { EntityKey, ColumnLabel } from "@/lib/constants/enums"
-import { getRoleIcon, getRoleLabel } from "@/lib/fields/helpers"
+import { getRoleIcon } from "@/lib/fields/helpers";
 import { RenderRoleIcon } from "@/components/sidebar/nav/user-info"
 import { createTextColumn, createCustomColumn } from "./helpers"
 
@@ -18,10 +18,13 @@ export function getProfilesColumns<T>(): ColumnDef<T>[] {
       const roleStr = String(val || "")
       return (
         <div className="flex items-center gap-1.5 text-muted-foreground">
-          <RenderRoleIcon icon={getRoleIcon(roleStr)} className="size-3.5 shrink-0" />
-          <span>{getRoleLabel(roleStr)}</span>
+          <RenderRoleIcon
+            icon={getRoleIcon(roleStr)}
+            className="size-3.5 shrink-0"
+          />
+          <span>{roleStr}</span>
         </div>
-      )
+      );
     }),
   ]
 }

@@ -28,14 +28,6 @@ export enum WeighmentType {
   OUT = "out",
 }
 
-export enum RoleLabel {
-  ADMIN = "ADMIN",
-  MANAGER = "MANAGER",
-  OPERATOR = "OPERATOR",
-  BASE = "BASE",
-  HARDWARE = "HARDWARE",
-}
-
 export enum FieldRequirementMode {
   MANDATORY = "mandatory",
   OPTIONAL = "optional",

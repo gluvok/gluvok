@@ -162,7 +162,11 @@ export const PillAvatarGroup = ({
   </div>
 );
 
-import { getRoleLabel, getRoleIcon, getRoleBadgeClass, getRoleIndicatorVariant } from "@/lib/fields/helpers";
+import {
+  getRoleIcon,
+  getRoleBadgeClass,
+  getRoleIndicatorVariant,
+} from "@/lib/fields/helpers";
 
 export type RolePillProps = PillProps & {
   role?: string;
@@ -180,7 +184,7 @@ export const RolePill = ({
   children,
   ...props
 }: RolePillProps) => {
-  const label = getRoleLabel(role);
+  const label = role;
   const RoleIcon = getRoleIcon(role);
   const colorClass = getRoleBadgeClass(role);
   const indicatorVariant = getRoleIndicatorVariant(role);
@@ -188,10 +192,12 @@ export const RolePill = ({
   return (
     <Pill
       variant="outline"
-      className={cn("gap-1.5 font-medium uppercase tracking-wide", colorClass, className)}
+      className={cn("gap-1.5 font-medium tracking-wide", colorClass, className)}
       {...props}
     >
-      {showIndicator && <PillIndicator variant={indicatorVariant} pulse={pulse} />}
+      {showIndicator && (
+        <PillIndicator variant={indicatorVariant} pulse={pulse} />
+      )}
       {showIcon && <PillIcon icon={RoleIcon} className="size-3 shrink-0" />}
       <span>{children || label}</span>
     </Pill>

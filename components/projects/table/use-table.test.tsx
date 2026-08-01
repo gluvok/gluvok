@@ -3,6 +3,7 @@ import { renderHook, act } from "@testing-library/react"
 import { useProjectTable } from "./use-table"
 import { fetchEntityListPaginated } from "@/lib/services"
 import { getProjectColumns } from "@/components/projects/columns"
+import { FieldRequirementMode } from "@/lib/constants/enums";
 
 const mockTriggerEntitiesUpdate = vi.fn()
 const mockPreferencesState = {
@@ -11,6 +12,12 @@ const mockPreferencesState = {
   setColumnPreferences: vi.fn(),
   setFilterPreferences: vi.fn(),
 }
+const mockConfigState = {
+  config: null as {
+    aadharNumberMode: FieldRequirementMode;
+    govtIdMode: FieldRequirementMode;
+  } | null,
+};
 
 interface MockAuthStoreState {
   user: {
@@ -28,6 +35,10 @@ interface MockPreferencesStoreState {
   filters: Record<string, Record<string, unknown>>
   setColumnPreferences: () => void
   setFilterPreferences: () => void
+}
+
+interface MockConfigStoreState {
+  config: typeof mockConfigState.config;
 }
 
 // Mock dependencies
@@ -57,6 +68,11 @@ vi.mock("@/lib/store", () => {
     subscribe: () => () => {},
   }
 
+  const mockConfigStore = {
+    getState: () => mockConfigState,
+    subscribe: () => () => {},
+  };
+
   const useAuthStoreMock = Object.assign(
     (selector: (state: MockAuthStoreState) => unknown) => selector(mockAuthStore.getState()),
     mockAuthStore
@@ -72,10 +88,17 @@ vi.mock("@/lib/store", () => {
     mockPreferencesStore
   )
 
+  const useConfigStoreMock = Object.assign(
+    (selector: (state: MockConfigStoreState) => unknown) =>
+      selector(mockConfigStore.getState()),
+    mockConfigStore,
+  );
+
   return {
     useAuthStore: useAuthStoreMock,
     useEntitiesStore: useEntitiesStoreMock,
     usePreferencesStore: usePreferencesStoreMock,
+    useConfigStore: useConfigStoreMock,
     getPermissions: () => ({
       read: true,
       write: true,
@@ -83,7 +106,7 @@ vi.mock("@/lib/store", () => {
       create: true,
       show: true,
     }),
-  }
+  };
 })
 
 vi.mock("@/lib/services", () => ({
@@ -99,6 +122,7 @@ describe("useProjectTable Hook", () => {
     vi.clearAllMocks()
     mockPreferencesState.columns = {}
     mockPreferencesState.filters = {}
+    mockConfigState.config = null;
     vi.mocked(getProjectColumns).mockReturnValue([])
     vi.useFakeTimers()
   })
@@ -241,4 +265,5 @@ describe("useProjectTable Hook", () => {
       actions: true,
     })
   })
+
 })

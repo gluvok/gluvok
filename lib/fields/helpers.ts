@@ -3,7 +3,17 @@
  * @description Helper definitions or configuration for entity table fields (helpers).
  */
 
-import { ProjectSlug, EntityKey, CommodityName, ProjectName, SystemSlug, SingularEntityName, Role, RoleLabel, WeighmentType, FieldRequirementMode } from "@/lib/constants/enums"
+import {
+  ProjectSlug,
+  EntityKey,
+  CommodityName,
+  ProjectName,
+  SystemSlug,
+  SingularEntityName,
+  Role,
+  WeighmentType,
+  FieldRequirementMode,
+} from "@/lib/constants/enums";
 import { Sprout, Wheat, Droplet, Hammer, Package, Leaf, Wine, Cable, ShieldCheck, Briefcase, HardHat, User, Cpu, Shield, ArrowDownLeft, ArrowUpRight, ArrowUpDown, CheckCircle2, HelpCircle, Ban, SlidersHorizontal, type LucideIcon } from "lucide-react"
 
 export function getPrimaryIdKey(slug: string | ProjectSlug): EntityKey {
@@ -52,23 +62,6 @@ export function getCommodityIcon(name: string): LucideIcon {
   if (!name) return Package
   const baseName = name.split(" (ID:")[0].trim()
   return COMMODITY_ICON_MAP[baseName as CommodityName] ?? Package
-}
-
-export function getRoleLabel(role?: string): string {
-  switch (role) {
-    case Role.ADMIN:
-      return RoleLabel.ADMIN
-    case Role.MANAGER:
-      return RoleLabel.MANAGER
-    case Role.OPERATOR:
-      return RoleLabel.OPERATOR
-    case Role.BASE:
-      return RoleLabel.BASE
-    case Role.HARDWARE:
-      return RoleLabel.HARDWARE
-    default:
-      return role ? role.toUpperCase() : ""
-  }
 }
 
 export function getRoleBadgeClass(role?: string): string {

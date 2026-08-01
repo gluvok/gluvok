@@ -6,7 +6,7 @@
  */
 
 import { BaseCombobox } from "./base"
-import { Role, RoleLabel } from "@/lib/constants/enums"
+import { Role } from "@/lib/constants/enums";
 import { getRoleIcon } from "@/lib/fields/helpers"
 
 interface RoleComboboxProps {
@@ -18,11 +18,11 @@ interface RoleComboboxProps {
 
 export function RoleCombobox({ value, onChange, id, disabled }: RoleComboboxProps) {
   const data = [
-    { value: Role.ADMIN, label: RoleLabel.ADMIN },
-    { value: Role.MANAGER, label: RoleLabel.MANAGER },
-    { value: Role.OPERATOR, label: RoleLabel.OPERATOR },
-    { value: Role.BASE, label: RoleLabel.BASE },
-  ]
+    { value: Role.ADMIN, label: Role.ADMIN },
+    { value: Role.MANAGER, label: Role.MANAGER },
+    { value: Role.OPERATOR, label: Role.OPERATOR },
+    { value: Role.BASE, label: Role.BASE },
+  ];
 
   const ActiveIcon = getRoleIcon(value)
 

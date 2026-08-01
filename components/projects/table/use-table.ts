@@ -11,7 +11,13 @@ import { useReactTable } from "@/lib/utils"
 import { getProjectColumns } from "@/components/projects/columns"
 import { ProjectSlug } from "@/lib/constants/enums"
 import { useProjectDialogStates, parseColumnFilters, areFiltersEqual, getVisibleColumnsList, isStringArrayEqual } from "./use-helpers"
-import { useAuthStore, getPermissions, useEntitiesStore, usePreferencesStore } from "@/lib/store"
+import {
+  useAuthStore,
+  getPermissions,
+  useConfigStore,
+  useEntitiesStore,
+  usePreferencesStore,
+} from "@/lib/store";
 import { fetchEntityListPaginated } from "@/lib/services"
 
 /** Stable empty object — avoids creating a new reference on every render in Zustand selectors */
@@ -47,6 +53,7 @@ export function useProjectTable({
 }: UseProjectTableProps) {
   const dialogStates = useProjectDialogStates()
   const user = useAuthStore((state) => state.user)
+  const config = useConfigStore((state) => state.config);
 
   const username = user?.username
   const prefKey = username ? `${username}:${projectSlug}` : projectSlug
@@ -89,11 +96,25 @@ export function useProjectTable({
   const permissions = React.useMemo(() => getPermissions(user?.role, projectSlug), [user?.role, projectSlug])
 
   const columns = React.useMemo<ColumnDef<EntityRecord>[]>(() => {
-    return getProjectColumns(projectSlug, primaryIdKey, projectName, {
-      onEdit: setEditingItem,
-      onDelete: setDeletingItem,
-    }, permissions)
-  }, [projectSlug, primaryIdKey, projectName, setEditingItem, setDeletingItem, permissions])
+    return getProjectColumns(
+      projectSlug,
+      primaryIdKey,
+      projectName,
+      {
+        onEdit: setEditingItem,
+        onDelete: setDeletingItem,
+      },
+      permissions,
+    );
+  }, [
+    projectSlug,
+    primaryIdKey,
+    projectName,
+    setEditingItem,
+    setDeletingItem,
+    permissions,
+    config,
+  ]);
 
   // Column visibility state synchronization
   const initialColumnVisibility = React.useMemo(

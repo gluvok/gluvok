@@ -3,12 +3,12 @@
  * @description Master database seed script — seeds initial tenant admin user + linked profile and default commodities catalog.
  *
  * Usage:
- *   DATABASE_URL=postgresql://... pnpm seed                     # standalone (dedicated)
- *   DATABASE_URL=postgresql://... FACTORY_ID=1 pnpm seed --shared # shared (SaaS)
+ *   DATABASE_URL=postgresql://... CENTER_NAME="Main Center" pnpm seed
+ *   DATABASE_URL=postgresql://... FACTORY_NAME="Factory A" CENTER_NAME="Gate 1" pnpm seed --shared
  */
 
 import { drizzle } from "drizzle-orm/postgres-js"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm";
 import postgres from "postgres"
 import * as standaloneSchema from "../db/schema/standalone"
 import * as sharedSchema from "../db/schema/shared"
@@ -67,6 +67,45 @@ async function main() {
 
   const schemaLabel = isShared ? `shared (Factory ID: ${sharedFactoryId})` : "standalone"
   console.log(`Seeding database for ${schemaLabel}...`)
+
+  const centerName = process.env.CENTER_NAME || "Main Center";
+  console.log(`Ensuring center '${centerName}' exists...`);
+  if (isShared) {
+    if (sharedFactoryId == null) {
+      throw new Error("Shared seed requires a factory ID");
+    }
+    const [existingCenter] = await db
+      .select({ id: sharedSchema.centers.id })
+      .from(sharedSchema.centers)
+      .where(
+        and(
+          eq(sharedSchema.centers.name, centerName),
+          eq(sharedSchema.centers.factory_id, sharedFactoryId),
+        ),
+      )
+      .limit(1);
+
+    if (!existingCenter) {
+      await db.insert(sharedSchema.centers).values({
+        name: centerName,
+        factory_id: sharedFactoryId,
+      });
+      console.log(
+        `Created center '${centerName}' for factory id=${sharedFactoryId}`,
+      );
+    }
+  } else {
+    const [existingCenter] = await db
+      .select({ id: standaloneSchema.centers.id })
+      .from(standaloneSchema.centers)
+      .where(eq(standaloneSchema.centers.name, centerName))
+      .limit(1);
+
+    if (!existingCenter) {
+      await db.insert(standaloneSchema.centers).values({ name: centerName });
+      console.log(`Created center '${centerName}'`);
+    }
+  }
 
   console.log("Hashing password for admin user...")
   const passwordHash = await hashPassword("admin123")

@@ -362,8 +362,11 @@ export function isColumnVisible(role: Role | null | undefined, projectSlug: stri
 }
 
 export function isFieldVisible(role: Role | null | undefined, projectSlug: string, fieldKey: string, mode?: TenantMode): boolean {
-  if (fieldKey === EntityKey.FACTORY_ID || fieldKey === EntityKey.FACTORY_NAME) {
-    return false
+  if (
+    fieldKey === EntityKey.FACTORY_ID ||
+    fieldKey === EntityKey.FACTORY_NAME
+  ) {
+    return false;
   }
 
   const effectiveMode = mode || getActiveTenantMode()

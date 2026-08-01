@@ -94,7 +94,7 @@ describe("Auth Store (Zustand with custom JWT API via Axios)", () => {
         expect.any(Object)
       )
       expect(useAuthStore.getState().user?.username).toBe("admin")
-      expect(toast.success).toHaveBeenCalledWith("Welcome back, admin!")
+      expect(toast.success).toHaveBeenCalledWith("Welcome back, admin! 🎉")
     })
 
     it("should toast error and return false on invalid credentials", async () => {
@@ -141,7 +141,7 @@ describe("Auth Store (Zustand with custom JWT API via Axios)", () => {
 
       expect(axios.post).toHaveBeenCalledWith("/api/auth/logout")
       expect(useAuthStore.getState().user).toBeNull()
-      expect(toast.success).toHaveBeenCalledWith("Successfully logged out")
+      expect(toast.success).toHaveBeenCalledWith("See you soon, u1! Logged out successfully 👋")
     })
   })
 })

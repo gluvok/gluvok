@@ -5,9 +5,10 @@
  * @description Small avatar block displaying user name, username, role badge, and profile avatar image.
  */
 
+import { type LucideIcon } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuthStore } from "@/lib/store"
-import { RolePill } from "@/components/kibo-ui/pill"
+import { getRoleIcon } from "@/lib/fields/helpers"
 
 export interface UserInfo {
   name?: string
@@ -16,15 +17,21 @@ export interface UserInfo {
   avatar: string
 }
 
+function RenderRoleIcon({ icon: Icon, className }: { icon: LucideIcon; className?: string }) {
+  return <Icon className={className} />
+}
+
 /**
  * UserAvatarInfo Component
- * Renders avatar image with fallback initials, user name, username, and unified role pill.
+ * Renders avatar image with fallback initials, user name, and side-by-side username + lowercase role with icon.
  */
 export function UserAvatarInfo({ user }: { user: UserInfo }) {
   const authUser = useAuthStore((state) => state.user)
   const displayName = user.name || authUser?.name || user.username || authUser?.username || "User"
   const username = user.username || authUser?.username || ""
   const rawRole = user.role || authUser?.role || "admin"
+
+  const roleIcon = getRoleIcon(rawRole)
 
   return (
     <>
@@ -36,11 +43,13 @@ export function UserAvatarInfo({ user }: { user: UserInfo }) {
       </Avatar>
       <div className="grid flex-1 text-left text-xs leading-tight min-w-0 gap-0.5">
         <span className="truncate font-semibold text-xs text-foreground">{displayName}</span>
-        {username && (
-          <span className="truncate text-[10px] text-muted-foreground font-mono">@{username}</span>
-        )}
-        <div className="flex items-center mt-0.5">
-          <RolePill role={rawRole} className="h-4 text-[9px] px-1.5 py-0 gap-1 w-fit" />
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+          {username && <span className="truncate font-mono">@{username}</span>}
+          {username && <span>•</span>}
+          <div className="flex items-center gap-1 shrink-0">
+            <RenderRoleIcon icon={roleIcon} className="size-2 shrink-0 text-muted-foreground" />
+            <span>{rawRole.toLowerCase()}</span>
+          </div>
         </div>
       </div>
     </>

@@ -107,7 +107,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       useConfigStore.getState().fetchConfig()
       useEntitiesStore.getState().preloadAllFilters({ silent: true })
 
-      toast.success(`Welcome back, ${data.user.name || data.user.username}!`)
+      const name = data.user.name || data.user.username
+      toast.success(`Welcome back, ${name}! 🎉`)
       return true
     } catch (err: unknown) {
       console.error("Login request error:", err)
@@ -121,13 +122,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
   logout: async () => {
+    const currentUser = get().user
+    const name = currentUser?.name || currentUser?.username || "there"
     try {
       await axios.post("/api/auth/logout")
     } catch (err) {
       console.error("Logout request error:", err)
     } finally {
       set({ user: null })
-      toast.success("Successfully logged out")
+      toast.success(`See you soon, ${name}! Logged out successfully 👋`)
     }
   },
   setHydrated: (state) => set({ hydrated: state }),

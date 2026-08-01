@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { useAuthStore } from "./auth"
 import { Role } from "@/lib/constants/enums"
+import { AuthErrorMessage } from "@/lib/constants"
 import { toast } from "sonner"
 import axios from "axios"
 
@@ -99,13 +100,26 @@ describe("Auth Store (Zustand with custom JWT API via Axios)", () => {
     it("should toast error and return false on invalid credentials", async () => {
       vi.mocked(axios.post).mockResolvedValueOnce({
         status: 401,
-        data: { error: "Invalid username or password." },
+        data: { error: AuthErrorMessage.INVALID_CREDENTIALS },
       })
 
       const success = await useAuthStore.getState().login("wronguser", "badpass")
 
       expect(success).toBe(false)
-      expect(toast.error).toHaveBeenCalledWith("Invalid username or password.")
+      expect(toast.error).toHaveBeenCalledWith(AuthErrorMessage.INVALID_CREDENTIALS)
+      expect(useAuthStore.getState().user).toBeNull()
+    })
+
+    it("should toast server error message and return false on 500 internal server error", async () => {
+      vi.mocked(axios.post).mockResolvedValueOnce({
+        status: 500,
+        data: { error: AuthErrorMessage.INTERNAL_SERVER_ERROR },
+      })
+
+      const success = await useAuthStore.getState().login("admin", "pass")
+
+      expect(success).toBe(false)
+      expect(toast.error).toHaveBeenCalledWith(AuthErrorMessage.INTERNAL_SERVER_ERROR)
       expect(useAuthStore.getState().user).toBeNull()
     })
   })

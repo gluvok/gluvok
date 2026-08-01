@@ -11,7 +11,8 @@ import { signJWT } from "@/lib/auth/jwt"
 import {
   CookieName,
   TenantMode,
-} from "@/lib/constants/enums";
+  AuthErrorMessage,
+} from "@/lib/constants";
 import { getWorkspace } from "@/lib/tenant/workspace"
 import { resolveTenant } from "@/lib/tenant"
 
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     if (!username || !password) {
       return NextResponse.json(
-        { error: "Username and password are required" },
+        { error: AuthErrorMessage.REQUIRED_FIELDS },
         { status: 400 }
       )
     }
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     if (!user || !user.is_active) {
       return NextResponse.json(
-        { error: "Invalid username or password" },
+        { error: AuthErrorMessage.INVALID_CREDENTIALS },
         { status: 401 }
       )
     }
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     );
     if (!isValidPassword) {
       return NextResponse.json(
-        { error: "Invalid username or password" },
+        { error: AuthErrorMessage.INVALID_CREDENTIALS },
         { status: 401 }
       )
     }
@@ -100,6 +101,6 @@ export async function POST(request: NextRequest) {
     return response
   } catch (err) {
     console.error("Login error:", err)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: AuthErrorMessage.INTERNAL_SERVER_ERROR }, { status: 500 })
   }
 }

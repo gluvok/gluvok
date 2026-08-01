@@ -7,7 +7,7 @@ import { create } from "zustand"
 import axios from "axios"
 import { toast } from "sonner"
 import { Role, EntityKey, TenantMode } from "@/lib/constants/enums"
-import { DEFAULT_AVATAR } from "@/lib/constants"
+import { DEFAULT_AVATAR, AuthErrorMessage } from "@/lib/constants"
 
 import { useConfigStore } from "./config"
 import { useEntitiesStore } from "./entities"
@@ -81,12 +81,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const res = await axios.post<{ success: boolean; user: AuthUser; error?: string }>(
         "/api/auth/login",
         { username, password },
-        { validateStatus: (status) => status < 500 }
+        { validateStatus: (status) => status < 600 }
       )
 
       const data = res.data
       if (res.status !== 200 || !data.success || !data.user) {
-        toast.error(data.error || "Invalid username or password.")
+        const errorMsg =
+          data.error ||
+          (res.status === 401
+            ? AuthErrorMessage.INVALID_CREDENTIALS
+            : AuthErrorMessage.SIGN_IN_ERROR)
+        toast.error(errorMsg)
         set({ user: null })
         return false
       }
@@ -106,7 +111,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       return true
     } catch (err: unknown) {
       console.error("Login request error:", err)
-      toast.error("Invalid username or password.")
+      const errorMsg =
+        axios.isAxiosError(err) && err.response?.data?.error
+          ? err.response.data.error
+          : AuthErrorMessage.SIGN_IN_ERROR
+      toast.error(errorMsg)
       set({ user: null })
       return false
     }

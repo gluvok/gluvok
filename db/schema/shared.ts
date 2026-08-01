@@ -14,8 +14,8 @@ import {
   centerBaseColumns,
   configBaseColumns,
   rateBaseColumns,
+  profileBaseColumns,
   commodities,
-  profiles,
   weighments,
 } from "./common"
 
@@ -46,6 +46,8 @@ export const users = pgTable(TableName.USERS, {
   ...userBaseColumns,
   [EntityKey.FACTORY_ID]: integer(EntityKey.FACTORY_ID).references(() => factories.id, { onDelete: "restrict" }),
 })
+
+export const profiles = pgTable(TableName.PROFILES, profileBaseColumns(users))
 
 export const customers = pgTable(TableName.CUSTOMERS, {
   ...customerBaseColumns,

@@ -7,7 +7,7 @@
  * factory-scoped FK columns where required (shared) or omits them (standalone).
  */
 
-import { pgTable, varchar, text, integer, boolean, pgEnum, decimal, jsonb, bigint, timestamp } from "drizzle-orm/pg-core"
+import { pgTable, varchar, text, integer, boolean, pgEnum, decimal, jsonb, bigint, timestamp, type AnyPgColumn } from "drizzle-orm/pg-core"
 import { Role, Unit, WeighmentType, EntityKey, TableName, DbEnum, FieldRequirementMode } from "@/lib/constants/enums"
 
 /** Reusable timestamp columns — previously in db/columns.helpers.ts */
@@ -111,13 +111,19 @@ export const commodities = pgTable(TableName.COMMODITIES, {
   ...timestamps,
 })
 
-export const profiles = pgTable(TableName.PROFILES, {
-  [EntityKey.ID]: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-  [EntityKey.USER_ID]: integer(EntityKey.USER_ID).notNull().unique(),
-  [EntityKey.AADHAR_NUMBER]: varchar(EntityKey.AADHAR_NUMBER, { length: 12 }),
-  [EntityKey.ROLE]: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
-  ...timestamps,
-})
+/**
+ * Core columns shared by every `profiles` table variant.
+ * Takes usersTable reference lazily to attach foreign key constraint.
+ */
+export function profileBaseColumns(usersTable: { id: AnyPgColumn }) {
+  return {
+    [EntityKey.ID]: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+    [EntityKey.USER_ID]: integer(EntityKey.USER_ID).notNull().unique().references(() => usersTable.id, { onDelete: "cascade" }),
+    [EntityKey.AADHAR_NUMBER]: varchar(EntityKey.AADHAR_NUMBER, { length: 12 }),
+    [EntityKey.ROLE]: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
+    ...timestamps,
+  }
+}
 
 export const weighments = pgTable(TableName.WEIGHMENTS, {
   [EntityKey.ID]: bigint(EntityKey.ID, { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),

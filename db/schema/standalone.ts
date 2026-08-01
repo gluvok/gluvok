@@ -14,8 +14,8 @@ import {
   centerBaseColumns,
   configBaseColumns,
   rateBaseColumns,
+  profileBaseColumns,
   commodities,
-  profiles,
   weighments,
 } from "./common"
 
@@ -37,6 +37,8 @@ export const rates = pgTable(TableName.RATES, {
 export const users = pgTable(TableName.USERS, {
   ...userBaseColumns,
 })
+
+export const profiles = pgTable(TableName.PROFILES, profileBaseColumns(users))
 
 export const customers = pgTable(TableName.CUSTOMERS, {
   ...customerBaseColumns,

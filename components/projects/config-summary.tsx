@@ -6,7 +6,7 @@
  */
 
 import * as React from "react";
-import { Pencil, Plus, RotateCw } from "lucide-react";
+import { Pencil, Plus, RotateCw, Fingerprint, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/kibo-ui/spinner"
@@ -28,16 +28,20 @@ interface ConfigSummaryProps {
 interface ConfigSettingProps {
   label: string
   mode: FieldRequirementMode
+  icon: React.ComponentType<{ className?: string }>
 }
 
-function ConfigSetting({ label, mode }: ConfigSettingProps) {
+function ConfigSetting({ label, mode, icon: Icon }: ConfigSettingProps) {
   const modeIcon = React.createElement(getModeIcon(mode), {
     className: "h-3.5 w-3.5",
   });
 
   return (
     <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/30 px-4 py-2">
-      <span className="text-xs font-medium text-foreground">{label}</span>
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+        <span className="text-xs font-medium text-foreground">{label}</span>
+      </div>
       <span
         className={`inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold ${getModeColorClass(mode)}`}
       >
@@ -127,8 +131,8 @@ export function ConfigSummary({
         )}
       </CardHeader>
       <CardContent className="grid gap-3 sm:grid-cols-2">
-        <ConfigSetting label="Aadhar number" mode={aadharNumberMode} />
-        <ConfigSetting label="Government ID" mode={govtIdMode} />
+        <ConfigSetting label="Aadhar number" mode={aadharNumberMode} icon={Fingerprint} />
+        <ConfigSetting label="Government ID" mode={govtIdMode} icon={ShieldCheck} />
       </CardContent>
     </Card>
   );

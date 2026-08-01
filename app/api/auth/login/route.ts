@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
 
     const token = await signJWT({
       sub: String(user.id),
+      name: user.name,
       username: user.username,
       role: user.role,
       factory_id: factoryId,
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
 
     const userPayload = {
       id: user.id,
+      name: user.name,
       username: user.username,
       role: user.role,
       factory_id: factoryId,

@@ -6,7 +6,6 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Fingerprint, Tag, Shield } from "lucide-react"
 import { EntityKey, ColumnLabel } from "@/lib/constants/enums"
-import { getRoleIcon, getRoleLabel } from "@/lib/fields/helpers"
 import { createTextColumn, createCustomColumn } from "./helpers"
 
 import { RolePill } from "@/components/kibo-ui/pill"

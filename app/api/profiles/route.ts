@@ -55,7 +55,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
   if (search) {
     const searchNum = parseInt(search, 10);
     const searchConds = [
-      ilike(profiles.name, `%${search}%`),
+      ilike(users.name, `%${search}%`),
       ...(isAadharNotRequired
         ? []
         : [ilike(profiles.aadharNumber, `%${search}%`)]),
@@ -72,7 +72,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
     .select({
       id: profiles.id,
       user_id: profiles.userId,
-      name: profiles.name,
+      name: users.name,
       ...(isAadharNotRequired ? {} : { aadhar_number: profiles.aadharNumber }),
       role: profiles.role,
       created_at: profiles.createdAt,
@@ -102,7 +102,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
           ? desc(profiles.aadharNumber)
           : asc(profiles.aadharNumber);
       case EntityKey.NAME:
-        return sortDesc ? desc(profiles.name) : asc(profiles.name);
+        return sortDesc ? desc(users.name) : asc(users.name);
       case EntityKey.ROLE:
         return sortDesc ? desc(profiles.role) : asc(profiles.role);
       case EntityKey.USERNAME:
@@ -181,6 +181,7 @@ export const POST = withAuth(async (req, user, db, mode) => {
 
   const passwordHash = await hashPassword(password);
   const userValues = {
+    name,
     username,
     passwordHash,
     role,
@@ -195,7 +196,6 @@ export const POST = withAuth(async (req, user, db, mode) => {
     .insert(profiles as typeof sharedSchema.profiles)
     .values({
       userId: newUser.id,
-      name,
       ...(aadhar_number ? { aadharNumber: aadhar_number } : {}),
       role,
     } as typeof sharedSchema.profiles.$inferInsert)
@@ -204,6 +204,7 @@ export const POST = withAuth(async (req, user, db, mode) => {
   return formatEntityResponse(
     {
       ...(newProfile as Record<string, unknown>),
+      name: newUser.name,
       username: newUser.username,
       isActive: newUser.isActive,
       ...(mode === TenantMode.SHARED ? { factoryId: targetFactoryId } : {}),

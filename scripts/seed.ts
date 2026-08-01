@@ -51,6 +51,7 @@ async function main() {
 
   console.log("Inserting admin user ('admin')...")
   const userValues: Record<string, unknown> = {
+    name: "Admin User",
     username: "admin",
     passwordHash,
     role: Role.ADMIN,
@@ -71,7 +72,6 @@ async function main() {
       .insert(schema.profiles)
       .values({
         userId: adminUser.id,
-        name: "Admin User",
         role: Role.ADMIN,
       })
       .onConflictDoNothing()

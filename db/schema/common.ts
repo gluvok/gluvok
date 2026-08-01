@@ -53,6 +53,7 @@ export const fieldRequirementModeEnum = pgEnum(DbEnum.FIELD_REQUIREMENT_MODE, [
 /** Core columns shared by every `users` table variant. */
 export const userBaseColumns = {
   id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
   username: varchar(EntityKey.USERNAME, { length: 255 }).notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   role: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
@@ -114,7 +115,6 @@ export const profiles = pgTable(TableName.PROFILES, {
   id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
   userId: integer(EntityKey.USER_ID).notNull().unique(),
   aadharNumber: varchar(EntityKey.AADHAR_NUMBER, { length: 12 }),
-  name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
   role: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
   ...timestamps,
 })

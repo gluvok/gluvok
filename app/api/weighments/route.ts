@@ -18,6 +18,7 @@ import {
   centers,
   profiles,
   customers,
+  users,
   sharedSchema,
 } from "@/db/schema";
 import {
@@ -85,7 +86,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
     const searchConds = [
       ilike(weighments.vehicleNumber, `%${search}%`),
       ilike(customers.name, `%${search}%`),
-      ilike(profiles.name, `%${search}%`),
+      ilike(users.name, `%${search}%`),
       ilike(centers.name, `%${search}%`),
     ];
     conditions.push(or(...searchConds));
@@ -98,6 +99,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
     .leftJoin(centers, eq(weighments.centerId, centers.id))
     .leftJoin(customers, eq(weighments.customerId, customers.id))
     .leftJoin(profiles, eq(weighments.profileId, profiles.id))
+    .leftJoin(users, eq(profiles.userId, users.id))
     .$dynamic();
 
   const baseQuery = db
@@ -117,7 +119,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
       updated_at: weighments.updatedAt,
       commodity_name: commodities.name,
       center_name: centers.name,
-      profile_name: profiles.name,
+      profile_name: users.name,
       profile_aadhar: profiles.aadharNumber,
       customer_name: customers.name,
       customer_govt_id: customers.govtId,
@@ -127,6 +129,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
     .leftJoin(commodities, eq(rates.commodityId, commodities.id))
     .leftJoin(centers, eq(weighments.centerId, centers.id))
     .leftJoin(profiles, eq(weighments.profileId, profiles.id))
+    .leftJoin(users, eq(profiles.userId, users.id))
     .leftJoin(customers, eq(weighments.customerId, customers.id))
     .$dynamic();
 
@@ -155,7 +158,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
           ? desc(weighments.profileId)
           : asc(weighments.profileId);
       case EntityKey.PROFILE_NAME:
-        return sortDesc ? desc(profiles.name) : asc(profiles.name);
+        return sortDesc ? desc(users.name) : asc(users.name);
       case EntityKey.PROFILE_AADHAR:
         return sortDesc
           ? desc(profiles.aadharNumber)

@@ -17,6 +17,7 @@ export const CUSTOMER_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.NAME}, ${Ent
 
 export interface AuthUser {
   id: string
+  name?: string
   username: string
   avatar?: string
   role: Role
@@ -101,7 +102,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       useConfigStore.getState().fetchConfig()
       useEntitiesStore.getState().preloadAllFilters({ silent: true })
 
-      toast.success(`Welcome back, ${data.user.username}!`)
+      toast.success(`Welcome back, ${data.user.name || data.user.username}!`)
       return true
     } catch (err: unknown) {
       console.error("Login request error:", err)

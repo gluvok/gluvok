@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { eq } from "drizzle-orm"
+import { eq, and, ne } from "drizzle-orm"
 import { getTables, sharedSchema } from "@/db/schema";
 import {
   withAuth,
@@ -16,6 +16,8 @@ import {
   DatabasePropertyKey,
   ProjectSlug,
   PermissionKey,
+  Role,
+  TenantMode,
 } from "@/lib/constants/enums";
 import { getDynamicCustomerSchema } from "@/lib/validation"
 import { hashPassword } from "@/lib/auth/password"
@@ -29,7 +31,7 @@ export const PATCH = withAuth(
 
       // Fetch the record first to check ownership
       const [existing] = await db
-        .select({ userId: customers.userId })
+        .select({ id: customers.id, userId: customers.userId, name: customers.name })
         .from(customers)
         .where(whereClause);
       const isOwn =
@@ -55,7 +57,22 @@ export const PATCH = withAuth(
         );
       }
 
-      const { name, father_name, password, is_active } = body;
+      const { name, father_name, username, password, is_active } = body;
+
+      if (username && typeof username === "string" && username.trim().length > 0) {
+        const cleanUsername = username.trim();
+        const existingUserConds = [eq(sharedSchema.users.username, cleanUsername)];
+        if (existing?.userId != null) {
+          existingUserConds.push(ne(sharedSchema.users.id, existing.userId));
+        }
+        const [takenUser] = await db
+          .select({ id: sharedSchema.users.id })
+          .from(users)
+          .where(and(...existingUserConds));
+        if (takenUser) {
+          return apiError("Username is already taken", StatusCodes.BAD_REQUEST);
+        }
+      }
 
       const [updated] = await db
         .update(customers)
@@ -72,6 +89,12 @@ export const PATCH = withAuth(
 
       if (updated.userId) {
         const userUpdates: Record<string, unknown> = { updatedAt: new Date() };
+        if (name && typeof name === "string" && name.trim().length > 0) {
+          userUpdates.name = name.trim();
+        }
+        if (username && typeof username === "string" && username.trim().length > 0) {
+          userUpdates.username = username.trim();
+        }
         if (
           password &&
           typeof password === "string" &&
@@ -90,6 +113,35 @@ export const PATCH = withAuth(
             .set(userUpdates)
             .where(eq(users.id, updated.userId));
         }
+      } else if (
+        username &&
+        typeof username === "string" &&
+        username.trim().length > 0 &&
+        password &&
+        typeof password === "string" &&
+        password.trim().length > 0
+      ) {
+        const passwordHash = await hashPassword(password.trim());
+        const userValues = {
+          name: updated.name,
+          username: username.trim(),
+          passwordHash,
+          role: Role.BASE,
+          ...(mode === TenantMode.SHARED && user.factory_id
+            ? { factoryId: user.factory_id }
+            : {}),
+        };
+        const [newUser] = await db
+          .insert(users as typeof sharedSchema.users)
+          .values(userValues as typeof sharedSchema.users.$inferInsert)
+          .returning();
+
+        await db
+          .update(customers)
+          .set({ userId: newUser.id })
+          .where(eq(customers.id, updated.id));
+
+        updated.userId = newUser.id;
       }
 
       return formatEntityResponse(updated, mode);

@@ -168,8 +168,17 @@ export const POST = withAuth(async (req, user, db, mode) => {
 
   let createdUserId: number | null = null;
   if (username && password) {
+    const [existingUser] = await db
+      .select({ id: sharedSchema.users.id })
+      .from(users)
+      .where(eq(sharedSchema.users.username, username));
+    if (existingUser) {
+      return apiError("Username is already taken", StatusCodes.BAD_REQUEST);
+    }
+
     const passwordHash = await hashPassword(password);
     const userValues = {
+      name,
       username,
       passwordHash,
       role: Role.BASE,

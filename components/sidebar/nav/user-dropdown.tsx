@@ -8,7 +8,6 @@
 import { BadgeCheckIcon, CreditCardIcon, BellIcon, LogOutIcon, RefreshCw, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
-import { Status, StatusIndicator, StatusLabel } from "@/components/kibo-ui/status"
 import { UserAvatarInfo, type UserInfo } from "./user-info"
 import { useAuthStore, useEntitiesStore } from "@/lib/store"
 import { AppRoutes } from "@/lib/constants/enums"
@@ -51,14 +50,8 @@ export function NavUserDropdown({ user, isMobile }: NavUserDropdownProps) {
       sideOffset={4}
     >
       <DropdownMenuLabel className="p-0 font-normal">
-        <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm justify-between">
-          <div className="flex items-center gap-2">
-            <UserAvatarInfo user={user} />
-          </div>
-          <Status status="online" className="text-[10px] h-5 py-0 px-2 rounded-full border-none bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <StatusIndicator />
-            <StatusLabel />
-          </Status>
+        <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+          <UserAvatarInfo user={user} />
         </div>
       </DropdownMenuLabel>
       <DropdownMenuSeparator />

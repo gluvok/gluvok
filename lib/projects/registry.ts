@@ -3,28 +3,23 @@
  * @description Helper component or configuration for project dashboards (registry).
  */
 
-import {
-  Building,
-  IndianRupee,
-  Users,
-  ClipboardList,
-  UserCog,
-  Tag,
-  Settings,
-} from "lucide-react";
-import { ProjectName, ProjectSlug } from "@/lib/constants/enums";
+import { ProjectName } from "@/lib/constants/enums";
+import { PROJECTS } from "./data";
 
 export interface ProjectConfig {
   name: ProjectName;
   icon: React.ComponentType<{ className?: string }>;
+  desc: string;
 }
 
-export const PROJECT_REGISTRY: Record<string, ProjectConfig> = {
-  [ProjectSlug.CENTERS]: { name: ProjectName.CENTERS, icon: Building },
-  [ProjectSlug.COMMODITIES]: { name: ProjectName.COMMODITIES, icon: Tag },
-  [ProjectSlug.RATES]: { name: ProjectName.RATES, icon: IndianRupee },
-  [ProjectSlug.CUSTOMERS]: { name: ProjectName.CUSTOMERS, icon: Users },
-  [ProjectSlug.WEIGHMENTS]: { name: ProjectName.WEIGHMENTS, icon: ClipboardList },
-  [ProjectSlug.PROFILES]: { name: ProjectName.PROFILES, icon: UserCog },
-  [ProjectSlug.CONFIGS]: { name: ProjectName.CONFIGS, icon: Settings },
-};
+export const PROJECT_REGISTRY: Record<string, ProjectConfig> = PROJECTS.reduce(
+  (acc, project) => {
+    acc[project.slug] = {
+      name: project.name,
+      icon: project.icon,
+      desc: project.desc,
+    };
+    return acc;
+  },
+  {} as Record<string, ProjectConfig>
+);

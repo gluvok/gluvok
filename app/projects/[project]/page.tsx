@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${config.name} | gluvok Dashboard`,
-    description: `Manage and track ${config.name} entities on the gluvok platform.`,
+    description: config.desc || `Manage and track ${config.name} entities on the gluvok platform.`,
   };
 }
 
@@ -43,7 +43,7 @@ export default async function ProjectPage({ params }: Props) {
 
   if (!config) notFound();
 
-  const { name: projectName, icon: IconComponent } = config;
+  const { name: projectName, icon: IconComponent, desc } = config;
 
   return (
     <>
@@ -52,7 +52,7 @@ export default async function ProjectPage({ params }: Props) {
       
       {/* Main dashboard content container */}
       <main className="p-6 w-full min-w-0">
-        <ProjectTitle projectName={projectName} Icon={IconComponent} />
+        <ProjectTitle projectName={projectName} projectSlug={projectSlug} desc={desc} Icon={IconComponent} />
         <ProjectClient
           key={projectSlug}
           projectName={projectName}

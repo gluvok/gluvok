@@ -11,7 +11,6 @@ import { getTables } from "@/db/schema"
 import { verifyJWT } from "@/lib/auth/jwt"
 import {
   CookieName,
-  DatabasePropertyKey,
   TenantMode,
 } from "@/lib/constants/enums";
 import { getWorkspace } from "@/lib/tenant/workspace"
@@ -51,17 +50,15 @@ export async function GET(request: NextRequest) {
       .where(eq(users.id, userId))
       .limit(1)
 
-    if (!user || !user.isActive) {
+    if (!user || !user.is_active) {
       return NextResponse.json({ user: null })
     }
 
     const factoryId =
       tenant.mode === TenantMode.SHARED
-        ? ((DatabasePropertyKey.FACTORY_ID in user
-            ? (user as { [DatabasePropertyKey.FACTORY_ID]: number | null })[
-                DatabasePropertyKey.FACTORY_ID
-              ]
-            : null) ?? null)
+        ? ("factory_id" in user
+            ? (user as unknown as { factory_id: number | null }).factory_id
+            : null)
         : null;
 
     const userPayload = {

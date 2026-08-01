@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq, ilike, and, desc, asc, or, count, inArray } from "drizzle-orm";
+import { eq, ilike, and, or, count, inArray } from "drizzle-orm";
 import { getTables, sharedSchema } from "@/db/schema";
 import {
   withAuth,
@@ -14,6 +14,7 @@ import {
   formatEntityResponse,
   isFKViolation,
   parseBulkIds,
+  getOrderByClause,
 } from "@/db/helpers";
 import {
   Role,
@@ -45,7 +46,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const factoryCond = getFactoryWhereClause(
     user,
     mode,
-    sharedSchema.users.factoryId,
+    sharedSchema.users.factory_id,
   );
   const conditions = [];
   if (factoryCond) conditions.push(factoryCond);
@@ -58,7 +59,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
       ilike(users.name, `%${search}%`),
       ...(isAadharNotRequired
         ? []
-        : [ilike(profiles.aadharNumber, `%${search}%`)]),
+        : [ilike(profiles.aadhar_number, `%${search}%`)]),
       ilike(users.username, `%${search}%`),
     ];
     if (!isNaN(searchNum)) {
@@ -71,52 +72,30 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const baseQuery = db
     .select({
       id: profiles.id,
-      user_id: profiles.userId,
+      user_id: profiles.user_id,
       name: users.name,
-      ...(isAadharNotRequired ? {} : { aadhar_number: profiles.aadharNumber }),
+      ...(isAadharNotRequired ? {} : { aadhar_number: profiles.aadhar_number }),
       role: profiles.role,
-      created_at: profiles.createdAt,
-      updated_at: profiles.updatedAt,
+      created_at: profiles.created_at,
+      updated_at: profiles.updated_at,
       username: users.username,
       ...(mode === TenantMode.SHARED
-        ? { factory_id: sharedSchema.users.factoryId }
+        ? { factory_id: sharedSchema.users.factory_id }
         : {}),
-      is_active: users.isActive,
+      is_active: users.is_active,
     })
     .from(profiles)
-    .innerJoin(users, eq(profiles.userId, users.id))
+    .innerJoin(users, eq(profiles.user_id, users.id))
     .$dynamic();
 
   const countQuery = db
     .select({ count: count() })
     .from(profiles)
-    .innerJoin(users, eq(profiles.userId, users.id))
+    .innerJoin(users, eq(profiles.user_id, users.id))
     .$dynamic();
 
-  const orderByClause = (() => {
-    switch (sortColumn) {
-      case EntityKey.ID:
-        return sortDesc ? desc(profiles.id) : asc(profiles.id);
-      case EntityKey.AADHAR_NUMBER:
-        return sortDesc
-          ? desc(profiles.aadharNumber)
-          : asc(profiles.aadharNumber);
-      case EntityKey.NAME:
-        return sortDesc ? desc(users.name) : asc(users.name);
-      case EntityKey.ROLE:
-        return sortDesc ? desc(profiles.role) : asc(profiles.role);
-      case EntityKey.USERNAME:
-        return sortDesc ? desc(users.username) : asc(users.username);
-      case EntityKey.IS_ACTIVE:
-        return sortDesc ? desc(users.isActive) : asc(users.isActive);
-      case EntityKey.CREATED_AT:
-        return sortDesc ? desc(profiles.createdAt) : asc(profiles.createdAt);
-      case EntityKey.UPDATED_AT:
-        return sortDesc ? desc(profiles.updatedAt) : asc(profiles.updatedAt);
-      default:
-        return desc(profiles.createdAt);
-    }
-  })();
+  const sortable = { ...profiles, ...users };
+  const orderByClause = getOrderByClause(sortable, sortColumn, sortDesc, profiles.created_at);
 
   return fetchPaginatedResult(
     db,
@@ -160,15 +139,15 @@ export const POST = withAuth(async (req, user, db, mode) => {
 
   if (aadhar_number) {
     const aadharConditions = [
-      eq(sharedSchema.profiles.aadharNumber, aadhar_number),
+      eq(sharedSchema.profiles.aadhar_number, aadhar_number),
     ];
     if (mode === TenantMode.SHARED && targetFactoryId) {
-      aadharConditions.push(eq(sharedSchema.users.factoryId, targetFactoryId));
+      aadharConditions.push(eq(sharedSchema.users.factory_id, targetFactoryId));
     }
     const [existingProfile] = await db
       .select({ id: sharedSchema.profiles.id })
       .from(profiles)
-      .innerJoin(users, eq(sharedSchema.profiles.userId, sharedSchema.users.id))
+      .innerJoin(users, eq(sharedSchema.profiles.user_id, sharedSchema.users.id))
       .where(and(...aadharConditions));
     if (existingProfile)
       return apiError(
@@ -183,9 +162,9 @@ export const POST = withAuth(async (req, user, db, mode) => {
   const userValues = {
     name,
     username,
-    passwordHash,
+    password_hash: passwordHash,
     role,
-    ...(mode === TenantMode.SHARED ? { factoryId: targetFactoryId } : {}),
+    ...(mode === TenantMode.SHARED ? { factory_id: targetFactoryId } : {}),
   };
   const [newUser] = await db
     .insert(users as typeof sharedSchema.users)
@@ -195,8 +174,8 @@ export const POST = withAuth(async (req, user, db, mode) => {
   const [newProfile] = await db
     .insert(profiles as typeof sharedSchema.profiles)
     .values({
-      userId: newUser.id,
-      ...(aadhar_number ? { aadharNumber: aadhar_number } : {}),
+      user_id: newUser.id,
+      ...(aadhar_number ? { aadhar_number: aadhar_number } : {}),
       role,
     } as typeof sharedSchema.profiles.$inferInsert)
     .returning();
@@ -206,8 +185,8 @@ export const POST = withAuth(async (req, user, db, mode) => {
       ...(newProfile as Record<string, unknown>),
       name: newUser.name,
       username: newUser.username,
-      isActive: newUser.isActive,
-      ...(mode === TenantMode.SHARED ? { factoryId: targetFactoryId } : {}),
+      is_active: newUser.is_active,
+      ...(mode === TenantMode.SHARED ? { factory_id: targetFactoryId } : {}),
     },
     mode,
     StatusCodes.CREATED,
@@ -232,13 +211,13 @@ export const DELETE = withAuth(async (req, user, db, mode) => {
     mode === TenantMode.SHARED
       ? and(
           inArray(profiles.id, ids),
-          eq(sharedSchema.users.factoryId, factoryId),
+          eq(sharedSchema.users.factory_id, factoryId),
         )
       : inArray(profiles.id, ids);
   const scopedProfileIds = db
     .select({ id: profiles.id })
     .from(profiles)
-    .innerJoin(users, eq(profiles.userId, users.id))
+    .innerJoin(users, eq(profiles.user_id, users.id))
     .where(ownershipScope);
 
   try {

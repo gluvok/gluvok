@@ -25,7 +25,7 @@ import {
 export const PATCH = withAuth(
   withEntityScope(
     (mode) => getTables(mode).profiles,
-    sharedSchema.users.factoryId,
+    sharedSchema.users.factory_id,
     async (req, user, db, mode, _ctx, { whereClause: profileWhereClause }) => {
       if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.WRITE))
         return forbiddenError();
@@ -33,16 +33,16 @@ export const PATCH = withAuth(
       const [existing] = await db
         .select({
           id: profiles.id,
-          userId: profiles.userId,
+          user_id: profiles.user_id,
           name: users.name,
-          isActive: users.isActive,
+          is_active: users.is_active,
           username: users.username,
           ...(mode === TenantMode.SHARED
-            ? { factoryId: sharedSchema.users.factoryId }
+            ? { factory_id: sharedSchema.users.factory_id }
             : {}),
         })
         .from(profiles)
-        .innerJoin(users, eq(profiles.userId, users.id))
+        .innerJoin(users, eq(profiles.user_id, users.id))
         .where(profileWhereClause)
         .limit(1);
       if (!existing)
@@ -70,19 +70,19 @@ export const PATCH = withAuth(
         .update(profiles)
         .set({
           ...(validRole ? { role: validRole } : {}),
-          updatedAt: new Date(),
+          updated_at: new Date(),
         })
         .where(
           and(
             eq(profiles.id, existing.id),
-            eq(profiles.userId, existing.userId),
+            eq(profiles.user_id, existing.user_id),
           ),
         )
         .returning();
 
       if (!updated) return apiError("Profile not found", StatusCodes.NOT_FOUND);
 
-      const userUpdates: Record<string, unknown> = { updatedAt: new Date() };
+      const userUpdates: Record<string, unknown> = { updated_at: new Date() };
       if (name && typeof name === "string" && name.trim().length > 0) {
         userUpdates.name = name.trim();
       }
@@ -99,18 +99,18 @@ export const PATCH = withAuth(
         userUpdates.role = validRole;
       }
       if (is_active !== undefined) {
-        userUpdates.isActive = Boolean(is_active);
+        userUpdates.is_active = Boolean(is_active);
       }
 
-      let updatedUserIsActive = existing.isActive;
+      let updatedUserIsActive = existing.is_active;
       let updatedUserName = existing.name;
       if (Object.keys(userUpdates).length > 1) {
         const [updatedUser] = await db
           .update(users)
           .set(userUpdates)
-          .where(eq(users.id, updated.userId))
-          .returning({ isActive: users.isActive, name: users.name });
-        updatedUserIsActive = updatedUser?.isActive ?? updatedUserIsActive;
+          .where(eq(users.id, updated.user_id))
+          .returning({ is_active: users.is_active, name: users.name });
+        updatedUserIsActive = updatedUser?.is_active ?? updatedUserIsActive;
         updatedUserName = updatedUser?.name ?? updatedUserName;
       }
 
@@ -118,10 +118,10 @@ export const PATCH = withAuth(
         {
           ...updated,
           name: updatedUserName,
-          isActive: updatedUserIsActive,
+          is_active: updatedUserIsActive,
           username: existing.username,
           ...(mode === TenantMode.SHARED
-            ? { factoryId: existing.factoryId }
+            ? { factory_id: existing.factory_id }
             : {}),
         },
         mode,
@@ -133,16 +133,16 @@ export const PATCH = withAuth(
 export const DELETE = withAuth(
   withEntityScope(
     (mode) => getTables(mode).profiles,
-    sharedSchema.users.factoryId,
+    sharedSchema.users.factory_id,
     async (_req, user, db, mode, _ctx, { whereClause: profileWhereClause }) => {
       if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.DELETE))
         return forbiddenError();
       try {
         const { profiles, users } = getTables(mode);
         const [existing] = await db
-          .select({ id: profiles.id, userId: profiles.userId })
+          .select({ id: profiles.id, user_id: profiles.user_id })
           .from(profiles)
-          .innerJoin(users, eq(profiles.userId, users.id))
+          .innerJoin(users, eq(profiles.user_id, users.id))
           .where(profileWhereClause)
           .limit(1);
         if (!existing)
@@ -152,7 +152,7 @@ export const DELETE = withAuth(
           .where(
             and(
               eq(profiles.id, existing.id),
-              eq(profiles.userId, existing.userId),
+              eq(profiles.user_id, existing.user_id),
             ),
           );
         return NextResponse.json({ success: true });

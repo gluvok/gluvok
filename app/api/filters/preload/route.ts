@@ -17,37 +17,37 @@ export const GET = withAuth(async (_req, user, db, mode) => {
   const { centers, profiles, customers, rates, commodities, users } = getTables(mode)
 
   let centersQuery = db.select({ id: centers.id, name: centers.name }).from(centers).$dynamic()
-  if (isShared && factoryFilter && sharedSchema.centers.factoryId) {
-    centersQuery = centersQuery.where(eq(sharedSchema.centers.factoryId, factoryFilter)) as typeof centersQuery
+  if (isShared && factoryFilter && sharedSchema.centers.factory_id) {
+    centersQuery = centersQuery.where(eq(sharedSchema.centers.factory_id, factoryFilter)) as typeof centersQuery
   }
 
   let profilesQuery = db
     .select({ id: profiles.id, name: users.name })
     .from(profiles)
-    .innerJoin(users, eq(profiles.userId, users.id))
+    .innerJoin(users, eq(profiles.user_id, users.id))
     .$dynamic()
-  if (isShared && factoryFilter && sharedSchema.users.factoryId) {
-    profilesQuery = profilesQuery.where(eq(sharedSchema.users.factoryId, factoryFilter)) as typeof profilesQuery
+  if (isShared && factoryFilter && sharedSchema.users.factory_id) {
+    profilesQuery = profilesQuery.where(eq(sharedSchema.users.factory_id, factoryFilter)) as typeof profilesQuery
   }
 
   let customersQuery = db.select({ id: customers.id, name: customers.name }).from(customers).$dynamic()
-  if (isShared && factoryFilter && sharedSchema.customers.factoryId) {
-    customersQuery = customersQuery.where(eq(sharedSchema.customers.factoryId, factoryFilter)) as typeof customersQuery
+  if (isShared && factoryFilter && sharedSchema.customers.factory_id) {
+    customersQuery = customersQuery.where(eq(sharedSchema.customers.factory_id, factoryFilter)) as typeof customersQuery
   }
 
   let ratesQuery = db
     .select({
       id: rates.id,
-      unit_price: rates.unitPrice,
+      unit_price: rates.unit_price,
       unit: rates.unit,
       commodity_name: commodities.name,
     })
     .from(rates)
-    .leftJoin(commodities, eq(rates.commodityId, commodities.id))
+    .leftJoin(commodities, eq(rates.commodity_id, commodities.id))
     .$dynamic()
 
-  if (isShared && factoryFilter && sharedSchema.rates.factoryId) {
-    ratesQuery = ratesQuery.where(eq(sharedSchema.rates.factoryId, factoryFilter)) as typeof ratesQuery
+  if (isShared && factoryFilter && sharedSchema.rates.factory_id) {
+    ratesQuery = ratesQuery.where(eq(sharedSchema.rates.factory_id, factoryFilter)) as typeof ratesQuery
   }
 
   const [commodityRows, centerRows, profileRows, customerRows, rateRows] = await Promise.all([

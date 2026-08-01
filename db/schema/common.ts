@@ -12,8 +12,8 @@ import { Role, Unit, WeighmentType, EntityKey, TableName, DbEnum, FieldRequireme
 
 /** Reusable timestamp columns — previously in db/columns.helpers.ts */
 export const timestamps = {
-  createdAt: timestamp(EntityKey.CREATED_AT, { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp(EntityKey.UPDATED_AT, { withTimezone: true }).defaultNow(),
+  [EntityKey.CREATED_AT]: timestamp(EntityKey.CREATED_AT, { withTimezone: true }).defaultNow(),
+  [EntityKey.UPDATED_AT]: timestamp(EntityKey.UPDATED_AT, { withTimezone: true }).defaultNow(),
 } as const
 
 // ---------------------------------------------------------------------------
@@ -52,28 +52,28 @@ export const fieldRequirementModeEnum = pgEnum(DbEnum.FIELD_REQUIREMENT_MODE, [
 
 /** Core columns shared by every `users` table variant. */
 export const userBaseColumns = {
-  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-  name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
-  username: varchar(EntityKey.USERNAME, { length: 255 }).notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  role: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
-  isActive: boolean(EntityKey.IS_ACTIVE).notNull().default(true),
+  [EntityKey.ID]: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  [EntityKey.NAME]: varchar(EntityKey.NAME, { length: 255 }).notNull(),
+  [EntityKey.USERNAME]: varchar(EntityKey.USERNAME, { length: 255 }).notNull().unique(),
+  password_hash: text("password_hash").notNull(),
+  [EntityKey.ROLE]: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
+  [EntityKey.IS_ACTIVE]: boolean(EntityKey.IS_ACTIVE).notNull().default(true),
   ...timestamps,
 } as const
 
 /** Core columns shared by every `customers` table variant. */
 export const customerBaseColumns = {
-  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-  govtId: integer(EntityKey.GOVT_ID),
-  name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
-  fatherName: varchar(EntityKey.FATHER_NAME, { length: 255 }).notNull(),
+  [EntityKey.ID]: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  [EntityKey.GOVT_ID]: integer(EntityKey.GOVT_ID),
+  [EntityKey.NAME]: varchar(EntityKey.NAME, { length: 255 }).notNull(),
+  [EntityKey.FATHER_NAME]: varchar(EntityKey.FATHER_NAME, { length: 255 }).notNull(),
   ...timestamps,
 } as const
 
 /** Core columns shared by every `centers` table variant. */
 export const centerBaseColumns = {
-  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-  name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
+  [EntityKey.ID]: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  [EntityKey.NAME]: varchar(EntityKey.NAME, { length: 255 }).notNull(),
   ...timestamps,
 } as const
 
@@ -85,19 +85,19 @@ export const centerBaseColumns = {
  */
 export function rateBaseColumns() {
   return {
-    id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-    commodityId: integer(EntityKey.COMMODITY_ID).notNull().references(() => commodities.id, { onDelete: "restrict", onUpdate: "cascade" }),
-    unitPrice: decimal(EntityKey.UNIT_PRICE, { precision: 12, scale: 2 }).notNull(),
-    unit: unitEnum(EntityKey.UNIT).notNull(),
+    [EntityKey.ID]: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+    [EntityKey.COMMODITY_ID]: integer(EntityKey.COMMODITY_ID).notNull().references(() => commodities.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    [EntityKey.UNIT_PRICE]: decimal(EntityKey.UNIT_PRICE, { precision: 12, scale: 2 }).notNull(),
+    [EntityKey.UNIT]: unitEnum(EntityKey.UNIT).notNull(),
     ...timestamps,
   } as const
 }
 
 /** Core columns shared by every `configs` table variant. */
 export const configBaseColumns = {
-  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-  aadharNumberMode: fieldRequirementModeEnum(EntityKey.AADHAR_NUMBER_MODE).notNull().default(FieldRequirementMode.OPTIONAL),
-  govtIdMode: fieldRequirementModeEnum(EntityKey.GOVT_ID_MODE).notNull().default(FieldRequirementMode.OPTIONAL),
+  [EntityKey.ID]: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  [EntityKey.AADHAR_NUMBER_MODE]: fieldRequirementModeEnum(EntityKey.AADHAR_NUMBER_MODE).notNull().default(FieldRequirementMode.OPTIONAL),
+  [EntityKey.GOVT_ID_MODE]: fieldRequirementModeEnum(EntityKey.GOVT_ID_MODE).notNull().default(FieldRequirementMode.OPTIONAL),
   ...timestamps,
 } as const
 
@@ -106,30 +106,30 @@ export const configBaseColumns = {
 // ---------------------------------------------------------------------------
 
 export const commodities = pgTable(TableName.COMMODITIES, {
-  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-  name: varchar(EntityKey.NAME, { length: 255 }).notNull().unique(),
+  [EntityKey.ID]: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  [EntityKey.NAME]: varchar(EntityKey.NAME, { length: 255 }).notNull().unique(),
   ...timestamps,
 })
 
 export const profiles = pgTable(TableName.PROFILES, {
-  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-  userId: integer(EntityKey.USER_ID).notNull().unique(),
-  aadharNumber: varchar(EntityKey.AADHAR_NUMBER, { length: 12 }),
-  role: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
+  [EntityKey.ID]: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  [EntityKey.USER_ID]: integer(EntityKey.USER_ID).notNull().unique(),
+  [EntityKey.AADHAR_NUMBER]: varchar(EntityKey.AADHAR_NUMBER, { length: 12 }),
+  [EntityKey.ROLE]: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
   ...timestamps,
 })
 
 export const weighments = pgTable(TableName.WEIGHMENTS, {
-  id: bigint(EntityKey.ID, { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
-  vehicleNumber: varchar(EntityKey.VEHICLE_NUMBER, { length: 10 }).notNull(),
-  weight: decimal(EntityKey.WEIGHT, { precision: 12, scale: 3 }).notNull(),
-  images: jsonb(EntityKey.IMAGES).default([]),
-  unit: unitEnum(EntityKey.UNIT).notNull().default(Unit.KG),
-  type: weighmentTypeEnum(EntityKey.TYPE).notNull().default(WeighmentType.IN),
-  rateId: integer(EntityKey.RATE_ID).notNull(),
-  centerId: integer(EntityKey.CENTER_ID).notNull(),
-  profileId: integer(EntityKey.PROFILE_ID).notNull(),
-  customerId: integer(EntityKey.CUSTOMER_ID).notNull(),
-  isActive: boolean(EntityKey.IS_ACTIVE).notNull().default(true),
+  [EntityKey.ID]: bigint(EntityKey.ID, { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  [EntityKey.VEHICLE_NUMBER]: varchar(EntityKey.VEHICLE_NUMBER, { length: 10 }).notNull(),
+  [EntityKey.WEIGHT]: decimal(EntityKey.WEIGHT, { precision: 12, scale: 3 }).notNull(),
+  [EntityKey.IMAGES]: jsonb(EntityKey.IMAGES).default([]),
+  [EntityKey.UNIT]: unitEnum(EntityKey.UNIT).notNull().default(Unit.KG),
+  [EntityKey.TYPE]: weighmentTypeEnum(EntityKey.TYPE).notNull().default(WeighmentType.IN),
+  [EntityKey.RATE_ID]: integer(EntityKey.RATE_ID).notNull(),
+  [EntityKey.CENTER_ID]: integer(EntityKey.CENTER_ID).notNull(),
+  [EntityKey.PROFILE_ID]: integer(EntityKey.PROFILE_ID).notNull(),
+  [EntityKey.CUSTOMER_ID]: integer(EntityKey.CUSTOMER_ID).notNull(),
+  [EntityKey.IS_ACTIVE]: boolean(EntityKey.IS_ACTIVE).notNull().default(true),
   ...timestamps,
 })

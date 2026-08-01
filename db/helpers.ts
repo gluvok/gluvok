@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { StatusCodes, ReasonPhrases } from "http-status-codes"
-import { sql, and, eq, count, type Column, type SQL } from "drizzle-orm";
+import { sql, and, eq, count, desc, asc, type Column, type SQL } from "drizzle-orm";
 import { verifyJWT, JWTPayload } from "@/lib/auth/jwt"
 import {
   Role,
@@ -270,6 +270,17 @@ export async function setDbSessionContext(
   }
 }
 
+export function getOrderByClause<T extends object>(
+  target: T,
+  sortColumn: string | null,
+  sortDesc: boolean,
+  defaultColumn: SQL | Column
+): SQL {
+  const t = target as Record<string, unknown>;
+  const col = (sortColumn && t[sortColumn] ? t[sortColumn] : defaultColumn) as SQL | Column;
+  return sortDesc ? desc(col) : asc(col);
+}
+
 /**
  * Reusable helper to fetch field requirement configuration.
  *
@@ -286,8 +297,8 @@ export async function getFactoryConfig(
       // Dedicated: single global config row, ignore factoryId
       const [c] = await tenantDb
         .select({
-          aadharNumberMode: configs.aadharNumberMode,
-          govtIdMode: configs.govtIdMode,
+          aadharNumberMode: configs.aadhar_number_mode,
+          govtIdMode: configs.govt_id_mode,
         })
         .from(configs)
         .limit(1)
@@ -296,12 +307,12 @@ export async function getFactoryConfig(
     if (!factoryId) return null
     const [c] = await tenantDb
       .select({
-        factoryId: configs.factoryId,
-        aadharNumberMode: configs.aadharNumberMode,
-        govtIdMode: configs.govtIdMode,
+        factoryId: configs.factory_id,
+        aadharNumberMode: configs.aadhar_number_mode,
+        govtIdMode: configs.govt_id_mode,
       })
       .from(configs)
-      .where(eq(configs.factoryId, factoryId))
+      .where(eq(configs.factory_id, factoryId))
       .limit(1)
     return c || null
   } catch {

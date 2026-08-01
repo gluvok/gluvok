@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq, ilike, and, desc, asc, or, count, inArray } from "drizzle-orm";
+import { eq, ilike, and, or, count, inArray } from "drizzle-orm";
 import { getTables, sharedSchema } from "@/db/schema";
 import {
   withAuth,
@@ -14,6 +14,7 @@ import {
   formatEntityResponse,
   isFKViolation,
   parseBulkIds,
+  getOrderByClause,
 } from "@/db/helpers";
 import {
   Role,
@@ -21,7 +22,6 @@ import {
   ProjectSlug,
   PermissionKey,
   QueryParam,
-  EntityKey,
   FieldRequirementMode,
 } from "@/lib/constants/enums";
 import { hashPassword } from "@/lib/auth/password";
@@ -43,7 +43,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const factoryCond = getFactoryWhereClause(
     user,
     mode,
-    sharedSchema.customers.factoryId,
+    sharedSchema.customers.factory_id,
   );
   const conditions = [];
   if (factoryCond) conditions.push(factoryCond);
@@ -52,12 +52,12 @@ export const GET = withAuth(async (req, user, db, mode) => {
     const searchNum = parseInt(search, 10);
     const searchConds = [
       ilike(customers.name, `%${search}%`),
-      ilike(customers.fatherName, `%${search}%`),
+      ilike(customers.father_name, `%${search}%`),
     ];
     if (!isNaN(searchNum)) {
       searchConds.push(eq(customers.id, searchNum));
       if (!isGovtIdNotRequired) {
-        searchConds.push(eq(customers.govtId, searchNum));
+        searchConds.push(eq(customers.govt_id, searchNum));
       }
     }
     conditions.push(or(...searchConds));
@@ -67,52 +67,30 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const baseQuery = db
     .select({
       id: customers.id,
-      ...(isGovtIdNotRequired ? {} : { govt_id: customers.govtId }),
+      ...(isGovtIdNotRequired ? {} : { govt_id: customers.govt_id }),
       name: customers.name,
-      father_name: customers.fatherName,
-      user_id: customers.userId,
+      father_name: customers.father_name,
+      user_id: customers.user_id,
       ...(mode === TenantMode.SHARED
-        ? { factory_id: sharedSchema.customers.factoryId }
+        ? { factory_id: sharedSchema.customers.factory_id }
         : {}),
-      created_at: customers.createdAt,
-      updated_at: customers.updatedAt,
+      created_at: customers.created_at,
+      updated_at: customers.updated_at,
       username: users.username,
-      is_active: users.isActive,
+      is_active: users.is_active,
     })
     .from(customers)
-    .leftJoin(users, eq(customers.userId, users.id))
+    .leftJoin(users, eq(customers.user_id, users.id))
     .$dynamic();
 
   const countQuery = db
     .select({ count: count() })
     .from(customers)
-    .leftJoin(users, eq(customers.userId, users.id))
+    .leftJoin(users, eq(customers.user_id, users.id))
     .$dynamic();
 
-  const orderByClause = (() => {
-    switch (sortColumn) {
-      case EntityKey.ID:
-        return sortDesc ? desc(customers.id) : asc(customers.id);
-      case EntityKey.GOVT_ID:
-        return sortDesc ? desc(customers.govtId) : asc(customers.govtId);
-      case EntityKey.NAME:
-        return sortDesc ? desc(customers.name) : asc(customers.name);
-      case EntityKey.FATHER_NAME:
-        return sortDesc
-          ? desc(customers.fatherName)
-          : asc(customers.fatherName);
-      case EntityKey.USERNAME:
-        return sortDesc ? desc(users.username) : asc(users.username);
-      case EntityKey.IS_ACTIVE:
-        return sortDesc ? desc(users.isActive) : asc(users.isActive);
-      case EntityKey.CREATED_AT:
-        return sortDesc ? desc(customers.createdAt) : asc(customers.createdAt);
-      case EntityKey.UPDATED_AT:
-        return sortDesc ? desc(customers.updatedAt) : asc(customers.updatedAt);
-      default:
-        return desc(customers.createdAt);
-    }
-  })();
+  const sortable = { ...customers, ...users };
+  const orderByClause = getOrderByClause(sortable, sortColumn, sortDesc, customers.created_at);
 
   return fetchPaginatedResult(
     db,
@@ -149,9 +127,9 @@ export const POST = withAuth(async (req, user, db, mode) => {
   const { customers, users } = getTables(mode);
 
   if (govt_id != null) {
-    const existingConds = [eq(sharedSchema.customers.govtId, Number(govt_id))];
+    const existingConds = [eq(sharedSchema.customers.govt_id, Number(govt_id))];
     if (mode === TenantMode.SHARED)
-      existingConds.push(eq(sharedSchema.customers.factoryId, targetFactoryId));
+      existingConds.push(eq(sharedSchema.customers.factory_id, targetFactoryId));
     const [existingCustomer] = await db
       .select({ id: sharedSchema.customers.id })
       .from(customers)
@@ -180,9 +158,9 @@ export const POST = withAuth(async (req, user, db, mode) => {
     const userValues = {
       name,
       username,
-      passwordHash,
+      password_hash: passwordHash,
       role: Role.BASE,
-      ...(mode === TenantMode.SHARED ? { factoryId: targetFactoryId } : {}),
+      ...(mode === TenantMode.SHARED ? { factory_id: targetFactoryId } : {}),
     };
     const [newUser] = await db
       .insert(users as typeof sharedSchema.users)
@@ -192,11 +170,11 @@ export const POST = withAuth(async (req, user, db, mode) => {
   }
 
   const customerValues = {
-    ...(govt_id != null ? { govtId: Number(govt_id) } : {}),
+    ...(govt_id != null ? { govt_id: Number(govt_id) } : {}),
     name,
-    fatherName: father_name,
-    userId: createdUserId,
-    ...(mode === TenantMode.SHARED ? { factoryId: targetFactoryId } : {}),
+    father_name: father_name,
+    user_id: createdUserId,
+    ...(mode === TenantMode.SHARED ? { factory_id: targetFactoryId } : {}),
   };
 
   const [newCustomer] = await db
@@ -220,7 +198,7 @@ export const DELETE = withAuth(async (req, user, db, mode) => {
   const factoryScope = getFactoryWhereClause(
     user,
     mode,
-    sharedSchema.customers.factoryId,
+    sharedSchema.customers.factory_id,
   );
   if (mode === TenantMode.SHARED && !factoryScope) return forbiddenError();
   const scopedIds = factoryScope

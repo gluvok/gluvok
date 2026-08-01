@@ -21,7 +21,7 @@ export const PATCH = withAuth(
       mode === TenantMode.DEDICATED
         ? standaloneSchema.configs
         : sharedSchema.configs,
-    sharedSchema.configs.factoryId,
+    sharedSchema.configs.factory_id,
     async (
       req,
       user,
@@ -39,13 +39,13 @@ export const PATCH = withAuth(
 
         const validModes = Object.values(FieldRequirementMode);
         const updates: Record<string, unknown> = {
-          updatedAt: new Date(),
+          updated_at: new Date(),
         };
         if (aadhar_number_mode && validModes.includes(aadhar_number_mode)) {
-          updates.aadharNumberMode = aadhar_number_mode;
+          updates.aadhar_number_mode = aadhar_number_mode;
         }
         if (govt_id_mode && validModes.includes(govt_id_mode)) {
-          updates.govtIdMode = govt_id_mode;
+          updates.govt_id_mode = govt_id_mode;
         }
 
         if (mode === TenantMode.DEDICATED) {
@@ -67,10 +67,10 @@ export const PATCH = withAuth(
           return NextResponse.json({
             data: {
               id: updated.id,
-              aadhar_number_mode: updated.aadharNumberMode,
-              govt_id_mode: updated.govtIdMode,
-              created_at: updated.createdAt,
-              updated_at: updated.updatedAt,
+              aadhar_number_mode: updated.aadhar_number_mode,
+              govt_id_mode: updated.govt_id_mode,
+              created_at: updated.created_at,
+              updated_at: updated.updated_at,
             },
           });
         }
@@ -96,11 +96,11 @@ export const PATCH = withAuth(
         return NextResponse.json({
           data: {
             id: updated.id,
-            factory_id: updated.factoryId,
-            aadhar_number_mode: updated.aadharNumberMode,
-            govt_id_mode: updated.govtIdMode,
-            created_at: updated.createdAt,
-            updated_at: updated.updatedAt,
+            factory_id: updated.factory_id,
+            aadhar_number_mode: updated.aadhar_number_mode,
+            govt_id_mode: updated.govt_id_mode,
+            created_at: updated.created_at,
+            updated_at: updated.updated_at,
           },
         });
       } catch (err) {
@@ -120,7 +120,7 @@ export const DELETE = withAuth(
       mode === TenantMode.DEDICATED
         ? standaloneSchema.configs
         : sharedSchema.configs,
-    sharedSchema.configs.factoryId,
+    sharedSchema.configs.factory_id,
     async (
       _req,
       user,

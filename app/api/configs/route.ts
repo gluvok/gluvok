@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { eq, and, asc, desc, inArray } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { sharedSchema, standaloneSchema } from "@/db/schema"
 import {
   withAuth,
@@ -11,8 +11,9 @@ import {
   formatEntityResponse,
   getFactoryWhereClause,
   parseBulkIds,
+  getOrderByClause,
 } from "@/db/helpers";
-import { TenantMode, ProjectSlug, PermissionKey, FieldRequirementMode, EntityKey, QueryParam } from "@/lib/constants/enums"
+import { TenantMode, ProjectSlug, PermissionKey, FieldRequirementMode, QueryParam } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user, db, mode) => {
   try {
@@ -21,30 +22,15 @@ export const GET = withAuth(async (req, user, db, mode) => {
 
     if (mode === TenantMode.DEDICATED) {
       // Single global config — no factory scoping
-      const orderByClause = (() => {
-        switch (sortColumn) {
-          case EntityKey.ID:
-            return sortDesc ? desc(standaloneSchema.configs.id) : asc(standaloneSchema.configs.id)
-          case EntityKey.AADHAR_NUMBER_MODE:
-            return sortDesc ? desc(standaloneSchema.configs.aadharNumberMode) : asc(standaloneSchema.configs.aadharNumberMode)
-          case EntityKey.GOVT_ID_MODE:
-            return sortDesc ? desc(standaloneSchema.configs.govtIdMode) : asc(standaloneSchema.configs.govtIdMode)
-          case EntityKey.CREATED_AT:
-            return sortDesc ? desc(standaloneSchema.configs.createdAt) : asc(standaloneSchema.configs.createdAt)
-          case EntityKey.UPDATED_AT:
-            return sortDesc ? desc(standaloneSchema.configs.updatedAt) : asc(standaloneSchema.configs.updatedAt)
-          default:
-            return desc(standaloneSchema.configs.createdAt)
-        }
-      })()
+      const orderByClause = getOrderByClause(standaloneSchema.configs, sortColumn, sortDesc, standaloneSchema.configs.created_at)
 
       const [row] = await db
         .select({
           id: standaloneSchema.configs.id,
-          aadhar_number_mode: standaloneSchema.configs.aadharNumberMode,
-          govt_id_mode: standaloneSchema.configs.govtIdMode,
-          created_at: standaloneSchema.configs.createdAt,
-          updated_at: standaloneSchema.configs.updatedAt,
+          aadhar_number_mode: standaloneSchema.configs.aadhar_number_mode,
+          govt_id_mode: standaloneSchema.configs.govt_id_mode,
+          created_at: standaloneSchema.configs.created_at,
+          updated_at: standaloneSchema.configs.updated_at,
         })
         .from(standaloneSchema.configs)
         .orderBy(orderByClause)
@@ -58,36 +44,21 @@ export const GET = withAuth(async (req, user, db, mode) => {
 
     // Shared mode — factory-scoped
     const sharedConfigs = sharedSchema.configs
-    const factoryCond = getFactoryWhereClause(user, mode, sharedConfigs.factoryId)
+    const factoryCond = getFactoryWhereClause(user, mode, sharedConfigs.factory_id)
     const conditions = []
     if (factoryCond) conditions.push(factoryCond)
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-    const orderByClause = (() => {
-      switch (sortColumn) {
-        case EntityKey.ID:
-          return sortDesc ? desc(sharedConfigs.id) : asc(sharedConfigs.id)
-        case EntityKey.AADHAR_NUMBER_MODE:
-          return sortDesc ? desc(sharedConfigs.aadharNumberMode) : asc(sharedConfigs.aadharNumberMode)
-        case EntityKey.GOVT_ID_MODE:
-          return sortDesc ? desc(sharedConfigs.govtIdMode) : asc(sharedConfigs.govtIdMode)
-        case EntityKey.CREATED_AT:
-          return sortDesc ? desc(sharedConfigs.createdAt) : asc(sharedConfigs.createdAt)
-        case EntityKey.UPDATED_AT:
-          return sortDesc ? desc(sharedConfigs.updatedAt) : asc(sharedConfigs.updatedAt)
-        default:
-          return desc(sharedConfigs.createdAt)
-      }
-    })()
+    const orderByClause = getOrderByClause(sharedConfigs, sortColumn, sortDesc, sharedConfigs.created_at)
 
     const rows = await db
       .select({
         id: sharedConfigs.id,
-        factory_id: sharedConfigs.factoryId,
-        aadhar_number_mode: sharedConfigs.aadharNumberMode,
-        govt_id_mode: sharedConfigs.govtIdMode,
-        created_at: sharedConfigs.createdAt,
-        updated_at: sharedConfigs.updatedAt,
+        factory_id: sharedConfigs.factory_id,
+        aadhar_number_mode: sharedConfigs.aadhar_number_mode,
+        govt_id_mode: sharedConfigs.govt_id_mode,
+        created_at: sharedConfigs.created_at,
+        updated_at: sharedConfigs.updated_at,
       })
       .from(sharedConfigs)
       .orderBy(orderByClause)
@@ -136,13 +107,13 @@ export const POST = withAuth(async (req, user, db, mode) => {
       if (existing) {
         ;[newConfig] = await db
           .update(standaloneSchema.configs)
-          .set({ aadharNumberMode: aMode, govtIdMode: gMode, updatedAt: new Date() })
+          .set({ aadhar_number_mode: aMode, govt_id_mode: gMode, updated_at: new Date() })
           .where(eq(standaloneSchema.configs.id, existing.id))
           .returning()
       } else {
         ;[newConfig] = await db
           .insert(standaloneSchema.configs)
-          .values({ aadharNumberMode: aMode, govtIdMode: gMode })
+          .values({ aadhar_number_mode: aMode, govt_id_mode: gMode })
           .returning()
       }
       return formatEntityResponse(newConfig, mode, StatusCodes.CREATED)
@@ -156,10 +127,10 @@ export const POST = withAuth(async (req, user, db, mode) => {
 
     const [newConfig] = await db
       .insert(sharedSchema.configs)
-      .values({ factoryId: targetFactoryId, aadharNumberMode: aMode, govtIdMode: gMode })
+      .values({ factory_id: targetFactoryId, aadhar_number_mode: aMode, govt_id_mode: gMode })
       .onConflictDoUpdate({
-        target: sharedSchema.configs.factoryId,
-        set: { aadharNumberMode: aMode, govtIdMode: gMode, updatedAt: new Date() },
+        target: sharedSchema.configs.factory_id,
+        set: { aadhar_number_mode: aMode, govt_id_mode: gMode, updated_at: new Date() },
       })
       .returning()
 
@@ -198,7 +169,7 @@ export const DELETE = withAuth(async (req, user, db, mode) => {
         .where(
           and(
             inArray(sharedSchema.configs.id, ids),
-            eq(sharedSchema.configs.factoryId, user.factory_id),
+            eq(sharedSchema.configs.factory_id, user.factory_id),
           ),
         )
         .returning({ id: sharedSchema.configs.id });

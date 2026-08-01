@@ -5,12 +5,11 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
-import { getTables, sharedSchema } from "@/db/schema"
+import { getTables } from "@/db/schema"
 import { verifyPassword } from "@/lib/auth/password"
 import { signJWT } from "@/lib/auth/jwt"
 import {
   CookieName,
-  DatabasePropertyKey,
   TenantMode,
 } from "@/lib/constants/enums";
 import { getWorkspace } from "@/lib/tenant/workspace"
@@ -44,7 +43,7 @@ export async function POST(request: NextRequest) {
       .where(eq(users.username, username))
       .limit(1)
 
-    if (!user || !user.isActive) {
+    if (!user || !user.is_active) {
       return NextResponse.json(
         { error: "Invalid username or password" },
         { status: 401 }
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
     // 2. Verify password with Argon2id
     const isValidPassword = await verifyPassword(
       password,
-      user[DatabasePropertyKey.PASSWORD_HASH],
+      user.password_hash,
     );
     if (!isValidPassword) {
       return NextResponse.json(
@@ -66,11 +65,9 @@ export async function POST(request: NextRequest) {
     // 3. Sign JWT — factory_id is null in dedicated mode (no factory column)
     const factoryId =
       tenant.mode === TenantMode.SHARED
-        ? ((DatabasePropertyKey.FACTORY_ID in user
-            ? (user as typeof sharedSchema.users.$inferSelect)[
-                DatabasePropertyKey.FACTORY_ID
-              ]
-            : null) ?? null)
+        ? ("factory_id" in user
+            ? (user as unknown as { factory_id: number | null }).factory_id
+            : null)
         : null;
 
     const token = await signJWT({

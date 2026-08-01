@@ -16,7 +16,7 @@ import { PermissionKey, ProjectSlug } from "@/lib/constants/enums";
 export const PATCH = withAuth(
   withEntityScope(
     (mode) => getTables(mode).weighments,
-    sharedSchema.centers.factoryId,
+    sharedSchema.centers.factory_id,
     async (
       req,
       user,
@@ -31,17 +31,17 @@ export const PATCH = withAuth(
       const scopedWeighmentIds = db
         .select({ id: weighments.id })
         .from(weighments)
-        .innerJoin(centers, eq(weighments.centerId, centers.id))
+        .innerJoin(centers, eq(weighments.center_id, centers.id))
         .where(weighmentWhereClause);
       const { vehicle_number, weight, is_active } = await req.json();
 
       const [updated] = await db
         .update(weighments)
         .set({
-          ...(vehicle_number ? { vehicleNumber: vehicle_number } : {}),
+          ...(vehicle_number ? { vehicle_number: vehicle_number } : {}),
           ...(weight ? { weight: String(weight) } : {}),
-          ...(is_active !== undefined ? { isActive: Boolean(is_active) } : {}),
-          updatedAt: new Date(),
+          ...(is_active !== undefined ? { is_active: Boolean(is_active) } : {}),
+          updated_at: new Date(),
         })
         .where(inArray(weighments.id, scopedWeighmentIds))
         .returning();
@@ -57,7 +57,7 @@ export const PATCH = withAuth(
 export const DELETE = withAuth(
   withEntityScope(
     (mode) => getTables(mode).weighments,
-    sharedSchema.centers.factoryId,
+    sharedSchema.centers.factory_id,
     async (
       _req,
       user,
@@ -73,7 +73,7 @@ export const DELETE = withAuth(
         const scopedWeighmentIds = db
           .select({ id: weighments.id })
           .from(weighments)
-          .innerJoin(centers, eq(weighments.centerId, centers.id))
+          .innerJoin(centers, eq(weighments.center_id, centers.id))
           .where(weighmentWhereClause);
         const [deleted] = await db
           .delete(weighments)

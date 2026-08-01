@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq, ilike, and, desc, asc, or, count, inArray } from "drizzle-orm";
+import { eq, ilike, and, or, count, inArray } from "drizzle-orm";
 import { getTables, sharedSchema } from "@/db/schema";
 import {
   withAuth,
@@ -14,13 +14,13 @@ import {
   formatEntityResponse,
   isFKViolation,
   parseBulkIds,
+  getOrderByClause,
 } from "@/db/helpers";
 import {
   TenantMode,
   ProjectSlug,
   QueryParam,
   PermissionKey,
-  EntityKey,
 } from "@/lib/constants/enums";
 
 export const GET = withAuth(async (req, user, db, mode) => {
@@ -35,7 +35,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const factoryCond = getFactoryWhereClause(
     user,
     mode,
-    sharedSchema.centers.factoryId,
+    sharedSchema.centers.factory_id,
   );
   const conditions = [];
   if (factoryCond) conditions.push(factoryCond);
@@ -55,30 +55,17 @@ export const GET = withAuth(async (req, user, db, mode) => {
       id: centers.id,
       name: centers.name,
       ...(mode === TenantMode.SHARED
-        ? { factory_id: sharedSchema.centers.factoryId }
+        ? { factory_id: sharedSchema.centers.factory_id }
         : {}),
-      created_at: centers.createdAt,
-      updated_at: centers.updatedAt,
+      created_at: centers.created_at,
+      updated_at: centers.updated_at,
     })
     .from(centers)
     .$dynamic();
 
   const countQuery = db.select({ count: count() }).from(centers).$dynamic();
 
-  const orderByClause = (() => {
-    switch (sortColumn) {
-      case EntityKey.ID:
-        return sortDesc ? desc(centers.id) : asc(centers.id);
-      case EntityKey.NAME:
-        return sortDesc ? desc(centers.name) : asc(centers.name);
-      case EntityKey.CREATED_AT:
-        return sortDesc ? desc(centers.createdAt) : asc(centers.createdAt);
-      case EntityKey.UPDATED_AT:
-        return sortDesc ? desc(centers.updatedAt) : asc(centers.updatedAt);
-      default:
-        return desc(centers.createdAt);
-    }
-  })();
+  const orderByClause = getOrderByClause(centers, sortColumn, sortDesc, centers.created_at);
 
   return fetchPaginatedResult(
     db,
@@ -104,7 +91,7 @@ export const POST = withAuth(async (req, user, db, mode) => {
 
   const insertValues: Record<string, unknown> = { name };
   if (mode === TenantMode.SHARED) {
-    insertValues.factoryId = user.factory_id ?? 0;
+    insertValues.factory_id = user.factory_id ?? 0;
   }
 
   const [newCenter] = await db
@@ -128,7 +115,7 @@ export const DELETE = withAuth(async (req, user, db, mode) => {
   const whereClause = getFactoryWhereClause(
     user,
     mode,
-    sharedSchema.centers.factoryId,
+    sharedSchema.centers.factory_id,
   );
   if (mode === TenantMode.SHARED && !whereClause) return forbiddenError();
   const scopedIds = whereClause

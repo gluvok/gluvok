@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import {
   eq,
   and,
-  desc,
-  asc,
   gte,
   lte,
   ilike,
@@ -25,6 +23,7 @@ import {
   formatEntityResponse,
   isFKViolation,
   parseBulkIds,
+  getOrderByClause,
 } from "@/db/helpers";
 import {
   TenantMode,
@@ -52,24 +51,24 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const factoryCond = getFactoryWhereClause(
     user,
     mode,
-    sharedSchema.rates.factoryId,
+    sharedSchema.rates.factory_id,
   );
   const conditions = [];
   if (factoryCond) conditions.push(factoryCond);
   if (commodityIdParam && commodityIdParam !== FilterValue.ALL)
-    conditions.push(eq(rates.commodityId, Number(commodityIdParam)));
+    conditions.push(eq(rates.commodity_id, Number(commodityIdParam)));
   if (unitParam && unitParam !== FilterValue.ALL)
     conditions.push(eq(rates.unit, unitParam as Unit));
   if (startDateParam)
-    conditions.push(gte(rates.createdAt, new Date(startDateParam)));
+    conditions.push(gte(rates.created_at, new Date(startDateParam)));
   if (endDateParam)
-    conditions.push(lte(rates.createdAt, new Date(endDateParam)));
+    conditions.push(lte(rates.created_at, new Date(endDateParam)));
 
   if (search) {
     const searchNum = parseInt(search, 10);
     const searchConds = [
       ilike(commodities.name, `%${search}%`),
-      ilike(rates.unitPrice, `%${search}%`),
+      ilike(rates.unit_price, `%${search}%`),
     ];
     if (!isNaN(searchNum)) {
       searchConds.push(eq(rates.id, searchNum));
@@ -81,44 +80,28 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const baseQuery = db
     .select({
       id: rates.id,
-      commodity_id: rates.commodityId,
-      unit_price: rates.unitPrice,
+      commodity_id: rates.commodity_id,
+      unit_price: rates.unit_price,
       unit: rates.unit,
       ...(mode === TenantMode.SHARED
-        ? { factory_id: sharedSchema.rates.factoryId }
+        ? { factory_id: sharedSchema.rates.factory_id }
         : {}),
-      created_at: rates.createdAt,
-      updated_at: rates.updatedAt,
+      created_at: rates.created_at,
+      updated_at: rates.updated_at,
       commodity_name: commodities.name,
     })
     .from(rates)
-    .leftJoin(commodities, eq(rates.commodityId, commodities.id))
+    .leftJoin(commodities, eq(rates.commodity_id, commodities.id))
     .$dynamic();
 
   const countQuery = db
     .select({ count: count() })
     .from(rates)
-    .leftJoin(commodities, eq(rates.commodityId, commodities.id))
+    .leftJoin(commodities, eq(rates.commodity_id, commodities.id))
     .$dynamic();
 
-  const orderByClause = (() => {
-    switch (sortColumn) {
-      case EntityKey.ID:
-        return sortDesc ? desc(rates.id) : asc(rates.id);
-      case EntityKey.COMMODITY_NAME:
-        return sortDesc ? desc(commodities.name) : asc(commodities.name);
-      case EntityKey.UNIT_PRICE:
-        return sortDesc ? desc(rates.unitPrice) : asc(rates.unitPrice);
-      case EntityKey.UNIT:
-        return sortDesc ? desc(rates.unit) : asc(rates.unit);
-      case EntityKey.CREATED_AT:
-        return sortDesc ? desc(rates.createdAt) : asc(rates.createdAt);
-      case EntityKey.UPDATED_AT:
-        return sortDesc ? desc(rates.updatedAt) : asc(rates.updatedAt);
-      default:
-        return desc(rates.createdAt);
-    }
-  })();
+  const sortable = { ...rates, commodity_name: commodities.name };
+  const orderByClause = getOrderByClause(sortable, sortColumn, sortDesc, rates.created_at);
 
   return fetchPaginatedResult(
     db,
@@ -143,8 +126,8 @@ export const POST = withAuth(async (req, user, db, mode) => {
   };
 
   const insertValues: Record<string, unknown> = {
-    commodityId: Number(commodity_id),
-    unitPrice: String(unit_price),
+    commodity_id: Number(commodity_id),
+    unit_price: String(unit_price),
     unit,
   };
 
@@ -156,7 +139,7 @@ export const POST = withAuth(async (req, user, db, mode) => {
         StatusCodes.BAD_REQUEST,
       );
     }
-    insertValues.factoryId = targetFactoryId;
+    insertValues.factory_id = targetFactoryId;
   }
 
   const [newRate] = await db
@@ -180,7 +163,7 @@ export const DELETE = withAuth(async (req, user, db, mode) => {
   const factoryScope = getFactoryWhereClause(
     user,
     mode,
-    sharedSchema.rates.factoryId,
+    sharedSchema.rates.factory_id,
   );
   if (mode === TenantMode.SHARED && !factoryScope) return forbiddenError();
   const scopedIds = factoryScope

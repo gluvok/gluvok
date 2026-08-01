@@ -72,7 +72,7 @@ describe("withEntityScope", () => {
     const handler = vi.fn();
     const scopedHandler = withEntityScope(
       () => sharedSchema.centers,
-      sharedSchema.centers.factoryId,
+      sharedSchema.centers.factory_id,
       handler,
     );
 
@@ -113,7 +113,7 @@ describe("getScopedEntityWhereClause", () => {
         { ...sharedUser, factory_id: null },
         TenantMode.SHARED,
         entityWhereClause,
-        sharedSchema.centers.factoryId,
+        sharedSchema.centers.factory_id,
       ),
     ).toBeNull();
   });
@@ -124,7 +124,7 @@ describe("getScopedEntityWhereClause", () => {
         sharedUser,
         TenantMode.SHARED,
         entityWhereClause,
-        sharedSchema.centers.factoryId,
+        sharedSchema.centers.factory_id,
       ),
     ).not.toBeNull();
     expect(
@@ -132,7 +132,7 @@ describe("getScopedEntityWhereClause", () => {
         sharedUser,
         TenantMode.DEDICATED,
         entityWhereClause,
-        sharedSchema.centers.factoryId,
+        sharedSchema.centers.factory_id,
       ),
     ).toBe(entityWhereClause);
   });

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq, ilike, desc, asc, or, inArray } from "drizzle-orm";
+import { eq, ilike, or, inArray } from "drizzle-orm";
 import { commodities } from "@/db/schema";
 import {
   withAuth,
@@ -13,12 +13,12 @@ import {
   formatEntityResponse,
   isFKViolation,
   parseBulkIds,
+  getOrderByClause,
 } from "@/db/helpers";
 import {
   ProjectSlug,
   QueryParam,
   PermissionKey,
-  EntityKey,
 } from "@/lib/constants/enums";
 
 export const GET = withAuth(async (req, _user, db) => {
@@ -42,29 +42,12 @@ export const GET = withAuth(async (req, _user, db) => {
     .select({
       id: commodities.id,
       name: commodities.name,
-      created_at: commodities.createdAt,
-      updated_at: commodities.updatedAt,
+      created_at: commodities.created_at,
+      updated_at: commodities.updated_at,
     })
     .from(commodities);
 
-  const orderByClause = (() => {
-    switch (sortColumn) {
-      case EntityKey.ID:
-        return sortDesc ? desc(commodities.id) : asc(commodities.id);
-      case EntityKey.NAME:
-        return sortDesc ? desc(commodities.name) : asc(commodities.name);
-      case EntityKey.CREATED_AT:
-        return sortDesc
-          ? desc(commodities.createdAt)
-          : asc(commodities.createdAt);
-      case EntityKey.UPDATED_AT:
-        return sortDesc
-          ? desc(commodities.updatedAt)
-          : asc(commodities.updatedAt);
-      default:
-        return desc(commodities.createdAt);
-    }
-  })();
+  const orderByClause = getOrderByClause(commodities, sortColumn, sortDesc, commodities.created_at);
 
   return fetchPaginatedResult(
     db,

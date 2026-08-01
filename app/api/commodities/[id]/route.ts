@@ -20,7 +20,7 @@ export const PATCH = withAuth(
 
     const [updated] = await db
       .update(commodities)
-      .set({ ...(name ? { name } : {}), updatedAt: new Date() })
+      .set({ ...(name ? { name } : {}), updated_at: new Date() })
       .where(eq(commodities.id, entityId))
       .returning();
 
@@ -30,8 +30,8 @@ export const PATCH = withAuth(
       data: {
         id: updated.id,
         name: updated.name,
-        created_at: updated.createdAt,
-        updated_at: updated.updatedAt,
+        created_at: updated.created_at,
+        updated_at: updated.updated_at,
       },
     });
   }),

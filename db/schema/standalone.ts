@@ -40,11 +40,11 @@ export const users = pgTable(TableName.USERS, {
 
 export const customers = pgTable(TableName.CUSTOMERS, {
   ...customerBaseColumns,
-  userId: integer(EntityKey.USER_ID).unique().references(() => users.id, { onDelete: "restrict" }),
+  [EntityKey.USER_ID]: integer(EntityKey.USER_ID).unique().references(() => users.id, { onDelete: "restrict" }),
 }, (table) => [
   uniqueIndex("customers_govt_id_idx")
-    .on(table.govtId)
-    .where(sql`${table.govtId} IS NOT NULL`),
+    .on(table.govt_id)
+    .where(sql`${table.govt_id} IS NOT NULL`),
 ])
 
 // Relations
@@ -58,7 +58,7 @@ export const commoditiesRelations = relations(commodities, ({ many }) => ({
 
 export const ratesRelations = relations(rates, ({ one, many }) => ({
   commodity: one(commodities, {
-    fields: [rates.commodityId],
+    fields: [rates.commodity_id],
     references: [commodities.id],
   }),
   weighments: many(weighments),
@@ -67,17 +67,17 @@ export const ratesRelations = relations(rates, ({ one, many }) => ({
 export const usersRelations = relations(users, ({ one }) => ({
   profile: one(profiles, {
     fields: [users.id],
-    references: [profiles.userId],
+    references: [profiles.user_id],
   }),
   customer: one(customers, {
     fields: [users.id],
-    references: [customers.userId],
+    references: [customers.user_id],
   }),
 }))
 
 export const customersRelations = relations(customers, ({ one, many }) => ({
   user: one(users, {
-    fields: [customers.userId],
+    fields: [customers.user_id],
     references: [users.id],
   }),
   weighments: many(weighments),
@@ -85,7 +85,7 @@ export const customersRelations = relations(customers, ({ one, many }) => ({
 
 export const profilesRelations = relations(profiles, ({ one, many }) => ({
   user: one(users, {
-    fields: [profiles.userId],
+    fields: [profiles.user_id],
     references: [users.id],
   }),
   weighments: many(weighments),
@@ -93,19 +93,19 @@ export const profilesRelations = relations(profiles, ({ one, many }) => ({
 
 export const weighmentsRelations = relations(weighments, ({ one }) => ({
   rate: one(rates, {
-    fields: [weighments.rateId],
+    fields: [weighments.rate_id],
     references: [rates.id],
   }),
   center: one(centers, {
-    fields: [weighments.centerId],
+    fields: [weighments.center_id],
     references: [centers.id],
   }),
   profile: one(profiles, {
-    fields: [weighments.profileId],
+    fields: [weighments.profile_id],
     references: [profiles.id],
   }),
   customer: one(customers, {
-    fields: [weighments.customerId],
+    fields: [weighments.customer_id],
     references: [customers.id],
   }),
 }))

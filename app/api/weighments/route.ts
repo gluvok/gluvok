@@ -1,30 +1,9 @@
 import { NextResponse } from "next/server";
-import {
-  eq,
-  ilike,
-  and,
-  desc,
-  asc,
-  or,
-  gte,
-  lte,
-  count,
-  inArray,
-} from "drizzle-orm";
-import {
-  weighments,
-  rates,
-  commodities,
-  centers,
-  profiles,
-  customers,
-  users,
-  sharedSchema,
-} from "@/db/schema";
+import { eq, ilike, and, or, count, inArray, gte, lte } from "drizzle-orm";
+import { getTables, sharedSchema } from "@/db/schema";
 import {
   withAuth,
   getPaginationParams,
-  validateRequiredFields,
   apiError,
   forbiddenError,
   hasPermission,
@@ -34,19 +13,24 @@ import {
   formatEntityResponse,
   isFKViolation,
   parseBulkIds,
+  validateRequiredFields,
+  getOrderByClause,
 } from "@/db/helpers";
 import {
+  Unit,
+  WeighmentType,
   TenantMode,
   ProjectSlug,
   PermissionKey,
   QueryParam,
-  Unit,
-  WeighmentType,
   EntityKey,
   FilterValue,
 } from "@/lib/constants/enums";
 
 export const GET = withAuth(async (req, user, db, mode) => {
+  const { weighments, centers, customers, profiles, users, rates, commodities } =
+    getTables(mode);
+
   const pagination = getPaginationParams(req.nextUrl);
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
   const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN);
@@ -63,28 +47,28 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const factoryCond = getFactoryWhereClause(
     user,
     mode,
-    sharedSchema.centers.factoryId,
+    sharedSchema.centers.factory_id,
   );
   const conditions = [];
   if (factoryCond) conditions.push(factoryCond);
   if (unitParam && unitParam !== FilterValue.ALL)
     conditions.push(eq(weighments.unit, unitParam as Unit));
   if (centerIdParam && centerIdParam !== FilterValue.ALL)
-    conditions.push(eq(weighments.centerId, Number(centerIdParam)));
+    conditions.push(eq(weighments.center_id, Number(centerIdParam)));
   if (commodityIdParam && commodityIdParam !== FilterValue.ALL)
-    conditions.push(eq(rates.commodityId, Number(commodityIdParam)));
+    conditions.push(eq(rates.commodity_id, Number(commodityIdParam)));
   if (typeParam && typeParam !== FilterValue.ALL)
     conditions.push(eq(weighments.type, typeParam as WeighmentType));
   if (isActiveParam && isActiveParam !== FilterValue.ALL)
-    conditions.push(eq(weighments.isActive, isActiveParam === "true"));
+    conditions.push(eq(weighments.is_active, isActiveParam === "true"));
   if (startDateParam)
-    conditions.push(gte(weighments.createdAt, new Date(startDateParam)));
+    conditions.push(gte(weighments.created_at, new Date(startDateParam)));
   if (endDateParam)
-    conditions.push(lte(weighments.createdAt, new Date(endDateParam)));
+    conditions.push(lte(weighments.created_at, new Date(endDateParam)));
 
   if (search) {
     const searchConds = [
-      ilike(weighments.vehicleNumber, `%${search}%`),
+      ilike(weighments.vehicle_number, `%${search}%`),
       ilike(customers.name, `%${search}%`),
       ilike(users.name, `%${search}%`),
       ilike(centers.name, `%${search}%`),
@@ -96,97 +80,58 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const countQuery = db
     .select({ count: count() })
     .from(weighments)
-    .leftJoin(centers, eq(weighments.centerId, centers.id))
-    .leftJoin(customers, eq(weighments.customerId, customers.id))
-    .leftJoin(profiles, eq(weighments.profileId, profiles.id))
-    .leftJoin(users, eq(profiles.userId, users.id))
+    .leftJoin(centers, eq(weighments.center_id, centers.id))
+    .leftJoin(customers, eq(weighments.customer_id, customers.id))
+    .leftJoin(profiles, eq(weighments.profile_id, profiles.id))
+    .leftJoin(users, eq(profiles.user_id, users.id))
     .$dynamic();
 
   const baseQuery = db
     .select({
       id: weighments.id,
-      vehicle_number: weighments.vehicleNumber,
+      vehicle_number: weighments.vehicle_number,
       weight: weighments.weight,
       unit: weighments.unit,
       type: weighments.type,
-      rate_id: weighments.rateId,
-      center_id: weighments.centerId,
-      profile_id: weighments.profileId,
-      customer_id: weighments.customerId,
-      is_active: weighments.isActive,
+      rate_id: weighments.rate_id,
+      center_id: weighments.center_id,
+      profile_id: weighments.profile_id,
+      customer_id: weighments.customer_id,
+      is_active: weighments.is_active,
       images: weighments.images,
-      created_at: weighments.createdAt,
-      updated_at: weighments.updatedAt,
+      created_at: weighments.created_at,
+      updated_at: weighments.updated_at,
       commodity_name: commodities.name,
       center_name: centers.name,
       profile_name: users.name,
-      profile_aadhar: profiles.aadharNumber,
+      profile_aadhar: profiles.aadhar_number,
       customer_name: customers.name,
-      customer_govt_id: customers.govtId,
+      customer_govt_id: customers.govt_id,
     })
     .from(weighments)
-    .leftJoin(rates, eq(weighments.rateId, rates.id))
-    .leftJoin(commodities, eq(rates.commodityId, commodities.id))
-    .leftJoin(centers, eq(weighments.centerId, centers.id))
-    .leftJoin(profiles, eq(weighments.profileId, profiles.id))
-    .leftJoin(users, eq(profiles.userId, users.id))
-    .leftJoin(customers, eq(weighments.customerId, customers.id))
+    .leftJoin(rates, eq(weighments.rate_id, rates.id))
+    .leftJoin(commodities, eq(rates.commodity_id, commodities.id))
+    .leftJoin(centers, eq(weighments.center_id, centers.id))
+    .leftJoin(profiles, eq(weighments.profile_id, profiles.id))
+    .leftJoin(users, eq(profiles.user_id, users.id))
+    .leftJoin(customers, eq(weighments.customer_id, customers.id))
     .$dynamic();
 
-  const orderByClause = (() => {
-    switch (sortColumn) {
-      case EntityKey.ID:
-        return sortDesc ? desc(weighments.id) : asc(weighments.id);
-      case EntityKey.VEHICLE_NUMBER:
-        return sortDesc
-          ? desc(weighments.vehicleNumber)
-          : asc(weighments.vehicleNumber);
-      case EntityKey.TYPE:
-        return sortDesc ? desc(weighments.type) : asc(weighments.type);
-      case EntityKey.WEIGHT:
-        return sortDesc ? desc(weighments.weight) : asc(weighments.weight);
-      case EntityKey.UNIT:
-        return sortDesc ? desc(weighments.unit) : asc(weighments.unit);
-      case EntityKey.RATE_ID:
-        return sortDesc ? desc(weighments.rateId) : asc(weighments.rateId);
-      case EntityKey.CENTER_ID:
-        return sortDesc ? desc(weighments.centerId) : asc(weighments.centerId);
-      case EntityKey.CENTER_NAME:
-        return sortDesc ? desc(centers.name) : asc(centers.name);
-      case EntityKey.PROFILE_ID:
-        return sortDesc
-          ? desc(weighments.profileId)
-          : asc(weighments.profileId);
-      case EntityKey.PROFILE_NAME:
-        return sortDesc ? desc(users.name) : asc(users.name);
-      case EntityKey.PROFILE_AADHAR:
-        return sortDesc
-          ? desc(profiles.aadharNumber)
-          : asc(profiles.aadharNumber);
-      case EntityKey.CUSTOMER_ID:
-        return sortDesc
-          ? desc(weighments.customerId)
-          : asc(weighments.customerId);
-      case EntityKey.CUSTOMER_NAME:
-        return sortDesc ? desc(customers.name) : asc(customers.name);
-      case EntityKey.CUSTOMER_GOVT_ID:
-        return sortDesc ? desc(customers.govtId) : asc(customers.govtId);
-      case EntityKey.COMMODITY_NAME:
-        return sortDesc ? desc(commodities.name) : asc(commodities.name);
-      case EntityKey.IS_ACTIVE:
-        return sortDesc ? desc(weighments.isActive) : asc(weighments.isActive);
-      case EntityKey.CREATED_AT:
-        return sortDesc
-          ? desc(weighments.createdAt)
-          : asc(weighments.createdAt);
-      case EntityKey.UPDATED_AT:
-        return sortDesc
-          ? desc(weighments.updatedAt)
-          : asc(weighments.updatedAt);
-      default:
-        return desc(weighments.createdAt);
-    }
-  })();
+  const sortable = {
+    ...weighments,
+    center_name: centers.name,
+    profile_name: users.name,
+    profile_aadhar: profiles.aadhar_number,
+    customer_name: customers.name,
+    customer_govt_id: customers.govt_id,
+    commodity_name: commodities.name,
+  };
+  const orderByClause = getOrderByClause(
+    sortable,
+    sortColumn,
+    sortDesc,
+    weighments.created_at,
+  );
 
   return fetchPaginatedResult(
     db,
@@ -217,11 +162,13 @@ export const POST = withAuth(async (req, user, db, mode) => {
     images,
   } = body;
 
+  const { weighments, centers } = getTables(mode);
+
   // Ensure center belongs to user's factory in shared mode
   const [center] = await db
     .select(
       mode === TenantMode.SHARED
-        ? { factoryId: sharedSchema.centers.factoryId }
+        ? { factory_id: sharedSchema.centers.factory_id }
         : { id: centers.id },
     )
     .from(centers)
@@ -229,21 +176,21 @@ export const POST = withAuth(async (req, user, db, mode) => {
   if (!center)
     return apiError("Selected center not found", StatusCodes.NOT_FOUND);
   if (mode === TenantMode.SHARED) {
-    const c = center as { factoryId: number };
-    if (c.factoryId !== user.factory_id) return forbiddenError();
+    const c = center as { factory_id: number };
+    if (c.factory_id !== user.factory_id) return forbiddenError();
   }
 
   const [newWeighment] = await db
     .insert(weighments)
     .values({
-      vehicleNumber: vehicle_number,
+      vehicle_number: vehicle_number,
       weight: String(weight),
       unit: unit || Unit.KG,
       type: type || WeighmentType.IN,
-      rateId: Number(rate_id),
-      centerId: Number(center_id),
-      profileId: Number(profile_id),
-      customerId: Number(customer_id),
+      rate_id: Number(rate_id),
+      center_id: Number(center_id),
+      profile_id: Number(profile_id),
+      customer_id: Number(customer_id),
       images: images || [],
     })
     .returning();
@@ -264,17 +211,18 @@ export const DELETE = withAuth(async (req, user, db, mode) => {
     return forbiddenError();
   const factoryId = user.factory_id as number;
 
+  const { weighments, centers } = getTables(mode);
   const ownershipScope =
     mode === TenantMode.SHARED
       ? and(
           inArray(weighments.id, ids),
-          eq(sharedSchema.centers.factoryId, factoryId),
+          eq(sharedSchema.centers.factory_id, factoryId),
         )
       : inArray(weighments.id, ids);
   const scopedWeighmentIds = db
     .select({ id: weighments.id })
     .from(weighments)
-    .innerJoin(centers, eq(weighments.centerId, centers.id))
+    .innerJoin(centers, eq(weighments.center_id, centers.id))
     .where(ownershipScope);
 
   try {

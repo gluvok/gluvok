@@ -15,7 +15,7 @@ import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 export const PATCH = withAuth(
   withEntityScope(
     (mode) => getTables(mode).centers,
-    sharedSchema.centers.factoryId,
+    sharedSchema.centers.factory_id,
     async (req, user, db, mode, _ctx, { whereClause }) => {
       if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.WRITE))
         return forbiddenError();
@@ -24,7 +24,7 @@ export const PATCH = withAuth(
 
       const [updated] = await db
         .update(centers)
-        .set({ ...(name ? { name } : {}), updatedAt: new Date() })
+        .set({ ...(name ? { name } : {}), updated_at: new Date() })
         .where(whereClause)
         .returning();
 
@@ -38,7 +38,7 @@ export const PATCH = withAuth(
 export const DELETE = withAuth(
   withEntityScope(
     (mode) => getTables(mode).centers,
-    sharedSchema.centers.factoryId,
+    sharedSchema.centers.factory_id,
     async (_req, user, db, mode, _ctx, { whereClause }) => {
       if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.DELETE))
         return forbiddenError();

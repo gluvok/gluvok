@@ -22,39 +22,39 @@ import {
 export * from "./common"
 
 export const factories = pgTable(TableName.FACTORIES, {
-  id: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-  name: varchar(EntityKey.NAME, { length: 255 }).notNull(),
+  [EntityKey.ID]: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
+  [EntityKey.NAME]: varchar(EntityKey.NAME, { length: 255 }).notNull(),
   ...timestamps,
 })
 
 export const configs = pgTable(TableName.CONFIGS, {
   ...configBaseColumns,
-  factoryId: integer(EntityKey.FACTORY_ID).notNull().unique().references(() => factories.id, { onDelete: "restrict" }),
+  [EntityKey.FACTORY_ID]: integer(EntityKey.FACTORY_ID).notNull().unique().references(() => factories.id, { onDelete: "restrict" }),
 })
 
 export const centers = pgTable(TableName.CENTERS, {
   ...centerBaseColumns,
-  factoryId: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
+  [EntityKey.FACTORY_ID]: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
 })
 
 export const rates = pgTable(TableName.RATES, {
   ...rateBaseColumns(),
-  factoryId: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
+  [EntityKey.FACTORY_ID]: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
 })
 
 export const users = pgTable(TableName.USERS, {
   ...userBaseColumns,
-  factoryId: integer(EntityKey.FACTORY_ID).references(() => factories.id, { onDelete: "restrict" }),
+  [EntityKey.FACTORY_ID]: integer(EntityKey.FACTORY_ID).references(() => factories.id, { onDelete: "restrict" }),
 })
 
 export const customers = pgTable(TableName.CUSTOMERS, {
   ...customerBaseColumns,
-  userId: integer(EntityKey.USER_ID).unique().references(() => users.id, { onDelete: "restrict" }),
-  factoryId: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
+  [EntityKey.USER_ID]: integer(EntityKey.USER_ID).unique().references(() => users.id, { onDelete: "restrict" }),
+  [EntityKey.FACTORY_ID]: integer(EntityKey.FACTORY_ID).notNull().references(() => factories.id, { onDelete: "restrict" }),
 }, (table) => [
   uniqueIndex("customers_govt_id_factory_id_idx")
-    .on(table.govtId, table.factoryId)
-    .where(sql`${table.govtId} IS NOT NULL`),
+    .on(table.govt_id, table.factory_id)
+    .where(sql`${table.govt_id} IS NOT NULL`),
 ])
 
 // Relations
@@ -68,14 +68,14 @@ export const factoriesRelations = relations(factories, ({ one, many }) => ({
 
 export const configsRelations = relations(configs, ({ one }) => ({
   factory: one(factories, {
-    fields: [configs.factoryId],
+    fields: [configs.factory_id],
     references: [factories.id],
   }),
 }))
 
 export const centersRelations = relations(centers, ({ one, many }) => ({
   factory: one(factories, {
-    fields: [centers.factoryId],
+    fields: [centers.factory_id],
     references: [factories.id],
   }),
   weighments: many(weighments),
@@ -87,11 +87,11 @@ export const commoditiesRelations = relations(commodities, ({ many }) => ({
 
 export const ratesRelations = relations(rates, ({ one, many }) => ({
   commodity: one(commodities, {
-    fields: [rates.commodityId],
+    fields: [rates.commodity_id],
     references: [commodities.id],
   }),
   factory: one(factories, {
-    fields: [rates.factoryId],
+    fields: [rates.factory_id],
     references: [factories.id],
   }),
   weighments: many(weighments),
@@ -99,26 +99,26 @@ export const ratesRelations = relations(rates, ({ one, many }) => ({
 
 export const usersRelations = relations(users, ({ one }) => ({
   factory: one(factories, {
-    fields: [users.factoryId],
+    fields: [users.factory_id],
     references: [factories.id],
   }),
   profile: one(profiles, {
     fields: [users.id],
-    references: [profiles.userId],
+    references: [profiles.user_id],
   }),
   customer: one(customers, {
     fields: [users.id],
-    references: [customers.userId],
+    references: [customers.user_id],
   }),
 }))
 
 export const customersRelations = relations(customers, ({ one, many }) => ({
   user: one(users, {
-    fields: [customers.userId],
+    fields: [customers.user_id],
     references: [users.id],
   }),
   factory: one(factories, {
-    fields: [customers.factoryId],
+    fields: [customers.factory_id],
     references: [factories.id],
   }),
   weighments: many(weighments),
@@ -126,7 +126,7 @@ export const customersRelations = relations(customers, ({ one, many }) => ({
 
 export const profilesRelations = relations(profiles, ({ one, many }) => ({
   user: one(users, {
-    fields: [profiles.userId],
+    fields: [profiles.user_id],
     references: [users.id],
   }),
   weighments: many(weighments),
@@ -134,19 +134,19 @@ export const profilesRelations = relations(profiles, ({ one, many }) => ({
 
 export const weighmentsRelations = relations(weighments, ({ one }) => ({
   rate: one(rates, {
-    fields: [weighments.rateId],
+    fields: [weighments.rate_id],
     references: [rates.id],
   }),
   center: one(centers, {
-    fields: [weighments.centerId],
+    fields: [weighments.center_id],
     references: [centers.id],
   }),
   profile: one(profiles, {
-    fields: [weighments.profileId],
+    fields: [weighments.profile_id],
     references: [profiles.id],
   }),
   customer: one(customers, {
-    fields: [weighments.customerId],
+    fields: [weighments.customer_id],
     references: [customers.id],
   }),
 }))

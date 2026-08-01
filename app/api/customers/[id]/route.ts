@@ -25,18 +25,18 @@ import { hashPassword } from "@/lib/auth/password"
 export const PATCH = withAuth(
   withEntityScope(
     (mode) => getTables(mode).customers,
-    sharedSchema.customers.factoryId,
+    sharedSchema.customers.factory_id,
     async (req, user, db, mode, _ctx, { whereClause }) => {
       const { customers, users } = getTables(mode);
 
       // Fetch the record first to check ownership
       const [existing] = await db
-        .select({ id: customers.id, userId: customers.userId, name: customers.name })
+        .select({ id: customers.id, user_id: customers.user_id, name: customers.name })
         .from(customers)
         .where(whereClause);
       const isOwn =
-        existing?.userId != null &&
-        String(existing.userId) === String(user.sub);
+        existing?.user_id != null &&
+        String(existing.user_id) === String(user.sub);
 
       // Self-update allowed even without write permission; otherwise check RBAC
       if (
@@ -62,8 +62,8 @@ export const PATCH = withAuth(
       if (username && typeof username === "string" && username.trim().length > 0) {
         const cleanUsername = username.trim();
         const existingUserConds = [eq(sharedSchema.users.username, cleanUsername)];
-        if (existing?.userId != null) {
-          existingUserConds.push(ne(sharedSchema.users.id, existing.userId));
+        if (existing?.user_id != null) {
+          existingUserConds.push(ne(sharedSchema.users.id, existing.user_id));
         }
         const [takenUser] = await db
           .select({ id: sharedSchema.users.id })
@@ -78,8 +78,8 @@ export const PATCH = withAuth(
         .update(customers)
         .set({
           ...(name ? { name } : {}),
-          ...(father_name ? { fatherName: father_name } : {}),
-          updatedAt: new Date(),
+          ...(father_name ? { father_name: father_name } : {}),
+          updated_at: new Date(),
         })
         .where(whereClause)
         .returning();
@@ -87,8 +87,8 @@ export const PATCH = withAuth(
       if (!updated)
         return apiError("Customer not found", StatusCodes.NOT_FOUND);
 
-      if (updated.userId) {
-        const userUpdates: Record<string, unknown> = { updatedAt: new Date() };
+      if (updated.user_id) {
+        const userUpdates: Record<string, unknown> = { updated_at: new Date() };
         if (name && typeof name === "string" && name.trim().length > 0) {
           userUpdates.name = name.trim();
         }
@@ -105,13 +105,13 @@ export const PATCH = withAuth(
           );
         }
         if (is_active !== undefined) {
-          userUpdates.isActive = Boolean(is_active);
+          userUpdates.is_active = Boolean(is_active);
         }
         if (Object.keys(userUpdates).length > 1) {
           await db
             .update(users)
             .set(userUpdates)
-            .where(eq(users.id, updated.userId));
+            .where(eq(users.id, updated.user_id));
         }
       } else if (
         username &&
@@ -125,10 +125,10 @@ export const PATCH = withAuth(
         const userValues = {
           name: updated.name,
           username: username.trim(),
-          passwordHash,
+          password_hash: passwordHash,
           role: Role.BASE,
           ...(mode === TenantMode.SHARED && user.factory_id
-            ? { factoryId: user.factory_id }
+            ? { factory_id: user.factory_id }
             : {}),
         };
         const [newUser] = await db
@@ -138,10 +138,10 @@ export const PATCH = withAuth(
 
         await db
           .update(customers)
-          .set({ userId: newUser.id })
+          .set({ user_id: newUser.id })
           .where(eq(customers.id, updated.id));
 
-        updated.userId = newUser.id;
+        updated.user_id = newUser.id;
       }
 
       return formatEntityResponse(updated, mode);
@@ -152,7 +152,7 @@ export const PATCH = withAuth(
 export const DELETE = withAuth(
   withEntityScope(
     (mode) => getTables(mode).customers,
-    sharedSchema.customers.factoryId,
+    sharedSchema.customers.factory_id,
     async (_req, user, db, mode, _ctx, { whereClause }) => {
       if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.DELETE))
         return forbiddenError();

@@ -53,10 +53,10 @@ async function main() {
   const userValues: Record<string, unknown> = {
     name: "Admin User",
     username: "admin",
-    passwordHash,
+    password_hash: passwordHash,
     role: Role.ADMIN,
-    isActive: true,
-    ...(isShared ? { factoryId: factoryIdArg } : {}),
+    is_active: true,
+    ...(isShared ? { factory_id: factoryIdArg } : {}),
   }
 
   const [adminUser] = await db
@@ -71,7 +71,7 @@ async function main() {
     await db
       .insert(schema.profiles)
       .values({
-        userId: adminUser.id,
+        user_id: adminUser.id,
         role: Role.ADMIN,
       })
       .onConflictDoNothing()

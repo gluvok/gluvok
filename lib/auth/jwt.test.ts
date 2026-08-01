@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest"
 import { TenantMode } from "@/lib/constants/enums"
-import { signJWT, verifyJWT } from "./jwt"
+import { getTokenExpiresIn, signJWT, verifyJWT } from "./jwt"
 
 const originalJwtSecret = process.env.JWT_SECRET
 
@@ -33,5 +33,19 @@ describe("JWT profile claims", () => {
       profile_id: 18,
       tenant_mode: TenantMode.SHARED,
     })
+  })
+
+  it("reports the signed token lifetime for client responses", async () => {
+    process.env.JWT_SECRET = "test-secret"
+
+    const token = await signJWT({
+      sub: "42",
+      username: "operator_01",
+      role: "operator",
+      factory_id: 7,
+      tenant_mode: TenantMode.SHARED,
+    }, "1h")
+
+    expect(getTokenExpiresIn(token)).toBe(3600)
   })
 })

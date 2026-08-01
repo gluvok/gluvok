@@ -103,6 +103,7 @@ export enum AppRoutes {
 
 export enum ApiRoutes {
   AUTH_LOGIN = "/api/auth/login",
+  AUTH_DEVICE_LOGIN = "/api/auth/device/login",
   AUTH_ME = "/api/auth/me",
   PROFILES = "/api/profiles",
   CUSTOMERS = "/api/customers",

@@ -3,7 +3,7 @@
  * @description JWT signing and verification utilities using jose.
  */
 
-import { SignJWT, jwtVerify } from "jose"
+import { decodeJwt, SignJWT, jwtVerify } from "jose"
 import { TenantMode } from "@/lib/constants/enums"
 
 function getJwtSecret(): Uint8Array {
@@ -44,6 +44,14 @@ export async function signJWT(
     .setIssuedAt()
     .setExpirationTime(expiresIn)
     .sign(getJwtSecret());
+}
+
+export function getTokenExpiresIn(token: string): number {
+  const { exp, iat } = decodeJwt(token)
+  if (typeof exp !== "number" || typeof iat !== "number") {
+    throw new Error("Signed JWT is missing an expiration time")
+  }
+  return Math.max(0, exp - iat)
 }
 
 /**

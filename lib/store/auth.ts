@@ -43,7 +43,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   profileLoading: false,
   initAuth: () => {
     if (get().initialized) {
-      return () => {}
+      return () => { }
     }
 
     set({ profileLoading: true })
@@ -74,7 +74,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         set({ user: null, initialized: true, profileLoading: false })
       })
 
-    return () => {}
+    return () => { }
   },
   login: async (username, password) => {
     try {
@@ -90,7 +90,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           data.error ||
           (res.status === 401
             ? AuthErrorMessage.INVALID_CREDENTIALS
-            : AuthErrorMessage.SIGN_IN_ERROR)
+            : res.status === 500 ? AuthErrorMessage.INTERNAL_SERVER_ERROR : AuthErrorMessage.SIGN_IN_ERROR)
         toast.error(errorMsg)
         set({ user: null })
         return false

@@ -47,8 +47,8 @@ export function UserAvatarInfo({ user }: { user: UserInfo }) {
           {username && <span className="truncate font-mono">@{username}</span>}
           {username && <span>•</span>}
           <div className="flex items-center gap-1 shrink-0">
-            <RenderRoleIcon icon={roleIcon} className="size-2 shrink-0 text-muted-foreground" />
-            <span>{rawRole.toLowerCase()}</span>
+            <RenderRoleIcon icon={roleIcon} className="size-3 shrink-0 text-muted-foreground" />
+            <span>{rawRole}</span>
           </div>
         </div>
       </div>

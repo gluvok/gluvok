@@ -14,7 +14,29 @@ import {
   WeighmentType,
   FieldRequirementMode,
 } from "@/lib/constants/enums";
-import { Sprout, Wheat, Droplet, Hammer, Package, Leaf, Wine, Cable, ShieldCheck, Briefcase, HardHat, User, Cpu, Shield, ArrowDownLeft, ArrowUpRight, ArrowUpDown, CheckCircle2, HelpCircle, Ban, SlidersHorizontal, type LucideIcon } from "lucide-react"
+import {
+  Sprout,
+  Wheat,
+  Droplet,
+  Hammer,
+  Package,
+  Leaf,
+  Wine,
+  Cable,
+  ShieldCheck,
+  Briefcase,
+  HardHat,
+  User,
+  Shield,
+  ArrowDownLeft,
+  ArrowUpRight,
+  ArrowUpDown,
+  CheckCircle2,
+  HelpCircle,
+  Ban,
+  SlidersHorizontal,
+  type LucideIcon,
+} from "lucide-react";
 
 export function getPrimaryIdKey(slug: string | ProjectSlug): EntityKey {
   switch (slug) {
@@ -73,9 +95,7 @@ export function getRoleBadgeClass(role?: string): string {
     case Role.OPERATOR:
       return "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
     case Role.BASE:
-      return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
-    case Role.HARDWARE:
-      return "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
+      return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30";
     default:
       return "bg-muted/70 text-foreground border-border/40"
   }
@@ -89,9 +109,7 @@ export function getRoleIndicatorVariant(role?: string): "success" | "warning" | 
     case Role.OPERATOR:
       return "warning"
     case Role.BASE:
-      return "success"
-    case Role.HARDWARE:
-      return "error"
+      return "success";
     default:
       return "info"
   }
@@ -106,9 +124,7 @@ export function getRoleIcon(role?: string): LucideIcon {
     case Role.OPERATOR:
       return HardHat
     case Role.BASE:
-      return User
-    case Role.HARDWARE:
-      return Cpu
+      return User;
     default:
       return Shield
   }

@@ -156,7 +156,6 @@ export const POST = withAuth(async (req, user, db, mode) => {
 
     const passwordHash = await hashPassword(password);
     const userValues = {
-      name,
       username,
       password_hash: passwordHash,
       role: Role.BASE,

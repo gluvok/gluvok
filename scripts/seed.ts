@@ -73,13 +73,12 @@ async function main() {
 
   console.log("Inserting admin user ('admin')...")
   const userValues: Record<string, unknown> = {
-    name: "Admin User",
     username: "admin",
     password_hash: passwordHash,
     role: Role.ADMIN,
     is_active: true,
     ...(isShared && sharedFactoryId ? { factory_id: sharedFactoryId } : {}),
-  }
+  };
 
   const [adminUser] = await db
     .insert(schema.users)
@@ -94,9 +93,10 @@ async function main() {
       .insert(schema.profiles)
       .values({
         user_id: adminUser.id,
+        name: "Admin User",
         role: Role.ADMIN,
       })
-      .onConflictDoNothing()
+      .onConflictDoNothing();
     console.log("Admin profile seeded successfully!")
   } else {
     console.log("Admin user already exists.")

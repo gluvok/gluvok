@@ -25,8 +25,7 @@ export const roleEnum = pgEnum(DbEnum.ROLE, [
   Role.MANAGER,
   Role.OPERATOR,
   Role.BASE,
-  Role.HARDWARE,
-])
+]);
 
 export const unitEnum = pgEnum(DbEnum.UNIT, [
   Unit.KG,
@@ -52,14 +51,17 @@ export const fieldRequirementModeEnum = pgEnum(DbEnum.FIELD_REQUIREMENT_MODE, [
 
 /** Core columns shared by every `users` table variant. */
 export const userBaseColumns = {
-  [EntityKey.ID]: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-  [EntityKey.NAME]: varchar(EntityKey.NAME, { length: 255 }).notNull(),
-  [EntityKey.USERNAME]: varchar(EntityKey.USERNAME, { length: 255 }).notNull().unique(),
+  [EntityKey.ID]: integer(EntityKey.ID)
+    .primaryKey()
+    .generatedAlwaysAsIdentity(),
+  [EntityKey.USERNAME]: varchar(EntityKey.USERNAME, { length: 255 })
+    .notNull()
+    .unique(),
   password_hash: text("password_hash").notNull(),
   [EntityKey.ROLE]: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
   [EntityKey.IS_ACTIVE]: boolean(EntityKey.IS_ACTIVE).notNull().default(true),
   ...timestamps,
-} as const
+} as const;
 
 /** Core columns shared by every `customers` table variant. */
 export const customerBaseColumns = {
@@ -117,12 +119,18 @@ export const commodities = pgTable(TableName.COMMODITIES, {
  */
 export function profileBaseColumns(usersTable: { id: AnyPgColumn }) {
   return {
-    [EntityKey.ID]: integer(EntityKey.ID).primaryKey().generatedAlwaysAsIdentity(),
-    [EntityKey.USER_ID]: integer(EntityKey.USER_ID).notNull().unique().references(() => usersTable.id, { onDelete: "cascade" }),
+    [EntityKey.ID]: integer(EntityKey.ID)
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
+    [EntityKey.USER_ID]: integer(EntityKey.USER_ID)
+      .notNull()
+      .unique()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+    [EntityKey.NAME]: varchar(EntityKey.NAME, { length: 255 }).notNull(),
     [EntityKey.AADHAR_NUMBER]: varchar(EntityKey.AADHAR_NUMBER, { length: 12 }),
     [EntityKey.ROLE]: roleEnum(EntityKey.ROLE).notNull().default(Role.BASE),
     ...timestamps,
-  }
+  };
 }
 
 export const weighments = pgTable(TableName.WEIGHMENTS, {

@@ -22,10 +22,10 @@ export const GET = withAuth(async (_req, user, db, mode) => {
   }
 
   let profilesQuery = db
-    .select({ id: profiles.id, name: users.name })
+    .select({ id: profiles.id, name: profiles.name })
     .from(profiles)
     .innerJoin(users, eq(profiles.user_id, users.id))
-    .$dynamic()
+    .$dynamic();
   if (isShared && factoryFilter && sharedSchema.users.factory_id) {
     profilesQuery = profilesQuery.where(eq(sharedSchema.users.factory_id, factoryFilter)) as typeof profilesQuery
   }
@@ -50,13 +50,17 @@ export const GET = withAuth(async (_req, user, db, mode) => {
     ratesQuery = ratesQuery.where(eq(sharedSchema.rates.factory_id, factoryFilter)) as typeof ratesQuery
   }
 
-  const [commodityRows, centerRows, profileRows, customerRows, rateRows] = await Promise.all([
-    db.select({ id: commodities.id, name: commodities.name }).from(commodities).orderBy(asc(commodities.name)),
-    centersQuery.orderBy(asc(centers.name)),
-    profilesQuery.orderBy(asc(users.name)),
-    customersQuery.orderBy(asc(customers.name)),
-    ratesQuery.orderBy(asc(rates.id)),
-  ])
+  const [commodityRows, centerRows, profileRows, customerRows, rateRows] =
+    await Promise.all([
+      db
+        .select({ id: commodities.id, name: commodities.name })
+        .from(commodities)
+        .orderBy(asc(commodities.name)),
+      centersQuery.orderBy(asc(centers.name)),
+      profilesQuery.orderBy(asc(profiles.name)),
+      customersQuery.orderBy(asc(customers.name)),
+      ratesQuery.orderBy(asc(rates.id)),
+    ]);
 
   return NextResponse.json(
     {

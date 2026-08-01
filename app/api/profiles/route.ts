@@ -56,7 +56,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
   if (search) {
     const searchNum = parseInt(search, 10);
     const searchConds = [
-      ilike(users.name, `%${search}%`),
+      ilike(profiles.name, `%${search}%`),
       ...(isAadharNotRequired
         ? []
         : [ilike(profiles.aadhar_number, `%${search}%`)]),
@@ -73,7 +73,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
     .select({
       id: profiles.id,
       user_id: profiles.user_id,
-      name: users.name,
+      name: profiles.name,
       ...(isAadharNotRequired ? {} : { aadhar_number: profiles.aadhar_number }),
       role: profiles.role,
       created_at: profiles.created_at,
@@ -160,7 +160,6 @@ export const POST = withAuth(async (req, user, db, mode) => {
 
   const passwordHash = await hashPassword(password);
   const userValues = {
-    name,
     username,
     password_hash: passwordHash,
     role,
@@ -175,6 +174,7 @@ export const POST = withAuth(async (req, user, db, mode) => {
     .insert(profiles as typeof sharedSchema.profiles)
     .values({
       user_id: newUser.id,
+      name,
       ...(aadhar_number ? { aadhar_number: aadhar_number } : {}),
       role,
     } as typeof sharedSchema.profiles.$inferInsert)
@@ -183,7 +183,6 @@ export const POST = withAuth(async (req, user, db, mode) => {
   return formatEntityResponse(
     {
       ...(newProfile as Record<string, unknown>),
-      name: newUser.name,
       username: newUser.username,
       is_active: newUser.is_active,
       ...(mode === TenantMode.SHARED ? { factory_id: targetFactoryId } : {}),

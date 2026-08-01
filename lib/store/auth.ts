@@ -16,13 +16,12 @@ export const PROFILE_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.USER_ID}, ${E
 export const CUSTOMER_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.NAME}, ${EntityKey.GOVT_ID}, ${EntityKey.FATHER_NAME}, ${EntityKey.FACTORY_ID}, ${EntityKey.USER_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`
 
 export interface AuthUser {
-  id: string
-  name?: string
-  username: string
-  avatar?: string
-  role: Role
-  factory_id: number | null
-  tenant_mode?: TenantMode
+  id: string;
+  username: string;
+  avatar?: string;
+  role: Role;
+  factory_id: number | null;
+  tenant_mode?: TenantMode;
 }
 
 interface AuthStore {
@@ -107,8 +106,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       useConfigStore.getState().fetchConfig()
       useEntitiesStore.getState().preloadAllFilters({ silent: true })
 
-      const name = data.user.name || data.user.username
-      toast.success(`Welcome back, ${name}! 🎉`)
+      toast.success(`Welcome back, ${data.user.username}! 🎉`);
       return true
     } catch (err: unknown) {
       console.error("Login request error:", err)
@@ -123,14 +121,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
   logout: async () => {
     const currentUser = get().user
-    const name = currentUser?.name || currentUser?.username || "there"
+    const username = currentUser?.username || "there";
     try {
       await axios.post("/api/auth/logout")
     } catch (err) {
       console.error("Logout request error:", err)
     } finally {
       set({ user: null })
-      toast.success(`See you soon, ${name}! Logged out successfully 👋`)
+      toast.success(`See you soon, ${username}! Logged out successfully 👋`);
     }
   },
   setHydrated: (state) => set({ hydrated: state }),

@@ -34,7 +34,7 @@ export const PATCH = withAuth(
         .select({
           id: profiles.id,
           user_id: profiles.user_id,
-          name: users.name,
+          name: profiles.name,
           is_active: users.is_active,
           username: users.username,
           ...(mode === TenantMode.SHARED
@@ -69,6 +69,9 @@ export const PATCH = withAuth(
       const [updated] = await db
         .update(profiles)
         .set({
+          ...(name && typeof name === "string" && name.trim().length > 0
+            ? { name: name.trim() }
+            : {}),
           ...(validRole ? { role: validRole } : {}),
           updated_at: new Date(),
         })
@@ -83,9 +86,6 @@ export const PATCH = withAuth(
       if (!updated) return apiError("Profile not found", StatusCodes.NOT_FOUND);
 
       const userUpdates: Record<string, unknown> = { updated_at: new Date() };
-      if (name && typeof name === "string" && name.trim().length > 0) {
-        userUpdates.name = name.trim();
-      }
       if (
         password &&
         typeof password === "string" &&
@@ -103,21 +103,18 @@ export const PATCH = withAuth(
       }
 
       let updatedUserIsActive = existing.is_active;
-      let updatedUserName = existing.name;
       if (Object.keys(userUpdates).length > 1) {
         const [updatedUser] = await db
           .update(users)
           .set(userUpdates)
           .where(eq(users.id, updated.user_id))
-          .returning({ is_active: users.is_active, name: users.name });
+          .returning({ is_active: users.is_active });
         updatedUserIsActive = updatedUser?.is_active ?? updatedUserIsActive;
-        updatedUserName = updatedUser?.name ?? updatedUserName;
       }
 
       return formatEntityResponse(
         {
           ...updated,
-          name: updatedUserName,
           is_active: updatedUserIsActive,
           username: existing.username,
           ...(mode === TenantMode.SHARED

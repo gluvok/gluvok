@@ -56,28 +56,6 @@ describe("RBAC Access Controls", () => {
       })
     })
 
-    it("should grant Hardware role access only to Weighments create/read", () => {
-      const weighmentPerms = getPermissions(Role.HARDWARE, ProjectSlug.WEIGHMENTS)
-      expect(weighmentPerms).toMatchObject({
-        read: true,
-        write: false,
-        delete: false,
-        create: true,
-        show: true,
-        filter: true,
-      })
-
-      const profilePerms = getPermissions(Role.HARDWARE, ProjectSlug.PROFILES)
-      expect(profilePerms).toEqual({
-        read: false,
-        write: false,
-        delete: false,
-        create: false,
-        show: false,
-        filter: false,
-      })
-    })
-
     it("should grant Base role view-only access to weighments page on dashboard", () => {
       const weighmentPerms = getPermissions(Role.BASE, ProjectSlug.WEIGHMENTS)
       expect(weighmentPerms).toMatchObject({
@@ -103,8 +81,8 @@ describe("RBAC Access Controls", () => {
 
   describe("hasCreateAccess", () => {
     it("should return create permission", () => {
-      expect(hasCreateAccess(Role.HARDWARE, ProjectSlug.WEIGHMENTS)).toBe(true)
-      expect(hasCreateAccess(Role.HARDWARE, ProjectSlug.CUSTOMERS)).toBe(false)
+      expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.WEIGHMENTS)).toBe(true);
+      expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.CUSTOMERS)).toBe(true);
     })
   })
 
@@ -117,7 +95,7 @@ describe("RBAC Access Controls", () => {
 
   describe("isColumnVisible & isFieldVisible", () => {
     it("should hide factory_id and factory_name columns and fields across all roles", () => {
-      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE, Role.HARDWARE]
+      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE];
       for (const role of roles) {
         expect(isColumnVisible(role, ProjectSlug.CENTERS, EntityKey.FACTORY_ID)).toBe(false)
         expect(isColumnVisible(role, ProjectSlug.CENTERS, EntityKey.FACTORY_NAME)).toBe(false)

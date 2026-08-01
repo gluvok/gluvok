@@ -63,12 +63,11 @@ export async function GET(request: NextRequest) {
 
     const userPayload = {
       id: user.id,
-      name: user.name,
       username: user.username,
       role: user.role,
       factory_id: factoryId,
       tenant_mode: tenant.mode,
-    }
+    };
 
     return NextResponse.json({ user: userPayload })
   } catch (error) {

@@ -70,7 +70,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
     const searchConds = [
       ilike(weighments.vehicle_number, `%${search}%`),
       ilike(customers.name, `%${search}%`),
-      ilike(users.name, `%${search}%`),
+      ilike(profiles.name, `%${search}%`),
       ilike(centers.name, `%${search}%`),
     ];
     conditions.push(or(...searchConds));
@@ -103,7 +103,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
       updated_at: weighments.updated_at,
       commodity_name: commodities.name,
       center_name: centers.name,
-      profile_name: users.name,
+      profile_name: profiles.name,
       profile_aadhar: profiles.aadhar_number,
       customer_name: customers.name,
       customer_govt_id: customers.govt_id,
@@ -120,7 +120,7 @@ export const GET = withAuth(async (req, user, db, mode) => {
   const sortable = {
     ...weighments,
     center_name: centers.name,
-    profile_name: users.name,
+    profile_name: profiles.name,
     profile_aadhar: profiles.aadhar_number,
     customer_name: customers.name,
     customer_govt_id: customers.govt_id,
@@ -162,6 +162,14 @@ export const POST = withAuth(async (req, user, db, mode) => {
     images,
   } = body;
 
+  const profileId = user.profile_id ?? Number(profile_id);
+  if (!Number.isSafeInteger(profileId) || profileId <= 0) {
+    return apiError("profile_id is required", StatusCodes.BAD_REQUEST);
+  }
+  if (user.profile_id != null && user.role !== "operator") {
+    return forbiddenError();
+  }
+
   const { weighments, centers } = getTables(mode);
 
   // Ensure center belongs to user's factory in shared mode
@@ -189,7 +197,7 @@ export const POST = withAuth(async (req, user, db, mode) => {
       type: type || WeighmentType.IN,
       rate_id: Number(rate_id),
       center_id: Number(center_id),
-      profile_id: Number(profile_id),
+      profile_id: profileId,
       customer_id: Number(customer_id),
       images: images || [],
     })

@@ -14,7 +14,6 @@ import { useProjectDialogStates, parseColumnFilters, areFiltersEqual, getVisible
 import {
   useAuthStore,
   getPermissions,
-  useConfigStore,
   useEntitiesStore,
   usePreferencesStore,
 } from "@/lib/store";
@@ -52,8 +51,7 @@ export function useProjectTable({
   projectName,
 }: UseProjectTableProps) {
   const dialogStates = useProjectDialogStates()
-  const user = useAuthStore((state) => state.user)
-  const config = useConfigStore((state) => state.config);
+  const user = useAuthStore((state) => state.user);
 
   const username = user?.username
   const prefKey = username ? `${username}:${projectSlug}` : projectSlug
@@ -113,7 +111,6 @@ export function useProjectTable({
     setEditingItem,
     setDeletingItem,
     permissions,
-    config,
   ]);
 
   // Column visibility state synchronization

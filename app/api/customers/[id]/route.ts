@@ -89,9 +89,6 @@ export const PATCH = withAuth(
 
       if (updated.user_id) {
         const userUpdates: Record<string, unknown> = { updated_at: new Date() };
-        if (name && typeof name === "string" && name.trim().length > 0) {
-          userUpdates.name = name.trim();
-        }
         if (username && typeof username === "string" && username.trim().length > 0) {
           userUpdates.username = username.trim();
         }
@@ -123,7 +120,6 @@ export const PATCH = withAuth(
       ) {
         const passwordHash = await hashPassword(password.trim());
         const userValues = {
-          name: updated.name,
           username: username.trim(),
           password_hash: passwordHash,
           role: Role.BASE,

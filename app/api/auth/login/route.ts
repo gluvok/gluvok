@@ -10,6 +10,7 @@ import { verifyPassword } from "@/lib/auth/password"
 import { signJWT } from "@/lib/auth/jwt"
 import {
   CookieName,
+  Role,
   TenantMode,
   AuthErrorMessage,
 } from "@/lib/constants";
@@ -31,7 +32,9 @@ export async function POST(request: NextRequest) {
     // Resolve tenant from request subdomain
     const workspace = getWorkspace(request)
     const tenant = resolveTenant(workspace)
-    const { users } = getTables(tenant.mode)
+    const isDeviceClient =
+      request.nextUrl.searchParams.get("client") === "device";
+    const { users, profiles } = getTables(tenant.mode);
 
     // Import getDb lazily to avoid circular issues — db/index exports it
     const { getDb } = await import("@/db")
@@ -71,22 +74,59 @@ export async function POST(request: NextRequest) {
             : null)
         : null;
 
-    const token = await signJWT({
-      sub: String(user.id),
-      name: user.name,
-      username: user.username,
-      role: user.role,
-      factory_id: factoryId,
-      tenant_mode: tenant.mode,
-    })
+    let profileId: number | undefined;
+    if (isDeviceClient) {
+      if (user.role !== Role.OPERATOR) {
+        return NextResponse.json(
+          { error: AuthErrorMessage.INVALID_CREDENTIALS },
+          { status: 401 },
+        );
+      }
+
+      const [profile] = await tenantDb
+        .select({ id: profiles.id })
+        .from(profiles)
+        .where(eq(profiles.user_id, user.id))
+        .limit(1);
+      if (!profile) {
+        return NextResponse.json(
+          { error: "Operator profile not found" },
+          { status: 404 },
+        );
+      }
+      profileId = profile.id;
+    }
+
+    const deviceExpiresIn = process.env.JWT_DEVICE_EXPIRES_IN || "1d";
+    const token = await signJWT(
+      {
+        sub: String(user.id),
+        username: user.username,
+        role: user.role,
+        factory_id: factoryId,
+        profile_id: profileId,
+        tenant_mode: tenant.mode,
+      },
+      isDeviceClient ? deviceExpiresIn : undefined,
+    );
 
     const userPayload = {
       id: user.id,
-      name: user.name,
       username: user.username,
       role: user.role,
       factory_id: factoryId,
       tenant_mode: tenant.mode,
+    };
+
+    if (isDeviceClient) {
+      return NextResponse.json({
+        success: true,
+        access_token: token,
+        token_type: "Bearer",
+        expires_in: 86_400,
+        profile_id: profileId,
+        user: userPayload,
+      });
     }
 
     const response = NextResponse.json({ success: true, user: userPayload })

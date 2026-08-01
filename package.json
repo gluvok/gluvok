@@ -12,6 +12,7 @@
     "test:coverage": "vitest run --coverage",
     "db:clear": "tsx --env-file=.env.local scripts/clear-db.ts",
     "db:clear:shared": "tsx --env-file=.env.local scripts/clear-db.ts --shared",
+    "db:migrate:user-model": "tsx --env-file=.env.local scripts/migrate-user-model.ts",
     "seed": "tsx --env-file=.env.local scripts/seed.ts"
   },
   "dependencies": {

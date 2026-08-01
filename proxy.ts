@@ -40,7 +40,8 @@ export async function proxy(request: NextRequest) {
 
   const token =
     request.cookies.get(CookieName.TOKEN)?.value ||
-    request.cookies.get(CookieName.AUTH_TOKEN)?.value;
+    request.cookies.get(CookieName.AUTH_TOKEN)?.value ||
+    request.headers.get("authorization")?.match(/^Bearer (.+)$/i)?.[1];
 
   const isApiRoute = pathname.startsWith(ApiPrefix.API)
 
@@ -73,6 +74,9 @@ export async function proxy(request: NextRequest) {
   // factory_id only meaningful in shared mode
   if (tenant.mode === TenantMode.SHARED && payload.factory_id != null) {
     requestHeaders.set(RequestHeader.FACTORY_ID, String(payload.factory_id))
+  }
+  if (payload.profile_id != null) {
+    requestHeaders.set(RequestHeader.PROFILE_ID, String(payload.profile_id));
   }
 
   return NextResponse.next({ request: { headers: requestHeaders } })

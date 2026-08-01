@@ -15,25 +15,28 @@ function getJwtSecret(): Uint8Array {
 }
 
 export interface JWTPayload {
-  sub: string
-  name?: string
-  username: string
-  role: string
-  factory_id: number | null
-  tenant_mode: TenantMode
+  sub: string;
+  username: string;
+  role: string;
+  factory_id: number | null;
+  profile_id?: number;
+  tenant_mode: TenantMode;
 }
 
 /**
  * Signs a JWT session token with expiration time from environment variables (defaults to 1 year).
  */
-export async function signJWT(payload: JWTPayload): Promise<string> {
-  const expiresIn = process.env.JWT_EXPIRES_IN || process.env.JWT_EXPIRATION_TIME || "1y";
-
+export async function signJWT(
+  payload: JWTPayload,
+  expiresIn = process.env.JWT_EXPIRES_IN ||
+    process.env.JWT_EXPIRATION_TIME ||
+    "1y",
+): Promise<string> {
   return new SignJWT({
-    name: payload.name ?? "",
     username: payload.username,
     role: payload.role,
     factory_id: payload.factory_id ?? null,
+    ...(payload.profile_id != null ? { profile_id: payload.profile_id } : {}),
     tenant_mode: payload.tenant_mode,
   })
     .setProtectedHeader({ alg: "HS256" })
@@ -56,12 +59,17 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
 
     return {
       sub: payload.sub,
-      name: typeof payload.name === "string" ? payload.name : undefined,
       username: payload.username,
       role: payload.role,
-      factory_id: typeof payload.factory_id === "number" ? payload.factory_id : null,
-      tenant_mode: payload.tenant_mode === TenantMode.DEDICATED ? TenantMode.DEDICATED : TenantMode.SHARED,
-    }
+      factory_id:
+        typeof payload.factory_id === "number" ? payload.factory_id : null,
+      profile_id:
+        typeof payload.profile_id === "number" ? payload.profile_id : undefined,
+      tenant_mode:
+        payload.tenant_mode === TenantMode.DEDICATED
+          ? TenantMode.DEDICATED
+          : TenantMode.SHARED,
+    };
   } catch {
     return null
   }

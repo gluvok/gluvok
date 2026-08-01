@@ -11,10 +11,9 @@ import { useAuthStore } from "@/lib/store"
 import { getRoleIcon } from "@/lib/fields/helpers"
 
 export interface UserInfo {
-  name?: string
-  username: string
-  role?: string
-  avatar: string
+  username: string;
+  role?: string;
+  avatar: string;
 }
 
 export function RenderRoleIcon({ icon: Icon, className }: { icon: LucideIcon; className?: string }) {
@@ -26,8 +25,7 @@ export function RenderRoleIcon({ icon: Icon, className }: { icon: LucideIcon; cl
  * Renders avatar image with fallback initials, user name, and side-by-side username + lowercase role with icon.
  */
 export function UserAvatarInfo({ user }: { user: UserInfo }) {
-  const authUser = useAuthStore((state) => state.user)
-  const displayName = user.name || authUser?.name || user.username || authUser?.username || "User"
+  const authUser = useAuthStore((state) => state.user);
   const username = user.username || authUser?.username || ""
   const rawRole = user.role || authUser?.role || "admin"
 
@@ -36,14 +34,14 @@ export function UserAvatarInfo({ user }: { user: UserInfo }) {
   return (
     <>
       <Avatar className="h-8 w-8 rounded-lg shrink-0">
-        <AvatarImage src={user.avatar} alt={displayName} />
+        <AvatarImage src={user.avatar} alt={username} />
         <AvatarFallback className="rounded-lg">
-          {displayName ? displayName.slice(0, 2).toUpperCase() : "??"}
+          {username ? username.slice(0, 2).toUpperCase() : "??"}
         </AvatarFallback>
       </Avatar>
       <div className="grid flex-1 text-left text-xs leading-tight min-w-0 gap-0.5">
         <span className="truncate font-semibold text-xs text-foreground">
-          {displayName}
+          @{username || "user"}
         </span>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
           {username && <span className="truncate font-mono">@{username}</span>}

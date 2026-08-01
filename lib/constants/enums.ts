@@ -8,7 +8,6 @@ export enum Role {
   MANAGER = "manager",
   OPERATOR = "operator",
   BASE = "base",
-  HARDWARE = "hardware",
 }
 
 export enum Unit {
@@ -262,6 +261,7 @@ export enum RequestHeader {
   USERNAME = "x-user-username",
   ROLE = "x-user-role",
   FACTORY_ID = "x-user-factory-id",
+  PROFILE_ID = "x-user-profile-id",
   TENANT_MODE = "x-tenant-mode",
   WORKSPACE = "x-workspace",
 }

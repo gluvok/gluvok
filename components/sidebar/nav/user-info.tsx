@@ -17,7 +17,7 @@ export interface UserInfo {
   avatar: string
 }
 
-function RenderRoleIcon({ icon: Icon, className }: { icon: LucideIcon; className?: string }) {
+export function RenderRoleIcon({ icon: Icon, className }: { icon: LucideIcon; className?: string }) {
   return <Icon className={className} />
 }
 
@@ -42,16 +42,21 @@ export function UserAvatarInfo({ user }: { user: UserInfo }) {
         </AvatarFallback>
       </Avatar>
       <div className="grid flex-1 text-left text-xs leading-tight min-w-0 gap-0.5">
-        <span className="truncate font-semibold text-xs text-foreground">{displayName}</span>
+        <span className="truncate font-semibold text-xs text-foreground">
+          {displayName}
+        </span>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
           {username && <span className="truncate font-mono">@{username}</span>}
           {username && <span>•</span>}
           <div className="flex items-center gap-1 shrink-0">
-            <RenderRoleIcon icon={roleIcon} className="size-3 shrink-0 text-muted-foreground" />
+            <RenderRoleIcon
+              icon={roleIcon}
+              className="size-3! shrink-0 text-muted-foreground"
+            />
             <span>{rawRole}</span>
           </div>
         </div>
       </div>
     </>
-  )
+  );
 }

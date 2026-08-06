@@ -33,7 +33,7 @@ function getSpecificColumns<T>(projectSlug: string): ColumnDef<T>[] {
     case ProjectSlug.CUSTOMERS: return getCustomersColumns<T>()
     case ProjectSlug.WEIGHMENTS: return getWeighmentsColumns<T>()
     case ProjectSlug.PROFILES: return getProfilesColumns<T>()
-    case ProjectSlug.CONFIGS: return getConfigsColumns<T>()
+    case ProjectSlug.SETTINGS: return getConfigsColumns<T>()
 
     default: return []
   }
@@ -62,7 +62,7 @@ export function getProjectColumns<T extends EntityRecord = EntityRecord>(
     const colKey = (col.id || (col as { accessorKey?: string }).accessorKey) as string
     return isColumnVisible(userRole, projectSlug, colKey)
   }).map((column) => (
-    projectSlug === ProjectSlug.CONFIGS
+    projectSlug === ProjectSlug.SETTINGS
       ? { ...column, enableSorting: false }
       : column
   ))

@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server"
-import { and, eq } from "drizzle-orm";
-import { getTables, sharedSchema } from "@/db/schema";
 import {
   withAuth,
   withEntityScope,
@@ -11,157 +9,168 @@ import {
   isFKViolation,
   StatusCodes,
   getFactoryConfig,
-} from "@/db/helpers";
+} from "@/db/helpers"
 import { getDynamicProfileSchema } from "@/lib/validation"
 import { hashPassword } from "@/lib/auth/password"
 import {
   PermissionKey,
-  DatabasePropertyKey,
   ProjectSlug,
   Role,
-  TenantMode,
-} from "@/lib/constants/enums";
+  TableName,
+} from "@/lib/constants/enums"
+
+export const GET = withAuth(
+  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.READ))
+      return forbiddenError()
+
+    let query = client
+      .from(TableName.PROFILES)
+      .select("*, users!inner(username, is_active, factory_id)")
+      .eq("id", entityId)
+
+    if (factoryId) {
+      query = query.eq("users.factory_id", factoryId)
+    }
+
+    const { data: profile, error } = await query.maybeSingle()
+    if (error || !profile) return apiError("Profile not found", StatusCodes.NOT_FOUND)
+
+    return formatEntityResponse(profile)
+  })
+)
 
 export const PATCH = withAuth(
-  withEntityScope(
-    (mode) => getTables(mode).profiles,
-    sharedSchema.users.factory_id,
-    async (req, user, db, mode, _ctx, { whereClause: profileWhereClause }) => {
-      if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.WRITE))
-        return forbiddenError();
-      const { profiles, users } = getTables(mode);
-      const [existing] = await db
-        .select({
-          id: profiles.id,
-          user_id: profiles.user_id,
-          name: profiles.name,
-          is_active: users.is_active,
-          username: users.username,
-          ...(mode === TenantMode.SHARED
-            ? { factory_id: sharedSchema.users.factory_id }
-            : {}),
-        })
-        .from(profiles)
-        .innerJoin(users, eq(profiles.user_id, users.id))
-        .where(profileWhereClause)
-        .limit(1);
-      if (!existing)
-        return apiError("Profile not found", StatusCodes.NOT_FOUND);
-      const body = await req.json();
+  withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.WRITE))
+      return forbiddenError()
 
-      const activeConfig = await getFactoryConfig(user.factory_id, db, mode);
-      const dynamicSchema = getDynamicProfileSchema(activeConfig, true);
-      const parsed = dynamicSchema.safeParse(body);
+    let existingQuery = client
+      .from(TableName.PROFILES)
+      .select("id, user_id, name, users!inner(username, is_active, factory_id)")
+      .eq("id", entityId)
 
-      if (!parsed.success) {
-        return apiError(
-          parsed.error.issues[0].message,
-          StatusCodes.BAD_REQUEST,
-        );
+    if (factoryId) {
+      existingQuery = existingQuery.eq("users.factory_id", factoryId)
+    }
+
+    const { data: existing } = await existingQuery.maybeSingle()
+    if (!existing) return apiError("Profile not found", StatusCodes.NOT_FOUND)
+
+    const body = await req.json()
+    const activeConfig = await getFactoryConfig(user.factory_id)
+    const dynamicSchema = getDynamicProfileSchema(activeConfig, true)
+    const parsed = dynamicSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST)
+    }
+
+    const { name, password, role, is_active } = body
+    const validRole =
+      role && Object.values(Role).includes(role as Role)
+        ? (role as Role)
+        : undefined
+
+    const { data: updated, error: updateErr } = await client
+      .from(TableName.PROFILES)
+      .update({
+        ...(name && typeof name === "string" && name.trim().length > 0
+          ? { name: name.trim() }
+          : {}),
+        ...(validRole ? { role: validRole } : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", entityId)
+      .select()
+      .maybeSingle()
+
+    if (updateErr || !updated) return apiError("Profile not found", StatusCodes.NOT_FOUND)
+
+    const userUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() }
+    if (password && typeof password === "string" && password.trim().length > 0) {
+      userUpdates.password_hash = await hashPassword(password.trim())
+    }
+    if (validRole) {
+      userUpdates.role = validRole
+    }
+    if (is_active !== undefined) {
+      userUpdates.is_active = Boolean(is_active)
+    }
+
+    let updatedUserIsActive = (existing.users as unknown as { is_active?: boolean })?.is_active
+    if (Object.keys(userUpdates).length > 1) {
+      const { data: updatedUser } = await client
+        .from(TableName.USERS)
+        .update(userUpdates)
+        .eq("id", updated.user_id)
+        .select("is_active")
+        .maybeSingle()
+
+      if (updatedUser) {
+        updatedUserIsActive = updatedUser.is_active
       }
+    }
 
-      const { name, password, role, is_active } = body;
-      const validRole =
-        role && Object.values(Role).includes(role as Role)
-          ? (role as Role)
-          : undefined;
+    const rawUsers = existing.users as unknown as { username?: string; factory_id?: number } | null
+    return formatEntityResponse({
+      ...updated,
+      is_active: updatedUserIsActive,
+      username: rawUsers?.username,
+      factory_id: rawUsers?.factory_id,
+    })
+  })
+)
 
-      const [updated] = await db
-        .update(profiles)
-        .set({
-          ...(name && typeof name === "string" && name.trim().length > 0
-            ? { name: name.trim() }
-            : {}),
-          ...(validRole ? { role: validRole } : {}),
-          updated_at: new Date(),
-        })
-        .where(
-          and(
-            eq(profiles.id, existing.id),
-            eq(profiles.user_id, existing.user_id),
-          ),
-        )
-        .returning();
-
-      if (!updated) return apiError("Profile not found", StatusCodes.NOT_FOUND);
-
-      const userUpdates: Record<string, unknown> = { updated_at: new Date() };
-      if (
-        password &&
-        typeof password === "string" &&
-        password.trim().length > 0
-      ) {
-        userUpdates[DatabasePropertyKey.PASSWORD_HASH] = await hashPassword(
-          password.trim(),
-        );
-      }
-      if (validRole) {
-        userUpdates.role = validRole;
-      }
-      if (is_active !== undefined) {
-        userUpdates.is_active = Boolean(is_active);
-      }
-
-      let updatedUserIsActive = existing.is_active;
-      if (Object.keys(userUpdates).length > 1) {
-        const [updatedUser] = await db
-          .update(users)
-          .set(userUpdates)
-          .where(eq(users.id, updated.user_id))
-          .returning({ is_active: users.is_active });
-        updatedUserIsActive = updatedUser?.is_active ?? updatedUserIsActive;
-      }
-
-      return formatEntityResponse(
-        {
-          ...updated,
-          is_active: updatedUserIsActive,
-          username: existing.username,
-          ...(mode === TenantMode.SHARED
-            ? { factory_id: existing.factory_id }
-            : {}),
-        },
-        mode,
-      );
-    },
-  ),
-);
+export const PUT = PATCH
 
 export const DELETE = withAuth(
-  withEntityScope(
-    (mode) => getTables(mode).profiles,
-    sharedSchema.users.factory_id,
-    async (_req, user, db, mode, _ctx, { whereClause: profileWhereClause }) => {
-      if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.DELETE))
-        return forbiddenError();
-      try {
-        const { profiles, users } = getTables(mode);
-        const [existing] = await db
-          .select({ id: profiles.id, user_id: profiles.user_id })
-          .from(profiles)
-          .innerJoin(users, eq(profiles.user_id, users.id))
-          .where(profileWhereClause)
-          .limit(1);
-        if (!existing)
-          return apiError("Profile not found", StatusCodes.NOT_FOUND);
-        await db
-          .delete(profiles)
-          .where(
-            and(
-              eq(profiles.id, existing.id),
-              eq(profiles.user_id, existing.user_id),
-            ),
-          );
-        return NextResponse.json({ success: true });
-      } catch (error) {
+  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.DELETE))
+      return forbiddenError()
+
+    try {
+      let existingQuery = client
+        .from(TableName.PROFILES)
+        .select("id, user_id, users!inner(factory_id)")
+        .eq("id", entityId)
+
+      if (factoryId) {
+        existingQuery = existingQuery.eq("users.factory_id", factoryId)
+      }
+
+      const { data: existing } = await existingQuery.maybeSingle()
+      if (!existing) return apiError("Profile not found", StatusCodes.NOT_FOUND)
+
+      const { data, error } = await client
+        .from(TableName.PROFILES)
+        .delete()
+        .eq("id", entityId)
+        .select("id")
+
+      if (error) {
         if (isFKViolation(error)) {
           return apiError(
-            "Cannot delete this profile because it is referenced by existing weighments. Please reassign or delete dependent records first.",
-            StatusCodes.BAD_REQUEST,
-          );
+            "Cannot delete this profile because it is referenced by existing weighments.",
+            StatusCodes.BAD_REQUEST
+          )
         }
-        throw error;
+        throw error
       }
-    },
-  ),
-);
+
+      if (!data || data.length === 0) {
+        return apiError("Profile not found", StatusCodes.NOT_FOUND)
+      }
+
+      return NextResponse.json({ success: true, id: entityId })
+    } catch (error) {
+      if (isFKViolation(error)) {
+        return apiError(
+          "Cannot delete this profile because it is referenced by existing weighments.",
+          StatusCodes.BAD_REQUEST
+        )
+      }
+      throw error
+    }
+  })
+)

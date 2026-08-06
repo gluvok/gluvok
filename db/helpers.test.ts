@@ -1,57 +1,31 @@
 import { describe, expect, it, vi } from "vitest";
-import { eq } from "drizzle-orm";
-import { sharedSchema } from "@/db/schema";
-import { TenantMode } from "@/lib/constants/enums";
+import { Role } from "@/lib/constants/enums";
 import {
   fetchPaginatedResult,
   formatEntityResponse,
-  getScopedEntityWhereClause,
   parseBulkIds,
   withEntityScope,
 } from "./helpers";
 
 describe("fetchPaginatedResult", () => {
-  it("applies ordering before pagination", async () => {
-    const calls: string[] = [];
-    const rows = [{ id: 2 }, { id: 1 }];
-    const orderByClause = { name: "name" };
-
-    const baseQuery = {
-      orderBy: (clause: unknown) => {
-        calls.push(`orderBy:${clause === orderByClause}`);
+  it("applies range pagination and returns standard payload", async () => {
+    const rows = [{ id: 1 }, { id: 2 }];
+    const query = {
+      range: async (start: number, end: number) => {
         return {
-          where: () => {
-            calls.push("where");
-            return {
-              limit: (limit: number) => {
-                calls.push(`limit:${limit}`);
-                return {
-                  offset: async (offset: number) => {
-                    calls.push(`offset:${offset}`);
-                    return rows;
-                  },
-                };
-              },
-            };
-          },
+          data: rows.slice(start, end + 1),
+          count: rows.length,
+          error: null,
         };
       },
     };
 
-    const countQuery = {
-      where: async () => [{ count: 2 }],
-    };
+    const response = await fetchPaginatedResult(query, {
+      page: 1,
+      limit: 10,
+      offset: 0,
+    });
 
-    const response = await fetchPaginatedResult(
-      {} as never,
-      countQuery,
-      baseQuery,
-      undefined,
-      { page: 1, limit: 10, offset: 0 },
-      orderByClause,
-    );
-
-    expect(calls).toEqual(["orderBy:true", "where", "limit:10", "offset:0"]);
     expect(await response.json()).toEqual({
       data: rows,
       pagination: { page: 1, limit: 10, total: 2 },
@@ -60,97 +34,60 @@ describe("fetchPaginatedResult", () => {
 });
 
 describe("withEntityScope", () => {
-  const sharedUser = {
+  const sampleUser = {
     sub: "1",
     username: "admin",
-    role: "admin",
+    role: Role.ADMIN,
     factory_id: 1,
-    tenant_mode: TenantMode.SHARED,
   };
 
-  it("rejects invalid IDs and shared users without a factory before calling the handler", async () => {
+  it("rejects invalid IDs before calling handler", async () => {
     const handler = vi.fn();
-    const scopedHandler = withEntityScope(
-      () => sharedSchema.centers,
-      sharedSchema.centers.factory_id,
-      handler,
-    );
+    const scopedHandler = withEntityScope(handler);
 
     const invalidResponse = await scopedHandler(
       new Request("http://localhost") as never,
-      sharedUser,
+      sampleUser,
       {} as never,
-      TenantMode.SHARED,
-      { params: Promise.resolve({ id: "invalid" }) },
-    );
-    const forbiddenResponse = await scopedHandler(
-      new Request("http://localhost") as never,
-      { ...sharedUser, factory_id: null },
-      {} as never,
-      TenantMode.SHARED,
-      { params: Promise.resolve({ id: "1" }) },
+      { params: Promise.resolve({ id: "invalid" }) }
     );
 
     expect(invalidResponse.status).toBe(400);
-    expect(forbiddenResponse.status).toBe(403);
     expect(handler).not.toHaveBeenCalled();
   });
-});
 
-describe("getScopedEntityWhereClause", () => {
-  const entityWhereClause = eq(sharedSchema.centers.id, 1);
-  const sharedUser = {
-    sub: "1",
-    username: "admin",
-    role: "admin",
-    factory_id: 1,
-    tenant_mode: TenantMode.SHARED,
-  };
+  it("passes entityId and factoryId to handler for valid IDs", async () => {
+    const handler = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true })));
+    const scopedHandler = withEntityScope(handler);
 
-  it("requires a factory assignment in shared mode", () => {
-    expect(
-      getScopedEntityWhereClause(
-        { ...sharedUser, factory_id: null },
-        TenantMode.SHARED,
-        entityWhereClause,
-        sharedSchema.centers.factory_id,
-      ),
-    ).toBeNull();
-  });
+    const validResponse = await scopedHandler(
+      new Request("http://localhost") as never,
+      sampleUser,
+      {} as never,
+      { params: Promise.resolve({ id: "5" }) }
+    );
 
-  it("adds factory scope in shared mode and preserves dedicated mode predicates", () => {
-    expect(
-      getScopedEntityWhereClause(
-        sharedUser,
-        TenantMode.SHARED,
-        entityWhereClause,
-        sharedSchema.centers.factory_id,
-      ),
-    ).not.toBeNull();
-    expect(
-      getScopedEntityWhereClause(
-        sharedUser,
-        TenantMode.DEDICATED,
-        entityWhereClause,
-        sharedSchema.centers.factory_id,
-      ),
-    ).toBe(entityWhereClause);
+    expect(validResponse.status).toBe(200);
+    expect(handler).toHaveBeenCalledWith(
+      expect.anything(),
+      sampleUser,
+      expect.anything(),
+      expect.anything(),
+      { entityId: 5, factoryId: 1 }
+    );
   });
 });
 
 describe("formatEntityResponse", () => {
-  it("preserves profile response fields, converts database keys, and omits password hashes", async () => {
-    const response = formatEntityResponse(
-      {
-        id: 1,
-        userId: "user-1",
-        username: "operator",
-        factoryId: 7,
-        isActive: false,
-        passwordHash: "secret",
-      },
-      TenantMode.SHARED,
-    );
+  it("omits password hashes and formats entity response", async () => {
+    const response = formatEntityResponse({
+      id: 1,
+      user_id: "user-1",
+      username: "operator",
+      factory_id: 7,
+      is_active: false,
+      password_hash: "secret",
+    });
 
     expect(await response.json()).toEqual({
       data: {

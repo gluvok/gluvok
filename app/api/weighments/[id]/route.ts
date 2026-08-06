@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server"
-import { eq, inArray } from "drizzle-orm";
-import { getTables, sharedSchema } from "@/db/schema";
 import {
   withAuth,
   withEntityScope,
@@ -10,90 +8,103 @@ import {
   hasPermission,
   isFKViolation,
   StatusCodes,
-} from "@/db/helpers";
-import { EntityKey, PermissionKey, ProjectSlug } from "@/lib/constants/enums";
+} from "@/db/helpers"
+import { EntityKey, PermissionKey, ProjectSlug, TableName } from "@/lib/constants/enums"
+
+export const GET = withAuth(
+  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.READ))
+      return forbiddenError()
+
+    let query = client
+      .from(TableName.WEIGHMENTS)
+      .select(
+        "*, centers!left(name, factory_id), customers!left(name, govt_id), profiles!left(name, aadhar_number), rates!left(unit_price, unit, commodities!left(name))"
+      )
+      .eq("id", entityId)
+
+    if (factoryId) {
+      query = query.eq("centers.factory_id", factoryId)
+    }
+
+    const { data: weighment, error } = await query.maybeSingle()
+    if (error || !weighment) return apiError("Weighment not found", StatusCodes.NOT_FOUND)
+
+    return formatEntityResponse(weighment)
+  })
+)
 
 export const PATCH = withAuth(
-  withEntityScope(
-    (mode) => getTables(mode).weighments,
-    sharedSchema.centers.factory_id,
-    async (
-      req,
-      user,
-      db,
-      mode,
-      _ctx,
-      { whereClause: weighmentWhereClause },
-    ) => {
-      if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.WRITE))
-        return forbiddenError();
-      const { weighments, centers } = getTables(mode);
-      const scopedWeighmentIds = db
-        .select({ id: weighments.id })
-        .from(weighments)
-        .innerJoin(centers, eq(weighments.center_id, centers.id))
-        .where(weighmentWhereClause);
-      const { vehicle_number, weight, is_active } = await req.json();
-      if (weight !== undefined && !hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.EDIT_FIELD, EntityKey.WEIGHT)) {
-        return forbiddenError();
-      }
+  withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.WRITE))
+      return forbiddenError()
 
-      const [updated] = await db
-        .update(weighments)
-        .set({
-          ...(vehicle_number ? { vehicle_number: vehicle_number } : {}),
-          ...(weight ? { weight: String(weight) } : {}),
-          ...(is_active !== undefined ? { is_active: Boolean(is_active) } : {}),
-          updated_at: new Date(),
-        })
-        .where(inArray(weighments.id, scopedWeighmentIds))
-        .returning();
+    const { vehicle_number, weight, is_active } = await req.json()
+    if (
+      weight !== undefined &&
+      !hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.EDIT_FIELD, EntityKey.WEIGHT)
+    ) {
+      return forbiddenError()
+    }
 
-      if (!updated)
-        return apiError("Weighment not found", StatusCodes.NOT_FOUND);
+    let query = client
+      .from(TableName.WEIGHMENTS)
+      .update({
+        ...(vehicle_number ? { vehicle_number } : {}),
+        ...(weight !== undefined ? { weight: String(weight) } : {}),
+        ...(is_active !== undefined ? { is_active: Boolean(is_active) } : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", entityId)
 
-      return formatEntityResponse(updated, mode);
-    },
-  ),
-);
+    if (factoryId) {
+      query = query.eq("factory_id", factoryId)
+    }
+
+    const { data: updated, error } = await query.select().maybeSingle()
+    if (error || !updated) return apiError("Weighment not found", StatusCodes.NOT_FOUND)
+
+    return formatEntityResponse(updated)
+  })
+)
+
+export const PUT = PATCH
 
 export const DELETE = withAuth(
-  withEntityScope(
-    (mode) => getTables(mode).weighments,
-    sharedSchema.centers.factory_id,
-    async (
-      _req,
-      user,
-      db,
-      mode,
-      _ctx,
-      { whereClause: weighmentWhereClause },
-    ) => {
-      if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.DELETE))
-        return forbiddenError();
-      try {
-        const { weighments, centers } = getTables(mode);
-        const scopedWeighmentIds = db
-          .select({ id: weighments.id })
-          .from(weighments)
-          .innerJoin(centers, eq(weighments.center_id, centers.id))
-          .where(weighmentWhereClause);
-        const [deleted] = await db
-          .delete(weighments)
-          .where(inArray(weighments.id, scopedWeighmentIds))
-          .returning({ id: weighments.id });
-        if (!deleted)
-          return apiError("Weighment not found", StatusCodes.NOT_FOUND);
-        return NextResponse.json({ success: true });
-      } catch (error) {
+  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.DELETE))
+      return forbiddenError()
+
+    try {
+      let query = client.from(TableName.WEIGHMENTS).delete().eq("id", entityId)
+      if (factoryId) {
+        query = query.eq("factory_id", factoryId)
+      }
+
+      const { data, error } = await query.select("id")
+      if (error) {
         if (isFKViolation(error)) {
           return apiError(
             "Cannot delete this weighment because it is referenced by other records.",
-            StatusCodes.BAD_REQUEST,
-          );
+            StatusCodes.BAD_REQUEST
+          )
         }
-        throw error;
+        throw error
       }
-    },
-  ),
-);
+
+      if (!data || data.length === 0) {
+        return apiError("Weighment not found", StatusCodes.NOT_FOUND)
+      }
+
+      return NextResponse.json({ success: true, id: entityId })
+    } catch (error) {
+      if (isFKViolation(error)) {
+        return apiError(
+          "Cannot delete this weighment because it is referenced by other records.",
+          StatusCodes.BAD_REQUEST
+        )
+      }
+      throw error
+    }
+  })
+)

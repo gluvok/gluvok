@@ -298,7 +298,16 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
   ],
-  [ProjectSlug.CONFIGS]: [
+  [ProjectSlug.SETTINGS]: [
+    {
+      key: EntityKey.NAME,
+      label: ColumnLabel.FACTORY_NAME,
+      placeholder: "Factory Name...",
+      type: FieldType.TEXT,
+      required: true,
+      icon: Building,
+      span: FieldSpan.FULL,
+    },
     {
       key: EntityKey.AADHAR_NUMBER_MODE,
       label: ColumnLabel.AADHAR_NUMBER_MODE,
@@ -348,5 +357,5 @@ export const REQUIRED_CREATE_FIELDS: Record<string, EntityKey[]> = {
     EntityKey.PASSWORD,
     EntityKey.CONFIRM_PASSWORD,
   ],
-  [ProjectSlug.CONFIGS]: [EntityKey.AADHAR_NUMBER_MODE, EntityKey.GOVT_ID_MODE],
+  [ProjectSlug.SETTINGS]: [EntityKey.AADHAR_NUMBER_MODE, EntityKey.GOVT_ID_MODE],
 };

@@ -6,7 +6,7 @@
 import { create } from "zustand"
 import axios from "axios"
 import { toast } from "sonner"
-import { Role, EntityKey, TenantMode } from "@/lib/constants/enums"
+import { Role, EntityKey } from "@/lib/constants/enums"
 import { DEFAULT_AVATAR, AuthErrorMessage } from "@/lib/constants"
 
 import { useConfigStore } from "./config"
@@ -21,7 +21,6 @@ export interface AuthUser {
   avatar?: string;
   role: Role;
   factory_id: number | null;
-  tenant_mode?: TenantMode;
 }
 
 interface AuthStore {
@@ -47,7 +46,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     set({ profileLoading: true })
 
-    // Call /api/auth/me using axios to check active JWT session
     axios
       .get<{ user: AuthUser | null }>("/api/auth/me", {
         validateStatus: (status) => status < 500,

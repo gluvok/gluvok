@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-import { getTables, sharedSchema } from "@/db/schema";
+import { NextResponse } from "next/server"
 import {
   withAuth,
   withEntityScope,
@@ -9,52 +8,89 @@ import {
   hasPermission,
   StatusCodes,
   formatEntityResponse,
-} from "@/db/helpers";
-import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
+} from "@/db/helpers"
+import { ProjectSlug, PermissionKey, TableName } from "@/lib/constants/enums"
+
+export const GET = withAuth(
+  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.READ))
+      return forbiddenError()
+
+    let query = client.from(TableName.CENTERS).select("*").eq("id", entityId)
+    if (factoryId) {
+      query = query.eq("factory_id", factoryId)
+    }
+
+    const { data: center, error } = await query.maybeSingle()
+    if (error || !center) return apiError("Center not found", StatusCodes.NOT_FOUND)
+
+    return formatEntityResponse(center)
+  })
+)
 
 export const PATCH = withAuth(
-  withEntityScope(
-    (mode) => getTables(mode).centers,
-    sharedSchema.centers.factory_id,
-    async (req, user, db, mode, _ctx, { whereClause }) => {
-      if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.WRITE))
-        return forbiddenError();
-      const { centers } = getTables(mode);
-      const { name } = await req.json();
+  withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.WRITE))
+      return forbiddenError()
 
-      const [updated] = await db
-        .update(centers)
-        .set({ ...(name ? { name } : {}), updated_at: new Date() })
-        .where(whereClause)
-        .returning();
+    const { name } = await req.json()
 
-      if (!updated) return apiError("Center not found", StatusCodes.NOT_FOUND);
+    let query = client
+      .from(TableName.CENTERS)
+      .update({
+        ...(name ? { name } : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", entityId)
 
-      return formatEntityResponse(updated, mode);
-    },
-  ),
-);
+    if (factoryId) {
+      query = query.eq("factory_id", factoryId)
+    }
+
+    const { data: updated, error } = await query.select().maybeSingle()
+    if (error || !updated) return apiError("Center not found", StatusCodes.NOT_FOUND)
+
+    return formatEntityResponse(updated)
+  })
+)
+
+export const PUT = PATCH
 
 export const DELETE = withAuth(
-  withEntityScope(
-    (mode) => getTables(mode).centers,
-    sharedSchema.centers.factory_id,
-    async (_req, user, db, mode, _ctx, { whereClause }) => {
-      if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.DELETE))
-        return forbiddenError();
-      try {
-        const { centers } = getTables(mode);
-        await db.delete(centers).where(whereClause);
-        return NextResponse.json({ success: true });
-      } catch (error) {
+  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.DELETE))
+      return forbiddenError()
+
+    try {
+      let query = client.from(TableName.CENTERS).delete().eq("id", entityId)
+      if (factoryId) {
+        query = query.eq("factory_id", factoryId)
+      }
+
+      const { data, error } = await query.select("id")
+      if (error) {
         if (isFKViolation(error)) {
           return apiError(
-            "Cannot delete this center because it is referenced by existing weighments. Please reassign or delete dependent records first.",
-            StatusCodes.BAD_REQUEST,
-          );
+            "Cannot delete this center because it is referenced by existing weighments.",
+            StatusCodes.BAD_REQUEST
+          )
         }
-        throw error;
+        throw error
       }
-    },
-  ),
-);
+
+      if (!data || data.length === 0) {
+        return apiError("Center not found", StatusCodes.NOT_FOUND)
+      }
+
+      return NextResponse.json({ success: true, id: entityId })
+    } catch (error) {
+      if (isFKViolation(error)) {
+        return apiError(
+          "Cannot delete this center because it is referenced by existing weighments.",
+          StatusCodes.BAD_REQUEST
+        )
+      }
+      throw error
+    }
+  })
+)

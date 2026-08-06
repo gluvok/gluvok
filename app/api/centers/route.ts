@@ -1,6 +1,4 @@
-import { NextResponse } from "next/server";
-import { eq, ilike, and, or, count, inArray } from "drizzle-orm";
-import { getTables, sharedSchema } from "@/db/schema";
+import { NextResponse } from "next/server"
 import {
   withAuth,
   apiError,
@@ -9,143 +7,111 @@ import {
   forbiddenError,
   hasPermission,
   StatusCodes,
-  getFactoryWhereClause,
   fetchPaginatedResult,
   formatEntityResponse,
   isFKViolation,
   parseBulkIds,
-  getOrderByClause,
-} from "@/db/helpers";
+} from "@/db/helpers"
 import {
-  TenantMode,
   ProjectSlug,
   QueryParam,
   PermissionKey,
-} from "@/lib/constants/enums";
+  TableName,
+} from "@/lib/constants/enums"
 
-export const GET = withAuth(async (req, user, db, mode) => {
-  const pagination = getPaginationParams(req.nextUrl);
-  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN);
-  const sortDesc =
-    req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true";
+export const GET = withAuth(async (req, user, client) => {
+  const pagination = getPaginationParams(req.nextUrl)
+  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
+  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at"
+  const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
 
-  const { centers } = getTables(mode);
+  let query = client
+    .from(TableName.CENTERS)
+    .select("*", { count: "exact" })
+    .order(sortColumn, { ascending: !sortDesc })
 
-  const factoryCond = getFactoryWhereClause(
-    user,
-    mode,
-    sharedSchema.centers.factory_id,
-  );
-  const conditions = [];
-  if (factoryCond) conditions.push(factoryCond);
+  if (user.factory_id) {
+    query = query.eq("factory_id", user.factory_id)
+  }
 
   if (search) {
-    const searchNum = parseInt(search, 10);
-    const searchConds = [ilike(centers.name, `%${search}%`)];
+    const searchNum = parseInt(search, 10)
     if (!isNaN(searchNum)) {
-      searchConds.push(eq(centers.id, searchNum));
+      query = query.or(`name.ilike.%${search}%,id.eq.${searchNum}`)
+    } else {
+      query = query.ilike("name", `%${search}%`)
     }
-    conditions.push(or(...searchConds));
   }
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const baseQuery = db
-    .select({
-      id: centers.id,
-      name: centers.name,
-      ...(mode === TenantMode.SHARED
-        ? { factory_id: sharedSchema.centers.factory_id }
-        : {}),
-      created_at: centers.created_at,
-      updated_at: centers.updated_at,
-    })
-    .from(centers)
-    .$dynamic();
+  return fetchPaginatedResult(query, pagination)
+})
 
-  const countQuery = db.select({ count: count() }).from(centers).$dynamic();
-
-  const orderByClause = getOrderByClause(centers, sortColumn, sortDesc, centers.created_at);
-
-  return fetchPaginatedResult(
-    db,
-    countQuery,
-    baseQuery,
-    whereClause,
-    pagination,
-    orderByClause,
-  );
-});
-
-export const POST = withAuth(async (req, user, db, mode) => {
+export const POST = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.CREATE))
-    return forbiddenError();
-  const body = await req.json();
-  const err = validateRequiredFields(body, ProjectSlug.CENTERS);
-  if (err) return err;
+    return forbiddenError()
+  const body = await req.json()
+  const err = validateRequiredFields(body, ProjectSlug.CENTERS)
+  if (err) return err
 
-  const { name } = body;
-  const { centers } = getTables(mode) as unknown as {
-    centers: Parameters<typeof db.insert>[0];
-  };
-
-  const insertValues: Record<string, unknown> = { name };
-  if (mode === TenantMode.SHARED) {
-    insertValues.factory_id = user.factory_id ?? 0;
+  const { name } = body
+  const insertValues: Record<string, unknown> = {
+    name,
+    factory_id: user.factory_id ?? null,
   }
 
-  const [newCenter] = await db
-    .insert(centers)
-    .values(insertValues as typeof sharedSchema.centers.$inferInsert)
-    .returning();
-  return formatEntityResponse(newCenter, mode, StatusCodes.CREATED);
-});
+  const { data: newCenter, error } = await client
+    .from(TableName.CENTERS)
+    .insert(insertValues)
+    .select()
+    .single()
 
-export const DELETE = withAuth(async (req, user, db, mode) => {
+  if (error) {
+    console.error("POST center error:", error)
+    return apiError(error.message || "Failed to create center", StatusCodes.BAD_REQUEST)
+  }
+
+  return formatEntityResponse(newCenter, StatusCodes.CREATED)
+})
+
+export const DELETE = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.DELETE))
-    return forbiddenError();
-  const ids = parseBulkIds(await req.json());
+    return forbiddenError()
+  const ids = parseBulkIds(await req.json())
   if (!ids)
     return apiError(
       "Provide between 1 and 100 valid IDs",
-      StatusCodes.BAD_REQUEST,
-    );
-
-  const { centers } = getTables(mode);
-  const whereClause = getFactoryWhereClause(
-    user,
-    mode,
-    sharedSchema.centers.factory_id,
-  );
-  if (mode === TenantMode.SHARED && !whereClause) return forbiddenError();
-  const scopedIds = whereClause
-    ? and(inArray(centers.id, ids), whereClause)
-    : inArray(centers.id, ids);
+      StatusCodes.BAD_REQUEST
+    )
 
   try {
-    const deletedCount = await db.transaction(async (tx) => {
-      const deleted = await tx
-        .delete(centers)
-        .where(scopedIds)
-        .returning({ id: centers.id });
-      if (deleted.length !== ids.length)
-        throw new Error("BULK_DELETE_INCOMPLETE");
-      return deleted.length;
-    });
-    return NextResponse.json({ success: true, deleted_count: deletedCount });
-  } catch (error) {
-    if (error instanceof Error && error.message === "BULK_DELETE_INCOMPLETE") {
-      return apiError(
-        "One or more centers were not found",
-        StatusCodes.NOT_FOUND,
-      );
+    let query = client.from(TableName.CENTERS).delete().in("id", ids)
+    if (user.factory_id) {
+      query = query.eq("factory_id", user.factory_id)
     }
+
+    const { data, error } = await query.select("id")
+    if (error) {
+      if (isFKViolation(error)) {
+        return apiError(
+          "Cannot delete selected centers because they are referenced by existing weighments.",
+          StatusCodes.BAD_REQUEST
+        )
+      }
+      throw error
+    }
+
+    if (!data || data.length !== ids.length) {
+      return apiError("One or more centers were not found", StatusCodes.NOT_FOUND)
+    }
+
+    return NextResponse.json({ success: true, deleted_count: data.length })
+  } catch (error) {
     if (isFKViolation(error)) {
       return apiError(
         "Cannot delete selected centers because they are referenced by existing weighments.",
-        StatusCodes.BAD_REQUEST,
-      );
+        StatusCodes.BAD_REQUEST
+      )
     }
-    throw error;
+    throw error
   }
-});
+})

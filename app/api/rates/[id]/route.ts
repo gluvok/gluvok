@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-import { getTables, sharedSchema } from "@/db/schema";
+import { NextResponse } from "next/server"
 import {
   withAuth,
   withEntityScope,
@@ -9,56 +8,95 @@ import {
   hasPermission,
   StatusCodes,
   formatEntityResponse,
-} from "@/db/helpers";
-import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
+} from "@/db/helpers"
+import { ProjectSlug, PermissionKey, TableName } from "@/lib/constants/enums"
+
+export const GET = withAuth(
+  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.READ))
+      return forbiddenError()
+
+    let query = client
+      .from(TableName.RATES)
+      .select("*, commodities!left(name)")
+      .eq("id", entityId)
+
+    if (factoryId) {
+      query = query.eq("factory_id", factoryId)
+    }
+
+    const { data: rate, error } = await query.maybeSingle()
+    if (error || !rate) return apiError("Rate not found", StatusCodes.NOT_FOUND)
+
+    return formatEntityResponse(rate)
+  })
+)
 
 export const PATCH = withAuth(
-  withEntityScope(
-    (mode) => getTables(mode).rates,
-    sharedSchema.rates.factory_id,
-    async (req, user, db, mode, _ctx, { whereClause }) => {
-      if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.WRITE))
-        return forbiddenError();
-      const { rates } = getTables(mode);
-      const { unit_price, unit } = await req.json();
+  withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.WRITE))
+      return forbiddenError()
 
-      const [updated] = await db
-        .update(rates)
-        .set({
-          ...(unit_price ? { unit_price: String(unit_price) } : {}),
-          ...(unit ? { unit } : {}),
-          updated_at: new Date(),
-        })
-        .where(whereClause)
-        .returning();
+    const { unit_price, unit, commodity_id } = await req.json()
 
-      if (!updated) return apiError("Rate not found", StatusCodes.NOT_FOUND);
+    let query = client
+      .from(TableName.RATES)
+      .update({
+        ...(unit_price ? { unit_price: String(unit_price) } : {}),
+        ...(unit ? { unit } : {}),
+        ...(commodity_id ? { commodity_id: Number(commodity_id) } : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", entityId)
 
-      return formatEntityResponse(updated, mode);
-    },
-  ),
-);
+    if (factoryId) {
+      query = query.eq("factory_id", factoryId)
+    }
+
+    const { data: updated, error } = await query.select().maybeSingle()
+    if (error || !updated) return apiError("Rate not found", StatusCodes.NOT_FOUND)
+
+    return formatEntityResponse(updated)
+  })
+)
+
+export const PUT = PATCH
 
 export const DELETE = withAuth(
-  withEntityScope(
-    (mode) => getTables(mode).rates,
-    sharedSchema.rates.factory_id,
-    async (_req, user, db, mode, _ctx, { whereClause }) => {
-      if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.DELETE))
-        return forbiddenError();
-      try {
-        const { rates } = getTables(mode);
-        await db.delete(rates).where(whereClause);
-        return NextResponse.json({ success: true });
-      } catch (error) {
+  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.DELETE))
+      return forbiddenError()
+
+    try {
+      let query = client.from(TableName.RATES).delete().eq("id", entityId)
+      if (factoryId) {
+        query = query.eq("factory_id", factoryId)
+      }
+
+      const { data, error } = await query.select("id")
+      if (error) {
         if (isFKViolation(error)) {
           return apiError(
-            "Cannot delete this rate because it is referenced by existing weighments. Please reassign or delete dependent weighments first.",
-            StatusCodes.BAD_REQUEST,
-          );
+            "Cannot delete this rate because it is referenced by existing weighments.",
+            StatusCodes.BAD_REQUEST
+          )
         }
-        throw error;
+        throw error
       }
-    },
-  ),
-);
+
+      if (!data || data.length === 0) {
+        return apiError("Rate not found", StatusCodes.NOT_FOUND)
+      }
+
+      return NextResponse.json({ success: true, id: entityId })
+    } catch (error) {
+      if (isFKViolation(error)) {
+        return apiError(
+          "Cannot delete this rate because it is referenced by existing weighments.",
+          StatusCodes.BAD_REQUEST
+        )
+      }
+      throw error
+    }
+  })
+)

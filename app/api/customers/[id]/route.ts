@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server"
-import { eq, and, ne } from "drizzle-orm"
-import { getTables, sharedSchema } from "@/db/schema";
 import {
   withAuth,
   withEntityScope,
@@ -11,160 +9,185 @@ import {
   StatusCodes,
   getFactoryConfig,
   formatEntityResponse,
-} from "@/db/helpers";
+} from "@/db/helpers"
 import {
-  DatabasePropertyKey,
   ProjectSlug,
   PermissionKey,
   Role,
-  TenantMode,
-} from "@/lib/constants/enums";
+  TableName,
+} from "@/lib/constants/enums"
 import { getDynamicCustomerSchema } from "@/lib/validation"
 import { hashPassword } from "@/lib/auth/password"
 
+export const GET = withAuth(
+  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.READ))
+      return forbiddenError()
+
+    let query = client
+      .from(TableName.CUSTOMERS)
+      .select("*, users!left(username, is_active)")
+      .eq("id", entityId)
+
+    if (factoryId) {
+      query = query.eq("factory_id", factoryId)
+    }
+
+    const { data: customer, error } = await query.maybeSingle()
+    if (error || !customer) return apiError("Customer not found", StatusCodes.NOT_FOUND)
+
+    return formatEntityResponse(customer)
+  })
+)
+
 export const PATCH = withAuth(
-  withEntityScope(
-    (mode) => getTables(mode).customers,
-    sharedSchema.customers.factory_id,
-    async (req, user, db, mode, _ctx, { whereClause }) => {
-      const { customers, users } = getTables(mode);
+  withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
+    let existingQuery = client
+      .from(TableName.CUSTOMERS)
+      .select("id, user_id, name")
+      .eq("id", entityId)
 
-      // Fetch the record first to check ownership
-      const [existing] = await db
-        .select({ id: customers.id, user_id: customers.user_id, name: customers.name })
-        .from(customers)
-        .where(whereClause);
-      const isOwn =
-        existing?.user_id != null &&
-        String(existing.user_id) === String(user.sub);
+    if (factoryId) {
+      existingQuery = existingQuery.eq("factory_id", factoryId)
+    }
 
-      // Self-update allowed even without write permission; otherwise check RBAC
-      if (
-        !isOwn &&
-        !hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.WRITE)
-      )
-        return forbiddenError();
+    const { data: existing } = await existingQuery.maybeSingle()
 
-      const body = await req.json();
-      const activeConfig = await getFactoryConfig(user.factory_id, db, mode);
-      const dynamicSchema = getDynamicCustomerSchema(activeConfig, true);
-      const parsed = dynamicSchema.safeParse(body);
+    const isOwn =
+      existing?.user_id != null &&
+      String(existing.user_id) === String(user.sub)
 
-      if (!parsed.success) {
-        return apiError(
-          parsed.error.issues[0].message,
-          StatusCodes.BAD_REQUEST,
-        );
+    if (!isOwn && !hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.WRITE)) {
+      return forbiddenError()
+    }
+
+    const body = await req.json()
+    const activeConfig = await getFactoryConfig(user.factory_id)
+    const dynamicSchema = getDynamicCustomerSchema(activeConfig, true)
+    const parsed = dynamicSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST)
+    }
+
+    const { name, father_name, username, password, is_active } = body
+
+    if (username && typeof username === "string" && username.trim().length > 0) {
+      const cleanUsername = username.trim()
+      let userQuery = client.from(TableName.USERS).select("id").eq("username", cleanUsername)
+      if (existing?.user_id != null) {
+        userQuery = userQuery.neq("id", existing.user_id)
       }
+      const { data: takenUser } = await userQuery.maybeSingle()
+      if (takenUser) {
+        return apiError("Username is already taken", StatusCodes.BAD_REQUEST)
+      }
+    }
 
-      const { name, father_name, username, password, is_active } = body;
+    let updateQuery = client
+      .from(TableName.CUSTOMERS)
+      .update({
+        ...(name ? { name } : {}),
+        ...(father_name ? { father_name } : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", entityId)
 
+    if (factoryId) {
+      updateQuery = updateQuery.eq("factory_id", factoryId)
+    }
+
+    const { data: updated, error } = await updateQuery.select().maybeSingle()
+
+    if (error || !updated) {
+      return apiError("Customer not found", StatusCodes.NOT_FOUND)
+    }
+
+    if (updated.user_id) {
+      const userUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() }
       if (username && typeof username === "string" && username.trim().length > 0) {
-        const cleanUsername = username.trim();
-        const existingUserConds = [eq(sharedSchema.users.username, cleanUsername)];
-        if (existing?.user_id != null) {
-          existingUserConds.push(ne(sharedSchema.users.id, existing.user_id));
-        }
-        const [takenUser] = await db
-          .select({ id: sharedSchema.users.id })
-          .from(users)
-          .where(and(...existingUserConds));
-        if (takenUser) {
-          return apiError("Username is already taken", StatusCodes.BAD_REQUEST);
-        }
+        userUpdates.username = username.trim()
       }
-
-      const [updated] = await db
-        .update(customers)
-        .set({
-          ...(name ? { name } : {}),
-          ...(father_name ? { father_name: father_name } : {}),
-          updated_at: new Date(),
-        })
-        .where(whereClause)
-        .returning();
-
-      if (!updated)
-        return apiError("Customer not found", StatusCodes.NOT_FOUND);
-
-      if (updated.user_id) {
-        const userUpdates: Record<string, unknown> = { updated_at: new Date() };
-        if (username && typeof username === "string" && username.trim().length > 0) {
-          userUpdates.username = username.trim();
-        }
-        if (
-          password &&
-          typeof password === "string" &&
-          password.trim().length > 0
-        ) {
-          userUpdates[DatabasePropertyKey.PASSWORD_HASH] = await hashPassword(
-            password.trim(),
-          );
-        }
-        if (is_active !== undefined) {
-          userUpdates.is_active = Boolean(is_active);
-        }
-        if (Object.keys(userUpdates).length > 1) {
-          await db
-            .update(users)
-            .set(userUpdates)
-            .where(eq(users.id, updated.user_id));
-        }
-      } else if (
-        username &&
-        typeof username === "string" &&
-        username.trim().length > 0 &&
-        password &&
-        typeof password === "string" &&
-        password.trim().length > 0
-      ) {
-        const passwordHash = await hashPassword(password.trim());
-        const userValues = {
+      if (password && typeof password === "string" && password.trim().length > 0) {
+        userUpdates.password_hash = await hashPassword(password.trim())
+      }
+      if (is_active !== undefined) {
+        userUpdates.is_active = Boolean(is_active)
+      }
+      if (Object.keys(userUpdates).length > 1) {
+        await client.from(TableName.USERS).update(userUpdates).eq("id", updated.user_id)
+      }
+    } else if (
+      username &&
+      typeof username === "string" &&
+      username.trim().length > 0 &&
+      password &&
+      typeof password === "string" &&
+      password.trim().length > 0
+    ) {
+      const passwordHash = await hashPassword(password.trim())
+      const { data: newUser } = await client
+        .from(TableName.USERS)
+        .insert({
           username: username.trim(),
           password_hash: passwordHash,
           role: Role.BASE,
-          ...(mode === TenantMode.SHARED && user.factory_id
-            ? { factory_id: user.factory_id }
-            : {}),
-        };
-        const [newUser] = await db
-          .insert(users as typeof sharedSchema.users)
-          .values(userValues as typeof sharedSchema.users.$inferInsert)
-          .returning();
+          factory_id: factoryId,
+        })
+        .select()
+        .single()
 
-        await db
-          .update(customers)
-          .set({ user_id: newUser.id })
-          .where(eq(customers.id, updated.id));
+      if (newUser) {
+        await client
+          .from(TableName.CUSTOMERS)
+          .update({ user_id: newUser.id })
+          .eq("id", updated.id)
 
-        updated.user_id = newUser.id;
+        updated.user_id = newUser.id
       }
+    }
 
-      return formatEntityResponse(updated, mode);
-    },
-  ),
-);
+    return formatEntityResponse(updated)
+  })
+)
+
+export const PUT = PATCH
 
 export const DELETE = withAuth(
-  withEntityScope(
-    (mode) => getTables(mode).customers,
-    sharedSchema.customers.factory_id,
-    async (_req, user, db, mode, _ctx, { whereClause }) => {
-      if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.DELETE))
-        return forbiddenError();
-      try {
-        const { customers } = getTables(mode);
-        await db.delete(customers).where(whereClause);
-        return NextResponse.json({ success: true });
-      } catch (error) {
+  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.DELETE))
+      return forbiddenError()
+
+    try {
+      let query = client.from(TableName.CUSTOMERS).delete().eq("id", entityId)
+      if (factoryId) {
+        query = query.eq("factory_id", factoryId)
+      }
+
+      const { data, error } = await query.select("id")
+      if (error) {
         if (isFKViolation(error)) {
           return apiError(
-            "Cannot delete this customer because they are referenced by existing weighments. Please reassign or delete dependent weighments first.",
-            StatusCodes.BAD_REQUEST,
-          );
+            "Cannot delete this customer because they are referenced by existing weighments.",
+            StatusCodes.BAD_REQUEST
+          )
         }
-        throw error;
+        throw error
       }
-    },
-  ),
-);
+
+      if (!data || data.length === 0) {
+        return apiError("Customer not found", StatusCodes.NOT_FOUND)
+      }
+
+      return NextResponse.json({ success: true, id: entityId })
+    } catch (error) {
+      if (isFKViolation(error)) {
+        return apiError(
+          "Cannot delete this customer because they are referenced by existing weighments.",
+          StatusCodes.BAD_REQUEST
+        )
+      }
+      throw error
+    }
+  })
+)

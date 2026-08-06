@@ -1,75 +1,59 @@
 import { NextResponse } from "next/server"
-import { eq, asc } from "drizzle-orm"
-import { getTables, sharedSchema } from "@/db/schema"
 import { withAuth, StatusCodes } from "@/db/helpers"
-import { TenantMode } from "@/lib/constants/enums"
+import { TableName } from "@/lib/constants/enums"
 
-/**
- * @file app/api/filters/preload/route.ts
- * @description Batch endpoint to preload all filter dropdown data in a single HTTP round-trip.
- * Runs all DB queries in parallel via Promise.all on the server, dynamically scoped by TenantMode.
- */
+export const GET = withAuth(async (_req, user, client) => {
+  const factoryId = user.factory_id ?? null
 
-export const GET = withAuth(async (_req, user, db, mode) => {
-  const isShared = mode === TenantMode.SHARED
-  const factoryFilter = isShared && user.factory_id != null ? user.factory_id : null
+  let centersQuery = client.from(TableName.CENTERS).select("id, name").order("name", { ascending: true })
+  let profilesQuery = client.from(TableName.PROFILES).select("id, name").order("name", { ascending: true })
+  let customersQuery = client.from(TableName.CUSTOMERS).select("id, name").order("name", { ascending: true })
+  let ratesQuery = client.from(TableName.RATES).select("id, unit_price, unit, commodities!left(name)").order("id", { ascending: true })
+  let commoditiesQuery = client.from(TableName.COMMODITIES).select("id, name").order("name", { ascending: true })
 
-  const { centers, profiles, customers, rates, commodities, users } = getTables(mode)
-
-  let centersQuery = db.select({ id: centers.id, name: centers.name }).from(centers).$dynamic()
-  if (isShared && factoryFilter && sharedSchema.centers.factory_id) {
-    centersQuery = centersQuery.where(eq(sharedSchema.centers.factory_id, factoryFilter)) as typeof centersQuery
+  if (factoryId) {
+    centersQuery = centersQuery.eq("factory_id", factoryId)
+    profilesQuery = profilesQuery.eq("factory_id", factoryId)
+    customersQuery = customersQuery.eq("factory_id", factoryId)
+    ratesQuery = ratesQuery.eq("factory_id", factoryId)
+    commoditiesQuery = commoditiesQuery.eq("factory_id", factoryId)
   }
 
-  let profilesQuery = db
-    .select({ id: profiles.id, name: profiles.name })
-    .from(profiles)
-    .innerJoin(users, eq(profiles.user_id, users.id))
-    .$dynamic();
-  if (isShared && factoryFilter && sharedSchema.users.factory_id) {
-    profilesQuery = profilesQuery.where(eq(sharedSchema.users.factory_id, factoryFilter)) as typeof profilesQuery
-  }
+  const [
+    { data: commodityRows },
+    { data: centerRows },
+    { data: profileRows },
+    { data: customerRows },
+    { data: rateRows },
+  ] = await Promise.all([
+    commoditiesQuery,
+    centersQuery,
+    profilesQuery,
+    customersQuery,
+    ratesQuery,
+  ])
 
-  let customersQuery = db.select({ id: customers.id, name: customers.name }).from(customers).$dynamic()
-  if (isShared && factoryFilter && sharedSchema.customers.factory_id) {
-    customersQuery = customersQuery.where(eq(sharedSchema.customers.factory_id, factoryFilter)) as typeof customersQuery
-  }
-
-  let ratesQuery = db
-    .select({
-      id: rates.id,
-      unit_price: rates.unit_price,
-      unit: rates.unit,
-      commodity_name: commodities.name,
-    })
-    .from(rates)
-    .leftJoin(commodities, eq(rates.commodity_id, commodities.id))
-    .$dynamic()
-
-  if (isShared && factoryFilter && sharedSchema.rates.factory_id) {
-    ratesQuery = ratesQuery.where(eq(sharedSchema.rates.factory_id, factoryFilter)) as typeof ratesQuery
-  }
-
-  const [commodityRows, centerRows, profileRows, customerRows, rateRows] =
-    await Promise.all([
-      db
-        .select({ id: commodities.id, name: commodities.name })
-        .from(commodities)
-        .orderBy(asc(commodities.name)),
-      centersQuery.orderBy(asc(centers.name)),
-      profilesQuery.orderBy(asc(profiles.name)),
-      customersQuery.orderBy(asc(customers.name)),
-      ratesQuery.orderBy(asc(rates.id)),
-    ]);
+  const formattedRates = (rateRows || []).map((r) => {
+    const rawCommodity = r.commodities
+    const commodity_name = Array.isArray(rawCommodity)
+      ? rawCommodity[0]?.name
+      : (rawCommodity as { name?: string } | null)?.name
+    return {
+      id: r.id,
+      unit_price: r.unit_price,
+      unit: r.unit,
+      commodity_name: commodity_name || null,
+    }
+  })
 
   return NextResponse.json(
     {
-      commodities: commodityRows,
+      commodities: commodityRows || [],
       factories: [],
-      centers: centerRows,
-      profiles: profileRows,
-      customers: customerRows,
-      rates: rateRows,
+      centers: centerRows || [],
+      profiles: profileRows || [],
+      customers: customerRows || [],
+      rates: formattedRates,
     },
     { status: StatusCodes.OK }
   )

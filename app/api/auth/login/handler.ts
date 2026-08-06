@@ -1,11 +1,8 @@
-import { eq } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
-import { getTables } from "@/db/schema"
+import { db } from "@/db"
 import { getTokenExpiresIn, signJWT } from "@/lib/auth/jwt"
 import { verifyPassword } from "@/lib/auth/password"
-import { AuthErrorMessage, CookieName, Role, TenantMode } from "@/lib/constants"
-import { resolveTenant } from "@/lib/tenant"
-import { getWorkspace } from "@/lib/tenant/workspace"
+import { AuthErrorMessage, CookieName, Role, TableName } from "@/lib/constants"
 
 type LoginClient = "browser" | "device"
 
@@ -21,19 +18,13 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
       )
     }
 
-    const workspace = getWorkspace(request)
-    const tenant = resolveTenant(workspace)
-    const { users, profiles } = getTables(tenant.mode)
-    const { getDb } = await import("@/db")
-    const tenantDb = getDb(tenant)
+    const { data: user, error: userError } = await db
+      .from(TableName.USERS)
+      .select("*")
+      .eq("username", username)
+      .maybeSingle()
 
-    const [user] = await tenantDb
-      .select()
-      .from(users)
-      .where(eq(users.username, username))
-      .limit(1)
-
-    if (!user || !user.is_active) {
+    if (userError || !user || !user.is_active) {
       return NextResponse.json(
         { error: AuthErrorMessage.INVALID_CREDENTIALS },
         { status: 401 }
@@ -48,14 +39,9 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
       )
     }
 
-    const factoryId =
-      tenant.mode === TenantMode.SHARED
-        ? ("factory_id" in user
-            ? (user as unknown as { factory_id: number | null }).factory_id
-            : null)
-        : null
-
+    const factoryId = user.factory_id ?? null
     let profileId: number | undefined
+
     if (client === "device") {
       if (user.role !== Role.OPERATOR) {
         return NextResponse.json(
@@ -64,11 +50,12 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
         )
       }
 
-      const [profile] = await tenantDb
-        .select({ id: profiles.id })
-        .from(profiles)
-        .where(eq(profiles.user_id, user.id))
-        .limit(1)
+      const { data: profile } = await db
+        .from(TableName.PROFILES)
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle()
+
       if (!profile) {
         return NextResponse.json({ error: "Operator profile not found" }, { status: 404 })
       }
@@ -82,7 +69,6 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
         role: user.role,
         factory_id: factoryId,
         profile_id: profileId,
-        tenant_mode: tenant.mode,
       },
       client === "device" ? process.env.JWT_DEVICE_EXPIRES_IN || "1d" : undefined
     )
@@ -92,7 +78,6 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
       username: user.username,
       role: user.role,
       factory_id: factoryId,
-      tenant_mode: tenant.mode,
     }
 
     if (client === "device") {

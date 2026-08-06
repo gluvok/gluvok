@@ -1,6 +1,4 @@
-import { NextResponse } from "next/server";
-import { eq, ilike, and, or, count, inArray } from "drizzle-orm";
-import { getTables, sharedSchema } from "@/db/schema";
+import { NextResponse } from "next/server"
 import {
   withAuth,
   getPaginationParams,
@@ -9,240 +7,202 @@ import {
   hasPermission,
   StatusCodes,
   getFactoryConfig,
-  getFactoryWhereClause,
   fetchPaginatedResult,
   formatEntityResponse,
   isFKViolation,
   parseBulkIds,
-  getOrderByClause,
-} from "@/db/helpers";
+} from "@/db/helpers"
 import {
   Role,
-  TenantMode,
   ProjectSlug,
   PermissionKey,
   QueryParam,
   EntityKey,
   FilterValue,
   FieldRequirementMode,
-} from "@/lib/constants/enums";
-import { getDynamicProfileSchema } from "@/lib/validation";
-import { hashPassword } from "@/lib/auth/password";
+  TableName,
+} from "@/lib/constants/enums"
+import { getDynamicProfileSchema } from "@/lib/validation"
+import { hashPassword } from "@/lib/auth/password"
 
-export const GET = withAuth(async (req, user, db, mode) => {
-  const pagination = getPaginationParams(req.nextUrl);
-  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN);
-  const sortDesc =
-    req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true";
-  const roleParam = req.nextUrl.searchParams.get(EntityKey.ROLE);
+export const GET = withAuth(async (req, user, client) => {
+  const pagination = getPaginationParams(req.nextUrl)
+  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
+  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at"
+  const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
+  const roleParam = req.nextUrl.searchParams.get(EntityKey.ROLE)
 
-  const { profiles, users } = getTables(mode);
-
-  const activeConfig = await getFactoryConfig(user.factory_id, db, mode);
+  const activeConfig = await getFactoryConfig(user.factory_id)
   const isAadharNotRequired =
-    activeConfig?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED;
+    activeConfig?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED
 
-  const factoryCond = getFactoryWhereClause(
-    user,
-    mode,
-    sharedSchema.users.factory_id,
-  );
-  const conditions = [];
-  if (factoryCond) conditions.push(factoryCond);
-  if (roleParam && roleParam !== FilterValue.ALL)
-    conditions.push(eq(profiles.role, roleParam as Role));
+  let query = client
+    .from(TableName.PROFILES)
+    .select("*, users!inner(username, is_active, factory_id)", { count: "exact" })
+    .order(sortColumn, { ascending: !sortDesc })
+
+  if (user.factory_id) {
+    query = query.eq("users.factory_id", user.factory_id)
+  }
+
+  if (roleParam && roleParam !== FilterValue.ALL) {
+    query = query.eq("role", roleParam)
+  }
 
   if (search) {
-    const searchNum = parseInt(search, 10);
-    const searchConds = [
-      ilike(profiles.name, `%${search}%`),
-      ...(isAadharNotRequired
-        ? []
-        : [ilike(profiles.aadhar_number, `%${search}%`)]),
-      ilike(users.username, `%${search}%`),
-    ];
+    const searchNum = parseInt(search, 10)
     if (!isNaN(searchNum)) {
-      searchConds.push(eq(profiles.id, searchNum));
+      if (!isAadharNotRequired) {
+        query = query.or(`name.ilike.%${search}%,aadhar_number.ilike.%${search}%,id.eq.${searchNum}`)
+      } else {
+        query = query.or(`name.ilike.%${search}%,id.eq.${searchNum}`)
+      }
+    } else {
+      if (!isAadharNotRequired) {
+        query = query.or(`name.ilike.%${search}%,aadhar_number.ilike.%${search}%`)
+      } else {
+        query = query.ilike("name", `%${search}%`)
+      }
     }
-    conditions.push(or(...searchConds));
   }
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const baseQuery = db
-    .select({
-      id: profiles.id,
-      user_id: profiles.user_id,
-      name: profiles.name,
-      ...(isAadharNotRequired ? {} : { aadhar_number: profiles.aadhar_number }),
-      role: profiles.role,
-      created_at: profiles.created_at,
-      updated_at: profiles.updated_at,
-      username: users.username,
-      ...(mode === TenantMode.SHARED
-        ? { factory_id: sharedSchema.users.factory_id }
-        : {}),
-      is_active: users.is_active,
-    })
-    .from(profiles)
-    .innerJoin(users, eq(profiles.user_id, users.id))
-    .$dynamic();
+  return fetchPaginatedResult(query, pagination)
+})
 
-  const countQuery = db
-    .select({ count: count() })
-    .from(profiles)
-    .innerJoin(users, eq(profiles.user_id, users.id))
-    .$dynamic();
+export const POST = withAuth(async (req, user, client) => {
+  const body = await req.json()
+  const targetFactoryId = user.factory_id ?? null
+  const activeConfig = await getFactoryConfig(targetFactoryId)
 
-  const sortable = { ...profiles, ...users };
-  const orderByClause = getOrderByClause(sortable, sortColumn, sortDesc, profiles.created_at);
-
-  return fetchPaginatedResult(
-    db,
-    countQuery,
-    baseQuery,
-    whereClause,
-    pagination,
-    orderByClause,
-  );
-});
-
-export const POST = withAuth(async (req, user, db, mode) => {
-  const body = await req.json();
-  const targetFactoryId = user.factory_id;
-  const activeConfig = await getFactoryConfig(targetFactoryId, db, mode);
-
-  const dynamicSchema = getDynamicProfileSchema(activeConfig);
-  const parsed = dynamicSchema.safeParse(body);
+  const dynamicSchema = getDynamicProfileSchema(activeConfig)
+  const parsed = dynamicSchema.safeParse(body)
 
   if (!parsed.success) {
-    const firstIssue = parsed.error.issues[0];
-    return apiError(firstIssue.message, StatusCodes.BAD_REQUEST);
+    const firstIssue = parsed.error.issues[0]
+    return apiError(firstIssue.message, StatusCodes.BAD_REQUEST)
   }
 
   const { name, aadhar_number, username, password, role } = parsed.data as {
-    name: string;
-    aadhar_number?: string | null;
-    username: string;
-    password: string;
-    role: Role;
-  };
-
-  const { profiles, users } = getTables(mode);
-
-  const [existingUser] = await db
-    .select({ id: sharedSchema.users.id })
-    .from(users)
-    .where(eq(sharedSchema.users.username, username));
-  if (existingUser)
-    return apiError("Username is already taken", StatusCodes.BAD_REQUEST);
-
-  if (aadhar_number) {
-    const aadharConditions = [
-      eq(sharedSchema.profiles.aadhar_number, aadhar_number),
-    ];
-    if (mode === TenantMode.SHARED && targetFactoryId) {
-      aadharConditions.push(eq(sharedSchema.users.factory_id, targetFactoryId));
-    }
-    const [existingProfile] = await db
-      .select({ id: sharedSchema.profiles.id })
-      .from(profiles)
-      .innerJoin(users, eq(sharedSchema.profiles.user_id, sharedSchema.users.id))
-      .where(and(...aadharConditions));
-    if (existingProfile)
-      return apiError(
-        mode === TenantMode.SHARED
-          ? "Aadhar number is already registered in this factory"
-          : "Aadhar number is already registered",
-        StatusCodes.BAD_REQUEST,
-      );
+    name: string
+    aadhar_number?: string | null
+    username: string
+    password: string
+    role: Role
   }
 
-  const passwordHash = await hashPassword(password);
-  const userValues = {
-    username,
-    password_hash: passwordHash,
-    role,
-    ...(mode === TenantMode.SHARED ? { factory_id: targetFactoryId } : {}),
-  };
-  const [newUser] = await db
-    .insert(users as typeof sharedSchema.users)
-    .values(userValues as typeof sharedSchema.users.$inferInsert)
-    .returning();
+  const { data: existingUser } = await client
+    .from(TableName.USERS)
+    .select("id")
+    .eq("username", username)
+    .maybeSingle()
 
-  const [newProfile] = await db
-    .insert(profiles as typeof sharedSchema.profiles)
-    .values({
+  if (existingUser)
+    return apiError("Username is already taken", StatusCodes.BAD_REQUEST)
+
+  if (aadhar_number) {
+    let aadharQuery = client
+      .from(TableName.PROFILES)
+      .select("id, users!inner(factory_id)")
+      .eq("aadhar_number", aadhar_number)
+
+    if (targetFactoryId) {
+      aadharQuery = aadharQuery.eq("users.factory_id", targetFactoryId)
+    }
+
+    const { data: existingProfile } = await aadharQuery.maybeSingle()
+    if (existingProfile)
+      return apiError(
+        targetFactoryId
+          ? "Aadhar number is already registered in this factory"
+          : "Aadhar number is already registered",
+        StatusCodes.BAD_REQUEST
+      )
+  }
+
+  const passwordHash = await hashPassword(password)
+  const { data: newUser, error: userErr } = await client
+    .from(TableName.USERS)
+    .insert({
+      username,
+      password_hash: passwordHash,
+      role,
+      factory_id: targetFactoryId,
+    })
+    .select()
+    .single()
+
+  if (userErr || !newUser) {
+    console.error("Failed to create user for profile:", userErr)
+    return apiError("Failed to create user account for profile", StatusCodes.BAD_REQUEST)
+  }
+
+  const { data: newProfile, error: profileErr } = await client
+    .from(TableName.PROFILES)
+    .insert({
       user_id: newUser.id,
       name,
-      ...(aadhar_number ? { aadhar_number: aadhar_number } : {}),
+      ...(aadhar_number ? { aadhar_number } : {}),
       role,
-    } as typeof sharedSchema.profiles.$inferInsert)
-    .returning();
+      factory_id: targetFactoryId,
+    })
+    .select()
+    .single()
+
+  if (profileErr || !newProfile) {
+    console.error("Failed to create profile:", profileErr)
+    return apiError("Failed to create profile record", StatusCodes.BAD_REQUEST)
+  }
 
   return formatEntityResponse(
     {
-      ...(newProfile as Record<string, unknown>),
+      ...newProfile,
       username: newUser.username,
       is_active: newUser.is_active,
-      ...(mode === TenantMode.SHARED ? { factory_id: targetFactoryId } : {}),
+      factory_id: targetFactoryId,
     },
-    mode,
-    StatusCodes.CREATED,
-  );
-});
+    StatusCodes.CREATED
+  )
+})
 
-export const DELETE = withAuth(async (req, user, db, mode) => {
+export const DELETE = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.DELETE))
-    return forbiddenError();
-  const ids = parseBulkIds(await req.json());
+    return forbiddenError()
+  const ids = parseBulkIds(await req.json())
   if (!ids)
     return apiError(
       "Provide between 1 and 100 valid IDs",
-      StatusCodes.BAD_REQUEST,
-    );
-  if (mode === TenantMode.SHARED && user.factory_id == null)
-    return forbiddenError();
-  const factoryId = user.factory_id as number;
-
-  const { profiles, users } = getTables(mode);
-  const ownershipScope =
-    mode === TenantMode.SHARED
-      ? and(
-          inArray(profiles.id, ids),
-          eq(sharedSchema.users.factory_id, factoryId),
-        )
-      : inArray(profiles.id, ids);
-  const scopedProfileIds = db
-    .select({ id: profiles.id })
-    .from(profiles)
-    .innerJoin(users, eq(profiles.user_id, users.id))
-    .where(ownershipScope);
+      StatusCodes.BAD_REQUEST
+    )
 
   try {
-    const deletedCount = await db.transaction(async (tx) => {
-      const deleted = await tx
-        .delete(profiles)
-        .where(inArray(profiles.id, scopedProfileIds))
-        .returning({ id: profiles.id });
-      if (deleted.length !== ids.length)
-        throw new Error("BULK_DELETE_INCOMPLETE");
-      return deleted.length;
-    });
-    return NextResponse.json({ success: true, deleted_count: deletedCount });
-  } catch (error) {
-    if (error instanceof Error && error.message === "BULK_DELETE_INCOMPLETE") {
-      return apiError(
-        "One or more profiles were not found",
-        StatusCodes.NOT_FOUND,
-      );
+    let query = client.from(TableName.PROFILES).delete().in("id", ids)
+    if (user.factory_id) {
+      query = query.eq("factory_id", user.factory_id)
     }
+
+    const { data, error } = await query.select("id")
+    if (error) {
+      if (isFKViolation(error)) {
+        return apiError(
+          "Cannot delete selected profiles because they are referenced by existing weighments.",
+          StatusCodes.BAD_REQUEST
+        )
+      }
+      throw error
+    }
+
+    if (!data || data.length !== ids.length) {
+      return apiError("One or more profiles were not found", StatusCodes.NOT_FOUND)
+    }
+
+    return NextResponse.json({ success: true, deleted_count: data.length })
+  } catch (error) {
     if (isFKViolation(error)) {
       return apiError(
         "Cannot delete selected profiles because they are referenced by existing weighments.",
-        StatusCodes.BAD_REQUEST,
-      );
+        StatusCodes.BAD_REQUEST
+      )
     }
-    throw error;
+    throw error
   }
-});
+})

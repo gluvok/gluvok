@@ -37,7 +37,7 @@ export const ENTITY_ADD_SCHEMAS: Record<ProjectSlug, EntityAddSchema> = {
   [ProjectSlug.CUSTOMERS]: addCustomerSchema,
   [ProjectSlug.WEIGHMENTS]: addWeighmentSchema,
   [ProjectSlug.PROFILES]: addProfileSchema,
-  [ProjectSlug.CONFIGS]: addConfigSchema,
+  [ProjectSlug.SETTINGS]: addConfigSchema,
 }
 
 export const ENTITY_EDIT_SCHEMAS: Record<ProjectSlug, EntityEditSchema> = {
@@ -47,6 +47,5 @@ export const ENTITY_EDIT_SCHEMAS: Record<ProjectSlug, EntityEditSchema> = {
   [ProjectSlug.CUSTOMERS]: editCustomerSchema,
   [ProjectSlug.WEIGHMENTS]: editWeighmentSchema,
   [ProjectSlug.PROFILES]: editProfileSchema,
-  [ProjectSlug.CONFIGS]: editConfigSchema,
+  [ProjectSlug.SETTINGS]: editConfigSchema,
 }
-

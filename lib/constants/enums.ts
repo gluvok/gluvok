@@ -42,7 +42,7 @@ export const SingularEntityName = {
   FACTORY: "Factory",
   PROFILE: "Profile",
   USER: "User",
-  CONFIG: "Config",
+  SETTING: "Setting",
 } as const
 export type SingularEntityName = typeof SingularEntityName[keyof typeof SingularEntityName]
 
@@ -112,7 +112,7 @@ export enum ApiRoutes {
   WEIGHMENTS = "/api/weighments",
   COMMODITIES = "/api/commodities",
   USERS = "/api/users",
-  CONFIGS = "/api/configs",
+  SETTINGS = "/api/settings",
   FILTERS_PRELOAD = "/api/filters/preload",
 }
 
@@ -123,7 +123,7 @@ export enum ProjectSlug {
   CUSTOMERS = "customers",
   WEIGHMENTS = "weighments",
   PROFILES = "profiles",
-  CONFIGS = "configs",
+  SETTINGS = "settings",
 }
 
 export enum FieldType {
@@ -182,12 +182,6 @@ export enum EntityKey {
   GOVT_ID_MODE = "govt_id_mode",
 }
 
-/** Camel-case properties on Drizzle database records. */
-export enum DatabasePropertyKey {
-  FACTORY_ID = "factoryId",
-  PASSWORD_HASH = "passwordHash",
-}
-
 export enum InputMode {
   NONE = "none",
   TEXT = "text",
@@ -216,7 +210,7 @@ export enum ProjectName {
   WEIGHMENTS = "Weighments",
   FACTORIES = "Factories",
   PROFILES = "Profiles",
-  CONFIGS = "Configs",
+  SETTINGS = "Settings",
 }
 
 export enum SystemSlug {
@@ -230,6 +224,7 @@ export enum DatePreset {
   LAST_7_DAYS = "7days",
   THIS_MONTH = "thisMonth",
 }
+
 export enum DbEnum {
   ROLE = "role_enum",
   UNIT = "unit_enum",
@@ -246,14 +241,12 @@ export enum TableName {
   CUSTOMERS = "customers",
   PROFILES = "profiles",
   WEIGHMENTS = "weighments",
-  CONFIGS = "configs",
 }
 
 export enum ApiPrefix {
   API = "/api/",
   NEXT = "/_next",
   FAVICON = "/favicon.ico",
-  FACTORIES_API = "/api/factories",
 }
 
 export enum RequestHeader {
@@ -263,13 +256,6 @@ export enum RequestHeader {
   ROLE = "x-user-role",
   FACTORY_ID = "x-user-factory-id",
   PROFILE_ID = "x-user-profile-id",
-  TENANT_MODE = "x-tenant-mode",
-  WORKSPACE = "x-workspace",
-}
-
-export enum TenantMode {
-  SHARED = "shared",
-  DEDICATED = "dedicated",
 }
 
 export enum PermissionKey {
@@ -310,5 +296,3 @@ export enum InputStep {
 export enum FilterValue {
   ALL = "all",
 }
-
-

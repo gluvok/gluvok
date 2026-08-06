@@ -1,31 +1,22 @@
 /**
  * @file scripts/seed.ts
- * @description Master database seed script — seeds initial tenant admin user + linked profile and default commodities catalog.
- *
- * Usage:
- *   DATABASE_URL=postgresql://... CENTER_NAME="Main Center" pnpm seed
- *   DATABASE_URL=postgresql://... FACTORY_NAME="Factory A" CENTER_NAME="Gate 1" pnpm seed --shared
+ * @description Master database seed script using Supabase JS client.
+ * Seeds initial factory, admin user + linked profile, main center, and default commodities catalog.
  */
 
-import { drizzle } from "drizzle-orm/postgres-js"
-import { and, eq } from "drizzle-orm";
-import postgres from "postgres"
-import * as standaloneSchema from "../db/schema/standalone"
-import * as sharedSchema from "../db/schema/shared"
-import { Role } from "../lib/constants/enums"
+import { createClient } from "@supabase/supabase-js"
+import { Role, TableName } from "../lib/constants/enums"
 import { hashPassword } from "../lib/auth/password"
 
-const connectionString = process.env.DATABASE_URL
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_TEST_URL
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-if (!connectionString) {
-  console.error("Error: DATABASE_URL environment variable is required.")
+if (!supabaseUrl || !supabaseKey) {
+  console.error("Error: Supabase URL and key environment variables are required.")
   process.exit(1)
 }
 
-const isShared = process.env.SCHEMA === "shared" || process.argv.includes("--shared")
-const client = postgres(connectionString, { ssl: "require", max: 1 })
-const schema = isShared ? sharedSchema : standaloneSchema
-const db = drizzle(client, { schema })
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 const DEFAULT_COMMODITIES = [
   { name: "Wheat" },
@@ -38,121 +29,106 @@ const DEFAULT_COMMODITIES = [
 ]
 
 async function main() {
-  let sharedFactoryId: number | null = null
+  const factoryName = process.env.FACTORY_NAME || "Default Factory"
+  console.log(`Ensuring factory '${factoryName}' exists...`)
 
-  if (isShared) {
-    const factoryName =
-      process.env.FACTORY_NAME ||
-      (process.env.FACTORY_ID ? `Factory ${process.env.FACTORY_ID}` : "Default Factory")
-    console.log(`Ensuring factory '${factoryName}' exists in Shared mode...`)
+  let factoryId: number
+  const { data: existingFactory } = await supabase
+    .from(TableName.FACTORIES)
+    .select("id")
+    .eq("name", factoryName)
+    .maybeSingle()
 
-    const existingFactories = await db
-      .select({ id: sharedSchema.factories.id })
-      .from(sharedSchema.factories)
-      .where(eq(sharedSchema.factories.name, factoryName))
-      .limit(1)
-
-    if (existingFactories.length > 0) {
-      sharedFactoryId = existingFactories[0].id
-      console.log(`Found existing factory '${factoryName}' with id=${sharedFactoryId}`)
-    } else {
-      const [created] = await db
-        .insert(sharedSchema.factories)
-        .values({ name: factoryName })
-        .returning({ id: sharedSchema.factories.id })
-      sharedFactoryId = created.id
-      console.log(`Created new factory '${factoryName}' with id=${sharedFactoryId}`)
-    }
+  if (existingFactory) {
+    factoryId = existingFactory.id
+    console.log(`Found existing factory '${factoryName}' with id=${factoryId}`)
+  } else {
+    const { data: newFactory, error } = await supabase
+      .from(TableName.FACTORIES)
+      .insert({ name: factoryName })
+      .select("id")
+      .single()
+    if (error || !newFactory) throw error || new Error("Failed to insert factory")
+    factoryId = newFactory.id
+    console.log(`Created new factory '${factoryName}' with id=${factoryId}`)
   }
 
-  const schemaLabel = isShared ? `shared (Factory ID: ${sharedFactoryId})` : "standalone"
-  console.log(`Seeding database for ${schemaLabel}...`)
+  const centerName = process.env.CENTER_NAME || "Main Center"
+  console.log(`Ensuring center '${centerName}' exists...`)
+  const { data: existingCenter } = await supabase
+    .from(TableName.CENTERS)
+    .select("id")
+    .eq("name", centerName)
+    .eq("factory_id", factoryId)
+    .maybeSingle()
 
-  const centerName = process.env.CENTER_NAME || "Main Center";
-  console.log(`Ensuring center '${centerName}' exists...`);
-  if (isShared) {
-    if (sharedFactoryId == null) {
-      throw new Error("Shared seed requires a factory ID");
-    }
-    const [existingCenter] = await db
-      .select({ id: sharedSchema.centers.id })
-      .from(sharedSchema.centers)
-      .where(
-        and(
-          eq(sharedSchema.centers.name, centerName),
-          eq(sharedSchema.centers.factory_id, sharedFactoryId),
-        ),
-      )
-      .limit(1);
-
-    if (!existingCenter) {
-      await db.insert(sharedSchema.centers).values({
-        name: centerName,
-        factory_id: sharedFactoryId,
-      });
-      console.log(
-        `Created center '${centerName}' for factory id=${sharedFactoryId}`,
-      );
-    }
-  } else {
-    const [existingCenter] = await db
-      .select({ id: standaloneSchema.centers.id })
-      .from(standaloneSchema.centers)
-      .where(eq(standaloneSchema.centers.name, centerName))
-      .limit(1);
-
-    if (!existingCenter) {
-      await db.insert(standaloneSchema.centers).values({ name: centerName });
-      console.log(`Created center '${centerName}'`);
-    }
+  if (!existingCenter) {
+    await supabase.from(TableName.CENTERS).insert({
+      name: centerName,
+      factory_id: factoryId,
+    })
+    console.log(`Created center '${centerName}' for factory id=${factoryId}`)
   }
 
   console.log("Hashing password for admin user...")
   const passwordHash = await hashPassword("admin123")
 
   console.log("Inserting admin user ('admin')...")
-  const userValues: Record<string, unknown> = {
-    username: "admin",
-    password_hash: passwordHash,
-    role: Role.ADMIN,
-    is_active: true,
-    ...(isShared && sharedFactoryId ? { factory_id: sharedFactoryId } : {}),
-  };
+  const { data: existingUser } = await supabase
+    .from(TableName.USERS)
+    .select("id")
+    .eq("username", "admin")
+    .maybeSingle()
 
-  const [adminUser] = await db
-    .insert(schema.users)
-    .values(userValues as typeof standaloneSchema.users.$inferInsert)
-    .onConflictDoNothing()
-    .returning({ id: schema.users.id })
-
-  if (adminUser) {
-    console.log(`Admin user inserted with id=${adminUser.id}`)
-    console.log("Inserting linked profile for admin...")
-    await db
-      .insert(schema.profiles)
-      .values({
-        user_id: adminUser.id,
-        name: "Admin User",
+  let adminUserId: number
+  if (!existingUser) {
+    const { data: newUser, error: userErr } = await supabase
+      .from(TableName.USERS)
+      .insert({
+        username: "admin",
+        password_hash: passwordHash,
         role: Role.ADMIN,
+        is_active: true,
+        factory_id: factoryId,
       })
-      .onConflictDoNothing();
+      .select("id")
+      .single()
+    if (userErr || !newUser) throw userErr || new Error("Failed to create admin user")
+    adminUserId = newUser.id
+    console.log(`Admin user inserted with id=${adminUserId}`)
+
+    console.log("Inserting linked profile for admin...")
+    await supabase.from(TableName.PROFILES).insert({
+      user_id: adminUserId,
+      name: "Admin User",
+      role: Role.ADMIN,
+      factory_id: factoryId,
+    })
     console.log("Admin profile seeded successfully!")
   } else {
+    adminUserId = existingUser.id
     console.log("Admin user already exists.")
   }
 
-  // Seed Default Commodities Catalog
   console.log("Seeding default commodities catalog...")
   for (const item of DEFAULT_COMMODITIES) {
-    await db
-      .insert(schema.commodities)
-      .values(item)
-      .onConflictDoNothing()
+    const { data: existingComm } = await supabase
+      .from(TableName.COMMODITIES)
+      .select("id")
+      .eq("name", item.name)
+      .eq("factory_id", factoryId)
+      .maybeSingle()
+
+    if (!existingComm) {
+      await supabase.from(TableName.COMMODITIES).insert({
+        name: item.name,
+        factory_id: factoryId,
+      })
+    }
   }
   console.log("Commodities catalog seeded successfully!")
 
   console.log("Database seeding completed successfully!")
-  await client.end()
 }
 
 main().catch((err) => {

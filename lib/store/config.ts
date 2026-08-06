@@ -1,6 +1,6 @@
 /**
  * @file lib/store/config.ts
- * @description Zustand state store for managing active tenant factory configuration.
+ * @description Zustand state store for managing active factory configuration/settings.
  */
 
 import { create } from "zustand"
@@ -37,10 +37,8 @@ export const useConfigStore = create<ConfigStore>((set) => ({
   fetchConfig: async () => {
     set({ configLoading: true })
 
-
-
     try {
-      const res = await axios.get<{ data: ConfigResponseData[] }>("/api/configs")
+      const res = await axios.get<{ data: ConfigResponseData[] }>("/api/settings")
       const row = res.data?.data?.[0]
       const config: FactoryConfig = row
         ? {

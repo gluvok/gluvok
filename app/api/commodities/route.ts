@@ -1,6 +1,4 @@
-import { NextResponse } from "next/server";
-import { eq, ilike, or, inArray } from "drizzle-orm";
-import { commodities } from "@/db/schema";
+import { NextResponse } from "next/server"
 import {
   withAuth,
   apiError,
@@ -13,102 +11,107 @@ import {
   formatEntityResponse,
   isFKViolation,
   parseBulkIds,
-  getOrderByClause,
-} from "@/db/helpers";
+} from "@/db/helpers"
 import {
   ProjectSlug,
   QueryParam,
   PermissionKey,
-} from "@/lib/constants/enums";
+  TableName,
+} from "@/lib/constants/enums"
 
-export const GET = withAuth(async (req, _user, db) => {
-  const pagination = getPaginationParams(req.nextUrl);
-  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN);
-  const sortDesc =
-    req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true";
-  const searchNum = search ? parseInt(search, 10) : NaN;
+export const GET = withAuth(async (req, user, client) => {
+  const pagination = getPaginationParams(req.nextUrl)
+  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
+  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at"
+  const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
 
-  const whereClause = search
-    ? !isNaN(searchNum)
-      ? or(
-          ilike(commodities.name, `%${search}%`),
-          eq(commodities.id, searchNum),
-        )
-      : ilike(commodities.name, `%${search}%`)
-    : undefined;
+  let query = client
+    .from(TableName.COMMODITIES)
+    .select("*", { count: "exact" })
+    .order(sortColumn, { ascending: !sortDesc })
 
-  const baseQuery = db
-    .select({
-      id: commodities.id,
-      name: commodities.name,
-      created_at: commodities.created_at,
-      updated_at: commodities.updated_at,
-    })
-    .from(commodities);
+  if (user.factory_id) {
+    query = query.eq("factory_id", user.factory_id)
+  }
 
-  const orderByClause = getOrderByClause(commodities, sortColumn, sortDesc, commodities.created_at);
+  if (search) {
+    const searchNum = parseInt(search, 10)
+    if (!isNaN(searchNum)) {
+      query = query.or(`name.ilike.%${search}%,id.eq.${searchNum}`)
+    } else {
+      query = query.ilike("name", `%${search}%`)
+    }
+  }
 
-  return fetchPaginatedResult(
-    db,
-    commodities,
-    baseQuery,
-    whereClause,
-    pagination,
-    orderByClause,
-  );
-});
+  return fetchPaginatedResult(query, pagination)
+})
 
-export const POST = withAuth(async (req, user, db, mode) => {
+export const POST = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.CREATE))
-    return forbiddenError();
-  const body = await req.json();
-  const err = validateRequiredFields(body, ProjectSlug.COMMODITIES);
-  if (err) return err;
+    return forbiddenError()
+  const body = await req.json()
+  const err = validateRequiredFields(body, ProjectSlug.COMMODITIES)
+  if (err) return err
 
-  const { name } = body;
-  const [newCommodity] = await db
-    .insert(commodities)
-    .values({ name })
-    .returning();
+  const { name } = body
+  const insertValues: Record<string, unknown> = {
+    name,
+    factory_id: user.factory_id ?? null,
+  }
 
-  return formatEntityResponse(newCommodity, mode, StatusCodes.CREATED);
-});
+  const { data: newCommodity, error } = await client
+    .from(TableName.COMMODITIES)
+    .insert(insertValues)
+    .select()
+    .single()
 
-export const DELETE = withAuth(async (req, user, db) => {
+  if (error) {
+    console.error("POST commodity error:", error)
+    return apiError(error.message || "Failed to create commodity", StatusCodes.BAD_REQUEST)
+  }
+
+  return formatEntityResponse(newCommodity, StatusCodes.CREATED)
+})
+
+export const DELETE = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.DELETE))
-    return forbiddenError();
-  const ids = parseBulkIds(await req.json());
+    return forbiddenError()
+  const ids = parseBulkIds(await req.json())
   if (!ids)
     return apiError(
       "Provide between 1 and 100 valid IDs",
-      StatusCodes.BAD_REQUEST,
-    );
+      StatusCodes.BAD_REQUEST
+    )
 
   try {
-    const deletedCount = await db.transaction(async (tx) => {
-      const deleted = await tx
-        .delete(commodities)
-        .where(inArray(commodities.id, ids))
-        .returning({ id: commodities.id });
-      if (deleted.length !== ids.length)
-        throw new Error("BULK_DELETE_INCOMPLETE");
-      return deleted.length;
-    });
-    return NextResponse.json({ success: true, deleted_count: deletedCount });
-  } catch (error) {
-    if (error instanceof Error && error.message === "BULK_DELETE_INCOMPLETE") {
-      return apiError(
-        "One or more commodities were not found",
-        StatusCodes.NOT_FOUND,
-      );
+    let query = client.from(TableName.COMMODITIES).delete().in("id", ids)
+    if (user.factory_id) {
+      query = query.eq("factory_id", user.factory_id)
     }
+
+    const { data, error } = await query.select("id")
+    if (error) {
+      if (isFKViolation(error)) {
+        return apiError(
+          "Cannot delete selected commodities because they are referenced by existing rates or weighments.",
+          StatusCodes.BAD_REQUEST
+        )
+      }
+      throw error
+    }
+
+    if (!data || data.length !== ids.length) {
+      return apiError("One or more commodities were not found", StatusCodes.NOT_FOUND)
+    }
+
+    return NextResponse.json({ success: true, deleted_count: data.length })
+  } catch (error) {
     if (isFKViolation(error)) {
       return apiError(
         "Cannot delete selected commodities because they are referenced by existing rates or weighments.",
-        StatusCodes.BAD_REQUEST,
-      );
+        StatusCodes.BAD_REQUEST
+      )
     }
-    throw error;
+    throw error
   }
-});
+})

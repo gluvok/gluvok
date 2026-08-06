@@ -1,46 +1,54 @@
 /**
  * @file scripts/clear-db.ts
- * @description Forcefully clears/drops all database tables, indexes, and custom Postgres ENUM types CASCADE, then re-applies the Drizzle schema.
- *
- * Pass --shared flag (or set SCHEMA=shared) to push shared schema instead of standalone.
- *
- * Usage:
- *   DATABASE_URL=postgresql://... pnpm tsx scripts/clear-db.ts           # standalone (dedicated)
- *   DATABASE_URL=postgresql://... pnpm tsx scripts/clear-db.ts --shared   # shared (SaaS)
+ * @description Clears/truncates data from all tables using Supabase JS client.
  */
 
-import postgres from "postgres"
-import { execSync } from "child_process"
+import { createClient } from "@supabase/supabase-js"
+import { TableName } from "../lib/constants/enums"
 
-const connectionString = process.env.DATABASE_URL
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_TEST_URL
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-if (!connectionString) {
-  console.error("Error: DATABASE_URL environment variable is required.")
+if (!supabaseUrl || !supabaseKey) {
+  console.error("Error: Supabase URL and key environment variables are required.")
   process.exit(1)
 }
 
-const isShared = process.env.SCHEMA === "shared" || process.argv.includes("--shared")
-const drizzleConfig = isShared ? "drizzle.config.ts" : "drizzle.standalone.config.ts"
-const schemaLabel = isShared ? "shared" : "standalone"
+const supabase = createClient(supabaseUrl, supabaseKey)
 
-const client = postgres(connectionString, { ssl: "require", max: 1 })
+const tables = [
+  TableName.WEIGHMENTS,
+  TableName.RATES,
+  TableName.CUSTOMERS,
+  TableName.PROFILES,
+  TableName.COMMODITIES,
+  TableName.CENTERS,
+  TableName.USERS,
+  TableName.FACTORIES,
+]
 
 async function main() {
-  console.log(`Dropping all existing tables, types & schema CASCADE for a clean ${schemaLabel} setup...`)
-  await client`DROP TYPE IF EXISTS user_role, field_requirement_mode, weighment_type, unit CASCADE`
-  await client`DROP SCHEMA IF EXISTS public CASCADE`
-  await client`CREATE SCHEMA public`
-  await client`GRANT ALL ON SCHEMA public TO public`
-  console.log("Database schema reset cleanly.")
+  console.log("Clearing all data from Supabase tables...")
+  for (const table of tables) {
+    const { error } = await supabase.from(table).delete().neq("id", 0)
+    if (error) {
+      console.warn(`Could not clear table ${table}:`, error.message)
+    } else {
+      console.log(`Cleared table: ${table}`)
+    }
 
-  console.log(`Pushing ${schemaLabel} Drizzle schema to database...`)
-  execSync(`pnpm drizzle-kit push --config=${drizzleConfig} --force`, {
-    stdio: "inherit",
-    env: { ...process.env, DATABASE_URL: connectionString },
-  })
+    const { error: seqError } = await supabase.rpc("reset_table_sequence", { table_name: table })
+    if (!seqError) {
+      console.log(`Reset sequence/index for table: ${table}`)
+    }
+  }
 
-  console.log("Database cleared and schema pushed successfully!")
-  await client.end()
+  const { error: resetAllErr } = await supabase.rpc("reset_all_sequences")
+  if (!resetAllErr) {
+    console.log("Reset all auto-increment sequence indexes successfully.")
+  }
+
+  console.log("Database cleared successfully!")
 }
 
 main().catch((err) => {

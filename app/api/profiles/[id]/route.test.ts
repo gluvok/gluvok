@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { PermissionKey, ProjectSlug, Role, TenantMode } from "@/lib/constants/enums"
+import { PermissionKey, ProjectSlug, Role } from "@/lib/constants/enums"
 
 const { mockHasPermission } = vi.hoisted(() => ({
   mockHasPermission: vi.fn(),
@@ -23,19 +23,16 @@ type RawProfileHandler = (
     username: string
     role: Role
     factory_id: number | null
-    tenant_mode: TenantMode
   },
   db: unknown,
-  mode: TenantMode,
   context: { params: Promise<{ id: string }> },
 ) => Promise<Response>
 
-const sharedUser = {
+const sampleUser = {
   sub: "user-1",
   username: "operator",
   role: Role.OPERATOR,
   factory_id: 1,
-  tenant_mode: TenantMode.SHARED,
 }
 
 const context = { params: Promise.resolve({ id: "1" }) }
@@ -56,38 +53,17 @@ describe("Profile mutation guards", () => {
 
       const response = await handler(
         request,
-        sharedUser,
+        sampleUser,
         {},
-        TenantMode.SHARED,
         context,
       );
 
       expect(response.status).toBe(403);
       expect(mockHasPermission).toHaveBeenCalledWith(
-        sharedUser,
+        sampleUser,
         ProjectSlug.PROFILES,
         permission,
       );
-    },
-  );
-
-  it.each([
-    ["PATCH", PATCH as unknown as RawProfileHandler],
-    ["DELETE", DELETE as unknown as RawProfileHandler],
-  ])(
-    "rejects %s in shared mode when the user has no factory assignment",
-    async (_method, handler) => {
-      mockHasPermission.mockReturnValue(true);
-
-      const response = await handler(
-        request,
-        { ...sharedUser, factory_id: null },
-        {},
-        TenantMode.SHARED,
-        context,
-      );
-
-      expect(response.status).toBe(403);
     },
   );
 })

@@ -43,7 +43,7 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
     setDeletingItem,
     handleReload,
   } = pt;
-  const isConfigTable = projectSlug === ProjectSlug.CONFIGS;
+  const isSettingsTable = projectSlug === ProjectSlug.SETTINGS;
 
   const isFiltersLoading = useEntitiesStore((state) => state.filtersLoading)
 
@@ -69,7 +69,7 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
 
   return (
     <div className="space-y-4">
-      {isConfigTable ? (
+      {isSettingsTable ? (
         <div className="flex min-h-[calc(100vh-14rem)] items-center justify-center">
           <ConfigSummary
             config={table.getRowModel().rows[0]?.original as Config | undefined}

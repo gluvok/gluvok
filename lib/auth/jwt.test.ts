@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it } from "vitest"
-import { TenantMode } from "@/lib/constants/enums"
 import { getTokenExpiresIn, signJWT, verifyJWT } from "./jwt"
 
 const originalJwtSecret = process.env.JWT_SECRET
@@ -22,7 +21,6 @@ describe("JWT profile claims", () => {
       role: "operator",
       factory_id: 7,
       profile_id: 18,
-      tenant_mode: TenantMode.SHARED,
     }, "1d")
 
     await expect(verifyJWT(token)).resolves.toEqual({
@@ -31,7 +29,6 @@ describe("JWT profile claims", () => {
       role: "operator",
       factory_id: 7,
       profile_id: 18,
-      tenant_mode: TenantMode.SHARED,
     })
   })
 
@@ -43,7 +40,6 @@ describe("JWT profile claims", () => {
       username: "operator_01",
       role: "operator",
       factory_id: 7,
-      tenant_mode: TenantMode.SHARED,
     }, "1h")
 
     expect(getTokenExpiresIn(token)).toBe(3600)

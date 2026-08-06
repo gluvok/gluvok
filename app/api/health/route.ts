@@ -1,24 +1,16 @@
-import { NextRequest, NextResponse } from "next/server"
-import { sql } from "drizzle-orm"
-import { getWorkspace } from "@/lib/tenant/workspace"
-import { resolveTenant } from "@/lib/tenant"
-import { getDb } from "@/db"
+import { NextResponse } from "next/server"
+import { db } from "@/db"
+import { TableName } from "@/lib/constants/enums"
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const workspace = getWorkspace(req)
-    const tenantCtx = resolveTenant(workspace)
-    const tenantDb = getDb(tenantCtx)
+    const { error } = await db.from(TableName.FACTORIES).select("id").limit(1)
 
-    await tenantDb.execute(sql`SELECT 1`)
+    if (error) throw error
 
     return NextResponse.json({
       status: "ok",
       database: "connected",
-      tenant: {
-        mode: tenantCtx.mode,
-        workspace: tenantCtx.workspace,
-      },
     })
   } catch (error: unknown) {
     console.error("Database health check error:", error)

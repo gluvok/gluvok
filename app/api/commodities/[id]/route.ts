@@ -1,57 +1,96 @@
 import { NextResponse } from "next/server"
-import { eq } from "drizzle-orm"
-import { commodities } from "@/db/schema"
 import {
   withAuth,
-  withEntityId,
+  withEntityScope,
   apiError,
   isFKViolation,
   forbiddenError,
   hasPermission,
   StatusCodes,
-} from "@/db/helpers";
-import { ProjectSlug, PermissionKey } from "@/lib/constants/enums"
+  formatEntityResponse,
+} from "@/db/helpers"
+import { ProjectSlug, PermissionKey, TableName } from "@/lib/constants/enums"
+
+export const GET = withAuth(
+  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.READ))
+      return forbiddenError()
+
+    let query = client.from(TableName.COMMODITIES).select("*").eq("id", entityId)
+    if (factoryId) {
+      query = query.eq("factory_id", factoryId)
+    }
+
+    const { data: commodity, error } = await query.maybeSingle()
+    if (error || !commodity) return apiError("Commodity not found", StatusCodes.NOT_FOUND)
+
+    return formatEntityResponse(commodity)
+  })
+)
 
 export const PATCH = withAuth(
-  withEntityId(async (req, user, db, _mode, _ctx, entityId) => {
+  withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
     if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.WRITE))
-      return forbiddenError();
-    const { name } = await req.json();
+      return forbiddenError()
 
-    const [updated] = await db
-      .update(commodities)
-      .set({ ...(name ? { name } : {}), updated_at: new Date() })
-      .where(eq(commodities.id, entityId))
-      .returning();
+    const { name } = await req.json()
 
-    if (!updated) return apiError("Commodity not found", StatusCodes.NOT_FOUND);
+    let query = client
+      .from(TableName.COMMODITIES)
+      .update({
+        ...(name ? { name } : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", entityId)
 
-    return NextResponse.json({
-      data: {
-        id: updated.id,
-        name: updated.name,
-        created_at: updated.created_at,
-        updated_at: updated.updated_at,
-      },
-    });
-  }),
-);
+    if (factoryId) {
+      query = query.eq("factory_id", factoryId)
+    }
+
+    const { data: updated, error } = await query.select().maybeSingle()
+    if (error || !updated) return apiError("Commodity not found", StatusCodes.NOT_FOUND)
+
+    return formatEntityResponse(updated)
+  })
+)
+
+export const PUT = PATCH
 
 export const DELETE = withAuth(
-  withEntityId(async (_req, user, db, _mode, _ctx, entityId) => {
+  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.DELETE))
-      return forbiddenError();
+      return forbiddenError()
+
     try {
-      await db.delete(commodities).where(eq(commodities.id, entityId));
-      return NextResponse.json({ success: true });
+      let query = client.from(TableName.COMMODITIES).delete().eq("id", entityId)
+      if (factoryId) {
+        query = query.eq("factory_id", factoryId)
+      }
+
+      const { data, error } = await query.select("id")
+      if (error) {
+        if (isFKViolation(error)) {
+          return apiError(
+            "Cannot delete this commodity because it is referenced by existing rates or weighments.",
+            StatusCodes.BAD_REQUEST
+          )
+        }
+        throw error
+      }
+
+      if (!data || data.length === 0) {
+        return apiError("Commodity not found", StatusCodes.NOT_FOUND)
+      }
+
+      return NextResponse.json({ success: true, id: entityId })
     } catch (error) {
       if (isFKViolation(error)) {
         return apiError(
-          "Cannot delete this commodity because it is referenced by existing rates or weighments. Please reassign or delete dependent records first.",
-          StatusCodes.BAD_REQUEST,
-        );
+          "Cannot delete this commodity because it is referenced by existing rates or weighments.",
+          StatusCodes.BAD_REQUEST
+        )
       }
-      throw error;
+      throw error
     }
-  }),
-);
+  })
+)

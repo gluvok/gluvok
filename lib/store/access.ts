@@ -3,28 +3,18 @@
  * @description Role-based access control (RBAC) matrix and permission helper functions.
  */
 
-import { Role, ProjectSlug, EntityKey, FieldRequirementMode, PermissionKey, TenantMode } from "@/lib/constants/enums"
+import { Role, ProjectSlug, EntityKey, FieldRequirementMode, PermissionKey } from "@/lib/constants/enums"
 import { useConfigStore } from "./config"
-import { useAuthStore } from "./auth"
 
 export interface Permission {
-  /** Whether this role can query records from this entity table */
   read: boolean
-  /** Whether this role can write/update records in this entity table */
   write: boolean
-  /** Whether this role can delete records from this entity table */
   delete: boolean
-  /** Whether this role can create new records in this entity table */
   create: boolean
-  /** Whether this role should see this entity page in the dashboard/sidebar */
   show: boolean
-  /** Whether this role can use filters in the table toolbar */
   filter: boolean
-  /** List of hidden column keys for data tables. If undefined or empty, all columns are shown. */
   hiddenColumns?: string[]
-  /** List of hidden field keys for add/edit form dialogs. If undefined or empty, all fields are shown. */
   hiddenFields?: string[]
-  /** Fields this role may modify when a record is being edited. */
   editableFields?: string[]
 }
 
@@ -56,9 +46,9 @@ export const RBAC_MATRIX: RbacMatrix = {
     },
     [ProjectSlug.COMMODITIES]: {
       read: true,
-      write: false,
-      delete: false,
-      create: false,
+      write: true,
+      delete: true,
+      create: true,
       show: true,
       filter: true,
     },
@@ -87,7 +77,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       filter: true,
       editableFields: [EntityKey.WEIGHT],
     },
-    [ProjectSlug.CONFIGS]: {
+    [ProjectSlug.SETTINGS]: {
       read: true,
       write: true,
       delete: true,
@@ -145,7 +135,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       show: true,
       filter: true,
     },
-    [ProjectSlug.CONFIGS]: {
+    [ProjectSlug.SETTINGS]: {
       read: false,
       write: false,
       delete: false,
@@ -203,7 +193,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       show: true,
       filter: true,
     },
-    [ProjectSlug.CONFIGS]: {
+    [ProjectSlug.SETTINGS]: {
       read: false,
       write: false,
       delete: false,
@@ -261,7 +251,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       show: true,
       filter: true,
     },
-    [ProjectSlug.CONFIGS]: {
+    [ProjectSlug.SETTINGS]: {
       read: false,
       write: false,
       delete: false,
@@ -270,23 +260,9 @@ export const RBAC_MATRIX: RbacMatrix = {
       filter: false,
     },
   },
-};
-
-export function getActiveTenantMode(): TenantMode {
-  if (typeof window !== "undefined") {
-    const user = useAuthStore.getState().user
-    if (user?.tenant_mode) return user.tenant_mode
-
-    const hostname = window.location.hostname
-    const rootDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || "localhost"
-    if (hostname !== rootDomain && hostname.endsWith(`.${rootDomain}`)) {
-      return TenantMode.DEDICATED
-    }
-  }
-  return TenantMode.SHARED
 }
 
-export function getPermissions(role: Role | null | undefined, projectSlug: string, mode?: TenantMode): Permission {
+export function getPermissions(role: Role | null | undefined, projectSlug: string): Permission {
   if (!role) {
     return { read: false, write: false, delete: false, create: false, show: false, filter: false }
   }
@@ -294,36 +270,19 @@ export function getPermissions(role: Role | null | undefined, projectSlug: strin
   if (!roleMatrix) {
     return { read: false, write: false, delete: false, create: false, show: false, filter: false }
   }
-  const basePerm = roleMatrix[projectSlug as ProjectSlug] || { read: false, write: false, delete: false, create: false, show: false, filter: false }
-
-  const effectiveMode = mode || getActiveTenantMode()
-
-  if (effectiveMode === TenantMode.DEDICATED) {
-
-
-    const commoditiesOverride = role === Role.ADMIN && projectSlug === ProjectSlug.COMMODITIES
-      ? { read: true, write: true, delete: true, create: true, show: true, filter: true }
-      : {}
-
-    return {
-      ...basePerm,
-      ...commoditiesOverride,
-    }
-  }
-
-  return basePerm
+  return roleMatrix[projectSlug as ProjectSlug] || { read: false, write: false, delete: false, create: false, show: false, filter: false }
 }
 
-export function hasPageAccess(role: Role | null | undefined, projectSlug: string, mode?: TenantMode): boolean {
-  return getPermissions(role, projectSlug, mode).show
+export function hasPageAccess(role: Role | null | undefined, projectSlug: string): boolean {
+  return getPermissions(role, projectSlug).show
 }
 
-export function hasCreateAccess(role: Role | null | undefined, projectSlug: string, mode?: TenantMode): boolean {
-  return getPermissions(role, projectSlug, mode).create
+export function hasCreateAccess(role: Role | null | undefined, projectSlug: string): boolean {
+  return getPermissions(role, projectSlug).create
 }
 
-export function hasDeleteAccess(role: Role | null | undefined, projectSlug: string, mode?: TenantMode): boolean {
-  return getPermissions(role, projectSlug, mode).delete
+export function hasDeleteAccess(role: Role | null | undefined, projectSlug: string): boolean {
+  return getPermissions(role, projectSlug).delete
 }
 
 export function hasPermission(
@@ -331,23 +290,21 @@ export function hasPermission(
   projectSlug: string,
   operation: PermissionKey,
   fieldKey?: string,
-  mode?: TenantMode,
 ): boolean {
   const role = typeof subject === "string" ? subject as Role : subject?.role as Role | undefined
-  const permissions = getPermissions(role, projectSlug, mode)
+  const permissions = getPermissions(role, projectSlug)
   if (operation === PermissionKey.EDIT_FIELD) {
     return fieldKey != null && permissions.editableFields?.includes(fieldKey) === true
   }
   return permissions[operation] ?? false
 }
 
-export function isColumnVisible(role: Role | null | undefined, projectSlug: string, columnKey: string, mode?: TenantMode): boolean {
+export function isColumnVisible(role: Role | null | undefined, projectSlug: string, columnKey: string): boolean {
   if (columnKey === EntityKey.FACTORY_ID || columnKey === EntityKey.FACTORY_NAME) {
     return false
   }
 
-  const effectiveMode = mode || getActiveTenantMode()
-  const perms = getPermissions(role, projectSlug, effectiveMode)
+  const perms = getPermissions(role, projectSlug)
   if (perms.hiddenColumns && perms.hiddenColumns.includes(columnKey)) return false
 
   const config = useConfigStore.getState().config
@@ -361,16 +318,15 @@ export function isColumnVisible(role: Role | null | undefined, projectSlug: stri
   return true
 }
 
-export function isFieldVisible(role: Role | null | undefined, projectSlug: string, fieldKey: string, mode?: TenantMode): boolean {
+export function isFieldVisible(role: Role | null | undefined, projectSlug: string, fieldKey: string): boolean {
   if (
     fieldKey === EntityKey.FACTORY_ID ||
     fieldKey === EntityKey.FACTORY_NAME
   ) {
-    return false;
+    return false
   }
 
-  const effectiveMode = mode || getActiveTenantMode()
-  const perms = getPermissions(role, projectSlug, effectiveMode)
+  const perms = getPermissions(role, projectSlug)
   if (perms.hiddenFields && perms.hiddenFields.includes(fieldKey)) return false
 
   const config = useConfigStore.getState().config

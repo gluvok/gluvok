@@ -1,25 +1,22 @@
 import { NextResponse } from "next/server"
-import { eq, and } from "drizzle-orm"
-import { getTables, sharedSchema } from "@/db/schema"
 import { withAuth } from "@/db/helpers"
-import { TenantMode } from "@/lib/constants/enums"
+import { TableName } from "@/lib/constants/enums"
 
-export const GET = withAuth(async (_req, user, db, mode) => {
-  const { users } = getTables(mode)
-  const conditions = [eq(users.is_active, true)]
-  if (mode === TenantMode.SHARED && user.factory_id != null) {
-    conditions.push(eq((users as typeof sharedSchema.users).factory_id, user.factory_id))
+export const GET = withAuth(async (_req, user, client) => {
+  let query = client
+    .from(TableName.USERS)
+    .select("id, username, role, factory_id, is_active")
+    .eq("is_active", true)
+
+  if (user.factory_id) {
+    query = query.eq("factory_id", user.factory_id)
   }
 
-  const rows = await db
-    .select({
-      id: users.id,
-      username: users.username,
-      role: users.role,
-      ...(mode === TenantMode.SHARED ? { factory_id: (users as typeof sharedSchema.users).factory_id } : {}),
-    })
-    .from(users)
-    .where(and(...conditions))
+  const { data: rows, error } = await query
+  if (error) {
+    console.error("GET users error:", error)
+    return NextResponse.json({ data: [] })
+  }
 
-  return NextResponse.json({ data: rows })
+  return NextResponse.json({ data: rows || [] })
 })

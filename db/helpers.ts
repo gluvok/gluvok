@@ -1,23 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { StatusCodes, ReasonPhrases } from "http-status-codes"
-import { sql, and, eq, count, desc, asc, type Column, type SQL } from "drizzle-orm";
 import { verifyJWT, JWTPayload } from "@/lib/auth/jwt"
 import {
   Role,
   RequestHeader,
-  TenantMode,
   ProjectSlug,
   QueryParam,
   CookieName,
-  DatabasePropertyKey,
-  EntityKey,
-} from "@/lib/constants/enums";
+  TableName,
+} from "@/lib/constants/enums"
 export { hasPermission } from "@/lib/store/access"
 import { REQUIRED_CREATE_FIELDS } from "@/lib/fields/config"
-import { db, getDb } from "@/db"
-import { configs } from "@/db/schema"
-import { getWorkspace } from "@/lib/tenant/workspace"
-import { resolveTenant, type TenantContext } from "@/lib/tenant"
+import { db, supabaseAdmin } from "@/db"
 
 export interface PaginationParams {
   page: number
@@ -25,20 +19,16 @@ export interface PaginationParams {
   offset: number
 }
 
-// ─── Typed route context (Next.js dynamic segments) ──────────────────────────
 export type RouteContext<P extends Record<string, string> = Record<string, string>> = {
   params: Promise<P>
 }
 
-// ─── Re-export StatusCodes for convenience across API routes ─────────────────
 export { StatusCodes }
 
-// ─── apiError helper — no more raw numbers or "Unauthorized" strings ──────────
 export function apiError(message: string, status: StatusCodes): NextResponse {
   return NextResponse.json({ error: message }, { status })
 }
 
-// ─── Centralized Required Field Validation ────────────────────────────────────
 export function validateRequiredFields(
   body: Record<string, unknown>,
   slug: ProjectSlug
@@ -56,12 +46,10 @@ export function validateRequiredFields(
   return null
 }
 
-
 export function forbiddenError(): NextResponse {
   return apiError(ReasonPhrases.FORBIDDEN, StatusCodes.FORBIDDEN)
 }
 
-// ─── Pagination ───────────────────────────────────────────────────────────────
 export function getPaginationParams(url: URL): PaginationParams {
   const pageParam = url.searchParams.get(QueryParam.PAGE)
   const limitParam = url.searchParams.get(QueryParam.LIMIT)
@@ -73,15 +61,13 @@ export function getPaginationParams(url: URL): PaginationParams {
   return { page, limit, offset }
 }
 
-// ─── FK constraint error catcher ─────────────────────────────────────────────
 const PG_FK_VIOLATION = "23503"
 
 export function isFKViolation(error: unknown): boolean {
   const e = error as { code?: string; message?: string }
-  return e.code === PG_FK_VIOLATION || Boolean(e.message?.includes("foreign key"))
+  return e?.code === PG_FK_VIOLATION || Boolean(e?.message?.includes("foreign key"))
 }
 
-/** Validates a bounded, de-duplicated numeric ID batch for collection mutations. */
 export function parseBulkIds(body: unknown): number[] | null {
   if (!body || typeof body !== "object" || !Array.isArray((body as { ids?: unknown }).ids)) {
     return null
@@ -96,14 +82,12 @@ export function parseBulkIds(body: unknown): number[] | null {
   return [...new Set(numericIds)]
 }
 
-// ─── Auth: resolve user from proxy-forwarded headers or JWT cookie ────────────
 export async function getAuthUser(req: NextRequest | Request): Promise<JWTPayload | null> {
   const userId = req.headers.get(RequestHeader.USER_ID)
   const username = req.headers.get(RequestHeader.USERNAME)
   const role = req.headers.get(RequestHeader.ROLE)
   const factoryIdStr = req.headers.get(RequestHeader.FACTORY_ID)
-  const profileIdStr = req.headers.get(RequestHeader.PROFILE_ID);
-  const tenantModeHeader = req.headers.get(RequestHeader.TENANT_MODE)
+  const profileIdStr = req.headers.get(RequestHeader.PROFILE_ID)
 
   if (userId && username && role) {
     return {
@@ -112,11 +96,7 @@ export async function getAuthUser(req: NextRequest | Request): Promise<JWTPayloa
       role: role as Role,
       factory_id: factoryIdStr ? parseInt(factoryIdStr, 10) : null,
       profile_id: profileIdStr ? parseInt(profileIdStr, 10) : undefined,
-      tenant_mode:
-        tenantModeHeader === TenantMode.DEDICATED
-          ? TenantMode.DEDICATED
-          : TenantMode.SHARED,
-    };
+    }
   }
 
   let token: string | undefined
@@ -124,7 +104,7 @@ export async function getAuthUser(req: NextRequest | Request): Promise<JWTPayloa
   if ("cookies" in req && typeof (req as NextRequest).cookies?.get === "function") {
     token =
       (req as NextRequest).cookies.get(CookieName.TOKEN)?.value ||
-      (req as NextRequest).cookies.get(CookieName.AUTH_TOKEN)?.value;
+      (req as NextRequest).cookies.get(CookieName.AUTH_TOKEN)?.value
   }
 
   if (!token) {
@@ -138,7 +118,6 @@ export async function getAuthUser(req: NextRequest | Request): Promise<JWTPayloa
   return await verifyJWT(token)
 }
 
-// ─── requireAuth: call inline when you need the user object ──────────────────
 export async function requireAuth(
   req: NextRequest | Request,
   requiredRole?: Role
@@ -159,32 +138,28 @@ export async function requireAuth(
   return { user }
 }
 
-// ─── withAuth: HOF — injects (req, user, db, mode, ctx) into every handler ──
 type AuthedHandler<P extends Record<string, string> = Record<string, string>> = (
   req: NextRequest,
   user: JWTPayload,
-  db: ReturnType<typeof getDb>,
-  mode: TenantMode,
+  client: typeof supabaseAdmin,
   ctx: RouteContext<P>
 ) => Promise<NextResponse>
 
 type EntityIdHandler<P extends Record<string, string>> = (
   req: NextRequest,
   user: JWTPayload,
-  db: ReturnType<typeof getDb>,
-  mode: TenantMode,
+  client: typeof supabaseAdmin,
   ctx: RouteContext<P>,
-  entityId: number,
-) => Promise<NextResponse>;
+  entityId: number
+) => Promise<NextResponse>
 
 type ScopedEntityHandler<P extends Record<string, string>> = (
   req: NextRequest,
   user: JWTPayload,
-  db: ReturnType<typeof getDb>,
-  mode: TenantMode,
+  client: typeof supabaseAdmin,
   ctx: RouteContext<P>,
-  scope: { entityId: number; whereClause: SQL },
-) => Promise<NextResponse>;
+  scope: { entityId: number; factoryId: number | null }
+) => Promise<NextResponse>
 
 export function withAuth<P extends Record<string, string> = Record<string, string>>(
   handler: AuthedHandler<P>,
@@ -193,236 +168,91 @@ export function withAuth<P extends Record<string, string> = Record<string, strin
   return async (req: NextRequest, ctx: RouteContext<P>): Promise<NextResponse> => {
     const { user, errorResponse } = await requireAuth(req, requiredRole)
     if (errorResponse) return errorResponse
-    // Resolve tenant context from the request (subdomain → env var look-up)
-    const workspace = getWorkspace(req)
-    const tenant: TenantContext = resolveTenant(workspace)
-    const tenantDb = getDb(tenant)
-    return handler(req, user, tenantDb, tenant.mode, ctx)
+    return handler(req, user, db, ctx)
   }
 }
 
-/**
- * Resolves and validates a numeric ID from a dynamic item route.
- */
 export function withEntityId<P extends Record<string, string> = Record<string, string>>(
-  handler: EntityIdHandler<P>,
+  handler: EntityIdHandler<P>
 ): AuthedHandler<P> {
-  return async (req, user, tenantDb, mode, ctx) => {
+  return async (req, user, client, ctx) => {
     const { id } = await ctx.params
     const entityId = Number(id)
     if (!Number.isSafeInteger(entityId) || entityId <= 0) {
       return apiError("Invalid entity ID", StatusCodes.BAD_REQUEST)
     }
 
-    return handler(req, user, tenantDb, mode, ctx, entityId)
+    return handler(req, user, client, ctx, entityId)
   }
 }
 
-/**
- * Resolves an item ID and applies a factory ownership predicate before calling
- * an item route handler. The factory column may belong to the entity table or
- * to a table joined by the handler (for example `users` or `centers`).
- */
 export function withEntityScope<P extends Record<string, string> = Record<string, string>>(
-  getTable: (mode: TenantMode) => { id: Column },
-  factoryIdColumn: Column,
-  handler: ScopedEntityHandler<P>,
+  handler: ScopedEntityHandler<P>
 ): AuthedHandler<P> {
-  return withEntityId(async (req, user, tenantDb, mode, ctx, entityId) => {
-
-    const whereClause = getScopedEntityWhereClause(
-      user,
-      mode,
-      eq(getTable(mode).id, entityId),
-      factoryIdColumn,
-    )
-    if (!whereClause) return forbiddenError()
-
-    return handler(req, user, tenantDb, mode, ctx, { entityId, whereClause })
+  return withEntityId(async (req, user, client, ctx, entityId) => {
+    return handler(req, user, client, ctx, { entityId, factoryId: user.factory_id })
   })
 }
-// ─── DB Session Context — set before queries so RLS policies can read them ────
-// Call this inside withAuth handler (or any authed route) before DB queries.
-// Uses SET LOCAL so values are scoped to the current transaction only.
-export async function setDbSessionContext(
-  user: JWTPayload,
-  tenantDb: ReturnType<typeof getDb> = db
-): Promise<void> {
-  if (user.tenant_mode === TenantMode.DEDICATED) {
-    await tenantDb.execute(sql`
-      SELECT
-        set_config('app.current_role',    ${user.role}, true),
-        set_config('app.current_user_id', ${user.sub},  true)
-    `)
-  } else {
-    await tenantDb.execute(sql`
-      SELECT
-        set_config('app.current_role',       ${user.role},              true),
-        set_config('app.current_factory_id', ${String(user.factory_id)}, true),
-        set_config('app.current_user_id',    ${user.sub},               true)
-    `)
-  }
-}
 
-export function getOrderByClause<T extends object>(
-  target: T,
-  sortColumn: string | null,
-  sortDesc: boolean,
-  defaultColumn: SQL | Column
-): SQL {
-  const t = target as Record<string, unknown>;
-  const col = (sortColumn && t[sortColumn] ? t[sortColumn] : defaultColumn) as SQL | Column;
-  return sortDesc ? desc(col) : asc(col);
-}
-
-/**
- * Reusable helper to fetch field requirement configuration.
- *
- * - Shared mode: looks up the config row for the given factoryId.
- * - Dedicated mode: always returns the single global config row.
- */
-export async function getFactoryConfig(
-  factoryId: number | null | undefined,
-  tenantDb: ReturnType<typeof getDb> = db,
-  mode: TenantMode = TenantMode.SHARED
-) {
+export async function getFactoryConfig(factoryId: number | null | undefined) {
+  if (!factoryId) return null
   try {
-    if (mode === TenantMode.DEDICATED) {
-      // Dedicated: single global config row, ignore factoryId
-      const [c] = await tenantDb
-        .select({
-          aadharNumberMode: configs.aadhar_number_mode,
-          govtIdMode: configs.govt_id_mode,
-        })
-        .from(configs)
-        .limit(1)
-      return c || null
+    const { data } = await db
+      .from(TableName.FACTORIES)
+      .select("id, aadhar_number_mode, govt_id_mode")
+      .eq("id", factoryId)
+      .single()
+    if (!data) return null
+    return {
+      factoryId: data.id,
+      aadharNumberMode: data.aadhar_number_mode,
+      govtIdMode: data.govt_id_mode,
     }
-    if (!factoryId) return null
-    const [c] = await tenantDb
-      .select({
-        factoryId: configs.factory_id,
-        aadharNumberMode: configs.aadhar_number_mode,
-        govtIdMode: configs.govt_id_mode,
-      })
-      .from(configs)
-      .where(eq(configs.factory_id, factoryId))
-      .limit(1)
-    return c || null
   } catch {
     return null
   }
 }
 
-/**
- * Returns a factory scoping condition when in SHARED mode:
- * Scopes query strictly to user's assigned factory (`eq(factoryIdColumn, user.factory_id)`).
- */
-export function getFactoryWhereClause(
-  user: JWTPayload,
-  mode: TenantMode,
-  factoryIdColumn: Column
-): SQL | undefined {
-  if (mode === TenantMode.SHARED && user.factory_id != null) {
-    return eq(factoryIdColumn, user.factory_id)
-  }
-  return undefined
+export interface SupabasePaginatedQuery {
+  range: (
+    start: number,
+    end: number
+  ) => PromiseLike<{
+    data: unknown[] | null
+    count: number | null
+    error: { message?: string } | null
+  }>
 }
 
-/**
- * Combines an entity predicate with the authenticated user's factory scope.
- * Returns null when a shared-mode request has no factory assignment.
- */
-export function getScopedEntityWhereClause(
-  user: JWTPayload,
-  mode: TenantMode,
-  entityWhereClause: SQL,
-  factoryIdColumn: Column
-): SQL | null {
-  if (mode === TenantMode.DEDICATED) return entityWhereClause
-  if (user.factory_id == null) return null
-  return and(entityWhereClause, eq(factoryIdColumn, user.factory_id)) ?? null
-}
-
-/**
- * Executes count and data queries in parallel with pagination and returns a standardized JSON response.
- */
-export async function fetchPaginatedResult<T = unknown>(
-  tenantDb: ReturnType<typeof getDb>,
-  countTableOrQuery: unknown,
-  baseQuery: unknown,
-  whereClause: SQL | undefined,
-  pagination: PaginationParams,
-  orderByClause?: unknown
+export async function fetchPaginatedResult<T = Record<string, unknown>>(
+  query: SupabasePaginatedQuery,
+  pagination: PaginationParams
 ) {
   const { page, limit, offset } = pagination
-  const bQuery = baseQuery as {
-    orderBy?: (ob: unknown) => {
-      where: (clause: unknown) => {
-        limit: (l: number) => {
-          offset: (o: number) => Promise<unknown[]>
-        }
-      }
-    }
-    where: (clause: unknown) => {
-      limit: (l: number) => {
-        offset: (o: number) => Promise<unknown[]>
-      }
-    }
+  const { data, count, error } = await query.range(offset, offset + limit - 1)
+  if (error) {
+    console.error("Supabase query error:", error)
+    return apiError(error.message || "Database query failed", StatusCodes.INTERNAL_SERVER_ERROR)
   }
-
-  const orderedQuery = orderByClause && typeof bQuery.orderBy === "function"
-    ? bQuery.orderBy(orderByClause)
-    : bQuery
-  const dataQuery = orderedQuery.where(whereClause).limit(limit).offset(offset)
-
-  const cObj = countTableOrQuery as { where?: (w: unknown) => Promise<{ count: number | string }[]> }
-  const countQuery = typeof cObj?.where === "function"
-    ? cObj.where(whereClause)
-    : (tenantDb as unknown as { select: (fields: unknown) => { from: (table: unknown) => { where: (clause: unknown) => Promise<{ count: number | string }[]> } } })
-        .select({ count: count() })
-        .from(countTableOrQuery)
-        .where(whereClause)
-
-  const [countResult, rows] = await Promise.all([
-    countQuery,
-    dataQuery,
-  ])
-
-  const total = Number((countResult as { count: number | string }[])[0]?.count || 0)
+  const total = count ?? (data?.length || 0)
   return NextResponse.json({
-    data: rows as T[],
+    data: (data || []) as T[],
     pagination: { page, limit, total },
   })
 }
 
-/**
- * Formats a DB entity record into standardized JSON API response:
- * - Converts camelCase DB fields (createdAt, fatherName) to snake_case (created_at, father_name)
- * - Omit sensitive internal fields (passwordHash)
- * - Conditionally includes factory_id based on TenantMode
- */
 export function formatEntityResponse<T extends Record<string, unknown>>(
   record: T,
-  mode: TenantMode = TenantMode.SHARED,
   status: number = StatusCodes.OK
 ) {
+  if (!record) return NextResponse.json({ data: null }, { status })
   const formatted: Record<string, unknown> = {}
 
   for (const [key, value] of Object.entries(record)) {
-    if (key === DatabasePropertyKey.FACTORY_ID) {
-      if (mode === TenantMode.SHARED && value != null) {
-        formatted[EntityKey.FACTORY_ID] = value;
-      }
-    } else if (key === DatabasePropertyKey.PASSWORD_HASH) {
-      continue;
-    } else {
-      const snakeKey = key.replace(
-        /[A-Z]/g,
-        (letter) => `_${letter.toLowerCase()}`,
-      );
-      formatted[snakeKey] = value;
+    if (key === "password_hash" || key === "passwordHash") {
+      continue
     }
+    formatted[key] = value
   }
 
   return NextResponse.json({ data: formatted }, { status })

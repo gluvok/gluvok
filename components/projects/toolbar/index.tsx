@@ -28,8 +28,8 @@ export function ProjectToolbar<TData>({
   const selectedRows = table.getFilteredSelectedRowModel().rows
   const user = useAuthStore((state) => state.user)
   const permissions = getPermissions(user?.role, projectSlug)
-  const isConfigTable = projectSlug === ProjectSlug.CONFIGS
-  const hideAddForConfig = isConfigTable && table.getPreFilteredRowModel().rows.length > 0
+  const isSettingsTable = projectSlug === ProjectSlug.SETTINGS
+  const hideAddForConfig = isSettingsTable && table.getPreFilteredRowModel().rows.length > 0
   const canCreate = permissions.create && !hideAddForConfig
 
   const isFiltered = table.getState().columnFilters.length > 0 || !!table.getState().globalFilter
@@ -47,7 +47,7 @@ export function ProjectToolbar<TData>({
         <>
           {/* Top Row: Search and Actions */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between w-full">
-            {!isConfigTable && (
+            {!isSettingsTable && (
               <div className="relative w-full sm:max-w-xs md:max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -63,7 +63,7 @@ export function ProjectToolbar<TData>({
             )}
 
             <div
-              className={`flex items-center gap-2 justify-end${isConfigTable ? " self-end sm:ml-auto" : ""}`}
+              className={`flex items-center gap-2 justify-end${isSettingsTable ? " self-end sm:ml-auto" : ""}`}
             >
               {isFiltered && (
                 <Button
@@ -103,7 +103,7 @@ export function ProjectToolbar<TData>({
           </div>
 
           {/* Bottom Row: Filter Controls */}
-          {!isConfigTable && permissions.filter && (
+          {!isSettingsTable && permissions.filter && (
             <ProjectFilters projectSlug={projectSlug} table={table} />
           )}
         </>

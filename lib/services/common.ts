@@ -15,7 +15,7 @@ const SLUG_TO_API_ROUTE: Record<ProjectSlug, ApiRoutes> = {
   [ProjectSlug.CUSTOMERS]: ApiRoutes.CUSTOMERS,
   [ProjectSlug.WEIGHMENTS]: ApiRoutes.WEIGHMENTS,
   [ProjectSlug.PROFILES]: ApiRoutes.PROFILES,
-  [ProjectSlug.CONFIGS]: ApiRoutes.CONFIGS,
+  [ProjectSlug.SETTINGS]: ApiRoutes.SETTINGS,
 }
 
 export function getEndpoint(slug: ProjectSlug): ApiRoutes {
@@ -78,7 +78,6 @@ export async function fetchEntityListPaginated(
   return fetchEntityPaginatedFromApi(slug, params)
 }
 
-// Mutate functions via Axios and API Routes with error message extraction
 export async function insertRow(slug: ProjectSlug, record: Record<string, unknown>): Promise<EntityRecord> {
   const endpoint = getEndpoint(slug)
   return apiRequest(async () => {

@@ -33,6 +33,10 @@ function SettingsClient({ projectName, projectSlug }: ProjectClientProps) {
   const { creating, setCreating, editingItem, setEditingItem, deletingItem, setDeletingItem } = useProjectDialogStates()
   const primaryIdKey = getPrimaryIdKey(projectSlug)
 
+  React.useEffect(() => {
+    fetchConfig()
+  }, [fetchConfig])
+
   const configAsRecord = config
     ? {
         id: config.id,

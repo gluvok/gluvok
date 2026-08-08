@@ -67,15 +67,7 @@ export const DELETE = withAuth(
         .eq(EntityKey.FACTORY_ID, factoryId!)
 
       const { data, error } = await query.select("id")
-      if (error) {
-        if (isFKViolation(error)) {
-          return apiError(
-            "Cannot delete this center because it is referenced by existing weighments.",
-            StatusCodes.BAD_REQUEST
-          )
-        }
-        throw error
-      }
+      if (error) throw error
 
       if (!data || data.length === 0) {
         return apiError("Center not found", StatusCodes.NOT_FOUND)

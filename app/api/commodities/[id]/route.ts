@@ -58,15 +58,7 @@ export const DELETE = withAuth(
       let query = client.from(TableName.COMMODITIES).delete().eq("id", entityId)
 
       const { data, error } = await query.select("id")
-      if (error) {
-        if (isFKViolation(error)) {
-          return apiError(
-            "Cannot delete this commodity because it is referenced by existing rates or weighments.",
-            StatusCodes.BAD_REQUEST
-          )
-        }
-        throw error
-      }
+      if (error) throw error
 
       if (!data || data.length === 0) {
         return apiError("Commodity not found", StatusCodes.NOT_FOUND)

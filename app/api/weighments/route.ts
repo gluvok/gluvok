@@ -155,15 +155,7 @@ export const DELETE = withAuth(async (req, user, client) => {
     let query = client.from(TableName.WEIGHMENTS).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
 
     const { data, error } = await query.select("id")
-    if (error) {
-      if (isFKViolation(error)) {
-        return apiError(
-          "Cannot delete selected weighments because they are referenced by other records.",
-          StatusCodes.BAD_REQUEST
-        )
-      }
-      throw error
-    }
+    if (error) throw error
 
     if (!data || data.length !== ids.length) {
       return apiError("One or more weighments were not found", StatusCodes.NOT_FOUND)

@@ -170,15 +170,7 @@ export const DELETE = withAuth(async (req, user, client) => {
     let query = client.from(TableName.PROFILES).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
 
     const { data, error } = await query.select("id")
-    if (error) {
-      if (isFKViolation(error)) {
-        return apiError(
-          "Cannot delete selected profiles because they are referenced by existing weighments.",
-          StatusCodes.BAD_REQUEST
-        )
-      }
-      throw error
-    }
+    if (error) throw error
 
     if (!data || data.length !== ids.length) {
       return apiError("One or more profiles were not found", StatusCodes.NOT_FOUND)

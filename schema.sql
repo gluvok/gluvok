@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     role role_enum NOT NULL DEFAULT 'base',
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    factory_id INT REFERENCES factories(id) ON DELETE RESTRICT,
+    factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS customers (
 CREATE TABLE IF NOT EXISTS centers (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    factory_id INT REFERENCES factories(id) ON DELETE RESTRICT,
+    factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -81,7 +81,6 @@ CREATE TABLE IF NOT EXISTS centers (
 CREATE TABLE IF NOT EXISTS commodities (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    factory_id INT REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -92,7 +91,7 @@ CREATE TABLE IF NOT EXISTS rates (
     commodity_id INT NOT NULL REFERENCES commodities(id) ON DELETE RESTRICT,
     unit_price NUMERIC(10, 2) NOT NULL,
     unit unit_enum NOT NULL DEFAULT 'kg',
-    factory_id INT REFERENCES factories(id) ON DELETE RESTRICT,
+    factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

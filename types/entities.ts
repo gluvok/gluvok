@@ -69,7 +69,8 @@ export interface Factory {
 
 export interface Config {
   id: number
-  factory_id: number
+  name?: string
+  factory_id?: number
   aadhar_number_mode: FieldRequirementMode
   govt_id_mode: FieldRequirementMode
   created_at: string

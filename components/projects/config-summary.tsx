@@ -6,7 +6,7 @@
  */
 
 import * as React from "react";
-import { Pencil, Plus, RotateCw, Fingerprint, ShieldCheck } from "lucide-react";
+import { Pencil, Plus, RotateCw, Fingerprint, ShieldCheck, Building } from "lucide-react";
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/kibo-ui/spinner"
@@ -104,6 +104,7 @@ export function ConfigSummary({
     );
   }
 
+  const factoryName = String(config.name || config.factory_name || "Factory");
   const aadharNumberMode =
     config[EntityKey.AADHAR_NUMBER_MODE] ?? FieldRequirementMode.MANDATORY;
   const govtIdMode =
@@ -112,9 +113,13 @@ export function ConfigSummary({
   return (
     <Card className="w-full max-w-2xl">
       <CardHeader>
+        <div className="flex items-center gap-2 mb-1 text-xs font-semibold uppercase tracking-wider text-primary">
+          <Building className="h-4 w-4" />
+          <span>{factoryName}</span>
+        </div>
         <CardTitle>Identification requirements</CardTitle>
         <CardDescription>
-          Manage which identification details are collected for this tenant.
+          Manage identification requirement settings for {factoryName}.
         </CardDescription>
         {canEdit && (
           <CardAction>

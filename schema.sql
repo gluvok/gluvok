@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS customers (
     govt_id INT,
     name TEXT NOT NULL,
     father_name TEXT NOT NULL,
-    user_id INT REFERENCES users(id) ON DELETE SET NULL,
+    user_id INT REFERENCES users(id) ON DELETE RESTRICT,
     factory_id INT REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

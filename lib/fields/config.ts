@@ -357,5 +357,5 @@ export const REQUIRED_CREATE_FIELDS: Record<string, EntityKey[]> = {
     EntityKey.PASSWORD,
     EntityKey.CONFIRM_PASSWORD,
   ],
-  [ProjectSlug.SETTINGS]: [EntityKey.AADHAR_NUMBER_MODE, EntityKey.GOVT_ID_MODE],
+  [ProjectSlug.SETTINGS]: [EntityKey.NAME, EntityKey.AADHAR_NUMBER_MODE, EntityKey.GOVT_ID_MODE],
 };

@@ -12,7 +12,7 @@ export * from "./weighments"
 export * from "./profiles"
 export * from "./registry"
 export * from "./uniqueness"
-export * from "./configs"
+export * from "./settings"
 export * from "./dynamic"
 
 

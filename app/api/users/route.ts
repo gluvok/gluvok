@@ -5,8 +5,8 @@ import { TableName, EntityKey } from "@/lib/constants/enums"
 export const GET = withAuth(async (_req, user, client) => {
   const query = client
     .from(TableName.USERS)
-    .select(`id, username, role, ${EntityKey.FACTORY_ID}, is_active`)
-    .eq("is_active", true)
+    .select(`${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.ROLE}, ${EntityKey.FACTORY_ID}, ${EntityKey.IS_ACTIVE}`)
+    .eq(EntityKey.IS_ACTIVE, true)
     .eq(EntityKey.FACTORY_ID, user.factory_id!)
 
   const { data: rows, error } = await query

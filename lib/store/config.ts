@@ -41,8 +41,9 @@ export const useConfigStore = create<ConfigStore>((set) => ({
     set({ configLoading: true })
 
     try {
-      const res = await axios.get<{ data: ConfigResponseData[] }>("/api/settings")
-      const row = res.data?.data?.[0]
+      const res = await axios.get<{ data: ConfigResponseData | ConfigResponseData[] }>("/api/settings")
+      const rawData = res.data?.data
+      const row = Array.isArray(rawData) ? rawData[0] : rawData
       const config: FactoryConfig = row
         ? {
             id: row.id,

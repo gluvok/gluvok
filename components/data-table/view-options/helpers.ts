@@ -42,6 +42,7 @@ export function getColumnLabel(id: string): string {
     case EntityKey.UNIT_PRICE: return ColumnLabel.UNIT_PRICE
     case EntityKey.UNIT: return ColumnLabel.UNIT
     case EntityKey.FATHER_NAME: return ColumnLabel.FATHER_NAME
+    case EntityKey.USERNAME: return ColumnLabel.USERNAME
     case EntityKey.VEHICLE_NUMBER: return ColumnLabel.VEHICLE_NUMBER
     case EntityKey.WEIGHT: return ColumnLabel.WEIGHT
     case EntityKey.COMMODITY_ID: return ColumnLabel.COMMODITY_ID

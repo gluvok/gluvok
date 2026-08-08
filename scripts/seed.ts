@@ -119,13 +119,11 @@ async function main() {
       .from(TableName.COMMODITIES)
       .select("id")
       .eq("name", item.name)
-      .eq("factory_id", factoryId)
       .maybeSingle()
 
     if (!existingComm) {
       await supabase.from(TableName.COMMODITIES).insert({
         name: item.name,
-        factory_id: factoryId,
       })
     }
   }

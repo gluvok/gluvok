@@ -55,12 +55,16 @@ ON centers FOR ALL
 TO authenticated
 USING (factory_id = (auth.jwt() ->> 'factory_id')::int);
 
--- 7. COMMODITIES TABLE: STRICT FACTORY ISOLATION
+-- 7. COMMODITIES TABLE: GLOBAL SHARED CATALOG (AUTHENTICATED ONLY)
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Commodities" ON commodities;
-CREATE POLICY "Strict Factory Multi-Tenancy Commodities"
+DROP POLICY IF EXISTS "Allow Read Commodities" ON commodities;
+DROP POLICY IF EXISTS "Allow Write Commodities" ON commodities;
+DROP POLICY IF EXISTS "Allow Commodities Access" ON commodities;
+
+CREATE POLICY "Allow Commodities Access"
 ON commodities FOR ALL
 TO authenticated
-USING (factory_id = (auth.jwt() ->> 'factory_id')::int);
+USING (true);
 
 -- 8. RATES TABLE: STRICT FACTORY ISOLATION
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Rates" ON rates;

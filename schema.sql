@@ -168,12 +168,16 @@ ON centers FOR ALL
 TO authenticated
 USING (factory_id = (auth.jwt() ->> 'factory_id')::int);
 
--- COMMODITIES TABLE POLICY
+-- COMMODITIES TABLE POLICY (Authenticated Only, Global Catalog)
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Commodities" ON commodities;
-CREATE POLICY "Strict Factory Multi-Tenancy Commodities"
+DROP POLICY IF EXISTS "Allow Read Commodities" ON commodities;
+DROP POLICY IF EXISTS "Allow Write Commodities" ON commodities;
+DROP POLICY IF EXISTS "Allow Commodities Access" ON commodities;
+
+CREATE POLICY "Allow Commodities Access"
 ON commodities FOR ALL
 TO authenticated
-USING (factory_id = (auth.jwt() ->> 'factory_id')::int);
+USING (true);
 
 -- RATES TABLE POLICY
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Rates" ON rates;

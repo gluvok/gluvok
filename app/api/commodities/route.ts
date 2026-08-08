@@ -30,9 +30,6 @@ export const GET = withAuth(async (req, user, client) => {
     .select("*", { count: "exact" })
     .order(sortColumn, { ascending: !sortDesc })
 
-  if (user.factory_id) {
-    query = query.eq("factory_id", user.factory_id)
-  }
 
   if (search) {
     const searchNum = parseInt(search, 10)
@@ -56,7 +53,6 @@ export const POST = withAuth(async (req, user, client) => {
   const { name } = body
   const insertValues: Record<string, unknown> = {
     name,
-    factory_id: user.factory_id ?? null,
   }
 
   const { data: newCommodity, error } = await client
@@ -85,9 +81,6 @@ export const DELETE = withAuth(async (req, user, client) => {
 
   try {
     let query = client.from(TableName.COMMODITIES).delete().in("id", ids)
-    if (user.factory_id) {
-      query = query.eq("factory_id", user.factory_id)
-    }
 
     const { data, error } = await query.select("id")
     if (error) {

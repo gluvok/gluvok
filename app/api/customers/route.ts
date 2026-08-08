@@ -13,7 +13,6 @@ import {
   parseBulkIds,
 } from "@/db/helpers"
 import {
-  Role,
   ProjectSlug,
   PermissionKey,
   QueryParam,
@@ -95,7 +94,7 @@ export const POST = withAuth(async (req, user, client) => {
     }
   }
 
-  let createdUserId: number | null = null
+  let passwordHash: string | null = null
   if (username && password) {
     const { data: existingUser } = await client
       .from(TableName.USERS)
@@ -107,42 +106,21 @@ export const POST = withAuth(async (req, user, client) => {
       return apiError(ApiErrorMessage.USERNAME_TAKEN, StatusCodes.BAD_REQUEST)
     }
 
-    const passwordHash = await hashPassword(password)
-    const { data: newUser, error: userErr } = await client
-      .from(TableName.USERS)
-      .insert({
-        [EntityKey.USERNAME]: username,
-        password_hash: passwordHash,
-        [EntityKey.ROLE]: Role.BASE,
-        [EntityKey.FACTORY_ID]: factoryId,
-      })
-      .select()
-      .single()
-
-    if (userErr || !newUser) {
-      console.error("Failed to create user for customer:", userErr)
-      return apiError(ApiErrorMessage.CREATE_CUSTOMER_USER_FAILED, StatusCodes.BAD_REQUEST)
-    }
-    createdUserId = newUser.id
+    passwordHash = await hashPassword(password)
   }
 
-  const customerValues = {
-    ...(govt_id != null ? { [EntityKey.GOVT_ID]: Number(govt_id) } : {}),
-    [EntityKey.NAME]: name,
-    [EntityKey.FATHER_NAME]: father_name,
-    [EntityKey.USER_ID]: createdUserId,
-    [EntityKey.FACTORY_ID]: factoryId,
-  }
+  const { data: newCustomer, error } = await client.rpc("create_customer_with_user", {
+    p_factory_id: factoryId,
+    p_name: name,
+    p_father_name: father_name,
+    p_govt_id: govt_id != null ? Number(govt_id) : null,
+    p_username: username || null,
+    p_password_hash: passwordHash || null,
+  })
 
-  const { data: newCustomer, error } = await client
-    .from(TableName.CUSTOMERS)
-    .insert(customerValues)
-    .select()
-    .single()
-
-  if (error) {
-    console.error("POST customer error:", error)
-    return apiError(error.message || ApiErrorMessage.CREATE_CUSTOMER_FAILED, StatusCodes.BAD_REQUEST)
+  if (error || !newCustomer) {
+    console.error("POST customer RPC error:", error)
+    return apiError(error?.message || ApiErrorMessage.CREATE_CUSTOMER_FAILED, StatusCodes.BAD_REQUEST)
   }
 
   return formatEntityResponse(newCustomer, StatusCodes.CREATED)
@@ -159,16 +137,18 @@ export const DELETE = withAuth(async (req, user, client) => {
     )
 
   try {
-    const query = client.from(TableName.CUSTOMERS).delete().in(EntityKey.ID, ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
+    const { data: deletedCount, error } = await client.rpc("delete_customers_with_user", {
+      p_customer_ids: ids,
+      p_factory_id: user.factory_id!,
+    })
 
-    const { data, error } = await query.select(EntityKey.ID)
     if (error) throw error
 
-    if (!data || data.length !== ids.length) {
+    if (deletedCount !== ids.length) {
       return apiError(ApiErrorMessage.ONE_OR_MORE_CUSTOMERS_NOT_FOUND, StatusCodes.NOT_FOUND)
     }
 
-    return NextResponse.json({ success: true, deleted_count: data.length })
+    return NextResponse.json({ success: true, deleted_count: deletedCount })
   } catch (error) {
     if (isFKViolation(error)) {
       return apiError(

@@ -195,3 +195,142 @@ BEGIN
 END;
 $$;
 
+-- 6. ATOMIC TRANSACTION RPC FUNCTIONS FOR CUSTOMERS & USERS
+
+CREATE OR REPLACE FUNCTION create_customer_with_user(
+    p_factory_id INT,
+    p_name TEXT,
+    p_father_name TEXT,
+    p_govt_id INT DEFAULT NULL,
+    p_username TEXT DEFAULT NULL,
+    p_password_hash TEXT DEFAULT NULL
+) RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_user_id INT := NULL;
+    v_customer_id INT;
+    v_result JSON;
+BEGIN
+    IF p_username IS NOT NULL AND p_password_hash IS NOT NULL THEN
+        INSERT INTO users (username, password_hash, role, factory_id)
+        VALUES (p_username, p_password_hash, 'base', p_factory_id)
+        RETURNING id INTO v_user_id;
+    END IF;
+
+    INSERT INTO customers (name, father_name, govt_id, user_id, factory_id)
+    VALUES (p_name, p_father_name, p_govt_id, v_user_id, p_factory_id)
+    RETURNING id INTO v_customer_id;
+
+    SELECT row_to_json(c) INTO v_result
+    FROM (
+        SELECT 
+            cust.*,
+            CASE WHEN u.id IS NOT NULL THEN
+                json_build_object('username', u.username, 'is_active', u.is_active)
+            ELSE NULL END AS users
+        FROM customers cust
+        LEFT JOIN users u ON cust.user_id = u.id
+        WHERE cust.id = v_customer_id
+    ) c;
+
+    RETURN v_result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION update_customer_with_user(
+    p_customer_id INT,
+    p_factory_id INT,
+    p_name TEXT DEFAULT NULL,
+    p_father_name TEXT DEFAULT NULL,
+    p_govt_id INT DEFAULT NULL,
+    p_username TEXT DEFAULT NULL,
+    p_password_hash TEXT DEFAULT NULL,
+    p_is_active BOOLEAN DEFAULT NULL
+) RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_user_id INT;
+    v_result JSON;
+BEGIN
+    SELECT user_id INTO v_user_id
+    FROM customers
+    WHERE id = p_customer_id AND factory_id = p_factory_id;
+
+    IF NOT FOUND THEN
+        RETURN NULL;
+    END IF;
+
+    UPDATE customers
+    SET 
+        name = COALESCE(p_name, name),
+        father_name = COALESCE(p_father_name, father_name),
+        govt_id = CASE WHEN p_govt_id IS NOT NULL THEN p_govt_id ELSE govt_id END,
+        updated_at = NOW()
+    WHERE id = p_customer_id AND factory_id = p_factory_id;
+
+    IF v_user_id IS NOT NULL THEN
+        UPDATE users
+        SET 
+            username = COALESCE(p_username, username),
+            password_hash = COALESCE(p_password_hash, password_hash),
+            is_active = COALESCE(p_is_active, is_active),
+            updated_at = NOW()
+        WHERE id = v_user_id;
+    ELSIF p_username IS NOT NULL AND p_password_hash IS NOT NULL THEN
+        INSERT INTO users (username, password_hash, role, factory_id)
+        VALUES (p_username, p_password_hash, 'base', p_factory_id)
+        RETURNING id INTO v_user_id;
+
+        UPDATE customers
+        SET user_id = v_user_id
+        WHERE id = p_customer_id;
+    END IF;
+
+    SELECT row_to_json(c) INTO v_result
+    FROM (
+        SELECT 
+            cust.*,
+            CASE WHEN u.id IS NOT NULL THEN
+                json_build_object('username', u.username, 'is_active', u.is_active)
+            ELSE NULL END AS users
+        FROM customers cust
+        LEFT JOIN users u ON cust.user_id = u.id
+        WHERE cust.id = p_customer_id
+    ) c;
+
+    RETURN v_result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION delete_customers_with_user(
+    p_customer_ids INT[],
+    p_factory_id INT
+) RETURNS INT
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_user_ids INT[];
+    v_deleted_count INT;
+BEGIN
+    SELECT ARRAY_AGG(user_id) INTO v_user_ids
+    FROM customers
+    WHERE id = ANY(p_customer_ids) AND factory_id = p_factory_id AND user_id IS NOT NULL;
+
+    DELETE FROM customers
+    WHERE id = ANY(p_customer_ids) AND factory_id = p_factory_id;
+
+    GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+
+    IF v_user_ids IS NOT NULL AND array_length(v_user_ids, 1) > 0 THEN
+        DELETE FROM users WHERE id = ANY(v_user_ids);
+    END IF;
+
+    RETURN v_deleted_count;
+END;
+$$;
+

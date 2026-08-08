@@ -13,7 +13,6 @@ import {
 import {
   ProjectSlug,
   PermissionKey,
-  Role,
   TableName,
   EntityKey,
 } from "@/lib/constants/enums"
@@ -43,11 +42,12 @@ export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client
       .from(TableName.CUSTOMERS)
-      .select("id, user_id, name")
-      .eq("id", entityId)
+      .select(`${EntityKey.ID}, ${EntityKey.USER_ID}, ${EntityKey.NAME}`)
+      .eq(EntityKey.ID, entityId)
       .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: existing } = await existingQuery.maybeSingle()
+    if (!existing) return apiError(ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND)
 
     const isOwn =
       existing?.user_id != null &&
@@ -58,7 +58,7 @@ export const PATCH = withAuth(
     }
 
     const body = await req.json()
-    const activeConfig = await getFactoryConfig(user.factory_id)
+    const activeConfig = await getFactoryConfig(user.factory_id!)
     const dynamicSchema = getDynamicCustomerSchema(activeConfig, true)
     const parsed = dynamicSchema.safeParse(body)
 
@@ -66,13 +66,13 @@ export const PATCH = withAuth(
       return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST)
     }
 
-    const { name, father_name, username, password, is_active } = body
+    const { name, father_name, govt_id, username, password, is_active } = body
 
     if (username && typeof username === "string" && username.trim().length > 0) {
       const cleanUsername = username.trim()
-      let userQuery = client.from(TableName.USERS).select("id").eq("username", cleanUsername)
+      let userQuery = client.from(TableName.USERS).select(EntityKey.ID).eq(EntityKey.USERNAME, cleanUsername)
       if (existing?.user_id != null) {
-        userQuery = userQuery.neq("id", existing.user_id)
+        userQuery = userQuery.neq(EntityKey.ID, existing.user_id)
       }
       const { data: takenUser } = await userQuery.maybeSingle()
       if (takenUser) {
@@ -80,64 +80,24 @@ export const PATCH = withAuth(
       }
     }
 
-    const updateQuery = client
-      .from(TableName.CUSTOMERS)
-      .update({
-        ...(name ? { name } : {}),
-        ...(father_name ? { father_name } : {}),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId!)
-
-    const { data: updated, error } = await updateQuery.select().maybeSingle()
-
-    if (error || !updated) {
-      return apiError(ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND)
+    let passwordHash: string | null = null
+    if (password && typeof password === "string" && password.trim().length > 0) {
+      passwordHash = await hashPassword(password.trim())
     }
 
-    if (updated.user_id) {
-      const userUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() }
-      if (username && typeof username === "string" && username.trim().length > 0) {
-        userUpdates.username = username.trim()
-      }
-      if (password && typeof password === "string" && password.trim().length > 0) {
-        userUpdates.password_hash = await hashPassword(password.trim())
-      }
-      if (is_active !== undefined) {
-        userUpdates.is_active = Boolean(is_active)
-      }
-      if (Object.keys(userUpdates).length > 1) {
-        await client.from(TableName.USERS).update(userUpdates).eq("id", updated.user_id)
-      }
-    } else if (
-      username &&
-      typeof username === "string" &&
-      username.trim().length > 0 &&
-      password &&
-      typeof password === "string" &&
-      password.trim().length > 0
-    ) {
-      const passwordHash = await hashPassword(password.trim())
-      const { data: newUser } = await client
-        .from(TableName.USERS)
-        .insert({
-          username: username.trim(),
-          password_hash: passwordHash,
-          role: Role.BASE,
-          [EntityKey.FACTORY_ID]: factoryId,
-        })
-        .select()
-        .single()
+    const { data: updated, error } = await client.rpc("update_customer_with_user", {
+      p_customer_id: entityId,
+      p_factory_id: factoryId!,
+      p_name: name ? String(name).trim() : null,
+      p_father_name: father_name ? String(father_name).trim() : null,
+      p_govt_id: govt_id != null ? Number(govt_id) : null,
+      p_username: username && typeof username === "string" ? username.trim() : null,
+      p_password_hash: passwordHash,
+      p_is_active: is_active !== undefined ? Boolean(is_active) : null,
+    })
 
-      if (newUser) {
-        await client
-          .from(TableName.CUSTOMERS)
-          .update({ user_id: newUser.id })
-          .eq("id", updated.id)
-
-        updated.user_id = newUser.id
-      }
+    if (error || !updated) {
+      return apiError(error?.message || ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND)
     }
 
     return formatEntityResponse(updated)
@@ -150,16 +110,14 @@ export const DELETE = withAuth(
       return forbiddenError()
 
     try {
-      const query = client
-        .from(TableName.CUSTOMERS)
-        .delete()
-        .eq("id", entityId)
-        .eq(EntityKey.FACTORY_ID, factoryId!)
+      const { data: deletedCount, error } = await client.rpc("delete_customers_with_user", {
+        p_customer_ids: [entityId],
+        p_factory_id: factoryId!,
+      })
 
-      const { data, error } = await query.select("id")
       if (error) throw error
 
-      if (!data || data.length === 0) {
+      if (!deletedCount || deletedCount === 0) {
         return apiError(ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND)
       }
 

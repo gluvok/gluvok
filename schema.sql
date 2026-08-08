@@ -124,74 +124,37 @@ ALTER TABLE commodities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE weighments ENABLE ROW LEVEL SECURITY;
 
--- 4. RLS POLICIES
-
--- USERS TABLE POLICIES
+-- 4. THIN RLS POLICIES (Access control & tenant isolation managed in backend Next.js API)
 DROP POLICY IF EXISTS "Allow Read Users" ON users;
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Users Write" ON users;
-
-CREATE POLICY "Allow Read Users"
-ON users FOR SELECT
-TO anon, authenticated
-USING (true);
-
-CREATE POLICY "Strict Factory Multi-Tenancy Users Write"
-ON users FOR ALL
-TO authenticated
-USING (factory_id = (auth.jwt() ->> 'factory_id')::int);
-
--- FACTORIES TABLE POLICY
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Factories" ON factories;
-CREATE POLICY "Strict Factory Multi-Tenancy Factories"
-ON factories FOR ALL
-TO authenticated
-USING (id = (auth.jwt() ->> 'factory_id')::int);
-
--- PROFILES TABLE POLICY
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Profiles" ON profiles;
-CREATE POLICY "Strict Factory Multi-Tenancy Profiles"
-ON profiles FOR ALL
-TO authenticated
-USING (factory_id = (auth.jwt() ->> 'factory_id')::int);
-
--- CUSTOMERS TABLE POLICY
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Customers" ON customers;
-CREATE POLICY "Strict Factory Multi-Tenancy Customers"
-ON customers FOR ALL
-TO authenticated
-USING (factory_id = (auth.jwt() ->> 'factory_id')::int);
-
--- CENTERS TABLE POLICY
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Centers" ON centers;
-CREATE POLICY "Strict Factory Multi-Tenancy Centers"
-ON centers FOR ALL
-TO authenticated
-USING (factory_id = (auth.jwt() ->> 'factory_id')::int);
-
--- COMMODITIES TABLE POLICY (Authenticated Only, Global Catalog)
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Commodities" ON commodities;
 DROP POLICY IF EXISTS "Allow Read Commodities" ON commodities;
 DROP POLICY IF EXISTS "Allow Write Commodities" ON commodities;
 DROP POLICY IF EXISTS "Allow Commodities Access" ON commodities;
-
-CREATE POLICY "Allow Commodities Access"
-ON commodities FOR ALL
-TO authenticated
-USING (true);
-
--- RATES TABLE POLICY
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Rates" ON rates;
-CREATE POLICY "Strict Factory Multi-Tenancy Rates"
-ON rates FOR ALL
-TO authenticated
-USING (factory_id = (auth.jwt() ->> 'factory_id')::int);
-
--- WEIGHMENTS TABLE POLICY
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Weighments" ON weighments;
-CREATE POLICY "Strict Factory Multi-Tenancy Weighments"
-ON weighments FOR ALL
-TO authenticated
-USING (factory_id = (auth.jwt() ->> 'factory_id')::int);
+
+DROP POLICY IF EXISTS "Allow access factories" ON factories;
+DROP POLICY IF EXISTS "Allow access users" ON users;
+DROP POLICY IF EXISTS "Allow access profiles" ON profiles;
+DROP POLICY IF EXISTS "Allow access customers" ON customers;
+DROP POLICY IF EXISTS "Allow access centers" ON centers;
+DROP POLICY IF EXISTS "Allow access commodities" ON commodities;
+DROP POLICY IF EXISTS "Allow access rates" ON rates;
+DROP POLICY IF EXISTS "Allow access weighments" ON weighments;
+
+CREATE POLICY "Allow access factories" ON factories FOR ALL USING (true);
+CREATE POLICY "Allow access users" ON users FOR ALL USING (true);
+CREATE POLICY "Allow access profiles" ON profiles FOR ALL USING (true);
+CREATE POLICY "Allow access customers" ON customers FOR ALL USING (true);
+CREATE POLICY "Allow access centers" ON centers FOR ALL USING (true);
+CREATE POLICY "Allow access commodities" ON commodities FOR ALL USING (true);
+CREATE POLICY "Allow access rates" ON rates FOR ALL USING (true);
+CREATE POLICY "Allow access weighments" ON weighments FOR ALL USING (true);
 
 -- 5. AUTO-INCREMENT SEQUENCE RESET FUNCTIONS
 CREATE OR REPLACE FUNCTION reset_table_sequence(table_name text)

@@ -8,19 +8,18 @@ import { ProjectSlug, ApiRoutes, QueryParam } from "@/lib/constants/enums";
 import { type EntityRecord } from "@/types"
 import { type PaginatedParams } from "./scoping"
 
-const SLUG_TO_API_ROUTE: Record<ProjectSlug, ApiRoutes> = {
+const SLUG_TO_API_ROUTE: Partial<Record<ProjectSlug, ApiRoutes>> = {
   [ProjectSlug.CENTERS]: ApiRoutes.CENTERS,
   [ProjectSlug.COMMODITIES]: ApiRoutes.COMMODITIES,
   [ProjectSlug.RATES]: ApiRoutes.RATES,
   [ProjectSlug.CUSTOMERS]: ApiRoutes.CUSTOMERS,
   [ProjectSlug.WEIGHMENTS]: ApiRoutes.WEIGHMENTS,
   [ProjectSlug.PROFILES]: ApiRoutes.PROFILES,
-  [ProjectSlug.SETTINGS]: ApiRoutes.SETTINGS,
 }
 
 export function getEndpoint(slug: ProjectSlug): ApiRoutes {
   const endpoint = SLUG_TO_API_ROUTE[slug]
-  if (!endpoint) throw new Error(`Unknown API route for slug: ${slug}`)
+  if (!endpoint) throw new Error(`No paginated API route for slug: ${slug}. Settings must be fetched via the config store.`)
   return endpoint
 }
 
@@ -48,7 +47,7 @@ export async function fetchEntityPaginatedFromApi<T = EntityRecord>(
   params: PaginatedParams
 ): Promise<{ data: T[]; count: number }> {
   const endpoint = getEndpoint(slug)
-  const { page, pageSize, search, filters, sortColumn, sortDesc } = params;
+  const { page, pageSize, search, filters, sortColumn, sortDesc } = params
   return apiRequest(async () => {
     const res = await axios.get<{ data: T[]; pagination: { total: number } }>(
       endpoint,
@@ -61,9 +60,9 @@ export async function fetchEntityPaginatedFromApi<T = EntityRecord>(
           [QueryParam.SORT_DESC]: sortDesc,
           ...filters,
         },
-      },
-    );
-    return { data: res.data.data, count: res.data.pagination.total }
+      }
+    )
+    return { data: res.data.data || [], count: res.data.pagination.total }
   })
 }
 

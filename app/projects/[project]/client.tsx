@@ -17,13 +17,57 @@ import {
   useProjectTable,
 } from "@/components/projects";
 import { Spinner } from "@/components/kibo-ui/spinner"
-import { useEntitiesStore } from "@/lib/store"
+import { useEntitiesStore, useConfigStore } from "@/lib/store"
 import { ProjectSlug } from "@/lib/constants/enums"
 import { type Config } from "@/types";
+import { useProjectDialogStates } from "@/components/projects/table/use-helpers"
 
 interface ProjectClientProps {
   projectName: string;
   projectSlug: string;
+}
+
+/** Settings page reads config directly from the Zustand config store — no DataTable, no paginated fetch */
+function SettingsClient({ projectName, projectSlug }: ProjectClientProps) {
+  const { config, configLoading, fetchConfig } = useConfigStore()
+  const { creating, setCreating, editingItem, setEditingItem, deletingItem, setDeletingItem } = useProjectDialogStates()
+  const primaryIdKey = getPrimaryIdKey(projectSlug)
+
+  const configAsRecord = config
+    ? {
+        id: config.id,
+        name: config.name,
+        factory_name: config.factoryName,
+        aadhar_number_mode: config.aadharNumberMode,
+        govt_id_mode: config.govtIdMode,
+      }
+    : undefined
+
+  return (
+    <div className="flex min-h-[calc(100vh-14rem)] items-center justify-center">
+      <ConfigSummary
+        config={configAsRecord as Config | undefined}
+        isLoading={configLoading}
+        error={null}
+        canCreate={false}
+        canEdit={!!config}
+        onCreate={() => setCreating(true)}
+        onEdit={setEditingItem}
+        onRetry={fetchConfig}
+      />
+      <ProjectDialogs
+        creating={creating}
+        setCreating={setCreating}
+        editingItem={editingItem}
+        setEditingItem={setEditingItem}
+        deletingItem={deletingItem}
+        setDeletingItem={setDeletingItem}
+        projectSlug={projectSlug}
+        projectName={projectName}
+        primaryIdKey={primaryIdKey}
+      />
+    </div>
+  )
 }
 
 function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps) {
@@ -34,7 +78,6 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
     isLoading,
     error,
     isReady,
-    permissions,
     creating,
     setCreating,
     editingItem,
@@ -43,7 +86,6 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
     setDeletingItem,
     handleReload,
   } = pt;
-  const isSettingsTable = projectSlug === ProjectSlug.SETTINGS;
 
   const isFiltersLoading = useEntitiesStore((state) => state.filtersLoading)
 
@@ -69,46 +111,29 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
 
   return (
     <div className="space-y-4">
-      {isSettingsTable ? (
-        <div className="flex min-h-[calc(100vh-14rem)] items-center justify-center">
-          <ConfigSummary
-            config={table.getRowModel().rows[0]?.original as Config | undefined}
-            isLoading={isLoading}
-            error={error}
-            canCreate={permissions.create}
-            canEdit={permissions.write}
-            onCreate={() => setCreating(true)}
-            onEdit={setEditingItem}
-            onRetry={handleReload}
-          />
+      {/* Search, filters, reload and creation controls */}
+      <ProjectToolbar
+        table={table}
+        projectSlug={projectSlug}
+        projectName={projectName}
+        primaryIdKey={primaryIdKey}
+        setCreating={setCreating}
+        onReload={handleReload}
+      />
+
+      {/* Main data representation grid/table */}
+      <ProjectTable
+        table={table}
+        isLoading={isLoading}
+        error={error}
+        onRetry={handleReload}
+      />
+
+      {/* Pagination controls */}
+      {table.getRowModel().rows?.length > 0 && (
+        <div className="pt-2">
+          <DataTablePagination table={table} />
         </div>
-      ) : (
-        <>
-          {/* Search, filters, reload and creation controls */}
-          <ProjectToolbar
-            table={table}
-            projectSlug={projectSlug}
-            projectName={projectName}
-            primaryIdKey={primaryIdKey}
-            setCreating={setCreating}
-            onReload={handleReload}
-          />
-
-          {/* Main data representation grid/table */}
-          <ProjectTable
-            table={table}
-            isLoading={isLoading}
-            error={error}
-            onRetry={handleReload}
-          />
-
-          {/* Pagination controls */}
-          {table.getRowModel().rows?.length > 0 && (
-            <div className="pt-2">
-              <DataTablePagination table={table} />
-            </div>
-          )}
-        </>
       )}
 
       {/* Dialog overlays for CUD operations (Create, Update, Delete) */}
@@ -132,5 +157,8 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
  * Serves as the main orchestrator for a project's data management UI.
  */
 export function ProjectClient({ projectName, projectSlug }: ProjectClientProps) {
+  if (projectSlug === ProjectSlug.SETTINGS) {
+    return <SettingsClient projectName={projectName} projectSlug={projectSlug} />
+  }
   return <StandardProjectClient projectName={projectName} projectSlug={projectSlug} />
 }

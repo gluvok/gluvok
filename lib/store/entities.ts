@@ -11,6 +11,7 @@ import axios from "axios"
 import { ProjectSlug, ApiRoutes } from "@/lib/constants/enums"
 import { toast } from "sonner"
 import { insertRow, updateRow, deleteRow, deleteRows } from "@/lib/services";
+import { useConfigStore } from "@/lib/store/config"
 
 export interface IdNamePair { id: number; name: string }
 export interface RateOption { id: number; label: string }
@@ -237,6 +238,9 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
           }
           break
         }
+        case ProjectSlug.SETTINGS:
+          useConfigStore.getState().fetchConfig()
+          break
         default:
           break
       }

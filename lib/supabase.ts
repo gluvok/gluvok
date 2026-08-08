@@ -12,20 +12,8 @@ const supabaseAnonKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   "placeholder-key"
 
-const supabaseServiceKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "placeholder-key"
-
 /**
  * supabase client instance
  * Shared client connection instance used for real-time channels, storage, and database operations.
  */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-/**
- * supabaseAdmin client instance
- * Privileged client connection instance for backend API routes and administrative tasks.
- */
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)

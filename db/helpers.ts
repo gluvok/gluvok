@@ -11,7 +11,7 @@ import {
 } from "@/lib/constants/enums"
 export { hasPermission } from "@/lib/store/access"
 import { REQUIRED_CREATE_FIELDS } from "@/lib/fields/config"
-import { db, supabaseAdmin } from "@/db"
+import { db, supabase } from "@/db"
 
 export interface PaginationParams {
   page: number
@@ -141,14 +141,14 @@ export async function requireAuth(
 type AuthedHandler<P extends Record<string, string> = Record<string, string>> = (
   req: NextRequest,
   user: JWTPayload,
-  client: typeof supabaseAdmin,
+  client: typeof supabase,
   ctx: RouteContext<P>
 ) => Promise<NextResponse>
 
 type EntityIdHandler<P extends Record<string, string>> = (
   req: NextRequest,
   user: JWTPayload,
-  client: typeof supabaseAdmin,
+  client: typeof supabase,
   ctx: RouteContext<P>,
   entityId: number
 ) => Promise<NextResponse>
@@ -156,7 +156,7 @@ type EntityIdHandler<P extends Record<string, string>> = (
 type ScopedEntityHandler<P extends Record<string, string>> = (
   req: NextRequest,
   user: JWTPayload,
-  client: typeof supabaseAdmin,
+  client: typeof supabase,
   ctx: RouteContext<P>,
   scope: { entityId: number; factoryId: number | null }
 ) => Promise<NextResponse>

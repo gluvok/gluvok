@@ -3,10 +3,10 @@
  * @description Database connection module exporting Supabase JS client.
  */
 
-import { supabaseAdmin, supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
 
-export const db = supabaseAdmin
-export { supabaseAdmin, supabase }
+export const db = supabase
+export { supabase }
 export function getDb() {
   return db
 }

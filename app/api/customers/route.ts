@@ -21,6 +21,7 @@ import {
   TableName,
   EntityKey,
 } from "@/lib/constants/enums"
+import { ApiErrorMessage } from "@/lib/constants/messages"
 import { hashPassword } from "@/lib/auth/password"
 import { getDynamicCustomerSchema } from "@/lib/validation"
 
@@ -103,7 +104,7 @@ export const POST = withAuth(async (req, user, client) => {
       .maybeSingle()
 
     if (existingUser) {
-      return apiError("Username is already taken", StatusCodes.BAD_REQUEST)
+      return apiError(ApiErrorMessage.USERNAME_TAKEN, StatusCodes.BAD_REQUEST)
     }
 
     const passwordHash = await hashPassword(password)
@@ -153,25 +154,25 @@ export const DELETE = withAuth(async (req, user, client) => {
   const ids = parseBulkIds(await req.json())
   if (!ids)
     return apiError(
-      "Provide between 1 and 100 valid IDs",
+      ApiErrorMessage.PROVIDE_VALID_IDS,
       StatusCodes.BAD_REQUEST
     )
 
   try {
-    let query = client.from(TableName.CUSTOMERS).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
+    const query = client.from(TableName.CUSTOMERS).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
 
     const { data, error } = await query.select("id")
     if (error) throw error
 
     if (!data || data.length !== ids.length) {
-      return apiError("One or more customers were not found", StatusCodes.NOT_FOUND)
+      return apiError(ApiErrorMessage.ONE_OR_MORE_CUSTOMERS_NOT_FOUND, StatusCodes.NOT_FOUND)
     }
 
     return NextResponse.json({ success: true, deleted_count: data.length })
   } catch (error) {
     if (isFKViolation(error)) {
       return apiError(
-        "Cannot delete selected customers because they are referenced by existing weighments.",
+        ApiErrorMessage.CANNOT_DELETE_SELECTED_CUSTOMERS,
         StatusCodes.BAD_REQUEST
       )
     }

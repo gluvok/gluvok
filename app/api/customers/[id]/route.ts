@@ -17,6 +17,7 @@ import {
   TableName,
   EntityKey,
 } from "@/lib/constants/enums"
+import { ApiErrorMessage } from "@/lib/constants/messages"
 import { getDynamicCustomerSchema } from "@/lib/validation"
 import { hashPassword } from "@/lib/auth/password"
 
@@ -25,14 +26,14 @@ export const GET = withAuth(
     if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.READ))
       return forbiddenError()
 
-    let query = client
+    const query = client
       .from(TableName.CUSTOMERS)
       .select("*, users!left(username, is_active)")
       .eq("id", entityId)
       .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: customer, error } = await query.maybeSingle()
-    if (error || !customer) return apiError("Customer not found", StatusCodes.NOT_FOUND)
+    if (error || !customer) return apiError(ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND)
 
     return formatEntityResponse(customer)
   })
@@ -75,11 +76,11 @@ export const PATCH = withAuth(
       }
       const { data: takenUser } = await userQuery.maybeSingle()
       if (takenUser) {
-        return apiError("Username is already taken", StatusCodes.BAD_REQUEST)
+        return apiError(ApiErrorMessage.USERNAME_TAKEN, StatusCodes.BAD_REQUEST)
       }
     }
 
-    let updateQuery = client
+    const updateQuery = client
       .from(TableName.CUSTOMERS)
       .update({
         ...(name ? { name } : {}),
@@ -92,7 +93,7 @@ export const PATCH = withAuth(
     const { data: updated, error } = await updateQuery.select().maybeSingle()
 
     if (error || !updated) {
-      return apiError("Customer not found", StatusCodes.NOT_FOUND)
+      return apiError(ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND)
     }
 
     if (updated.user_id) {
@@ -143,15 +144,13 @@ export const PATCH = withAuth(
   })
 )
 
-export const PUT = PATCH
-
 export const DELETE = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.DELETE))
       return forbiddenError()
 
     try {
-      let query = client
+      const query = client
         .from(TableName.CUSTOMERS)
         .delete()
         .eq("id", entityId)
@@ -161,14 +160,14 @@ export const DELETE = withAuth(
       if (error) throw error
 
       if (!data || data.length === 0) {
-        return apiError("Customer not found", StatusCodes.NOT_FOUND)
+        return apiError(ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND)
       }
 
       return NextResponse.json({ success: true, id: entityId })
     } catch (error) {
       if (isFKViolation(error)) {
         return apiError(
-          "Cannot delete this customer because they are referenced by existing weighments.",
+          ApiErrorMessage.CANNOT_DELETE_CUSTOMER,
           StatusCodes.BAD_REQUEST
         )
       }

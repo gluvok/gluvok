@@ -10,20 +10,21 @@ import {
   formatEntityResponse,
 } from "@/db/helpers"
 import { ProjectSlug, PermissionKey, TableName, EntityKey } from "@/lib/constants/enums"
+import { ApiErrorMessage } from "@/lib/constants/messages"
 
 export const GET = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.READ))
       return forbiddenError()
 
-    let query = client
+    const query = client
       .from(TableName.RATES)
       .select("*, commodities!left(name)")
       .eq("id", entityId)
       .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: rate, error } = await query.maybeSingle()
-    if (error || !rate) return apiError("Rate not found", StatusCodes.NOT_FOUND)
+    if (error || !rate) return apiError(ApiErrorMessage.RATE_NOT_FOUND, StatusCodes.NOT_FOUND)
 
     return formatEntityResponse(rate)
   })
@@ -36,7 +37,7 @@ export const PATCH = withAuth(
 
     const { unit_price, unit, commodity_id } = await req.json()
 
-    let query = client
+    const query = client
       .from(TableName.RATES)
       .update({
         ...(unit_price ? { unit_price: String(unit_price) } : {}),
@@ -48,13 +49,11 @@ export const PATCH = withAuth(
       .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: updated, error } = await query.select().maybeSingle()
-    if (error || !updated) return apiError("Rate not found", StatusCodes.NOT_FOUND)
+    if (error || !updated) return apiError(ApiErrorMessage.RATE_NOT_FOUND, StatusCodes.NOT_FOUND)
 
     return formatEntityResponse(updated)
   })
 )
-
-export const PUT = PATCH
 
 export const DELETE = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
@@ -62,7 +61,7 @@ export const DELETE = withAuth(
       return forbiddenError()
 
     try {
-      let query = client
+      const query = client
         .from(TableName.RATES)
         .delete()
         .eq("id", entityId)
@@ -72,14 +71,14 @@ export const DELETE = withAuth(
       if (error) throw error
 
       if (!data || data.length === 0) {
-        return apiError("Rate not found", StatusCodes.NOT_FOUND)
+        return apiError(ApiErrorMessage.RATE_NOT_FOUND, StatusCodes.NOT_FOUND)
       }
 
       return NextResponse.json({ success: true, id: entityId })
     } catch (error) {
       if (isFKViolation(error)) {
         return apiError(
-          "Cannot delete this rate because it is referenced by existing weighments.",
+          ApiErrorMessage.CANNOT_DELETE_RATE,
           StatusCodes.BAD_REQUEST
         )
       }

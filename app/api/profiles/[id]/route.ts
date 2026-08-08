@@ -17,24 +17,23 @@ import {
   ProjectSlug,
   Role,
   TableName,
+  EntityKey,
 } from "@/lib/constants/enums"
+import { ApiErrorMessage } from "@/lib/constants/messages"
 
 export const GET = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.READ))
       return forbiddenError()
 
-    let query = client
+    const query = client
       .from(TableName.PROFILES)
       .select("*, users!inner(username, is_active, factory_id)")
       .eq("id", entityId)
-
-    if (factoryId) {
-      query = query.eq("users.factory_id", factoryId)
-    }
+      .eq(`users.${EntityKey.FACTORY_ID}`, factoryId!)
 
     const { data: profile, error } = await query.maybeSingle()
-    if (error || !profile) return apiError("Profile not found", StatusCodes.NOT_FOUND)
+    if (error || !profile) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
 
     return formatEntityResponse(profile)
   })
@@ -45,17 +44,14 @@ export const PATCH = withAuth(
     if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.WRITE))
       return forbiddenError()
 
-    let existingQuery = client
+    const existingQuery = client
       .from(TableName.PROFILES)
       .select("id, user_id, name, users!inner(username, is_active, factory_id)")
       .eq("id", entityId)
-
-    if (factoryId) {
-      existingQuery = existingQuery.eq("users.factory_id", factoryId)
-    }
+      .eq(`users.${EntityKey.FACTORY_ID}`, factoryId!)
 
     const { data: existing } = await existingQuery.maybeSingle()
-    if (!existing) return apiError("Profile not found", StatusCodes.NOT_FOUND)
+    if (!existing) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
 
     const body = await req.json()
     const activeConfig = await getFactoryConfig(user.factory_id)
@@ -85,7 +81,7 @@ export const PATCH = withAuth(
       .select()
       .maybeSingle()
 
-    if (updateErr || !updated) return apiError("Profile not found", StatusCodes.NOT_FOUND)
+    if (updateErr || !updated) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
 
     const userUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() }
     if (password && typeof password === "string" && password.trim().length > 0) {
@@ -117,12 +113,10 @@ export const PATCH = withAuth(
       ...updated,
       is_active: updatedUserIsActive,
       username: rawUsers?.username,
-      factory_id: rawUsers?.factory_id,
+      [EntityKey.FACTORY_ID]: rawUsers?.factory_id,
     })
   })
 )
-
-export const PUT = PATCH
 
 export const DELETE = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
@@ -130,17 +124,14 @@ export const DELETE = withAuth(
       return forbiddenError()
 
     try {
-      let existingQuery = client
+      const existingQuery = client
         .from(TableName.PROFILES)
         .select("id, user_id, users!inner(factory_id)")
         .eq("id", entityId)
-
-      if (factoryId) {
-        existingQuery = existingQuery.eq("users.factory_id", factoryId)
-      }
+        .eq(`users.${EntityKey.FACTORY_ID}`, factoryId!)
 
       const { data: existing } = await existingQuery.maybeSingle()
-      if (!existing) return apiError("Profile not found", StatusCodes.NOT_FOUND)
+      if (!existing) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
 
       const { data, error } = await client
         .from(TableName.PROFILES)
@@ -148,25 +139,17 @@ export const DELETE = withAuth(
         .eq("id", entityId)
         .select("id")
 
-      if (error) {
-        if (isFKViolation(error)) {
-          return apiError(
-            "Cannot delete this profile because it is referenced by existing weighments.",
-            StatusCodes.BAD_REQUEST
-          )
-        }
-        throw error
-      }
+      if (error) throw error
 
       if (!data || data.length === 0) {
-        return apiError("Profile not found", StatusCodes.NOT_FOUND)
+        return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
       }
 
       return NextResponse.json({ success: true, id: entityId })
     } catch (error) {
       if (isFKViolation(error)) {
         return apiError(
-          "Cannot delete this profile because it is referenced by existing weighments.",
+          ApiErrorMessage.CANNOT_DELETE_PROFILE,
           StatusCodes.BAD_REQUEST
         )
       }

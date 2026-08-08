@@ -19,6 +19,7 @@ import {
   TableName,
   EntityKey,
 } from "@/lib/constants/enums"
+import { ApiErrorMessage } from "@/lib/constants/messages"
 
 export const GET = withAuth(async (req, user, client) => {
   const pagination = getPaginationParams(req.nextUrl)
@@ -77,25 +78,25 @@ export const DELETE = withAuth(async (req, user, client) => {
   const ids = parseBulkIds(await req.json())
   if (!ids)
     return apiError(
-      "Provide between 1 and 100 valid IDs",
+      ApiErrorMessage.PROVIDE_VALID_IDS,
       StatusCodes.BAD_REQUEST
     )
 
   try {
-    let query = client.from(TableName.CENTERS).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
+    const query = client.from(TableName.CENTERS).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
 
     const { data, error } = await query.select("id")
     if (error) throw error
 
     if (!data || data.length !== ids.length) {
-      return apiError("One or more centers were not found", StatusCodes.NOT_FOUND)
+      return apiError(ApiErrorMessage.ONE_OR_MORE_CENTERS_NOT_FOUND, StatusCodes.NOT_FOUND)
     }
 
     return NextResponse.json({ success: true, deleted_count: data.length })
   } catch (error) {
     if (isFKViolation(error)) {
       return apiError(
-        "Cannot delete selected centers because they are referenced by existing weighments.",
+        ApiErrorMessage.CANNOT_DELETE_SELECTED_CENTERS,
         StatusCodes.BAD_REQUEST
       )
     }

@@ -10,24 +10,7 @@ import {
   formatEntityResponse,
 } from "@/db/helpers"
 import { ProjectSlug, PermissionKey, TableName, EntityKey } from "@/lib/constants/enums"
-
-export const GET = withAuth(
-  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
-    if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.READ))
-      return forbiddenError()
-
-    let query = client
-      .from(TableName.CENTERS)
-      .select("*")
-      .eq("id", entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId!)
-
-    const { data: center, error } = await query.maybeSingle()
-    if (error || !center) return apiError("Center not found", StatusCodes.NOT_FOUND)
-
-    return formatEntityResponse(center)
-  })
-)
+import { ApiErrorMessage } from "@/lib/constants/messages"
 
 export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
@@ -36,7 +19,7 @@ export const PATCH = withAuth(
 
     const { name } = await req.json()
 
-    let query = client
+    const query = client
       .from(TableName.CENTERS)
       .update({
         ...(name ? { name } : {}),
@@ -46,13 +29,11 @@ export const PATCH = withAuth(
       .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: updated, error } = await query.select().maybeSingle()
-    if (error || !updated) return apiError("Center not found", StatusCodes.NOT_FOUND)
+    if (error || !updated) return apiError(ApiErrorMessage.CENTER_NOT_FOUND, StatusCodes.NOT_FOUND)
 
     return formatEntityResponse(updated)
   })
 )
-
-export const PUT = PATCH
 
 export const DELETE = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
@@ -60,7 +41,7 @@ export const DELETE = withAuth(
       return forbiddenError()
 
     try {
-      let query = client
+      const query = client
         .from(TableName.CENTERS)
         .delete()
         .eq("id", entityId)
@@ -70,14 +51,14 @@ export const DELETE = withAuth(
       if (error) throw error
 
       if (!data || data.length === 0) {
-        return apiError("Center not found", StatusCodes.NOT_FOUND)
+        return apiError(ApiErrorMessage.CENTER_NOT_FOUND, StatusCodes.NOT_FOUND)
       }
 
       return NextResponse.json({ success: true, id: entityId })
     } catch (error) {
       if (isFKViolation(error)) {
         return apiError(
-          "Cannot delete this center because it is referenced by existing weighments.",
+          ApiErrorMessage.CANNOT_DELETE_CENTER,
           StatusCodes.BAD_REQUEST
         )
       }

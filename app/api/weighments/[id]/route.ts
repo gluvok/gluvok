@@ -10,13 +10,14 @@ import {
   StatusCodes,
 } from "@/db/helpers"
 import { EntityKey, PermissionKey, ProjectSlug, TableName } from "@/lib/constants/enums"
+import { ApiErrorMessage } from "@/lib/constants/messages"
 
 export const GET = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.READ))
       return forbiddenError()
 
-    let query = client
+    const query = client
       .from(TableName.WEIGHMENTS)
       .select(
         `*, centers!left(name, ${EntityKey.FACTORY_ID}), customers!left(name, govt_id), profiles!left(name, aadhar_number), rates!left(unit_price, unit, commodities!left(name))`
@@ -25,7 +26,7 @@ export const GET = withAuth(
       .eq(`centers.${EntityKey.FACTORY_ID}`, factoryId!)
 
     const { data: weighment, error } = await query.maybeSingle()
-    if (error || !weighment) return apiError("Weighment not found", StatusCodes.NOT_FOUND)
+    if (error || !weighment) return apiError(ApiErrorMessage.WEIGHMENT_NOT_FOUND, StatusCodes.NOT_FOUND)
 
     return formatEntityResponse(weighment)
   })
@@ -44,7 +45,7 @@ export const PATCH = withAuth(
       return forbiddenError()
     }
 
-    let query = client
+    const query = client
       .from(TableName.WEIGHMENTS)
       .update({
         ...(vehicle_number ? { vehicle_number } : {}),
@@ -56,13 +57,11 @@ export const PATCH = withAuth(
       .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: updated, error } = await query.select().maybeSingle()
-    if (error || !updated) return apiError("Weighment not found", StatusCodes.NOT_FOUND)
+    if (error || !updated) return apiError(ApiErrorMessage.WEIGHMENT_NOT_FOUND, StatusCodes.NOT_FOUND)
 
     return formatEntityResponse(updated)
   })
 )
-
-export const PUT = PATCH
 
 export const DELETE = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
@@ -70,7 +69,7 @@ export const DELETE = withAuth(
       return forbiddenError()
 
     try {
-      let query = client
+      const query = client
         .from(TableName.WEIGHMENTS)
         .delete()
         .eq("id", entityId)
@@ -80,14 +79,14 @@ export const DELETE = withAuth(
       if (error) throw error
 
       if (!data || data.length === 0) {
-        return apiError("Weighment not found", StatusCodes.NOT_FOUND)
+        return apiError(ApiErrorMessage.WEIGHMENT_NOT_FOUND, StatusCodes.NOT_FOUND)
       }
 
       return NextResponse.json({ success: true, id: entityId })
     } catch (error) {
       if (isFKViolation(error)) {
         return apiError(
-          "Cannot delete this weighment because it is referenced by other records.",
+          ApiErrorMessage.CANNOT_DELETE_WEIGHMENT,
           StatusCodes.BAD_REQUEST
         )
       }

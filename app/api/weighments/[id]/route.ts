@@ -20,10 +20,10 @@ export const GET = withAuth(
     const query = client
       .from(TableName.WEIGHMENTS)
       .select(
-        `*, centers!left(name, ${EntityKey.FACTORY_ID}), customers!left(name, govt_id), profiles!left(name, aadhar_number), rates!left(unit_price, unit, commodities!left(name))`
+        `*, ${TableName.CENTERS}!left(${EntityKey.NAME}, ${EntityKey.FACTORY_ID}), ${TableName.CUSTOMERS}!left(${EntityKey.NAME}, ${EntityKey.GOVT_ID}), ${TableName.PROFILES}!left(${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}), ${TableName.RATES}!left(${EntityKey.UNIT_PRICE}, ${EntityKey.UNIT}, ${TableName.COMMODITIES}!left(${EntityKey.NAME}))`
       )
-      .eq("id", entityId)
-      .eq(`centers.${EntityKey.FACTORY_ID}`, factoryId!)
+      .eq(EntityKey.ID, entityId)
+      .eq(`${TableName.CENTERS}.${EntityKey.FACTORY_ID}`, factoryId!)
 
     const { data: weighment, error } = await query.maybeSingle()
     if (error || !weighment) return apiError(ApiErrorMessage.WEIGHMENT_NOT_FOUND, StatusCodes.NOT_FOUND)

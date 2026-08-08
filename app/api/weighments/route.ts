@@ -40,11 +40,11 @@ export const GET = withAuth(async (req, user, client) => {
   let query = client
     .from(TableName.WEIGHMENTS)
     .select(
-      `*, centers!left(name, ${EntityKey.FACTORY_ID}), customers!left(name, govt_id), profiles!left(name, aadhar_number), rates!left(unit_price, unit, commodities!left(name))`,
+      `*, ${TableName.CENTERS}!left(${EntityKey.NAME}, ${EntityKey.FACTORY_ID}), ${TableName.CUSTOMERS}!left(${EntityKey.NAME}, ${EntityKey.GOVT_ID}), ${TableName.PROFILES}!left(${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}), ${TableName.RATES}!left(${EntityKey.UNIT_PRICE}, ${EntityKey.UNIT}, ${TableName.COMMODITIES}!left(${EntityKey.NAME}))`,
       { count: "exact" }
     )
     .order(sortColumn, { ascending: !sortDesc })
-    .eq(`centers.${EntityKey.FACTORY_ID}`, user.factory_id!)
+    .eq(`${TableName.CENTERS}.${EntityKey.FACTORY_ID}`, user.factory_id!)
 
   if (unitParam && unitParam !== FilterValue.ALL) {
     query = query.eq("unit", unitParam)
@@ -96,7 +96,7 @@ export const POST = withAuth(async (req, user, client) => {
 
   const profileId = user.profile_id ?? Number(profile_id)
   if (!Number.isSafeInteger(profileId) || profileId <= 0) {
-    return apiError("profile_id is required", StatusCodes.BAD_REQUEST)
+    return apiError(ApiErrorMessage.PROFILE_ID_REQUIRED, StatusCodes.BAD_REQUEST)
   }
   if (user.profile_id != null && user.role !== "operator") {
     return forbiddenError()
@@ -109,7 +109,7 @@ export const POST = withAuth(async (req, user, client) => {
 
   const { data: center } = await centerQuery.maybeSingle()
   if (!center)
-    return apiError("Selected center not found", StatusCodes.NOT_FOUND)
+    return apiError(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND, StatusCodes.NOT_FOUND)
 
   if (center.factory_id !== user.factory_id) {
     return forbiddenError()
@@ -136,7 +136,7 @@ export const POST = withAuth(async (req, user, client) => {
 
   if (error) {
     console.error("POST weighment error:", error)
-    return apiError(error.message || "Failed to create weighment", StatusCodes.BAD_REQUEST)
+    return apiError(error.message || ApiErrorMessage.CREATE_WEIGHMENT_FAILED, StatusCodes.BAD_REQUEST)
   }
 
   return formatEntityResponse(newWeighment, StatusCodes.CREATED)

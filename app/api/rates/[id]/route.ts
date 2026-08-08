@@ -19,8 +19,8 @@ export const GET = withAuth(
 
     const query = client
       .from(TableName.RATES)
-      .select("*, commodities!left(name)")
-      .eq("id", entityId)
+      .select(`*, ${TableName.COMMODITIES}!left(${EntityKey.NAME})`)
+      .eq(EntityKey.ID, entityId)
       .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: rate, error } = await query.maybeSingle()

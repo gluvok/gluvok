@@ -34,7 +34,7 @@ export const GET = withAuth(async (req, user, client) => {
 
   let query = client
     .from(TableName.RATES)
-    .select("*, commodities!left(name)", { count: "exact" })
+    .select(`*, ${TableName.COMMODITIES}!left(${EntityKey.NAME})`, { count: "exact" })
     .order(sortColumn, { ascending: !sortDesc })
     .eq(EntityKey.FACTORY_ID, user.factory_id!)
 
@@ -86,7 +86,7 @@ export const POST = withAuth(async (req, user, client) => {
 
   if (error) {
     console.error("POST rate error:", error)
-    return apiError(error.message || "Failed to create rate", StatusCodes.BAD_REQUEST)
+    return apiError(error.message || ApiErrorMessage.CREATE_RATE_FAILED, StatusCodes.BAD_REQUEST)
   }
 
   return formatEntityResponse(newRate, StatusCodes.CREATED)

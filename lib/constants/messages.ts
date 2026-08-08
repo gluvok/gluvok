@@ -50,4 +50,20 @@ export const ApiErrorMessage = {
   // Generic & Validation
   PROVIDE_VALID_IDS: "Provide between 1 and 100 valid IDs",
   USERNAME_TAKEN: "Username is already taken",
+  GOVT_ID_EXISTS: "Govt ID already exists in this factory",
+  AADHAR_NUMBER_EXISTS: "Aadhar number is already registered in this factory",
+
+  // Creation Failures
+  CREATE_USER_FOR_PROFILE_FAILED: "Failed to create user account for profile",
+  CREATE_PROFILE_RECORD_FAILED: "Failed to create profile record",
+  CREATE_CUSTOMER_USER_FAILED: "Failed to create customer user account",
+  CREATE_CUSTOMER_FAILED: "Failed to create customer",
+  CREATE_CENTER_FAILED: "Failed to create center",
+  CREATE_RATE_FAILED: "Failed to create rate",
+  CREATE_WEIGHMENT_FAILED: "Failed to create weighment",
+  CREATE_COMMODITY_FAILED: "Failed to create commodity",
+  PROFILE_ID_REQUIRED: "profile_id is required",
+  SELECTED_CENTER_NOT_FOUND: "Selected center not found",
+  SAVE_CONFIGURATION_FAILED: "Failed to save configuration in database.",
+  DELETE_SETTINGS_FAILED: "Failed to delete selected setting(s)",
 } as const

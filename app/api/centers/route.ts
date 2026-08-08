@@ -66,7 +66,7 @@ export const POST = withAuth(async (req, user, client) => {
 
   if (error) {
     console.error("POST center error:", error)
-    return apiError(error.message || "Failed to create center", StatusCodes.BAD_REQUEST)
+    return apiError(error.message || ApiErrorMessage.CREATE_CENTER_FAILED, StatusCodes.BAD_REQUEST)
   }
 
   return formatEntityResponse(newCenter, StatusCodes.CREATED)

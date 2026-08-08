@@ -39,9 +39,9 @@ export const GET = withAuth(async (req, user, client) => {
 
   let query = client
     .from(TableName.PROFILES)
-    .select("*, users!inner(username, is_active, factory_id)", { count: "exact" })
+    .select(`*, ${TableName.USERS}!inner(${EntityKey.USERNAME}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID})`, { count: "exact" })
     .order(sortColumn, { ascending: !sortDesc })
-    .eq(`users.${EntityKey.FACTORY_ID}`, user.factory_id!)
+    .eq(`${TableName.USERS}.${EntityKey.FACTORY_ID}`, user.factory_id!)
 
   if (roleParam && roleParam !== FilterValue.ALL) {
     query = query.eq("role", roleParam)
@@ -100,14 +100,14 @@ export const POST = withAuth(async (req, user, client) => {
   if (aadhar_number) {
     const aadharQuery = client
       .from(TableName.PROFILES)
-      .select("id, users!inner(factory_id)")
-      .eq("aadhar_number", aadhar_number)
-      .eq(`users.${EntityKey.FACTORY_ID}`, targetFactoryId!)
+      .select(`${EntityKey.ID}, ${TableName.USERS}!inner(${EntityKey.FACTORY_ID})`)
+      .eq(EntityKey.AADHAR_NUMBER, aadhar_number)
+      .eq(`${TableName.USERS}.${EntityKey.FACTORY_ID}`, targetFactoryId!)
 
     const { data: existingProfile } = await aadharQuery.maybeSingle()
     if (existingProfile)
       return apiError(
-        "Aadhar number is already registered in this factory",
+        ApiErrorMessage.AADHAR_NUMBER_EXISTS,
         StatusCodes.BAD_REQUEST
       )
   }
@@ -126,7 +126,7 @@ export const POST = withAuth(async (req, user, client) => {
 
   if (userErr || !newUser) {
     console.error("Failed to create user for profile:", userErr)
-    return apiError("Failed to create user account for profile", StatusCodes.BAD_REQUEST)
+    return apiError(ApiErrorMessage.CREATE_USER_FOR_PROFILE_FAILED, StatusCodes.BAD_REQUEST)
   }
 
   const { data: newProfile, error: profileErr } = await client
@@ -143,7 +143,7 @@ export const POST = withAuth(async (req, user, client) => {
 
   if (profileErr || !newProfile) {
     console.error("Failed to create profile:", profileErr)
-    return apiError("Failed to create profile record", StatusCodes.BAD_REQUEST)
+    return apiError(ApiErrorMessage.CREATE_PROFILE_RECORD_FAILED, StatusCodes.BAD_REQUEST)
   }
 
   return formatEntityResponse(

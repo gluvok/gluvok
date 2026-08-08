@@ -28,9 +28,9 @@ export const GET = withAuth(
 
     const query = client
       .from(TableName.PROFILES)
-      .select("*, users!inner(username, is_active, factory_id)")
-      .eq("id", entityId)
-      .eq(`users.${EntityKey.FACTORY_ID}`, factoryId!)
+      .select(`*, ${TableName.USERS}!inner(${EntityKey.USERNAME}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID})`)
+      .eq(EntityKey.ID, entityId)
+      .eq(`${TableName.USERS}.${EntityKey.FACTORY_ID}`, factoryId!)
 
     const { data: profile, error } = await query.maybeSingle()
     if (error || !profile) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
@@ -46,9 +46,9 @@ export const PATCH = withAuth(
 
     const existingQuery = client
       .from(TableName.PROFILES)
-      .select("id, user_id, name, users!inner(username, is_active, factory_id)")
-      .eq("id", entityId)
-      .eq(`users.${EntityKey.FACTORY_ID}`, factoryId!)
+      .select(`${EntityKey.ID}, ${EntityKey.USER_ID}, ${EntityKey.NAME}, ${TableName.USERS}!inner(${EntityKey.USERNAME}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID})`)
+      .eq(EntityKey.ID, entityId)
+      .eq(`${TableName.USERS}.${EntityKey.FACTORY_ID}`, factoryId!)
 
     const { data: existing } = await existingQuery.maybeSingle()
     if (!existing) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
@@ -126,9 +126,9 @@ export const DELETE = withAuth(
     try {
       const existingQuery = client
         .from(TableName.PROFILES)
-        .select("id, user_id, users!inner(factory_id)")
-        .eq("id", entityId)
-        .eq(`users.${EntityKey.FACTORY_ID}`, factoryId!)
+        .select(`${EntityKey.ID}, ${EntityKey.USER_ID}, ${TableName.USERS}!inner(${EntityKey.FACTORY_ID})`)
+        .eq(EntityKey.ID, entityId)
+        .eq(`${TableName.USERS}.${EntityKey.FACTORY_ID}`, factoryId!)
 
       const { data: existing } = await existingQuery.maybeSingle()
       if (!existing) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)

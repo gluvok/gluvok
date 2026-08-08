@@ -28,8 +28,8 @@ export const GET = withAuth(
 
     const query = client
       .from(TableName.CUSTOMERS)
-      .select("*, users!left(username, is_active)")
-      .eq("id", entityId)
+      .select(`*, ${TableName.USERS}!left(${EntityKey.USERNAME}, ${EntityKey.IS_ACTIVE})`)
+      .eq(EntityKey.ID, entityId)
       .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: customer, error } = await query.maybeSingle()

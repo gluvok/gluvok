@@ -9,7 +9,6 @@ import { FieldRequirementMode } from "@/lib/constants/enums"
 
 export interface FactoryConfig {
   id?: number
-  factoryId?: number | null
   name?: string
   factoryName?: string
   aadharNumberMode: FieldRequirementMode
@@ -18,7 +17,6 @@ export interface FactoryConfig {
 
 interface ConfigResponseData {
   id?: number
-  factory_id?: number | null
   name?: string
   aadhar_number_mode: FieldRequirementMode
   govt_id_mode: FieldRequirementMode
@@ -47,7 +45,6 @@ export const useConfigStore = create<ConfigStore>((set) => ({
       const config: FactoryConfig = row
         ? {
             id: row.id,
-            factoryId: row.factory_id,
             name: row.name,
             factoryName: row.name,
             aadharNumberMode: row.aadhar_number_mode,

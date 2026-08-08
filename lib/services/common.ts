@@ -92,7 +92,9 @@ export async function insertRow(slug: ProjectSlug, record: Record<string, unknow
 export async function updateRow(slug: ProjectSlug, id: number, record: Record<string, unknown>): Promise<EntityRecord> {
   const endpoint = getEndpoint(slug)
   return apiRequest(async () => {
-    const res = await axios.patch<{ data: EntityRecord }>(`${endpoint}/${id}`, record)
+    // Settings has no meaningful [id] segment — the factory is scoped server-side via user.factory_id
+    const url = slug === ProjectSlug.SETTINGS ? endpoint : `${endpoint}/${id}`
+    const res = await axios.patch<{ data: EntityRecord }>(url, record)
     return res.data.data
   })
 }

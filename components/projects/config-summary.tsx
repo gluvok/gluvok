@@ -2,7 +2,7 @@
 
 /**
  * @file components/projects/config-summary.tsx
- * @description Single-record configuration summary with contextual create and edit actions.
+ * @description Single-record settings summary with contextual edit actions.
  */
 
 import * as React from "react";

@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { getTokenExpiresIn, signJWT } from "@/lib/auth/jwt"
 import { verifyPassword } from "@/lib/auth/password"
-import { AuthErrorMessage, CookieName, Role, TableName } from "@/lib/constants"
-
-type LoginClient = "browser" | "device"
+import { AuthErrorMessage, CookieName, EntityKey, LoginClient, Role, TableName } from "@/lib/constants"
 
 export async function handleLogin(request: NextRequest, client: LoginClient) {
   try {
@@ -21,7 +19,7 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
     const { data: user, error: userError } = await db
       .from(TableName.USERS)
       .select("*")
-      .eq("username", username)
+      .eq(EntityKey.USERNAME, username)
       .maybeSingle()
 
     if (userError || !user || !user.is_active) {
@@ -42,7 +40,7 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
     const factoryId = user.factory_id ?? null
     let profileId: number | undefined
 
-    if (client === "device") {
+    if (client === LoginClient.DEVICE) {
       if (user.role !== Role.OPERATOR) {
         return NextResponse.json(
           { error: AuthErrorMessage.INVALID_CREDENTIALS },
@@ -52,12 +50,12 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
 
       const { data: profile } = await db
         .from(TableName.PROFILES)
-        .select("id")
-        .eq("user_id", user.id)
+        .select(EntityKey.ID)
+        .eq(EntityKey.USER_ID, user.id)
         .maybeSingle()
 
       if (!profile) {
-        return NextResponse.json({ error: "Operator profile not found" }, { status: 404 })
+        return NextResponse.json({ error: AuthErrorMessage.OPERATOR_PROFILE_NOT_FOUND }, { status: 404 })
       }
       profileId = profile.id
     }
@@ -70,7 +68,7 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
         factory_id: factoryId,
         profile_id: profileId,
       },
-      client === "device" ? process.env.JWT_DEVICE_EXPIRES_IN || "1d" : undefined
+      client === LoginClient.DEVICE ? process.env.JWT_DEVICE_EXPIRES_IN || "1d" : undefined
     )
     const expiresIn = getTokenExpiresIn(token)
     const userPayload = {
@@ -80,7 +78,7 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
       factory_id: factoryId,
     }
 
-    if (client === "device") {
+    if (client === LoginClient.DEVICE) {
       return NextResponse.json({
         success: true,
         access_token: token,

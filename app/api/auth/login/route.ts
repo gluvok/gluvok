@@ -5,7 +5,8 @@
 
 import { NextRequest } from "next/server"
 import { handleLogin } from "./handler"
+import { LoginClient } from "@/lib/constants/enums"
 
 export async function POST(request: NextRequest) {
-  return handleLogin(request, "browser")
+  return handleLogin(request, LoginClient.BROWSER)
 }

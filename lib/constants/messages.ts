@@ -8,6 +8,7 @@ export const AuthErrorMessage = {
   SIGN_IN_ERROR: "An error occurred during sign in. Please try again",
   REQUIRED_FIELDS: "Username and password are required",
   INTERNAL_SERVER_ERROR: "Internal server error",
+  OPERATOR_PROFILE_NOT_FOUND: "Operator profile not found",
 } as const
 
 export const ApiErrorMessage = {

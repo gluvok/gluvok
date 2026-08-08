@@ -35,10 +35,7 @@ export const GET = withAuth(async (req, user, client) => {
     .from(TableName.RATES)
     .select("*, commodities!left(name)", { count: "exact" })
     .order(sortColumn, { ascending: !sortDesc })
-
-  if (user.factory_id) {
-    query = query.eq("factory_id", user.factory_id)
-  }
+    .eq(EntityKey.FACTORY_ID, user.factory_id!)
 
   if (commodityIdParam && commodityIdParam !== FilterValue.ALL) {
     query = query.eq("commodity_id", Number(commodityIdParam))
@@ -77,7 +74,7 @@ export const POST = withAuth(async (req, user, client) => {
     commodity_id: Number(commodity_id),
     unit_price: String(unit_price),
     unit,
-    factory_id: user.factory_id ?? null,
+    [EntityKey.FACTORY_ID]: user.factory_id!,
   }
 
   const { data: newRate, error } = await client
@@ -105,10 +102,7 @@ export const DELETE = withAuth(async (req, user, client) => {
     )
 
   try {
-    let query = client.from(TableName.RATES).delete().in("id", ids)
-    if (user.factory_id) {
-      query = query.eq("factory_id", user.factory_id)
-    }
+    let query = client.from(TableName.RATES).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
 
     const { data, error } = await query.select("id")
     if (error) {

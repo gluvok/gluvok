@@ -15,6 +15,7 @@ import {
   PermissionKey,
   Role,
   TableName,
+  EntityKey,
 } from "@/lib/constants/enums"
 import { getDynamicCustomerSchema } from "@/lib/validation"
 import { hashPassword } from "@/lib/auth/password"
@@ -28,10 +29,7 @@ export const GET = withAuth(
       .from(TableName.CUSTOMERS)
       .select("*, users!left(username, is_active)")
       .eq("id", entityId)
-
-    if (factoryId) {
-      query = query.eq("factory_id", factoryId)
-    }
+      .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: customer, error } = await query.maybeSingle()
     if (error || !customer) return apiError("Customer not found", StatusCodes.NOT_FOUND)
@@ -42,14 +40,11 @@ export const GET = withAuth(
 
 export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
-    let existingQuery = client
+    const existingQuery = client
       .from(TableName.CUSTOMERS)
       .select("id, user_id, name")
       .eq("id", entityId)
-
-    if (factoryId) {
-      existingQuery = existingQuery.eq("factory_id", factoryId)
-    }
+      .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: existing } = await existingQuery.maybeSingle()
 
@@ -92,10 +87,7 @@ export const PATCH = withAuth(
         updated_at: new Date().toISOString(),
       })
       .eq("id", entityId)
-
-    if (factoryId) {
-      updateQuery = updateQuery.eq("factory_id", factoryId)
-    }
+      .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: updated, error } = await updateQuery.select().maybeSingle()
 
@@ -132,7 +124,7 @@ export const PATCH = withAuth(
           username: username.trim(),
           password_hash: passwordHash,
           role: Role.BASE,
-          factory_id: factoryId,
+          [EntityKey.FACTORY_ID]: factoryId,
         })
         .select()
         .single()
@@ -159,10 +151,11 @@ export const DELETE = withAuth(
       return forbiddenError()
 
     try {
-      let query = client.from(TableName.CUSTOMERS).delete().eq("id", entityId)
-      if (factoryId) {
-        query = query.eq("factory_id", factoryId)
-      }
+      let query = client
+        .from(TableName.CUSTOMERS)
+        .delete()
+        .eq("id", entityId)
+        .eq(EntityKey.FACTORY_ID, factoryId!)
 
       const { data, error } = await query.select("id")
       if (error) {

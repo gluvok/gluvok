@@ -12,14 +12,11 @@ import {
 import { ProjectSlug, PermissionKey, TableName } from "@/lib/constants/enums"
 
 export const GET = withAuth(
-  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+  withEntityScope(async (_req, user, client, _ctx, { entityId }) => {
     if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.READ))
       return forbiddenError()
 
     let query = client.from(TableName.COMMODITIES).select("*").eq("id", entityId)
-    if (factoryId) {
-      query = query.eq("factory_id", factoryId)
-    }
 
     const { data: commodity, error } = await query.maybeSingle()
     if (error || !commodity) return apiError("Commodity not found", StatusCodes.NOT_FOUND)
@@ -29,7 +26,7 @@ export const GET = withAuth(
 )
 
 export const PATCH = withAuth(
-  withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
+  withEntityScope(async (req, user, client, _ctx, { entityId }) => {
     if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.WRITE))
       return forbiddenError()
 
@@ -43,10 +40,6 @@ export const PATCH = withAuth(
       })
       .eq("id", entityId)
 
-    if (factoryId) {
-      query = query.eq("factory_id", factoryId)
-    }
-
     const { data: updated, error } = await query.select().maybeSingle()
     if (error || !updated) return apiError("Commodity not found", StatusCodes.NOT_FOUND)
 
@@ -57,15 +50,12 @@ export const PATCH = withAuth(
 export const PUT = PATCH
 
 export const DELETE = withAuth(
-  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+  withEntityScope(async (_req, user, client, _ctx, { entityId }) => {
     if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.DELETE))
       return forbiddenError()
 
     try {
       let query = client.from(TableName.COMMODITIES).delete().eq("id", entityId)
-      if (factoryId) {
-        query = query.eq("factory_id", factoryId)
-      }
 
       const { data, error } = await query.select("id")
       if (error) {

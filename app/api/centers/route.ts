@@ -17,6 +17,7 @@ import {
   QueryParam,
   PermissionKey,
   TableName,
+  EntityKey,
 } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (req, user, client) => {
@@ -29,10 +30,7 @@ export const GET = withAuth(async (req, user, client) => {
     .from(TableName.CENTERS)
     .select("*", { count: "exact" })
     .order(sortColumn, { ascending: !sortDesc })
-
-  if (user.factory_id) {
-    query = query.eq("factory_id", user.factory_id)
-  }
+    .eq(EntityKey.FACTORY_ID, user.factory_id!)
 
   if (search) {
     const searchNum = parseInt(search, 10)
@@ -56,7 +54,7 @@ export const POST = withAuth(async (req, user, client) => {
   const { name } = body
   const insertValues: Record<string, unknown> = {
     name,
-    factory_id: user.factory_id ?? null,
+    [EntityKey.FACTORY_ID]: user.factory_id,
   }
 
   const { data: newCenter, error } = await client
@@ -84,10 +82,7 @@ export const DELETE = withAuth(async (req, user, client) => {
     )
 
   try {
-    let query = client.from(TableName.CENTERS).delete().in("id", ids)
-    if (user.factory_id) {
-      query = query.eq("factory_id", user.factory_id)
-    }
+    let query = client.from(TableName.CENTERS).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
 
     const { data, error } = await query.select("id")
     if (error) {

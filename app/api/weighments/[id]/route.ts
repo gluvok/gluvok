@@ -19,13 +19,10 @@ export const GET = withAuth(
     let query = client
       .from(TableName.WEIGHMENTS)
       .select(
-        "*, centers!left(name, factory_id), customers!left(name, govt_id), profiles!left(name, aadhar_number), rates!left(unit_price, unit, commodities!left(name))"
+        `*, centers!left(name, ${EntityKey.FACTORY_ID}), customers!left(name, govt_id), profiles!left(name, aadhar_number), rates!left(unit_price, unit, commodities!left(name))`
       )
       .eq("id", entityId)
-
-    if (factoryId) {
-      query = query.eq("centers.factory_id", factoryId)
-    }
+      .eq(`centers.${EntityKey.FACTORY_ID}`, factoryId!)
 
     const { data: weighment, error } = await query.maybeSingle()
     if (error || !weighment) return apiError("Weighment not found", StatusCodes.NOT_FOUND)
@@ -56,10 +53,7 @@ export const PATCH = withAuth(
         updated_at: new Date().toISOString(),
       })
       .eq("id", entityId)
-
-    if (factoryId) {
-      query = query.eq("factory_id", factoryId)
-    }
+      .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: updated, error } = await query.select().maybeSingle()
     if (error || !updated) return apiError("Weighment not found", StatusCodes.NOT_FOUND)
@@ -76,10 +70,11 @@ export const DELETE = withAuth(
       return forbiddenError()
 
     try {
-      let query = client.from(TableName.WEIGHMENTS).delete().eq("id", entityId)
-      if (factoryId) {
-        query = query.eq("factory_id", factoryId)
-      }
+      let query = client
+        .from(TableName.WEIGHMENTS)
+        .delete()
+        .eq("id", entityId)
+        .eq(EntityKey.FACTORY_ID, factoryId!)
 
       const { data, error } = await query.select("id")
       if (error) {

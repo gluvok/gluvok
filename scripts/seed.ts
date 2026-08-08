@@ -5,7 +5,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js"
-import { Role, TableName } from "../lib/constants/enums"
+import { Role, TableName, EntityKey } from "../lib/constants/enums"
 import { hashPassword } from "../lib/auth/password"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -62,13 +62,13 @@ async function main() {
     .from(TableName.CENTERS)
     .select("id")
     .eq("name", centerName)
-    .eq("factory_id", factoryId)
+    .eq(EntityKey.FACTORY_ID, factoryId)
     .maybeSingle()
 
   if (!existingCenter) {
     await supabase.from(TableName.CENTERS).insert({
       name: centerName,
-      factory_id: factoryId,
+      [EntityKey.FACTORY_ID]: factoryId,
     })
     console.log(`Created center '${centerName}' for factory id=${factoryId}`)
   }
@@ -92,7 +92,7 @@ async function main() {
         password_hash: passwordHash,
         role: Role.ADMIN,
         is_active: true,
-        factory_id: factoryId,
+        [EntityKey.FACTORY_ID]: factoryId,
       })
       .select("id")
       .single()
@@ -105,7 +105,7 @@ async function main() {
       user_id: adminUserId,
       name: "Admin User",
       role: Role.ADMIN,
-      factory_id: factoryId,
+      [EntityKey.FACTORY_ID]: factoryId,
     })
     console.log("Admin profile seeded successfully!")
   } else {

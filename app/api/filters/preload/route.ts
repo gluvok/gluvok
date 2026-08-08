@@ -1,23 +1,15 @@
 import { NextResponse } from "next/server"
 import { withAuth, StatusCodes } from "@/db/helpers"
-import { TableName } from "@/lib/constants/enums"
+import { TableName, EntityKey } from "@/lib/constants/enums"
 
 export const GET = withAuth(async (_req, user, client) => {
-  const factoryId = user.factory_id ?? null
+  const factoryId = user.factory_id!
 
-  let centersQuery = client.from(TableName.CENTERS).select("id, name").order("name", { ascending: true })
-  let profilesQuery = client.from(TableName.PROFILES).select("id, name").order("name", { ascending: true })
-  let customersQuery = client.from(TableName.CUSTOMERS).select("id, name").order("name", { ascending: true })
-  let ratesQuery = client.from(TableName.RATES).select("id, unit_price, unit, commodities!left(name)").order("id", { ascending: true })
-  let commoditiesQuery = client.from(TableName.COMMODITIES).select("id, name").order("name", { ascending: true })
-
-  if (factoryId) {
-    centersQuery = centersQuery.eq("factory_id", factoryId)
-    profilesQuery = profilesQuery.eq("factory_id", factoryId)
-    customersQuery = customersQuery.eq("factory_id", factoryId)
-    ratesQuery = ratesQuery.eq("factory_id", factoryId)
-    commoditiesQuery = commoditiesQuery.eq("factory_id", factoryId)
-  }
+  const centersQuery = client.from(TableName.CENTERS).select("id, name").eq(EntityKey.FACTORY_ID, factoryId).order("name", { ascending: true })
+  const profilesQuery = client.from(TableName.PROFILES).select("id, name").eq(EntityKey.FACTORY_ID, factoryId).order("name", { ascending: true })
+  const customersQuery = client.from(TableName.CUSTOMERS).select("id, name").eq(EntityKey.FACTORY_ID, factoryId).order("name", { ascending: true })
+  const ratesQuery = client.from(TableName.RATES).select("id, unit_price, unit, commodities!left(name)").eq(EntityKey.FACTORY_ID, factoryId).order("id", { ascending: true })
+  const commoditiesQuery = client.from(TableName.COMMODITIES).select("id, name").order("name", { ascending: true })
 
   const [
     { data: commodityRows },

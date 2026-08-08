@@ -9,7 +9,7 @@ import {
   StatusCodes,
   formatEntityResponse,
 } from "@/db/helpers"
-import { ProjectSlug, PermissionKey, TableName } from "@/lib/constants/enums"
+import { ProjectSlug, PermissionKey, TableName, EntityKey } from "@/lib/constants/enums"
 
 export const GET = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
@@ -20,10 +20,7 @@ export const GET = withAuth(
       .from(TableName.RATES)
       .select("*, commodities!left(name)")
       .eq("id", entityId)
-
-    if (factoryId) {
-      query = query.eq("factory_id", factoryId)
-    }
+      .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: rate, error } = await query.maybeSingle()
     if (error || !rate) return apiError("Rate not found", StatusCodes.NOT_FOUND)
@@ -48,10 +45,7 @@ export const PATCH = withAuth(
         updated_at: new Date().toISOString(),
       })
       .eq("id", entityId)
-
-    if (factoryId) {
-      query = query.eq("factory_id", factoryId)
-    }
+      .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: updated, error } = await query.select().maybeSingle()
     if (error || !updated) return apiError("Rate not found", StatusCodes.NOT_FOUND)
@@ -68,10 +62,11 @@ export const DELETE = withAuth(
       return forbiddenError()
 
     try {
-      let query = client.from(TableName.RATES).delete().eq("id", entityId)
-      if (factoryId) {
-        query = query.eq("factory_id", factoryId)
-      }
+      let query = client
+        .from(TableName.RATES)
+        .delete()
+        .eq("id", entityId)
+        .eq(EntityKey.FACTORY_ID, factoryId!)
 
       const { data, error } = await query.select("id")
       if (error) {

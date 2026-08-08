@@ -40,10 +40,7 @@ export const GET = withAuth(async (req, user, client) => {
     .from(TableName.PROFILES)
     .select("*, users!inner(username, is_active, factory_id)", { count: "exact" })
     .order(sortColumn, { ascending: !sortDesc })
-
-  if (user.factory_id) {
-    query = query.eq("users.factory_id", user.factory_id)
-  }
+    .eq(`users.${EntityKey.FACTORY_ID}`, user.factory_id!)
 
   if (roleParam && roleParam !== FilterValue.ALL) {
     query = query.eq("role", roleParam)
@@ -100,21 +97,16 @@ export const POST = withAuth(async (req, user, client) => {
     return apiError("Username is already taken", StatusCodes.BAD_REQUEST)
 
   if (aadhar_number) {
-    let aadharQuery = client
+    const aadharQuery = client
       .from(TableName.PROFILES)
       .select("id, users!inner(factory_id)")
       .eq("aadhar_number", aadhar_number)
-
-    if (targetFactoryId) {
-      aadharQuery = aadharQuery.eq("users.factory_id", targetFactoryId)
-    }
+      .eq(`users.${EntityKey.FACTORY_ID}`, targetFactoryId!)
 
     const { data: existingProfile } = await aadharQuery.maybeSingle()
     if (existingProfile)
       return apiError(
-        targetFactoryId
-          ? "Aadhar number is already registered in this factory"
-          : "Aadhar number is already registered",
+        "Aadhar number is already registered in this factory",
         StatusCodes.BAD_REQUEST
       )
   }
@@ -126,7 +118,7 @@ export const POST = withAuth(async (req, user, client) => {
       username,
       password_hash: passwordHash,
       role,
-      factory_id: targetFactoryId,
+      [EntityKey.FACTORY_ID]: targetFactoryId,
     })
     .select()
     .single()
@@ -143,7 +135,7 @@ export const POST = withAuth(async (req, user, client) => {
       name,
       ...(aadhar_number ? { aadhar_number } : {}),
       role,
-      factory_id: targetFactoryId,
+      [EntityKey.FACTORY_ID]: targetFactoryId,
     })
     .select()
     .single()
@@ -158,7 +150,7 @@ export const POST = withAuth(async (req, user, client) => {
       ...newProfile,
       username: newUser.username,
       is_active: newUser.is_active,
-      factory_id: targetFactoryId,
+      [EntityKey.FACTORY_ID]: targetFactoryId,
     },
     StatusCodes.CREATED
   )
@@ -175,10 +167,7 @@ export const DELETE = withAuth(async (req, user, client) => {
     )
 
   try {
-    let query = client.from(TableName.PROFILES).delete().in("id", ids)
-    if (user.factory_id) {
-      query = query.eq("factory_id", user.factory_id)
-    }
+    let query = client.from(TableName.PROFILES).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
 
     const { data, error } = await query.select("id")
     if (error) {

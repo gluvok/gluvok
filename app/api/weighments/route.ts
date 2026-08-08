@@ -39,14 +39,11 @@ export const GET = withAuth(async (req, user, client) => {
   let query = client
     .from(TableName.WEIGHMENTS)
     .select(
-      "*, centers!left(name, factory_id), customers!left(name, govt_id), profiles!left(name, aadhar_number), rates!left(unit_price, unit, commodities!left(name))",
+      `*, centers!left(name, ${EntityKey.FACTORY_ID}), customers!left(name, govt_id), profiles!left(name, aadhar_number), rates!left(unit_price, unit, commodities!left(name))`,
       { count: "exact" }
     )
     .order(sortColumn, { ascending: !sortDesc })
-
-  if (user.factory_id) {
-    query = query.eq("centers.factory_id", user.factory_id)
-  }
+    .eq(`centers.${EntityKey.FACTORY_ID}`, user.factory_id!)
 
   if (unitParam && unitParam !== FilterValue.ALL) {
     query = query.eq("unit", unitParam)
@@ -106,14 +103,14 @@ export const POST = withAuth(async (req, user, client) => {
 
   const centerQuery = client
     .from(TableName.CENTERS)
-    .select("id, factory_id")
+    .select(`id, ${EntityKey.FACTORY_ID}`)
     .eq("id", Number(center_id))
 
   const { data: center } = await centerQuery.maybeSingle()
   if (!center)
     return apiError("Selected center not found", StatusCodes.NOT_FOUND)
 
-  if (user.factory_id && center.factory_id !== user.factory_id) {
+  if (center.factory_id !== user.factory_id) {
     return forbiddenError()
   }
 
@@ -127,7 +124,7 @@ export const POST = withAuth(async (req, user, client) => {
     profile_id: profileId,
     customer_id: customer_id === "" || customer_id === null || customer_id === undefined ? null : Number(customer_id),
     images: images || [],
-    factory_id: user.factory_id ?? null,
+    [EntityKey.FACTORY_ID]: user.factory_id!,
   }
 
   const { data: newWeighment, error } = await client
@@ -155,10 +152,7 @@ export const DELETE = withAuth(async (req, user, client) => {
     )
 
   try {
-    let query = client.from(TableName.WEIGHMENTS).delete().in("id", ids)
-    if (user.factory_id) {
-      query = query.eq("factory_id", user.factory_id)
-    }
+    let query = client.from(TableName.WEIGHMENTS).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
 
     const { data, error } = await query.select("id")
     if (error) {

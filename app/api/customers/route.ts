@@ -19,6 +19,7 @@ import {
   QueryParam,
   FieldRequirementMode,
   TableName,
+  EntityKey,
 } from "@/lib/constants/enums"
 import { hashPassword } from "@/lib/auth/password"
 import { getDynamicCustomerSchema } from "@/lib/validation"
@@ -37,10 +38,7 @@ export const GET = withAuth(async (req, user, client) => {
     .from(TableName.CUSTOMERS)
     .select("*, users!left(username, is_active)", { count: "exact" })
     .order(sortColumn, { ascending: !sortDesc })
-
-  if (user.factory_id) {
-    query = query.eq("factory_id", user.factory_id)
-  }
+    .eq(EntityKey.FACTORY_ID, user.factory_id!)
 
   if (search) {
     const searchNum = parseInt(search, 10)
@@ -81,16 +79,16 @@ export const POST = withAuth(async (req, user, client) => {
   }
 
   if (govt_id != null) {
-    let existingQuery = client.from(TableName.CUSTOMERS).select("id").eq("govt_id", Number(govt_id))
-    if (targetFactoryId) {
-      existingQuery = existingQuery.eq("factory_id", targetFactoryId)
-    }
+    const existingQuery = client
+      .from(TableName.CUSTOMERS)
+      .select("id")
+      .eq("govt_id", Number(govt_id))
+      .eq(EntityKey.FACTORY_ID, targetFactoryId!)
+
     const { data: existingCustomer } = await existingQuery.maybeSingle()
     if (existingCustomer) {
       return apiError(
-        targetFactoryId
-          ? "Govt ID already exists in this factory"
-          : "Govt ID already exists",
+        "Govt ID already exists in this factory",
         StatusCodes.BAD_REQUEST
       )
     }
@@ -115,7 +113,7 @@ export const POST = withAuth(async (req, user, client) => {
         username,
         password_hash: passwordHash,
         role: Role.BASE,
-        factory_id: targetFactoryId,
+        [EntityKey.FACTORY_ID]: targetFactoryId,
       })
       .select()
       .single()
@@ -132,7 +130,7 @@ export const POST = withAuth(async (req, user, client) => {
     name,
     father_name,
     user_id: createdUserId,
-    factory_id: targetFactoryId,
+    [EntityKey.FACTORY_ID]: targetFactoryId,
   }
 
   const { data: newCustomer, error } = await client
@@ -160,10 +158,7 @@ export const DELETE = withAuth(async (req, user, client) => {
     )
 
   try {
-    let query = client.from(TableName.CUSTOMERS).delete().in("id", ids)
-    if (user.factory_id) {
-      query = query.eq("factory_id", user.factory_id)
-    }
+    let query = client.from(TableName.CUSTOMERS).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
 
     const { data, error } = await query.select("id")
     if (error) {

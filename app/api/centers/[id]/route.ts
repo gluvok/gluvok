@@ -9,17 +9,18 @@ import {
   StatusCodes,
   formatEntityResponse,
 } from "@/db/helpers"
-import { ProjectSlug, PermissionKey, TableName } from "@/lib/constants/enums"
+import { ProjectSlug, PermissionKey, TableName, EntityKey } from "@/lib/constants/enums"
 
 export const GET = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.READ))
       return forbiddenError()
 
-    let query = client.from(TableName.CENTERS).select("*").eq("id", entityId)
-    if (factoryId) {
-      query = query.eq("factory_id", factoryId)
-    }
+    let query = client
+      .from(TableName.CENTERS)
+      .select("*")
+      .eq("id", entityId)
+      .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: center, error } = await query.maybeSingle()
     if (error || !center) return apiError("Center not found", StatusCodes.NOT_FOUND)
@@ -42,10 +43,7 @@ export const PATCH = withAuth(
         updated_at: new Date().toISOString(),
       })
       .eq("id", entityId)
-
-    if (factoryId) {
-      query = query.eq("factory_id", factoryId)
-    }
+      .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: updated, error } = await query.select().maybeSingle()
     if (error || !updated) return apiError("Center not found", StatusCodes.NOT_FOUND)
@@ -62,10 +60,11 @@ export const DELETE = withAuth(
       return forbiddenError()
 
     try {
-      let query = client.from(TableName.CENTERS).delete().eq("id", entityId)
-      if (factoryId) {
-        query = query.eq("factory_id", factoryId)
-      }
+      let query = client
+        .from(TableName.CENTERS)
+        .delete()
+        .eq("id", entityId)
+        .eq(EntityKey.FACTORY_ID, factoryId!)
 
       const { data, error } = await query.select("id")
       if (error) {

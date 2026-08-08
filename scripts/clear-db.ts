@@ -4,10 +4,13 @@
  */
 
 import { createClient } from "@supabase/supabase-js"
-import { TableName } from "../lib/constants/enums"
+import { TableName } from "@/lib/constants/enums"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_TEST_URL
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseKey) {
   console.error("Error: Supabase URL and key environment variables are required.")
@@ -17,13 +20,13 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 const tables = [
+  TableName.USERS,
   TableName.WEIGHMENTS,
   TableName.RATES,
   TableName.CUSTOMERS,
   TableName.PROFILES,
   TableName.COMMODITIES,
   TableName.CENTERS,
-  TableName.USERS,
   TableName.FACTORIES,
 ]
 
@@ -32,7 +35,11 @@ async function main() {
   for (const table of tables) {
     const { error } = await supabase.from(table).delete().neq("id", 0)
     if (error) {
-      console.warn(`Could not clear table ${table}:`, error.message)
+      if (error.code === "PGRST205") {
+        console.warn(`Could not clear table '${table}': Table does not exist in Supabase database schema (PGRST205). Please run 'schema.sql' in Supabase SQL Editor to create it.`)
+      } else {
+        console.warn(`Could not clear table ${table}:`, error.message)
+      }
     } else {
       console.log(`Cleared table: ${table}`)
     }

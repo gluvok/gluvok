@@ -73,13 +73,17 @@ export function validatePasswordRefinement(
   const hasConfirm = Boolean(rawConfirm && rawConfirm.trim().length > 0)
 
   // 1. Username validation
-  if (requireUsername && !hasUsername && !isEdit) {
-    ctx.addIssue({
-      code: "custom",
-      message: `${ColumnLabel.USERNAME} is required`,
-      path: [EntityKey.USERNAME],
-    })
-  } else if (hasUsername && rawUsername!.trim().length < 3) {
+  if (!hasUsername) {
+    if ((requireUsername && !isEdit) || hasPassword) {
+      ctx.addIssue({
+        code: "custom",
+        message: hasPassword
+          ? `${ColumnLabel.USERNAME} is required when setting a password`
+          : `${ColumnLabel.USERNAME} is required`,
+        path: [EntityKey.USERNAME],
+      })
+    }
+  } else if (rawUsername!.trim().length < 3) {
     ctx.addIssue({
       code: "custom",
       message: `${ColumnLabel.USERNAME} must be at least 3 characters`,
@@ -88,7 +92,8 @@ export function validatePasswordRefinement(
   }
 
   // 2. Password presence check
-  if (!isEdit && !hasPassword) {
+  const isPasswordRequired = !isEdit && (requireUsername || hasUsername)
+  if (isPasswordRequired && !hasPassword) {
     ctx.addIssue({
       code: "custom",
       message: `${ColumnLabel.PASSWORD} is required`,
@@ -106,7 +111,8 @@ export function validatePasswordRefinement(
   }
 
   // 4. Confirm password check & equality check
-  if ((!isEdit || hasPassword) && !hasConfirm) {
+  const isConfirmRequired = hasPassword || isPasswordRequired
+  if (isConfirmRequired && !hasConfirm) {
     ctx.addIssue({
       code: "custom",
       message: "Please confirm your password",
@@ -160,27 +166,6 @@ export function getDynamicCustomerSchema(config: FactoryConfig | null, isEdit = 
       [EntityKey.IS_ACTIVE]: z.boolean().optional(),
     })
     .superRefine((data, ctx) => {
-      const rawUsername = data[EntityKey.USERNAME]
-      const rawPassword = data[EntityKey.PASSWORD]
-      const hasUsername = Boolean(rawUsername && rawUsername.trim().length > 0)
-      const hasPassword = Boolean(rawPassword && rawPassword.trim().length > 0)
-
-      if (hasPassword && !hasUsername) {
-        ctx.addIssue({
-          code: "custom",
-          message: `${ColumnLabel.USERNAME} is required when setting a password`,
-          path: [EntityKey.USERNAME],
-        })
-      }
-
-      if (hasUsername && !hasPassword && !isEdit) {
-        ctx.addIssue({
-          code: "custom",
-          message: `${ColumnLabel.PASSWORD} is required when providing a username`,
-          path: [EntityKey.PASSWORD],
-        })
-      }
-
       validatePasswordRefinement(data, ctx, isEdit, false)
     })
 }
@@ -188,26 +173,16 @@ export function getDynamicCustomerSchema(config: FactoryConfig | null, isEdit = 
 export function getDynamicProfileSchema(config: FactoryConfig | null, isEdit = false) {
   const aadharSchema = buildAadharSchema(config)
 
-  const passwordField = isEdit
-    ? z.string().optional().or(z.literal(""))
-    : z.string().min(6, `${ColumnLabel.PASSWORD} must be at least 6 characters`)
-
-  const confirmField = isEdit
-    ? z.string().optional().or(z.literal(""))
-    : z.string({ message: "Please confirm your password" }).min(1, "Please confirm your password")
-
   return z
     .object({
-      [EntityKey.USERNAME]: isEdit
-        ? z.string().min(3, `${ColumnLabel.USERNAME} must be at least 3 characters`).optional().or(z.literal(""))
-        : z.string().min(3, `${ColumnLabel.USERNAME} must be at least 3 characters`),
+      [EntityKey.USERNAME]: z.string().optional().or(z.literal("")),
       [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
       [EntityKey.ROLE]: z.nativeEnum(Role, {
         message: "Please select a valid role",
       }),
       [EntityKey.AADHAR_NUMBER]: aadharSchema,
-      [EntityKey.PASSWORD]: passwordField,
-      [EntityKey.CONFIRM_PASSWORD]: confirmField,
+      [EntityKey.PASSWORD]: z.string().optional().or(z.literal("")),
+      [EntityKey.CONFIRM_PASSWORD]: z.string().optional().or(z.literal("")),
       [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
       ...(isEdit ? { [EntityKey.IS_ACTIVE]: z.boolean().optional() } : {}),
     })

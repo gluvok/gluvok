@@ -157,6 +157,7 @@ CREATE POLICY "Allow access rates" ON rates FOR ALL USING (true);
 CREATE POLICY "Allow access weighments" ON weighments FOR ALL USING (true);
 
 -- 5. AUTO-INCREMENT SEQUENCE RESET FUNCTIONS
+DROP FUNCTION IF EXISTS public.reset_table_sequence(text);
 CREATE OR REPLACE FUNCTION reset_table_sequence(table_name text)
 RETURNS void
 LANGUAGE plpgsql
@@ -174,6 +175,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.reset_all_sequences();
 CREATE OR REPLACE FUNCTION reset_all_sequences()
 RETURNS void
 LANGUAGE plpgsql
@@ -196,6 +198,9 @@ END;
 $$;
 
 -- 6. ATOMIC TRANSACTION RPC FUNCTIONS FOR CUSTOMERS & USERS
+
+DROP FUNCTION IF EXISTS public.create_customer_with_user(TEXT, TEXT, INT, TEXT, TEXT, INT);
+DROP FUNCTION IF EXISTS public.create_customer_with_user(INT, TEXT, TEXT, INT, TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION create_customer_with_user(
     p_factory_id INT,
@@ -238,6 +243,8 @@ BEGIN
     RETURN v_result;
 END;
 $$;
+
+DROP FUNCTION IF EXISTS public.update_customer_with_user(INT, INT, TEXT, TEXT, INT, TEXT, TEXT, BOOLEAN);
 
 CREATE OR REPLACE FUNCTION update_customer_with_user(
     p_customer_id INT,
@@ -306,6 +313,8 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.delete_customers_with_user(INT[], INT);
+
 CREATE OR REPLACE FUNCTION delete_customers_with_user(
     p_customer_ids INT[],
     p_factory_id INT
@@ -335,6 +344,8 @@ END;
 $$;
 
 -- 7. ATOMIC TRANSACTION RPC FUNCTIONS FOR PROFILES & USERS
+
+DROP FUNCTION IF EXISTS public.create_profile_with_user(INT, TEXT, TEXT, TEXT, role_enum, TEXT);
 
 CREATE OR REPLACE FUNCTION create_profile_with_user(
     p_factory_id INT,
@@ -374,6 +385,8 @@ BEGIN
     RETURN v_result;
 END;
 $$;
+
+DROP FUNCTION IF EXISTS public.update_profile_with_user(INT, INT, TEXT, role_enum, TEXT, TEXT, BOOLEAN);
 
 CREATE OR REPLACE FUNCTION update_profile_with_user(
     p_profile_id INT,
@@ -429,6 +442,8 @@ BEGIN
     RETURN v_result;
 END;
 $$;
+
+DROP FUNCTION IF EXISTS public.delete_profiles_with_user(INT[], INT);
 
 CREATE OR REPLACE FUNCTION delete_profiles_with_user(
     p_profile_ids INT[],

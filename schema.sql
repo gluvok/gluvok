@@ -334,3 +334,127 @@ BEGIN
 END;
 $$;
 
+-- 7. ATOMIC TRANSACTION RPC FUNCTIONS FOR PROFILES & USERS
+
+CREATE OR REPLACE FUNCTION create_profile_with_user(
+    p_factory_id INT,
+    p_name TEXT,
+    p_username TEXT,
+    p_password_hash TEXT,
+    p_role role_enum DEFAULT 'operator',
+    p_aadhar_number TEXT DEFAULT NULL
+) RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_user_id INT;
+    v_profile_id INT;
+    v_result JSON;
+BEGIN
+    INSERT INTO users (username, password_hash, role, factory_id)
+    VALUES (p_username, p_password_hash, p_role, p_factory_id)
+    RETURNING id INTO v_user_id;
+
+    INSERT INTO profiles (user_id, name, aadhar_number, role, factory_id)
+    VALUES (v_user_id, p_name, p_aadhar_number, p_role, p_factory_id)
+    RETURNING id INTO v_profile_id;
+
+    SELECT row_to_json(p) INTO v_result
+    FROM (
+        SELECT 
+            prof.*,
+            u.username,
+            u.is_active
+        FROM profiles prof
+        JOIN users u ON prof.user_id = u.id
+        WHERE prof.id = v_profile_id
+    ) p;
+
+    RETURN v_result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION update_profile_with_user(
+    p_profile_id INT,
+    p_factory_id INT,
+    p_name TEXT DEFAULT NULL,
+    p_role role_enum DEFAULT NULL,
+    p_aadhar_number TEXT DEFAULT NULL,
+    p_password_hash TEXT DEFAULT NULL,
+    p_is_active BOOLEAN DEFAULT NULL
+) RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_user_id INT;
+    v_result JSON;
+BEGIN
+    SELECT user_id INTO v_user_id
+    FROM profiles
+    WHERE id = p_profile_id AND factory_id = p_factory_id;
+
+    IF NOT FOUND THEN
+        RETURN NULL;
+    END IF;
+
+    UPDATE profiles
+    SET 
+        name = COALESCE(p_name, name),
+        role = COALESCE(p_role, role),
+        aadhar_number = CASE WHEN p_aadhar_number IS NOT NULL THEN p_aadhar_number ELSE aadhar_number END,
+        updated_at = NOW()
+    WHERE id = p_profile_id AND factory_id = p_factory_id;
+
+    UPDATE users
+    SET 
+        role = COALESCE(p_role, role),
+        password_hash = COALESCE(p_password_hash, password_hash),
+        is_active = COALESCE(p_is_active, is_active),
+        updated_at = NOW()
+    WHERE id = v_user_id;
+
+    SELECT row_to_json(p) INTO v_result
+    FROM (
+        SELECT 
+            prof.*,
+            u.username,
+            u.is_active
+        FROM profiles prof
+        JOIN users u ON prof.user_id = u.id
+        WHERE prof.id = p_profile_id
+    ) p;
+
+    RETURN v_result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION delete_profiles_with_user(
+    p_profile_ids INT[],
+    p_factory_id INT
+) RETURNS INT
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_user_ids INT[];
+    v_deleted_count INT;
+BEGIN
+    SELECT ARRAY_AGG(user_id) INTO v_user_ids
+    FROM profiles
+    WHERE id = ANY(p_profile_ids) AND factory_id = p_factory_id;
+
+    DELETE FROM profiles
+    WHERE id = ANY(p_profile_ids) AND factory_id = p_factory_id;
+
+    GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+
+    IF v_user_ids IS NOT NULL AND array_length(v_user_ids, 1) > 0 THEN
+        DELETE FROM users WHERE id = ANY(v_user_ids);
+    END IF;
+
+    RETURN v_deleted_count;
+END;
+$$;
+

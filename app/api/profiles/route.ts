@@ -29,11 +29,12 @@ import { hashPassword } from "@/lib/auth/password"
 export const GET = withAuth(async (req, user, client) => {
   const pagination = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at"
+  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT
   const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
   const roleParam = req.nextUrl.searchParams.get(EntityKey.ROLE)
 
-  const activeConfig = await getFactoryConfig(user.factory_id)
+  const factoryId = user.factory_id!
+  const activeConfig = await getFactoryConfig(factoryId)
   const isAadharNotRequired =
     activeConfig?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED
 
@@ -41,25 +42,25 @@ export const GET = withAuth(async (req, user, client) => {
     .from(TableName.PROFILES)
     .select(`*, ${TableName.USERS}!inner(${EntityKey.USERNAME}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID})`, { count: "exact" })
     .order(sortColumn, { ascending: !sortDesc })
-    .eq(`${TableName.USERS}.${EntityKey.FACTORY_ID}`, user.factory_id!)
+    .eq(`${TableName.USERS}.${EntityKey.FACTORY_ID}`, factoryId)
 
   if (roleParam && roleParam !== FilterValue.ALL) {
-    query = query.eq("role", roleParam)
+    query = query.eq(EntityKey.ROLE, roleParam)
   }
 
   if (search) {
     const searchNum = parseInt(search, 10)
     if (!isNaN(searchNum)) {
       if (!isAadharNotRequired) {
-        query = query.or(`name.ilike.%${search}%,aadhar_number.ilike.%${search}%,id.eq.${searchNum}`)
+        query = query.or(`${EntityKey.NAME}.ilike.%${search}%,${EntityKey.AADHAR_NUMBER}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`)
       } else {
-        query = query.or(`name.ilike.%${search}%,id.eq.${searchNum}`)
+        query = query.or(`${EntityKey.NAME}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`)
       }
     } else {
       if (!isAadharNotRequired) {
-        query = query.or(`name.ilike.%${search}%,aadhar_number.ilike.%${search}%`)
+        query = query.or(`${EntityKey.NAME}.ilike.%${search}%,${EntityKey.AADHAR_NUMBER}.ilike.%${search}%`)
       } else {
-        query = query.ilike("name", `%${search}%`)
+        query = query.ilike(EntityKey.NAME, `%${search}%`)
       }
     }
   }
@@ -69,8 +70,8 @@ export const GET = withAuth(async (req, user, client) => {
 
 export const POST = withAuth(async (req, user, client) => {
   const body = await req.json()
-  const targetFactoryId = user.factory_id ?? null
-  const activeConfig = await getFactoryConfig(targetFactoryId)
+  const factoryId = user.factory_id!
+  const activeConfig = await getFactoryConfig(factoryId)
 
   const dynamicSchema = getDynamicProfileSchema(activeConfig)
   const parsed = dynamicSchema.safeParse(body)
@@ -90,8 +91,8 @@ export const POST = withAuth(async (req, user, client) => {
 
   const { data: existingUser } = await client
     .from(TableName.USERS)
-    .select("id")
-    .eq("username", username)
+    .select(EntityKey.ID)
+    .eq(EntityKey.USERNAME, username)
     .maybeSingle()
 
   if (existingUser)
@@ -102,7 +103,7 @@ export const POST = withAuth(async (req, user, client) => {
       .from(TableName.PROFILES)
       .select(`${EntityKey.ID}, ${TableName.USERS}!inner(${EntityKey.FACTORY_ID})`)
       .eq(EntityKey.AADHAR_NUMBER, aadhar_number)
-      .eq(`${TableName.USERS}.${EntityKey.FACTORY_ID}`, targetFactoryId!)
+      .eq(`${TableName.USERS}.${EntityKey.FACTORY_ID}`, factoryId)
 
     const { data: existingProfile } = await aadharQuery.maybeSingle()
     if (existingProfile)
@@ -113,48 +114,22 @@ export const POST = withAuth(async (req, user, client) => {
   }
 
   const passwordHash = await hashPassword(password)
-  const { data: newUser, error: userErr } = await client
-    .from(TableName.USERS)
-    .insert({
-      username,
-      password_hash: passwordHash,
-      role,
-      [EntityKey.FACTORY_ID]: targetFactoryId,
-    })
-    .select()
-    .single()
 
-  if (userErr || !newUser) {
-    console.error("Failed to create user for profile:", userErr)
-    return apiError(ApiErrorMessage.CREATE_USER_FOR_PROFILE_FAILED, StatusCodes.BAD_REQUEST)
+  const { data: newProfile, error } = await client.rpc("create_profile_with_user", {
+    p_factory_id: factoryId,
+    p_name: name,
+    p_username: username,
+    p_password_hash: passwordHash,
+    p_role: role || Role.OPERATOR,
+    p_aadhar_number: aadhar_number || null,
+  })
+
+  if (error || !newProfile) {
+    console.error("POST profile RPC error:", error)
+    return apiError(error?.message || ApiErrorMessage.CREATE_PROFILE_RECORD_FAILED, StatusCodes.BAD_REQUEST)
   }
 
-  const { data: newProfile, error: profileErr } = await client
-    .from(TableName.PROFILES)
-    .insert({
-      user_id: newUser.id,
-      name,
-      ...(aadhar_number ? { aadhar_number } : {}),
-      role,
-      [EntityKey.FACTORY_ID]: targetFactoryId,
-    })
-    .select()
-    .single()
-
-  if (profileErr || !newProfile) {
-    console.error("Failed to create profile:", profileErr)
-    return apiError(ApiErrorMessage.CREATE_PROFILE_RECORD_FAILED, StatusCodes.BAD_REQUEST)
-  }
-
-  return formatEntityResponse(
-    {
-      ...newProfile,
-      username: newUser.username,
-      is_active: newUser.is_active,
-      [EntityKey.FACTORY_ID]: targetFactoryId,
-    },
-    StatusCodes.CREATED
-  )
+  return formatEntityResponse(newProfile, StatusCodes.CREATED)
 })
 
 export const DELETE = withAuth(async (req, user, client) => {
@@ -168,16 +143,18 @@ export const DELETE = withAuth(async (req, user, client) => {
     )
 
   try {
-    const query = client.from(TableName.PROFILES).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
+    const { data: deletedCount, error } = await client.rpc("delete_profiles_with_user", {
+      p_profile_ids: ids,
+      p_factory_id: user.factory_id!,
+    })
 
-    const { data, error } = await query.select("id")
     if (error) throw error
 
-    if (!data || data.length !== ids.length) {
+    if (deletedCount !== ids.length) {
       return apiError(ApiErrorMessage.ONE_OR_MORE_PROFILES_NOT_FOUND, StatusCodes.NOT_FOUND)
     }
 
-    return NextResponse.json({ success: true, deleted_count: data.length })
+    return NextResponse.json({ success: true, deleted_count: deletedCount })
   } catch (error) {
     if (isFKViolation(error)) {
       return apiError(

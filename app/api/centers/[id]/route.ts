@@ -25,7 +25,7 @@ export const PATCH = withAuth(
         ...(name ? { name } : {}),
         updated_at: new Date().toISOString(),
       })
-      .eq("id", entityId)
+      .eq(EntityKey.ID, entityId)
       .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: updated, error } = await query.select().maybeSingle()

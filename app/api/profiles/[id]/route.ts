@@ -21,24 +21,6 @@ import {
 } from "@/lib/constants/enums"
 import { ApiErrorMessage } from "@/lib/constants/messages"
 
-export const GET = withAuth(
-  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
-    if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.READ))
-      return forbiddenError()
-
-    const query = client
-      .from(TableName.PROFILES)
-      .select(`*, ${TableName.USERS}!inner(${EntityKey.USERNAME}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID})`)
-      .eq(EntityKey.ID, entityId)
-      .eq(`${TableName.USERS}.${EntityKey.FACTORY_ID}`, factoryId!)
-
-    const { data: profile, error } = await query.maybeSingle()
-    if (error || !profile) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
-
-    return formatEntityResponse(profile)
-  })
-)
-
 export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
     if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.WRITE))
@@ -54,7 +36,7 @@ export const PATCH = withAuth(
     if (!existing) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
 
     const body = await req.json()
-    const activeConfig = await getFactoryConfig(user.factory_id)
+    const activeConfig = await getFactoryConfig(user.factory_id!)
     const dynamicSchema = getDynamicProfileSchema(activeConfig, true)
     const parsed = dynamicSchema.safeParse(body)
 
@@ -62,59 +44,32 @@ export const PATCH = withAuth(
       return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST)
     }
 
-    const { name, password, role, is_active } = body
+    const { name, aadhar_number, password, role, is_active } = body
     const validRole =
       role && Object.values(Role).includes(role as Role)
         ? (role as Role)
         : undefined
 
-    const { data: updated, error: updateErr } = await client
-      .from(TableName.PROFILES)
-      .update({
-        ...(name && typeof name === "string" && name.trim().length > 0
-          ? { name: name.trim() }
-          : {}),
-        ...(validRole ? { role: validRole } : {}),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", entityId)
-      .select()
-      .maybeSingle()
-
-    if (updateErr || !updated) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
-
-    const userUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() }
+    let passwordHash: string | null = null
     if (password && typeof password === "string" && password.trim().length > 0) {
-      userUpdates.password_hash = await hashPassword(password.trim())
-    }
-    if (validRole) {
-      userUpdates.role = validRole
-    }
-    if (is_active !== undefined) {
-      userUpdates.is_active = Boolean(is_active)
+      passwordHash = await hashPassword(password.trim())
     }
 
-    let updatedUserIsActive = (existing.users as unknown as { is_active?: boolean })?.is_active
-    if (Object.keys(userUpdates).length > 1) {
-      const { data: updatedUser } = await client
-        .from(TableName.USERS)
-        .update(userUpdates)
-        .eq("id", updated.user_id)
-        .select("is_active")
-        .maybeSingle()
-
-      if (updatedUser) {
-        updatedUserIsActive = updatedUser.is_active
-      }
-    }
-
-    const rawUsers = existing.users as unknown as { username?: string; factory_id?: number } | null
-    return formatEntityResponse({
-      ...updated,
-      is_active: updatedUserIsActive,
-      username: rawUsers?.username,
-      [EntityKey.FACTORY_ID]: rawUsers?.factory_id,
+    const { data: updated, error } = await client.rpc("update_profile_with_user", {
+      p_profile_id: entityId,
+      p_factory_id: factoryId!,
+      p_name: name && typeof name === "string" && name.trim().length > 0 ? name.trim() : null,
+      p_role: validRole || null,
+      p_aadhar_number: aadhar_number != null ? String(aadhar_number) : null,
+      p_password_hash: passwordHash,
+      p_is_active: is_active !== undefined ? Boolean(is_active) : null,
     })
+
+    if (error || !updated) {
+      return apiError(error?.message || ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
+    }
+
+    return formatEntityResponse(updated)
   })
 )
 
@@ -124,24 +79,14 @@ export const DELETE = withAuth(
       return forbiddenError()
 
     try {
-      const existingQuery = client
-        .from(TableName.PROFILES)
-        .select(`${EntityKey.ID}, ${EntityKey.USER_ID}, ${TableName.USERS}!inner(${EntityKey.FACTORY_ID})`)
-        .eq(EntityKey.ID, entityId)
-        .eq(`${TableName.USERS}.${EntityKey.FACTORY_ID}`, factoryId!)
-
-      const { data: existing } = await existingQuery.maybeSingle()
-      if (!existing) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
-
-      const { data, error } = await client
-        .from(TableName.PROFILES)
-        .delete()
-        .eq("id", entityId)
-        .select("id")
+      const { data: deletedCount, error } = await client.rpc("delete_profiles_with_user", {
+        p_profile_ids: [entityId],
+        p_factory_id: factoryId!,
+      })
 
       if (error) throw error
 
-      if (!data || data.length === 0) {
+      if (!deletedCount || deletedCount === 0) {
         return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
       }
 

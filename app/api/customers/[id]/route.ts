@@ -20,24 +20,6 @@ import { ApiErrorMessage } from "@/lib/constants/messages"
 import { getDynamicCustomerSchema } from "@/lib/validation"
 import { hashPassword } from "@/lib/auth/password"
 
-export const GET = withAuth(
-  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
-    if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.READ))
-      return forbiddenError()
-
-    const query = client
-      .from(TableName.CUSTOMERS)
-      .select(`*, ${TableName.USERS}!left(${EntityKey.USERNAME}, ${EntityKey.IS_ACTIVE})`)
-      .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId!)
-
-    const { data: customer, error } = await query.maybeSingle()
-    if (error || !customer) return apiError(ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND)
-
-    return formatEntityResponse(customer)
-  })
-)
-
 export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client

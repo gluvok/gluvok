@@ -4,7 +4,7 @@
  */
 
 import { Role, ProjectSlug, EntityKey, FieldRequirementMode, PermissionKey } from "@/lib/constants/enums"
-import { useConfigStore } from "./config"
+import { useFactoryStore } from "./factory";
 
 export interface Permission {
   read: boolean
@@ -307,12 +307,14 @@ export function isColumnVisible(role: Role | null | undefined, projectSlug: stri
   const perms = getPermissions(role, projectSlug)
   if (perms.hiddenColumns && perms.hiddenColumns.includes(columnKey)) return false
 
-  const config = useConfigStore.getState().config
+  const factory = useFactoryStore.getState().factory;
   if (projectSlug === ProjectSlug.CUSTOMERS && columnKey === EntityKey.GOVT_ID) {
-    if (config?.govtIdMode === FieldRequirementMode.NOT_REQUIRED) return false
+    if (factory?.govt_id_mode === FieldRequirementMode.NOT_REQUIRED)
+      return false;
   }
   if (projectSlug === ProjectSlug.PROFILES && columnKey === EntityKey.AADHAR_NUMBER) {
-    if (config?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED) return false
+    if (factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED)
+      return false;
   }
 
   return true
@@ -329,26 +331,37 @@ export function isFieldVisible(role: Role | null | undefined, projectSlug: strin
   const perms = getPermissions(role, projectSlug)
   if (perms.hiddenFields && perms.hiddenFields.includes(fieldKey)) return false
 
-  const config = useConfigStore.getState().config
+  const factory = useFactoryStore.getState().factory;
   if (projectSlug === ProjectSlug.CUSTOMERS && fieldKey === EntityKey.GOVT_ID) {
-    if (config?.govtIdMode === FieldRequirementMode.NOT_REQUIRED) return false
+    if (factory?.govt_id_mode === FieldRequirementMode.NOT_REQUIRED)
+      return false;
   }
   if (projectSlug === ProjectSlug.PROFILES && fieldKey === EntityKey.AADHAR_NUMBER) {
-    if (config?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED) return false
+    if (factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED)
+      return false;
   }
 
   return true
 }
 
 export function isFieldRequired(projectSlug: string, fieldKey: string, defaultRequired?: boolean): boolean {
-  const config = useConfigStore.getState().config
+  const factory = useFactoryStore.getState().factory;
   if (projectSlug === ProjectSlug.CUSTOMERS && fieldKey === EntityKey.GOVT_ID) {
-    if (config?.govtIdMode === FieldRequirementMode.MANDATORY) return true
-    if (config?.govtIdMode === FieldRequirementMode.OPTIONAL || config?.govtIdMode === FieldRequirementMode.NOT_REQUIRED) return false
+    if (factory?.govt_id_mode === FieldRequirementMode.MANDATORY) return true;
+    if (
+      factory?.govt_id_mode === FieldRequirementMode.OPTIONAL ||
+      factory?.govt_id_mode === FieldRequirementMode.NOT_REQUIRED
+    )
+      return false;
   }
   if (projectSlug === ProjectSlug.PROFILES && fieldKey === EntityKey.AADHAR_NUMBER) {
-    if (config?.aadharNumberMode === FieldRequirementMode.MANDATORY) return true
-    if (config?.aadharNumberMode === FieldRequirementMode.OPTIONAL || config?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED) return false
+    if (factory?.aadhar_number_mode === FieldRequirementMode.MANDATORY)
+      return true;
+    if (
+      factory?.aadhar_number_mode === FieldRequirementMode.OPTIONAL ||
+      factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED
+    )
+      return false;
   }
   return !!defaultRequired
 }

@@ -12,10 +12,10 @@ const mockPreferencesState = {
   setColumnPreferences: vi.fn(),
   setFilterPreferences: vi.fn(),
 }
-const mockConfigState = {
-  config: null as {
-    aadharNumberMode: FieldRequirementMode;
-    govtIdMode: FieldRequirementMode;
+const mockFactoryState = {
+  factory: null as {
+    aadhar_number_mode: FieldRequirementMode;
+    govt_id_mode: FieldRequirementMode;
   } | null,
 };
 
@@ -37,8 +37,8 @@ interface MockPreferencesStoreState {
   setFilterPreferences: () => void
 }
 
-interface MockConfigStoreState {
-  config: typeof mockConfigState.config;
+interface MockFactoryStoreState {
+  factory: typeof mockFactoryState.factory;
 }
 
 // Mock dependencies
@@ -68,11 +68,6 @@ vi.mock("@/lib/store", () => {
     subscribe: () => () => {},
   }
 
-  const mockConfigStore = {
-    getState: () => mockConfigState,
-    subscribe: () => () => {},
-  };
-
   const useAuthStoreMock = Object.assign(
     (selector: (state: MockAuthStoreState) => unknown) => selector(mockAuthStore.getState()),
     mockAuthStore
@@ -88,17 +83,22 @@ vi.mock("@/lib/store", () => {
     mockPreferencesStore
   )
 
-  const useConfigStoreMock = Object.assign(
-    (selector: (state: MockConfigStoreState) => unknown) =>
-      selector(mockConfigStore.getState()),
-    mockConfigStore,
+  const mockFactoryStore = {
+    getState: () => mockFactoryState,
+    subscribe: () => () => {},
+  };
+
+  const useFactoryStoreMock = Object.assign(
+    (selector: (state: MockFactoryStoreState) => unknown) =>
+      selector(mockFactoryStore.getState()),
+    mockFactoryStore,
   );
 
   return {
     useAuthStore: useAuthStoreMock,
     useEntitiesStore: useEntitiesStoreMock,
     usePreferencesStore: usePreferencesStoreMock,
-    useConfigStore: useConfigStoreMock,
+    useFactoryStore: useFactoryStoreMock,
     getPermissions: () => ({
       read: true,
       write: true,
@@ -122,7 +122,7 @@ describe("useProjectTable Hook", () => {
     vi.clearAllMocks()
     mockPreferencesState.columns = {}
     mockPreferencesState.filters = {}
-    mockConfigState.config = null;
+    mockFactoryState.factory = null;
     vi.mocked(getProjectColumns).mockReturnValue([])
     vi.useFakeTimers()
   })

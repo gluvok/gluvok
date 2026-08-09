@@ -48,7 +48,9 @@ export async function fetchEntityPaginatedFromApi<T = EntityRecord>(
   params: PaginatedParams
 ): Promise<{ data: T[]; count: number }> {
   if (slug === ProjectSlug.SETTINGS) {
-    throw new Error(`fetchEntityPaginatedFromApi should not be called for settings. Use the config store instead.`)
+    throw new Error(
+      `fetchEntityPaginatedFromApi should not be called for settings. Use the factory store instead.`,
+    );
   }
   const endpoint = getEndpoint(slug)
   const { page, pageSize, search, filters, sortColumn, sortDesc } = params

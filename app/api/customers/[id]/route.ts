@@ -7,9 +7,9 @@ import {
   forbiddenError,
   hasPermission,
   StatusCodes,
-  getFactoryConfig,
+  getFactory,
   formatEntityResponse,
-} from "@/db/helpers"
+} from "@/db/helpers";
 import {
   ProjectSlug,
   PermissionKey,
@@ -40,8 +40,8 @@ export const PATCH = withAuth(
     }
 
     const body = await req.json()
-    const activeConfig = await getFactoryConfig(user.factory_id!)
-    const dynamicSchema = getDynamicCustomerSchema(activeConfig, true)
+    const factory = await getFactory(client, user.factory_id);
+    const dynamicSchema = getDynamicCustomerSchema(factory, true);
     const parsed = dynamicSchema.safeParse(body)
 
     if (!parsed.success) {

@@ -8,8 +8,8 @@ import {
   hasPermission,
   isFKViolation,
   StatusCodes,
-  getFactoryConfig,
-} from "@/db/helpers"
+  getFactory,
+} from "@/db/helpers";
 import { getDynamicProfileSchema } from "@/lib/validation"
 import { hashPassword } from "@/lib/auth/password"
 import {
@@ -36,8 +36,8 @@ export const PATCH = withAuth(
     if (!existing) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
 
     const body = await req.json()
-    const activeConfig = await getFactoryConfig(user.factory_id!)
-    const dynamicSchema = getDynamicProfileSchema(activeConfig, true)
+    const factory = await getFactory(client, user.factory_id);
+    const dynamicSchema = getDynamicProfileSchema(factory, true);
     const parsed = dynamicSchema.safeParse(body)
 
     if (!parsed.success) {

@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * @file components/projects/config-summary.tsx
+ * @file components/projects/settings-summary.tsx
  * @description Single-record settings summary with contextual edit actions.
  */
 
@@ -12,26 +12,26 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import { Spinner } from "@/components/kibo-ui/spinner"
 import { getFieldRequirementModeLabel, getModeColorClass, getModeIcon } from "@/lib/fields"
 import { EntityKey, FieldRequirementMode } from "@/lib/constants/enums"
-import { type Config, type EntityRecord } from "@/types"
+import { type Settings, type EntityRecord } from "@/types"
 
-interface ConfigSummaryProps {
-  config?: Config;
+interface SettingsSummaryProps {
+  settings?: Settings;
   isLoading: boolean;
   error?: string | null;
   canCreate: boolean;
   canEdit: boolean;
   onCreate: () => void;
-  onEdit: (config: EntityRecord) => void;
+  onEdit: (settings: EntityRecord) => void;
   onRetry: () => void;
 }
 
-interface ConfigSettingProps {
+interface SettingsFieldProps {
   label: string
   mode: FieldRequirementMode
   icon: React.ComponentType<{ className?: string }>
 }
 
-function ConfigSetting({ label, mode, icon: Icon }: ConfigSettingProps) {
+function SettingsField({ label, mode, icon: Icon }: SettingsFieldProps) {
   const modeIcon = React.createElement(getModeIcon(mode), {
     className: "h-3.5 w-3.5",
   });
@@ -53,8 +53,8 @@ function ConfigSetting({ label, mode, icon: Icon }: ConfigSettingProps) {
 }
 
 /** Displays the single configuration record for the active tenant scope. */
-export function ConfigSummary({
-  config,
+export function SettingsSummary({
+  settings,
   isLoading,
   error,
   canCreate,
@@ -62,7 +62,7 @@ export function ConfigSummary({
   onCreate,
   onEdit,
   onRetry,
-}: ConfigSummaryProps) {
+}: SettingsSummaryProps) {
   if (isLoading) {
     return (
       <div className="flex min-h-48 items-center justify-center">
@@ -88,27 +88,27 @@ export function ConfigSummary({
     );
   }
 
-  if (!config) {
+  if (!settings) {
     return (
       <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center">
         <p className="text-sm text-muted-foreground">
-          No configuration has been created yet.
+          No settings have been created yet.
         </p>
         {canCreate && (
           <Button onClick={onCreate} size="sm" className="gap-1.5">
             <Plus className="h-4 w-4" />
-            Add configuration
+            Add settings
           </Button>
         )}
       </div>
     );
   }
 
-  const factoryName = String(config.name || config.factory_name || "Factory");
+  const factoryName = String(settings.name || settings.factory_name || "Factory");
   const aadharNumberMode =
-    config[EntityKey.AADHAR_NUMBER_MODE] ?? FieldRequirementMode.MANDATORY;
+    settings[EntityKey.AADHAR_NUMBER_MODE] ?? FieldRequirementMode.MANDATORY;
   const govtIdMode =
-    config[EntityKey.GOVT_ID_MODE] ?? FieldRequirementMode.MANDATORY;
+    settings[EntityKey.GOVT_ID_MODE] ?? FieldRequirementMode.MANDATORY;
 
   return (
     <Card className="w-full max-w-2xl">
@@ -124,7 +124,7 @@ export function ConfigSummary({
         {canEdit && (
           <CardAction>
             <Button
-              onClick={() => onEdit(config)}
+              onClick={() => onEdit(settings)}
               size="sm"
               variant="outline"
               className="gap-1.5"
@@ -136,8 +136,8 @@ export function ConfigSummary({
         )}
       </CardHeader>
       <CardContent className="grid gap-3 sm:grid-cols-2">
-        <ConfigSetting label="Aadhar number" mode={aadharNumberMode} icon={Fingerprint} />
-        <ConfigSetting label="Government ID" mode={govtIdMode} icon={ShieldCheck} />
+        <SettingsField label="Aadhar number" mode={aadharNumberMode} icon={Fingerprint} />
+        <SettingsField label="Government ID" mode={govtIdMode} icon={ShieldCheck} />
       </CardContent>
     </Card>
   );

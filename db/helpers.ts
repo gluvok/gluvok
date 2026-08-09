@@ -194,22 +194,30 @@ export function withEntityScope<P extends Record<string, string> = Record<string
   })
 }
 
-export async function getFactoryConfig(factoryId: number | null | undefined) {
-  if (!factoryId) return null
+export async function getFactory(
+  client: typeof supabase,
+  factoryId: number | null | undefined,
+) {
+  if (!factoryId) return null;
   try {
-    const { data } = await db
+    const { data } = await client
       .from(TableName.FACTORIES)
-      .select("id, aadhar_number_mode, govt_id_mode")
+      .select(
+        "id, name, aadhar_number_mode, govt_id_mode, created_at, updated_at",
+      )
       .eq("id", factoryId)
-      .single()
-    if (!data) return null
+      .maybeSingle();
+    if (!data) return null;
     return {
-      factoryId: data.id,
-      aadharNumberMode: data.aadhar_number_mode,
-      govtIdMode: data.govt_id_mode,
-    }
+      id: data.id,
+      name: data.name,
+      aadhar_number_mode: data.aadhar_number_mode,
+      govt_id_mode: data.govt_id_mode,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+    };
   } catch {
-    return null
+    return null;
   }
 }
 

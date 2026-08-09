@@ -9,7 +9,7 @@ import { toast } from "sonner"
 import { Role, EntityKey } from "@/lib/constants/enums"
 import { DEFAULT_AVATAR, AuthErrorMessage } from "@/lib/constants"
 
-import { useConfigStore } from "./config"
+import { useFactoryStore } from "./factory";
 import { useEntitiesStore } from "./entities"
 
 export const PROFILE_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.USER_ID}, ${EntityKey.NAME}, ${EntityKey.ROLE}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`
@@ -60,7 +60,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             initialized: true,
             profileLoading: false,
           })
-          useConfigStore.getState().fetchConfig()
+          useFactoryStore.getState().fetchFactory();
           useEntitiesStore.getState().preloadAllFilters({ silent: true })
         } else {
           set({ user: null, initialized: true, profileLoading: false })
@@ -101,7 +101,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         initialized: true,
       })
 
-      useConfigStore.getState().fetchConfig()
+      useFactoryStore.getState().fetchFactory();
       useEntitiesStore.getState().preloadAllFilters({ silent: true })
 
       toast.success(`Welcome back, ${data.user.username}! 🎉`);

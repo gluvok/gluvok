@@ -10,16 +10,16 @@ import * as React from "react"
 import { getPrimaryIdKey } from "@/lib/fields"
 import { DataTablePagination } from "@/components/data-table"
 import {
-  ConfigSummary,
+  SettingsSummary,
   ProjectToolbar,
   ProjectDialogs,
   ProjectTable,
   useProjectTable,
 } from "@/components/projects";
 import { Spinner } from "@/components/kibo-ui/spinner"
-import { useEntitiesStore, useConfigStore } from "@/lib/store"
+import { useEntitiesStore, useFactoryStore } from "@/lib/store";
 import { ProjectSlug } from "@/lib/constants/enums"
-import { type Config } from "@/types";
+import { type Settings } from "@/types";
 import { useProjectDialogStates } from "@/components/projects/table/use-helpers"
 
 interface ProjectClientProps {
@@ -27,37 +27,36 @@ interface ProjectClientProps {
   projectSlug: string;
 }
 
-/** Settings page reads config directly from the Zustand config store — no DataTable, no paginated fetch */
+/** Settings page reads the active factory directly from the Zustand store. */
 function SettingsClient({ projectName, projectSlug }: ProjectClientProps) {
-  const { config, configLoading, fetchConfig } = useConfigStore()
+  const { factory, factoryLoading, fetchFactory } = useFactoryStore();
   const { creating, setCreating, editingItem, setEditingItem, deletingItem, setDeletingItem } = useProjectDialogStates()
   const primaryIdKey = getPrimaryIdKey(projectSlug)
 
   React.useEffect(() => {
-    fetchConfig()
-  }, [fetchConfig])
+    fetchFactory();
+  }, [fetchFactory]);
 
-  const configAsRecord = config
+  const factoryAsRecord = factory
     ? {
-        id: config.id,
-        name: config.name,
-        factory_name: config.factoryName,
-        aadhar_number_mode: config.aadharNumberMode,
-        govt_id_mode: config.govtIdMode,
+        id: factory.id,
+        name: factory.name,
+        aadhar_number_mode: factory.aadhar_number_mode,
+        govt_id_mode: factory.govt_id_mode,
       }
-    : undefined
+    : undefined;
 
   return (
     <div className="flex min-h-[calc(100vh-14rem)] items-center justify-center">
-      <ConfigSummary
-        config={configAsRecord as Config | undefined}
-        isLoading={configLoading}
+      <SettingsSummary
+        settings={factoryAsRecord as Settings | undefined}
+        isLoading={factoryLoading}
         error={null}
         canCreate={false}
-        canEdit={!!config}
+        canEdit={!!factory}
         onCreate={() => setCreating(true)}
         onEdit={setEditingItem}
-        onRetry={fetchConfig}
+        onRetry={fetchFactory}
       />
       <ProjectDialogs
         creating={creating}
@@ -71,7 +70,7 @@ function SettingsClient({ projectName, projectSlug }: ProjectClientProps) {
         primaryIdKey={primaryIdKey}
       />
     </div>
-  )
+  );
 }
 
 function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps) {

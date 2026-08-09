@@ -6,12 +6,12 @@ import {
   forbiddenError,
   hasPermission,
   StatusCodes,
-  getFactoryConfig,
+  getFactory,
   fetchPaginatedResult,
   formatEntityResponse,
   isFKViolation,
   parseBulkIds,
-} from "@/db/helpers"
+} from "@/db/helpers";
 import {
   Role,
   ProjectSlug,
@@ -34,9 +34,9 @@ export const GET = withAuth(async (req, user, client) => {
   const roleParam = req.nextUrl.searchParams.get(EntityKey.ROLE)
 
   const factoryId = user.factory_id!
-  const activeConfig = await getFactoryConfig(factoryId)
+  const factory = await getFactory(client, factoryId);
   const isAadharNotRequired =
-    activeConfig?.aadharNumberMode === FieldRequirementMode.NOT_REQUIRED
+    factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED;
 
   let query = client
     .from(TableName.PROFILES)
@@ -71,9 +71,9 @@ export const GET = withAuth(async (req, user, client) => {
 export const POST = withAuth(async (req, user, client) => {
   const body = await req.json()
   const factoryId = user.factory_id!
-  const activeConfig = await getFactoryConfig(factoryId)
+  const factory = await getFactory(client, factoryId);
 
-  const dynamicSchema = getDynamicProfileSchema(activeConfig)
+  const dynamicSchema = getDynamicProfileSchema(factory);
   const parsed = dynamicSchema.safeParse(body)
 
   if (!parsed.success) {

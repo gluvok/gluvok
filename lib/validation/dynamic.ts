@@ -1,29 +1,37 @@
 /**
  * @file lib/validation/dynamic.ts
- * @description Dynamic Zod validation schema generator based on active FactoryConfig.
+ * @description Dynamic Zod validation schema generator based on the active factory.
  */
 
 import * as z from "zod"
 import { EntityKey, ColumnLabel, FieldRequirementMode, Role } from "@/lib/constants/enums"
-import { type FactoryConfig } from "@/lib/store/config"
+import { type Factory } from "@/types";
 import { integerIdSchema, nameSchema } from "./helpers"
 
 /**
  * Dynamic Aadhaar schema generator based on active configuration mode.
  */
-function buildAadharSchema(config: FactoryConfig | null): z.ZodTypeAny {
-  const aadharMode = config?.aadharNumberMode ?? FieldRequirementMode.MANDATORY
+function buildAadharSchema(factory: Factory | null): z.ZodTypeAny {
+  const aadharMode =
+    factory?.aadhar_number_mode ?? FieldRequirementMode.MANDATORY;
 
   if (aadharMode === FieldRequirementMode.MANDATORY) {
-    return z
-      .preprocess(
-        (val) => (typeof val === "string" ? val.replace(/\s/g, "") : (val === null || val === undefined ? "" : val)),
-        z
-          .string({ message: `${ColumnLabel.AADHAR_NUMBER} is required` })
-          .min(1, `${ColumnLabel.AADHAR_NUMBER} is required`)
-          .length(12, `${ColumnLabel.AADHAR_NUMBER} must be exactly 12 digits`)
-          .regex(/^\d+$/, `${ColumnLabel.AADHAR_NUMBER} must contain only digits`)
-      )
+    return z.preprocess(
+      (val) =>
+        typeof val === "string"
+          ? val.replace(/\s/g, "")
+          : val === null || val === undefined
+            ? ""
+            : val,
+      z
+        .string({ message: `${ColumnLabel.AADHAR_NUMBER} is required` })
+        .min(1, `${ColumnLabel.AADHAR_NUMBER} is required`)
+        .length(12, `${ColumnLabel.AADHAR_NUMBER} must be exactly 12 digits`)
+        .regex(
+          /^\d+$/,
+          `${ColumnLabel.AADHAR_NUMBER} must contain only digits`,
+        ),
+    );
   }
 
   if (aadharMode === FieldRequirementMode.OPTIONAL) {
@@ -33,16 +41,19 @@ function buildAadharSchema(config: FactoryConfig | null): z.ZodTypeAny {
         z
           .string()
           .length(12, `${ColumnLabel.AADHAR_NUMBER} must be exactly 12 digits`)
-          .regex(/^\d+$/, `${ColumnLabel.AADHAR_NUMBER} must contain only digits`)
+          .regex(
+            /^\d+$/,
+            `${ColumnLabel.AADHAR_NUMBER} must contain only digits`,
+          )
           .optional()
           .nullable()
-          .or(z.literal(""))
+          .or(z.literal("")),
       )
-      .transform((v) => (v === "" || v === undefined ? null : v))
+      .transform((v) => (v === "" || v === undefined ? null : v));
   }
 
   // NOT_REQUIRED
-  return z.any().transform(() => null)
+  return z.any().transform(() => null);
 }
 
 /**
@@ -127,22 +138,25 @@ export function validatePasswordRefinement(
   }
 }
 
-export function getDynamicCustomerSchema(config: FactoryConfig | null, isEdit = false) {
-  const govtIdMode = config?.govtIdMode ?? FieldRequirementMode.MANDATORY
+export function getDynamicCustomerSchema(
+  factory: Factory | null,
+  isEdit = false,
+) {
+  const govtIdMode = factory?.govt_id_mode ?? FieldRequirementMode.MANDATORY;
 
-  let govtIdSchema: z.ZodTypeAny
+  let govtIdSchema: z.ZodTypeAny;
   if (govtIdMode === FieldRequirementMode.MANDATORY) {
-    govtIdSchema = integerIdSchema(ColumnLabel.GOVT_ID)
+    govtIdSchema = integerIdSchema(ColumnLabel.GOVT_ID);
   } else if (govtIdMode === FieldRequirementMode.OPTIONAL) {
     govtIdSchema = z
       .preprocess(
         (v) => (v === "" || v === null || v === undefined ? null : Number(v)),
-        z.number().int().positive().nullable().optional()
+        z.number().int().positive().nullable().optional(),
       )
-      .transform((v) => (v === undefined || Number.isNaN(v) ? null : v))
+      .transform((v) => (v === undefined || Number.isNaN(v) ? null : v));
   } else {
     // NOT_REQUIRED
-    govtIdSchema = z.any().transform(() => null)
+    govtIdSchema = z.any().transform(() => null);
   }
 
   return z
@@ -151,27 +165,21 @@ export function getDynamicCustomerSchema(config: FactoryConfig | null, isEdit = 
       [EntityKey.FATHER_NAME]: nameSchema(ColumnLabel.FATHER_NAME),
       [EntityKey.GOVT_ID]: govtIdSchema,
       [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
-      [EntityKey.USERNAME]: z
-        .string()
-        .optional()
-        .or(z.literal("")),
-      [EntityKey.PASSWORD]: z
-        .string()
-        .optional()
-        .or(z.literal("")),
-      [EntityKey.CONFIRM_PASSWORD]: z
-        .string()
-        .optional()
-        .or(z.literal("")),
+      [EntityKey.USERNAME]: z.string().optional().or(z.literal("")),
+      [EntityKey.PASSWORD]: z.string().optional().or(z.literal("")),
+      [EntityKey.CONFIRM_PASSWORD]: z.string().optional().or(z.literal("")),
       [EntityKey.IS_ACTIVE]: z.boolean().optional(),
     })
     .superRefine((data, ctx) => {
-      validatePasswordRefinement(data, ctx, isEdit, false)
-    })
+      validatePasswordRefinement(data, ctx, isEdit, false);
+    });
 }
 
-export function getDynamicProfileSchema(config: FactoryConfig | null, isEdit = false) {
-  const aadharSchema = buildAadharSchema(config)
+export function getDynamicProfileSchema(
+  factory: Factory | null,
+  isEdit = false,
+) {
+  const aadharSchema = buildAadharSchema(factory);
 
   return z
     .object({
@@ -186,5 +194,7 @@ export function getDynamicProfileSchema(config: FactoryConfig | null, isEdit = f
       [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
       ...(isEdit ? { [EntityKey.IS_ACTIVE]: z.boolean().optional() } : {}),
     })
-    .superRefine((data, ctx) => validatePasswordRefinement(data, ctx, isEdit, true))
+    .superRefine((data, ctx) =>
+      validatePasswordRefinement(data, ctx, isEdit, true),
+    );
 }

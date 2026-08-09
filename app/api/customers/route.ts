@@ -6,12 +6,12 @@ import {
   forbiddenError,
   hasPermission,
   StatusCodes,
-  getFactoryConfig,
+  getFactory,
   fetchPaginatedResult,
   formatEntityResponse,
   isFKViolation,
   parseBulkIds,
-} from "@/db/helpers"
+} from "@/db/helpers";
 import {
   ProjectSlug,
   PermissionKey,
@@ -30,9 +30,9 @@ export const GET = withAuth(async (req, user, client) => {
   const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT
   const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
 
-  const activeConfig = await getFactoryConfig(user.factory_id!)
+  const factory = await getFactory(client, user.factory_id);
   const isGovtIdNotRequired =
-    activeConfig?.govtIdMode === FieldRequirementMode.NOT_REQUIRED
+    factory?.govt_id_mode === FieldRequirementMode.NOT_REQUIRED;
 
   let query = client
     .from(TableName.CUSTOMERS)
@@ -62,9 +62,9 @@ export const POST = withAuth(async (req, user, client) => {
   const body = await req.json()
 
   const factoryId = user.factory_id!
-  const activeConfig = await getFactoryConfig(factoryId)
+  const factory = await getFactory(client, factoryId);
 
-  const dynamicSchema = getDynamicCustomerSchema(activeConfig)
+  const dynamicSchema = getDynamicCustomerSchema(factory);
   const parsed = dynamicSchema.safeParse(body)
   if (!parsed.success) {
     return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST)

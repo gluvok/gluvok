@@ -5,7 +5,8 @@ import {
   hasPermission,
   StatusCodes,
   formatEntityResponse,
-} from "@/db/helpers"
+  getFactory,
+} from "@/db/helpers";
 import { ProjectSlug, PermissionKey, FieldRequirementMode, TableName, EntityKey } from "@/lib/constants/enums"
 import { ApiErrorMessage } from "@/lib/constants/messages"
 
@@ -14,14 +15,9 @@ export const GET = withAuth(async (_req, user, client) => {
     return forbiddenError()
   }
 
-  const { data: factory, error } = await client
-    .from(TableName.FACTORIES)
-    .select(`${EntityKey.ID}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER_MODE}, ${EntityKey.GOVT_ID_MODE}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`)
-    .eq(EntityKey.ID, user.factory_id!)
-    .maybeSingle()
-
-  if (error || !factory) {
-    return apiError(ApiErrorMessage.SETTING_NOT_FOUND, StatusCodes.NOT_FOUND)
+  const factory = await getFactory(client, user.factory_id);
+  if (!factory) {
+    return apiError(ApiErrorMessage.SETTING_NOT_FOUND, StatusCodes.NOT_FOUND);
   }
 
   return formatEntityResponse(factory)

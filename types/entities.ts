@@ -61,22 +61,24 @@ export interface Customer {
 }
 
 export interface Factory {
-  id: number
-  name: string
-  created_at: string
-  updated_at: string
+  id: number;
+  name: string;
+  aadhar_number_mode: FieldRequirementMode;
+  govt_id_mode: FieldRequirementMode;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface Config {
-  id: number
-  name?: string
-  factory_id?: number
-  aadhar_number_mode: FieldRequirementMode
-  govt_id_mode: FieldRequirementMode
-  created_at: string
-  updated_at: string
+export interface Settings {
+  id: number;
+  name?: string;
+  factory_id?: number;
+  aadhar_number_mode: FieldRequirementMode;
+  govt_id_mode: FieldRequirementMode;
+  created_at: string;
+  updated_at: string;
   // Flattened join fields
-  factory_name?: string
+  factory_name?: string;
 }
 
 export interface Weighment {
@@ -130,5 +132,5 @@ export type EntityRecord =
   | Weighment
   | Factory
   | Profile
-  | Config
+  | Settings;
 

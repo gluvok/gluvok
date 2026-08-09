@@ -8,6 +8,7 @@ import {
   QueryParam,
   CookieName,
   TableName,
+  EntityKey,
 } from "@/lib/constants/enums"
 export { hasPermission } from "@/lib/store/access"
 import { REQUIRED_CREATE_FIELDS } from "@/lib/fields/config"
@@ -203,18 +204,18 @@ export async function getFactory(
     const { data } = await client
       .from(TableName.FACTORIES)
       .select(
-        "id, name, aadhar_number_mode, govt_id_mode, created_at, updated_at",
+        `${EntityKey.ID}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER_MODE}, ${EntityKey.GOVT_ID_MODE}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
       )
-      .eq("id", factoryId)
+      .eq(EntityKey.ID, factoryId)
       .maybeSingle();
     if (!data) return null;
     return {
-      id: data.id,
-      name: data.name,
-      aadhar_number_mode: data.aadhar_number_mode,
-      govt_id_mode: data.govt_id_mode,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
+      [EntityKey.ID]: data[EntityKey.ID],
+      [EntityKey.NAME]: data[EntityKey.NAME],
+      [EntityKey.AADHAR_NUMBER_MODE]: data[EntityKey.AADHAR_NUMBER_MODE],
+      [EntityKey.GOVT_ID_MODE]: data[EntityKey.GOVT_ID_MODE],
+      [EntityKey.CREATED_AT]: data[EntityKey.CREATED_AT],
+      [EntityKey.UPDATED_AT]: data[EntityKey.UPDATED_AT],
     };
   } catch {
     return null;

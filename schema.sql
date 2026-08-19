@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     role role_enum NOT NULL DEFAULT 'base',
+    token_version INT NOT NULL DEFAULT 1,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -370,6 +371,7 @@ BEGIN
         SET 
             username = COALESCE(p_username, username),
             password_hash = COALESCE(p_password_hash, password_hash),
+            token_version = CASE WHEN p_password_hash IS NOT NULL THEN token_version + 1 ELSE token_version END,
             is_active = COALESCE(p_is_active, is_active),
             updated_at = NOW()
         WHERE id = v_user_id;
@@ -510,6 +512,7 @@ BEGIN
     SET 
         role = COALESCE(p_role, role),
         password_hash = COALESCE(p_password_hash, password_hash),
+        token_version = CASE WHEN p_password_hash IS NOT NULL THEN token_version + 1 ELSE token_version END,
         is_active = COALESCE(p_is_active, is_active),
         updated_at = NOW()
     WHERE id = v_user_id;

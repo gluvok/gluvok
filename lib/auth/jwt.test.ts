@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest"
-import { getTokenExpiresIn, signJWT, verifyJWT } from "./jwt"
+import {
+  getTokenExpiresIn,
+  signJWT,
+  verifyJWT,
+  signRefreshToken,
+  verifyRefreshToken,
+} from "./jwt"
 
 const originalJwtSecret = process.env.JWT_SECRET
 
@@ -43,5 +49,26 @@ describe("JWT profile claims", () => {
     }, "1h")
 
     expect(getTokenExpiresIn(token)).toBe(3600)
+  })
+
+  it("signs and verifies refresh tokens with token_version", async () => {
+    process.env.JWT_SECRET = "test-secret"
+
+    const refreshToken = await signRefreshToken({
+      sub: "42",
+      token_version: 3,
+    }, "7d")
+
+    const verified = await verifyRefreshToken(refreshToken)
+    expect(verified).toEqual({
+      sub: "42",
+      token_version: 3,
+    })
+  })
+
+  it("returns null for invalid or corrupted refresh tokens", async () => {
+    process.env.JWT_SECRET = "test-secret"
+    const verified = await verifyRefreshToken("invalid.token.payload")
+    expect(verified).toBeNull()
   })
 })

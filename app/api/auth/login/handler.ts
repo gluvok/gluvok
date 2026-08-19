@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
-import { getTokenExpiresIn, signJWT } from "@/lib/auth/jwt"
+import { getTokenExpiresIn, signJWT, signRefreshToken } from "@/lib/auth/jwt"
 import { verifyPassword } from "@/lib/auth/password"
 import { AuthErrorMessage, CookieName, EntityKey, LoginClient, Role, TableName } from "@/lib/constants"
 
@@ -60,6 +60,8 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
       profileId = profile.id
     }
 
+    const tokenVersion = typeof user.token_version === "number" ? user.token_version : 1
+
     const token = await signJWT(
       {
         sub: String(user.id),
@@ -71,6 +73,16 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
       client === LoginClient.DEVICE ? process.env.JWT_DEVICE_EXPIRES_IN || "1d" : undefined
     )
     const expiresIn = getTokenExpiresIn(token)
+
+    const refreshToken = await signRefreshToken(
+      {
+        sub: String(user.id),
+        token_version: tokenVersion,
+      },
+      client === LoginClient.DEVICE ? process.env.JWT_DEVICE_REFRESH_EXPIRES_IN || "30d" : undefined
+    )
+    const refreshExpiresIn = getTokenExpiresIn(refreshToken)
+
     const userPayload = {
       id: user.id,
       username: user.username,
@@ -82,6 +94,7 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
       return NextResponse.json({
         success: true,
         access_token: token,
+        refresh_token: refreshToken,
         token_type: "Bearer",
         expires_in: expiresIn,
         profile_id: profileId,
@@ -96,6 +109,13 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
       sameSite: "lax",
       maxAge: expiresIn,
       path: "/",
+    })
+    response.cookies.set(CookieName.REFRESH_TOKEN, refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: refreshExpiresIn,
+      path: "/api/auth",
     })
     return response
   } catch (error) {

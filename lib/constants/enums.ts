@@ -138,6 +138,8 @@ export enum AppRoutes {
 export enum ApiRoutes {
   AUTH_LOGIN = "/api/auth/login",
   AUTH_DEVICE_LOGIN = "/api/auth/device/login",
+  AUTH_REFRESH = "/api/auth/refresh",
+  AUTH_LOGOUT = "/api/auth/logout",
   AUTH_ME = "/api/auth/me",
   PROFILES = "/api/profiles",
   CUSTOMERS = "/api/customers",
@@ -238,6 +240,7 @@ export enum EntityKey {
   IN_CUSTOMER_NAME = "in_customer_name",
   OUT_CUSTOMER_ID = "out_customer_id",
   OUT_CUSTOMER_NAME = "out_customer_name",
+  TOKEN_VERSION = "token_version",
 }
 
 export enum InputMode {
@@ -348,6 +351,7 @@ export enum QueryParam {
 export enum CookieName {
   TOKEN = "token",
   AUTH_TOKEN = "auth_token",
+  REFRESH_TOKEN = "refresh_token",
 }
 
 export enum AutoComplete {

@@ -19,22 +19,47 @@ export interface JWTPayload {
   role: string
   factory_id: number | null
   profile_id?: number
+  token_version?: number
+}
+
+export interface RefreshTokenPayload {
+  sub: string
+  token_version: number
 }
 
 /**
- * Signs a JWT session token with expiration time from environment variables (defaults to 1 year).
+ * Signs a short-lived JWT access token (defaults to 15 minutes).
  */
 export async function signJWT(
   payload: JWTPayload,
-  expiresIn = process.env.JWT_EXPIRES_IN ||
+  expiresIn = process.env.JWT_ACCESS_EXPIRES_IN ||
+    process.env.JWT_EXPIRES_IN ||
     process.env.JWT_EXPIRATION_TIME ||
-    "1y"
+    "15m"
 ): Promise<string> {
   return new SignJWT({
     username: payload.username,
     role: payload.role,
     factory_id: payload.factory_id ?? null,
     ...(payload.profile_id != null ? { profile_id: payload.profile_id } : {}),
+    ...(payload.token_version != null ? { token_version: payload.token_version } : {}),
+  })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(payload.sub)
+    .setIssuedAt()
+    .setExpirationTime(expiresIn)
+    .sign(getJwtSecret())
+}
+
+/**
+ * Signs a long-lived JWT refresh token (defaults to 7 days).
+ */
+export async function signRefreshToken(
+  payload: RefreshTokenPayload,
+  expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || "7d"
+): Promise<string> {
+  return new SignJWT({
+    token_version: payload.token_version,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
@@ -52,7 +77,7 @@ export function getTokenExpiresIn(token: string): number {
 }
 
 /**
- * Verifies a JWT session token.
+ * Verifies a JWT access token.
  */
 export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   const jwtSecret = getJwtSecret()
@@ -70,6 +95,28 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
         typeof payload.factory_id === "number" ? payload.factory_id : null,
       profile_id:
         typeof payload.profile_id === "number" ? payload.profile_id : undefined,
+      token_version:
+        typeof payload.token_version === "number" ? payload.token_version : undefined,
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Verifies a JWT refresh token.
+ */
+export async function verifyRefreshToken(token: string): Promise<RefreshTokenPayload | null> {
+  const jwtSecret = getJwtSecret()
+  try {
+    const { payload } = await jwtVerify(token, jwtSecret)
+    if (!payload.sub || typeof payload.token_version !== "number") {
+      return null
+    }
+
+    return {
+      sub: payload.sub,
+      token_version: payload.token_version,
     }
   } catch {
     return null

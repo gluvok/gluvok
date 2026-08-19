@@ -16,6 +16,7 @@ export const PUBLIC_ROUTES = [
 export const PUBLIC_API_ROUTES = [
   ApiRoutes.AUTH_LOGIN,
   ApiRoutes.AUTH_DEVICE_LOGIN,
+  ApiRoutes.AUTH_REFRESH,
 ]
 
 

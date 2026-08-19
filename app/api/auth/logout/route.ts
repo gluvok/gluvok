@@ -19,5 +19,9 @@ export async function POST() {
 
   response.cookies.set(CookieName.TOKEN, "", cookieOptions);
   response.cookies.set(CookieName.AUTH_TOKEN, "", cookieOptions);
+  response.cookies.set(CookieName.REFRESH_TOKEN, "", {
+    ...cookieOptions,
+    path: "/api/auth",
+  });
   return response
 }

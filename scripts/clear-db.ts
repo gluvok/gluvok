@@ -1,6 +1,6 @@
 /**
  * @file scripts/clear-db.ts
- * @description Clears/truncates data from all tables using Supabase JS client.
+ * @description Clears/truncates data from all tables using Supabase JS client in proper dependency order.
  */
 
 import { createClient } from "@supabase/supabase-js"
@@ -19,14 +19,16 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+// Order: Dependent child tables first -> Independent/parent tables last
 const tables = [
-  TableName.USERS,
   TableName.WEIGHMENTS,
+  TableName.ENTRIES,
   TableName.RATES,
   TableName.CUSTOMERS,
   TableName.PROFILES,
   TableName.COMMODITIES,
   TableName.CENTERS,
+  TableName.USERS,
   TableName.FACTORIES,
 ]
 

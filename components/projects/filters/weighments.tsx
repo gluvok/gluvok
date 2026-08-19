@@ -9,7 +9,7 @@ import * as React from "react"
 import { Table } from "@tanstack/react-table"
 import { EntityKey, Unit, WeighmentType } from "@/lib/constants/enums"
 import { useEntitiesStore } from "@/lib/store"
-import { IndianRupee, Building, Users, User, Ruler } from "lucide-react"
+import { IndianRupee, Ruler } from "lucide-react"
 import { BaseCombobox } from "@/components/combobox/base"
 import { getTypeIcon } from "@/lib/fields/helpers"
 import { DateRangeFilter } from "./date-range-filter"
@@ -30,15 +30,12 @@ function useWeighmentsFilterData() {
 }
 
 export function WeighmentsFilters<TData>({ table }: WeighmentsFiltersProps<TData>) {
-  const { centers, profiles, customers, rates } = useWeighmentsFilterData()
+  const { rates } = useWeighmentsFilterData()
 
   const columnFilters = table.getState().columnFilters
   const currentType = columnFilters.find((f) => f.id === EntityKey.TYPE)?.value
   const currentUnit = columnFilters.find((f) => f.id === EntityKey.UNIT)?.value
   const currentRateId = columnFilters.find((f) => f.id === EntityKey.RATE_ID)?.value
-  const currentCenterId = columnFilters.find((f) => f.id === EntityKey.CENTER_ID)?.value
-  const currentCustomerId = columnFilters.find((f) => f.id === EntityKey.CUSTOMER_ID)?.value
-  const currentProfileId = columnFilters.find((f) => f.id === EntityKey.PROFILE_ID)?.value
 
   const setColumnFilter = (id: string, value: unknown) => {
     table.setColumnFilters((prev) => {
@@ -55,6 +52,7 @@ export function WeighmentsFilters<TData>({ table }: WeighmentsFiltersProps<TData
       { value: "all", label: "All Types" },
       { value: WeighmentType.IN, label: "In" },
       { value: WeighmentType.OUT, label: "Out" },
+      { value: WeighmentType.UNASSIGNED, label: "Unassigned" },
     ]
   }, [])
 
@@ -77,36 +75,6 @@ export function WeighmentsFilters<TData>({ table }: WeighmentsFiltersProps<TData
       })),
     ]
   }, [rates])
-
-  const centerOptions = React.useMemo(() => {
-    return [
-      { value: "all", label: "All Centers" },
-      ...centers.map((c) => ({
-        value: String(c.id),
-        label: `${c.name} (ID: ${c.id})`,
-      })),
-    ]
-  }, [centers])
-
-  const customerOptions = React.useMemo(() => {
-    return [
-      { value: "all", label: "All Customers" },
-      ...customers.map((c) => ({
-        value: String(c.id),
-        label: `${c.name} (ID: ${c.id})`,
-      })),
-    ]
-  }, [customers])
-
-  const profileOptions = React.useMemo(() => {
-    return [
-      { value: "all", label: "All Profiles" },
-      ...profiles.map((p) => ({
-        value: String(p.id),
-        label: `${p.name} (ID: ${p.id})`,
-      })),
-    ]
-  }, [profiles])
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -150,45 +118,6 @@ export function WeighmentsFilters<TData>({ table }: WeighmentsFiltersProps<TData
         icon={IndianRupee}
         className="w-auto"
         id="filter-rate-combobox"
-      />
-
-      {/* Center */}
-      <BaseCombobox
-        type="center"
-        value={currentCenterId ? String(currentCenterId) : "all"}
-        onChange={(val) => setColumnFilter(EntityKey.CENTER_ID, val === "all" ? undefined : Number(val))}
-        data={centerOptions}
-        placeholder="All Centers"
-        searchPlaceholder="Search center..."
-        icon={Building}
-        className="w-auto"
-        id="filter-center-combobox"
-      />
-
-      {/* Customer */}
-      <BaseCombobox
-        type="customer"
-        value={currentCustomerId ? String(currentCustomerId) : "all"}
-        onChange={(val) => setColumnFilter(EntityKey.CUSTOMER_ID, val === "all" ? undefined : Number(val))}
-        data={customerOptions}
-        placeholder="All Customers"
-        searchPlaceholder="Search customer..."
-        icon={Users}
-        className="w-auto"
-        id="filter-customer-combobox"
-      />
-
-      {/* Profile */}
-      <BaseCombobox
-        type="profile"
-        value={currentProfileId ? String(currentProfileId) : "all"}
-        onChange={(val) => setColumnFilter(EntityKey.PROFILE_ID, val === "all" ? undefined : Number(val))}
-        data={profileOptions}
-        placeholder="All Profiles"
-        searchPlaceholder="Search profile..."
-        icon={User}
-        className="w-auto"
-        id="filter-profile-combobox"
       />
     </div>
   )

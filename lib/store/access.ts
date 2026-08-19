@@ -48,7 +48,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       read: true,
       write: true,
       delete: true,
-      create: true,
+      create: false,
       show: true,
       filter: true,
     },
@@ -68,11 +68,19 @@ export const RBAC_MATRIX: RbacMatrix = {
       show: true,
       filter: true,
     },
+    [ProjectSlug.ENTRIES]: {
+      read: true,
+      write: true,
+      delete: true,
+      create: false,
+      show: true,
+      filter: true,
+    },
     [ProjectSlug.WEIGHMENTS]: {
       read: true,
       write: true,
       delete: true,
-      create: true,
+      create: false,
       show: true,
       filter: true,
       editableFields: [EntityKey.WEIGHT],
@@ -127,11 +135,19 @@ export const RBAC_MATRIX: RbacMatrix = {
       show: true,
       filter: true,
     },
+    [ProjectSlug.ENTRIES]: {
+      read: true,
+      write: true,
+      delete: false,
+      create: false,
+      show: true,
+      filter: true,
+    },
     [ProjectSlug.WEIGHMENTS]: {
       read: true,
       write: true,
       delete: false,
-      create: true,
+      create: false,
       show: true,
       filter: true,
     },
@@ -185,11 +201,19 @@ export const RBAC_MATRIX: RbacMatrix = {
       show: true,
       filter: true,
     },
+    [ProjectSlug.ENTRIES]: {
+      read: true,
+      write: true,
+      delete: false,
+      create: false,
+      show: true,
+      filter: true,
+    },
     [ProjectSlug.WEIGHMENTS]: {
       read: true,
       write: true,
       delete: false,
-      create: true,
+      create: false,
       show: true,
       filter: true,
     },
@@ -243,6 +267,14 @@ export const RBAC_MATRIX: RbacMatrix = {
       show: false,
       filter: true,
     },
+    [ProjectSlug.ENTRIES]: {
+      read: true,
+      write: false,
+      delete: false,
+      create: false,
+      show: true,
+      filter: true,
+    },
     [ProjectSlug.WEIGHMENTS]: {
       read: true,
       write: false,
@@ -278,6 +310,13 @@ export function hasPageAccess(role: Role | null | undefined, projectSlug: string
 }
 
 export function hasCreateAccess(role: Role | null | undefined, projectSlug: string): boolean {
+  if (
+    projectSlug === ProjectSlug.COMMODITIES ||
+    projectSlug === ProjectSlug.ENTRIES ||
+    projectSlug === ProjectSlug.WEIGHMENTS
+  ) {
+    return false
+  }
   return getPermissions(role, projectSlug).create
 }
 

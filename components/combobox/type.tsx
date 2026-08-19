@@ -18,6 +18,7 @@ interface TypeComboboxProps {
 const data = [
   { value: WeighmentType.IN, label: "In" },
   { value: WeighmentType.OUT, label: "Out" },
+  { value: WeighmentType.UNASSIGNED, label: "Unassigned" },
 ]
 
 /**

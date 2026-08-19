@@ -3,173 +3,143 @@ import {
   withAuth,
   getPaginationParams,
   apiError,
-  forbiddenError,
-  hasPermission,
   StatusCodes,
-  fetchPaginatedResult,
-  formatEntityResponse,
-  isFKViolation,
-  parseBulkIds,
-  validateRequiredFields,
 } from "@/db/helpers"
 import {
-  Unit,
-  WeighmentType,
-  ProjectSlug,
-  PermissionKey,
   QueryParam,
   EntityKey,
-  FilterValue,
   TableName,
+  RelationAlias,
+  FilterValue,
+  WeighmentType,
+  Unit,
 } from "@/lib/constants/enums"
-import { ApiErrorMessage } from "@/lib/constants/messages"
 
 export const GET = withAuth(async (req, user, client) => {
   const pagination = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at"
-  const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
-  const unitParam = req.nextUrl.searchParams.get(EntityKey.UNIT)
-  const centerIdParam = req.nextUrl.searchParams.get(EntityKey.CENTER_ID)
-  const commodityIdParam = req.nextUrl.searchParams.get(EntityKey.COMMODITY_ID)
   const typeParam = req.nextUrl.searchParams.get(EntityKey.TYPE)
-  const isActiveParam = req.nextUrl.searchParams.get(EntityKey.IS_ACTIVE)
+  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT
+  const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
   const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE)
   const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE)
 
+  // Query weighments joined with in_entry and out_entry and their related centers, profiles, customers
   let query = client
     .from(TableName.WEIGHMENTS)
     .select(
-      `*, ${TableName.CENTERS}!left(${EntityKey.NAME}, ${EntityKey.FACTORY_ID}), ${TableName.CUSTOMERS}!left(${EntityKey.NAME}, ${EntityKey.GOVT_ID}), ${TableName.PROFILES}!left(${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}), ${TableName.RATES}!left(${EntityKey.UNIT_PRICE}, ${EntityKey.UNIT}, ${TableName.COMMODITIES}!left(${EntityKey.NAME}))`,
+      `*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.PROFILES}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME})), ${RelationAlias.OUT_ENTRY}:${TableName.ENTRIES}!out_entry_id(*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.PROFILES}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME}))`,
       { count: "exact" }
     )
-    .order(sortColumn, { ascending: !sortDesc })
-    .eq(`${TableName.CENTERS}.${EntityKey.FACTORY_ID}`, user.factory_id!)
+    .eq(`${RelationAlias.IN_ENTRY}.${EntityKey.FACTORY_ID}`, user.factory_id!)
 
-  if (unitParam && unitParam !== FilterValue.ALL) {
-    query = query.eq("unit", unitParam)
-  }
-  if (centerIdParam && centerIdParam !== FilterValue.ALL) {
-    query = query.eq("center_id", Number(centerIdParam))
-  }
-  if (commodityIdParam && commodityIdParam !== FilterValue.ALL) {
-    query = query.eq("rates.commodity_id", Number(commodityIdParam))
-  }
   if (typeParam && typeParam !== FilterValue.ALL) {
-    query = query.eq("type", typeParam)
+    query = query.eq(EntityKey.TYPE, typeParam)
   }
-  if (isActiveParam && isActiveParam !== FilterValue.ALL) {
-    query = query.eq("is_active", isActiveParam === "true")
-  }
+
   if (startDateParam) {
-    query = query.gte("created_at", startDateParam)
+    query = query.gte(EntityKey.CREATED_AT, startDateParam)
   }
+
   if (endDateParam) {
-    query = query.lte("created_at", endDateParam)
+    query = query.lte(EntityKey.CREATED_AT, endDateParam)
   }
 
   if (search) {
-    query = query.or(`vehicle_number.ilike.%${search}%`)
+    const searchNum = parseInt(search, 10)
+    if (!isNaN(searchNum)) {
+      query = query.or(
+        `${EntityKey.IN_ENTRY_ID}.eq.${searchNum},${EntityKey.OUT_ENTRY_ID}.eq.${searchNum},${RelationAlias.IN_ENTRY}.${EntityKey.VEHICLE_NUMBER}.ilike.%${search}%`
+      )
+    } else {
+      query = query.or(`${RelationAlias.IN_ENTRY}.${EntityKey.VEHICLE_NUMBER}.ilike.%${search}%`)
+    }
   }
 
-  return fetchPaginatedResult(query, pagination)
-})
-
-export const POST = withAuth(async (req, user, client) => {
-  if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.CREATE))
-    return forbiddenError()
-  const body = await req.json()
-  const err = validateRequiredFields(body, ProjectSlug.WEIGHMENTS)
-  if (err) return err
-
-  const {
-    vehicle_number,
-    weight,
-    unit,
-    type,
-    rate_id,
-    center_id,
-    profile_id,
-    customer_id,
-    images,
-  } = body
-
-  const profileId = user.profile_id ?? Number(profile_id)
-  if (!Number.isSafeInteger(profileId) || profileId <= 0) {
-    return apiError(ApiErrorMessage.PROFILE_ID_REQUIRED, StatusCodes.BAD_REQUEST)
-  }
-  if (user.profile_id != null && user.role !== "operator") {
-    return forbiddenError()
+  // Non-deprecated PostgreSQL ordering (including Computed Columns: gross_weight, tare_weight, net_weight)
+  if (
+    sortColumn === EntityKey.CREATED_AT ||
+    sortColumn === EntityKey.ID ||
+    sortColumn === EntityKey.UNIT ||
+    sortColumn === EntityKey.IN_ENTRY_ID ||
+    sortColumn === EntityKey.OUT_ENTRY_ID ||
+    sortColumn === EntityKey.GROSS_WEIGHT ||
+    sortColumn === EntityKey.TARE_WEIGHT ||
+    sortColumn === EntityKey.NET_WEIGHT
+  ) {
+    query = query.order(sortColumn, { ascending: !sortDesc })
+  } else if (sortColumn === EntityKey.IN_ENTRY_CREATED_AT) {
+    query = query.order(`${RelationAlias.IN_ENTRY}.${EntityKey.CREATED_AT}`, { ascending: !sortDesc })
+  } else if (sortColumn === EntityKey.OUT_ENTRY_CREATED_AT) {
+    query = query.order(`${RelationAlias.OUT_ENTRY}.${EntityKey.CREATED_AT}`, { ascending: !sortDesc })
+  } else {
+    query = query.order(EntityKey.CREATED_AT, { ascending: false })
   }
 
-  const centerQuery = client
-    .from(TableName.CENTERS)
-    .select(`id, ${EntityKey.FACTORY_ID}`)
-    .eq("id", Number(center_id))
-
-  const { data: center } = await centerQuery.maybeSingle()
-  if (!center)
-    return apiError(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND, StatusCodes.NOT_FOUND)
-
-  if (center.factory_id !== user.factory_id) {
-    return forbiddenError()
-  }
-
-  const insertValues = {
-    vehicle_number,
-    weight: String(weight),
-    unit: unit || Unit.KG,
-    type: type || WeighmentType.IN,
-    rate_id: rate_id === "" || rate_id === null || rate_id === undefined ? null : Number(rate_id),
-    center_id: Number(center_id),
-    profile_id: profileId,
-    customer_id: customer_id === "" || customer_id === null || customer_id === undefined ? null : Number(customer_id),
-    images: images || [],
-    [EntityKey.FACTORY_ID]: user.factory_id!,
-  }
-
-  const { data: newWeighment, error } = await client
-    .from(TableName.WEIGHMENTS)
-    .insert(insertValues)
-    .select()
-    .single()
+  const { page, limit, offset } = pagination
+  const { data, count, error } = await query.range(offset, offset + limit - 1)
 
   if (error) {
-    console.error("POST weighment error:", error)
-    return apiError(error.message || ApiErrorMessage.CREATE_WEIGHMENT_FAILED, StatusCodes.BAD_REQUEST)
+    console.error("Supabase query error:", error)
+    return apiError(error.message || "Database query failed", StatusCodes.INTERNAL_SERVER_ERROR)
   }
 
-  return formatEntityResponse(newWeighment, StatusCodes.CREATED)
-})
+  // Format response rows with computed derived fields
+  const formattedData = (data || []).map((row: Record<string, unknown>) => {
+    const inEntry = (row[RelationAlias.IN_ENTRY] as Record<string, unknown>) || {}
+    const outEntry = (row[RelationAlias.OUT_ENTRY] as Record<string, unknown>) || {}
 
-export const DELETE = withAuth(async (req, user, client) => {
-  if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.DELETE))
-    return forbiddenError()
-  const ids = parseBulkIds(await req.json())
-  if (!ids)
-    return apiError(
-      ApiErrorMessage.PROVIDE_VALID_IDS,
-      StatusCodes.BAD_REQUEST
-    )
+    const inWeight = Number(inEntry.weight || 0)
+    const outWeight = Number(outEntry.weight || 0)
 
-  try {
-    const query = client.from(TableName.WEIGHMENTS).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
+    const grossWeight = Math.max(inWeight, outWeight)
+    const tareWeight = Math.min(inWeight, outWeight)
+    const netWeight = grossWeight - tareWeight
 
-    const { data, error } = await query.select("id")
-    if (error) throw error
+    const inImages = Array.isArray(inEntry.images) ? (inEntry.images as string[]) : []
+    const outImages = Array.isArray(outEntry.images) ? (outEntry.images as string[]) : []
+    const combinedImages = Array.from(new Set([...inImages, ...outImages]))
 
-    if (!data || data.length !== ids.length) {
-      return apiError(ApiErrorMessage.ONE_OR_MORE_WEIGHMENTS_NOT_FOUND, StatusCodes.NOT_FOUND)
+    const inCenters = inEntry.centers as Record<string, unknown> | undefined
+    const outCenters = outEntry.centers as Record<string, unknown> | undefined
+    const inProfiles = inEntry.profiles as Record<string, unknown> | undefined
+    const outProfiles = outEntry.profiles as Record<string, unknown> | undefined
+    const inCustomers = inEntry.customers as Record<string, unknown> | undefined
+    const outCustomers = outEntry.customers as Record<string, unknown> | undefined
+
+    return {
+      [EntityKey.ID]: row.id,
+      [EntityKey.UNIT]: row.unit || Unit.KG,
+      [EntityKey.TYPE]: row.type || WeighmentType.UNASSIGNED,
+      [EntityKey.GROSS_WEIGHT]: grossWeight,
+      [EntityKey.TARE_WEIGHT]: tareWeight,
+      [EntityKey.NET_WEIGHT]: netWeight,
+      [EntityKey.IMAGES]: combinedImages,
+      [EntityKey.IN_ENTRY_ID]: row.in_entry_id,
+      [EntityKey.IN_ENTRY_CREATED_AT]: inEntry.created_at,
+      [EntityKey.OUT_ENTRY_ID]: row.out_entry_id,
+      [EntityKey.OUT_ENTRY_CREATED_AT]: outEntry.created_at,
+      [EntityKey.IN_CENTER_ID]: inEntry.center_id,
+      [EntityKey.IN_CENTER_NAME]: inCenters?.name || "",
+      [EntityKey.OUT_CENTER_ID]: outEntry.center_id,
+      [EntityKey.OUT_CENTER_NAME]: outCenters?.name || "",
+      [EntityKey.IN_PROFILE_ID]: inEntry.profile_id,
+      [EntityKey.IN_PROFILE_NAME]: inProfiles?.name || "",
+      [EntityKey.OUT_PROFILE_ID]: outEntry.profile_id,
+      [EntityKey.OUT_PROFILE_NAME]: outProfiles?.name || "",
+      [EntityKey.IN_CUSTOMER_ID]: inEntry.customer_id,
+      [EntityKey.IN_CUSTOMER_NAME]: inCustomers?.name || "",
+      [EntityKey.OUT_CUSTOMER_ID]: outEntry.customer_id,
+      [EntityKey.OUT_CUSTOMER_NAME]: outCustomers?.name || "",
+      [EntityKey.VEHICLE_NUMBER]: inEntry.vehicle_number || outEntry.vehicle_number || "",
+      [EntityKey.CREATED_AT]: row.created_at,
+      [EntityKey.UPDATED_AT]: row.updated_at,
     }
+  })
 
-    return NextResponse.json({ success: true, deleted_count: data.length })
-  } catch (error) {
-    if (isFKViolation(error)) {
-      return apiError(
-        ApiErrorMessage.CANNOT_DELETE_SELECTED_WEIGHMENTS,
-        StatusCodes.BAD_REQUEST
-      )
-    }
-    throw error
-  }
+  const total = count ?? formattedData.length
+  return NextResponse.json({
+    data: formattedData,
+    pagination: { page, limit, total },
+  })
 })

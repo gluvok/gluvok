@@ -1,27 +1,32 @@
 import { describe, expect, it } from "vitest"
-import { EntityKey, Unit, WeighmentType } from "@/lib/constants/enums"
-import { addWeighmentSchema, editWeighmentSchema } from "./weighments"
+import { EntityKey, Unit, EntryStatus } from "@/lib/constants/enums"
+import { addEntrySchema, editEntrySchema, editWeighmentSchema } from "./weighments"
 
-const validWeighment = {
+const validEntry = {
+  [EntityKey.DETECTED_VEHICLE_NUMBER]: "PB10XY1234",
   [EntityKey.VEHICLE_NUMBER]: "PB10XY1234",
   [EntityKey.WEIGHT]: "15.5",
-  [EntityKey.UNIT]: Unit.KG,
-  [EntityKey.TYPE]: WeighmentType.IN,
   [EntityKey.CENTER_ID]: "1",
   [EntityKey.PROFILE_ID]: "2",
 }
 
-describe("weighment validation", () => {
-  it("accepts blank Rate and Customer values as null", () => {
-    const result = addWeighmentSchema.parse(validWeighment)
+describe("entries & weighments validation", () => {
+  it("parses valid raw entry data and sets default pending status", () => {
+    const result = addEntrySchema.parse(validEntry)
 
-    expect(result[EntityKey.RATE_ID]).toBeNull()
+    expect(result[EntityKey.STATUS]).toBe(EntryStatus.PENDING)
     expect(result[EntityKey.CUSTOMER_ID]).toBeNull()
   })
 
-  it("allows partial edits without create-only requirements", () => {
-    expect(editWeighmentSchema.parse({ [EntityKey.IS_ACTIVE]: false })).toEqual({
-      [EntityKey.IS_ACTIVE]: false,
+  it("allows partial edits for entry customer", () => {
+    expect(editEntrySchema.parse({ [EntityKey.CUSTOMER_ID]: "5" })).toEqual({
+      [EntityKey.CUSTOMER_ID]: 5,
+    })
+  })
+
+  it("allows updating unit on weighment edit schema", () => {
+    expect(editWeighmentSchema.parse({ [EntityKey.UNIT]: Unit.Q })).toEqual({
+      [EntityKey.UNIT]: Unit.Q,
     })
   })
 })

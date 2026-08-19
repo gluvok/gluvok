@@ -16,13 +16,13 @@ describe("RBAC Access Controls", () => {
         read: true,
         write: true,
         delete: true,
-        create: true,
+        create: false,
         show: true,
         filter: true,
       })
     })
 
-    it("should grant Manager correct permissions (can write/create but not delete rates, customers, weighments)", () => {
+    it("should grant Manager correct permissions (can write/create but not delete rates, customers)", () => {
       const ratePerms = getPermissions(Role.MANAGER, ProjectSlug.RATES)
       expect(ratePerms).toMatchObject({
         read: true,
@@ -34,13 +34,13 @@ describe("RBAC Access Controls", () => {
       })
     })
 
-    it("should grant Operator correct permissions (read-only rates/centers, write/create weighments and customers)", () => {
+    it("should grant Operator correct permissions (read-only rates/centers, write customers)", () => {
       const weighmentPerms = getPermissions(Role.OPERATOR, ProjectSlug.WEIGHMENTS)
       expect(weighmentPerms).toMatchObject({
         read: true,
         write: true,
         delete: false,
-        create: true,
+        create: false,
         show: true,
         filter: true,
       })
@@ -80,8 +80,10 @@ describe("RBAC Access Controls", () => {
   })
 
   describe("hasCreateAccess", () => {
-    it("should return create permission", () => {
-      expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.WEIGHMENTS)).toBe(true);
+    it("should return false for WEIGHMENTS, ENTRIES, COMMODITIES and true for CUSTOMERS", () => {
+      expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.WEIGHMENTS)).toBe(false);
+      expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.ENTRIES)).toBe(false);
+      expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.COMMODITIES)).toBe(false);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.CUSTOMERS)).toBe(true);
     })
   })

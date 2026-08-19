@@ -27,7 +27,14 @@ export enum FieldSpan {
   THIRD = "third",
 }
 
+export enum EntryStatus {
+  PENDING = "pending",
+  APPROVED = "approved",
+  REJECTED = "rejected",
+}
+
 export enum WeighmentType {
+  UNASSIGNED = "unassigned",
   IN = "in",
   OUT = "out",
 }
@@ -44,6 +51,7 @@ export const SingularEntityName = {
   RATE: "Rate",
   CUSTOMER: "Customer",
   WEIGHMENT: "Weighment",
+  ENTRY: "Entry",
   FACTORY: "Factory",
   PROFILE: "Profile",
   USER: "User",
@@ -63,6 +71,8 @@ export const ColumnLabel = {
   TYPE: "Type",
   FATHER_NAME: "Father's Name",
   VEHICLE_NUMBER: "Vehicle Number",
+  DETECTED_VEHICLE_NUMBER: "Detected Vehicle Number",
+  STATUS: "Status",
   WEIGHT: "Weight",
   COMMODITY_ID: "Commodity ID",
   COMMODITY_NAME: "Commodity Name",
@@ -85,6 +95,25 @@ export const ColumnLabel = {
   CONFIRM_PASSWORD: "Confirm Password",
   AADHAR_NUMBER_MODE: "Aadhaar Number Mode",
   GOVT_ID_MODE: "Govt ID Mode",
+  IN_ENTRY_ID: "In-Entry ID",
+  OUT_ENTRY_ID: "Out-Entry ID",
+  IN_ENTRY_CREATED_AT: "In-Entry Time",
+  OUT_ENTRY_CREATED_AT: "Out-Entry Time",
+  GROSS_WEIGHT: "Gross Weight",
+  TARE_WEIGHT: "Tare Weight",
+  NET_WEIGHT: "Net Weight",
+  IN_CENTER_ID: "In-Center ID",
+  IN_CENTER_NAME: "In-Center Name",
+  OUT_CENTER_ID: "Out-Center ID",
+  OUT_CENTER_NAME: "Out-Center Name",
+  IN_PROFILE_ID: "In-Profile ID",
+  IN_PROFILE_NAME: "In-Profile Name",
+  OUT_PROFILE_ID: "Out-Profile ID",
+  OUT_PROFILE_NAME: "Out-Profile Name",
+  IN_CUSTOMER_ID: "In-Customer ID",
+  IN_CUSTOMER_NAME: "In-Customer Name",
+  OUT_CUSTOMER_ID: "Out-Customer ID",
+  OUT_CUSTOMER_NAME: "Out-Customer Name",
 } as const
 export type ColumnLabel = typeof ColumnLabel[keyof typeof ColumnLabel]
 
@@ -114,6 +143,7 @@ export enum ApiRoutes {
   CUSTOMERS = "/api/customers",
   CENTERS = "/api/centers",
   RATES = "/api/rates",
+  ENTRIES = "/api/entries",
   WEIGHMENTS = "/api/weighments",
   COMMODITIES = "/api/commodities",
   USERS = "/api/users",
@@ -126,6 +156,7 @@ export enum ProjectSlug {
   COMMODITIES = "commodities",
   RATES = "rates",
   CUSTOMERS = "customers",
+  ENTRIES = "entries",
   WEIGHMENTS = "weighments",
   PROFILES = "profiles",
   SETTINGS = "settings",
@@ -141,6 +172,7 @@ export enum FieldType {
   TYPE = "type",
   CHECKBOX = "checkbox",
   FIELD_REQUIREMENT_MODE = "field_requirement_mode",
+  ENTRY_STATUS = "entry_status",
 }
 
 export enum EntityKey {
@@ -154,6 +186,8 @@ export enum EntityKey {
   TYPE = "type",
   FATHER_NAME = "father_name",
   VEHICLE_NUMBER = "vehicle_number",
+  DETECTED_VEHICLE_NUMBER = "detected_vehicle_number",
+  STATUS = "status",
   WEIGHT = "weight",
   COMMODITY_ID = "commodity_id",
   COMMODITY_NAME = "commodity_name",
@@ -185,6 +219,25 @@ export enum EntityKey {
   CONFIRM_PASSWORD = "confirmPassword",
   AADHAR_NUMBER_MODE = "aadhar_number_mode",
   GOVT_ID_MODE = "govt_id_mode",
+  IN_ENTRY_ID = "in_entry_id",
+  OUT_ENTRY_ID = "out_entry_id",
+  IN_ENTRY_CREATED_AT = "in_entry_created_at",
+  OUT_ENTRY_CREATED_AT = "out_entry_created_at",
+  GROSS_WEIGHT = "gross_weight",
+  TARE_WEIGHT = "tare_weight",
+  NET_WEIGHT = "net_weight",
+  IN_CENTER_ID = "in_center_id",
+  IN_CENTER_NAME = "in_center_name",
+  OUT_CENTER_ID = "out_center_id",
+  OUT_CENTER_NAME = "out_center_name",
+  IN_PROFILE_ID = "in_profile_id",
+  IN_PROFILE_NAME = "in_profile_name",
+  OUT_PROFILE_ID = "out_profile_id",
+  OUT_PROFILE_NAME = "out_profile_name",
+  IN_CUSTOMER_ID = "in_customer_id",
+  IN_CUSTOMER_NAME = "in_customer_name",
+  OUT_CUSTOMER_ID = "out_customer_id",
+  OUT_CUSTOMER_NAME = "out_customer_name",
 }
 
 export enum InputMode {
@@ -212,6 +265,7 @@ export enum ProjectName {
   COMMODITIES = "Commodities",
   RATES = "Rates",
   CUSTOMERS = "Customers",
+  ENTRIES = "Entries",
   WEIGHMENTS = "Weighments",
   FACTORIES = "Factories",
   PROFILES = "Profiles",
@@ -235,6 +289,7 @@ export enum DbEnum {
   UNIT = "unit_enum",
   WEIGHMENT_TYPE = "weighment_type",
   FIELD_REQUIREMENT_MODE = "field_requirement_mode",
+  ENTRY_STATUS = "entry_status",
 }
 
 export enum TableName {
@@ -245,7 +300,13 @@ export enum TableName {
   USERS = "users",
   CUSTOMERS = "customers",
   PROFILES = "profiles",
+  ENTRIES = "entries",
   WEIGHMENTS = "weighments",
+}
+
+export enum RelationAlias {
+  IN_ENTRY = "in_entry",
+  OUT_ENTRY = "out_entry",
 }
 
 export enum ApiPrefix {

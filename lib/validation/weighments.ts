@@ -1,27 +1,23 @@
 /**
  * @file lib/validation/weighments.ts
- * @description Zod schema and validation rules for Weighments entities.
+ * @description Zod schema and validation rules for Entries and Weighments entities.
  */
 
 import * as z from "zod"
-import { ColumnLabel, Unit, WeighmentType } from "@/lib/constants/enums"
-import { EntityKey } from "@/lib/constants/enums"
+import { ColumnLabel, Unit, EntryStatus, EntityKey, WeighmentType } from "@/lib/constants/enums"
 import { integerIdSchema, optionalIntegerIdSchema } from "./helpers"
 
-// Indian State & Union Territory codes (mirrors constants.py STATE_CODES, excluding BH which is handled separately)
 const STATE_CODES = [
   'AN','AP','AR','AS','BR','CH','CG','DD','DL','DN','GA','GJ','HR','HP',
   'JK','JH','KA','KL','LA','LD','MP','MH','MN','ML','MZ','NL','OD','OR',
   'PB','PY','RJ','SK','TN','TS','TR','UP','UA','UK','WB'
 ]
 
-// Mirrors INDIAN_PLATE_REGEX in constants.py.
-// Standard: State(2L) + RTO(1-2 alphanum) + Series(1-3L) + Serial(3-4 digits), optional [\s.-] separators
-// BH series: 2-digit year + BH + 4-digit serial + 1-2 letter class, optional [\s.-] separators
 const INDIAN_PLATE_REGEX =
   /^(?:([A-Z]{2})[\s.-]?([A-Z0-9]{1,2})[\s.-]?([A-Za-z]{1,3})[\s.-]?(\d{3,4})|(\d{2})[\s.-]?(BH)[\s.-]?(\d{4})[\s.-]?([A-Za-z]{1,2}))$/i
 
-export const addWeighmentSchema = z.object({
+export const addEntrySchema = z.object({
+  [EntityKey.DETECTED_VEHICLE_NUMBER]: z.string().min(1, `${ColumnLabel.DETECTED_VEHICLE_NUMBER} is required`),
   [EntityKey.VEHICLE_NUMBER]: z
     .string()
     .min(1, `${ColumnLabel.VEHICLE_NUMBER} plate number is required`)
@@ -32,7 +28,6 @@ export const addWeighmentSchema = z.object({
     )
     .refine(
       (val) => {
-        // BH series plates start with 2 digits followed by BH — no state code check needed
         if (/^\d{2}[\s.-]?BH/i.test(val)) return true
         return STATE_CODES.includes(val.substring(0, 2).toUpperCase())
       },
@@ -41,18 +36,28 @@ export const addWeighmentSchema = z.object({
       }
     ),
   [EntityKey.WEIGHT]: z.coerce.number({ message: `${ColumnLabel.WEIGHT} must be a number` }).positive(`Measured ${ColumnLabel.WEIGHT.toLowerCase()} must be a positive number`),
-  [EntityKey.UNIT]: z.enum(Unit, { message: `${ColumnLabel.UNIT} must be a valid unit (kg, q, or gal)` }),
-  [EntityKey.TYPE]: z.enum(WeighmentType, { message: `${ColumnLabel.TYPE} must be a valid type (in or out)` }),
-  [EntityKey.RATE_ID]: optionalIntegerIdSchema(ColumnLabel.RATE),
   [EntityKey.CENTER_ID]: integerIdSchema(ColumnLabel.CENTER),
   [EntityKey.PROFILE_ID]: integerIdSchema(ColumnLabel.PROFILE),
   [EntityKey.CUSTOMER_ID]: optionalIntegerIdSchema(ColumnLabel.CUSTOMER),
-  [EntityKey.IS_ACTIVE]: z.boolean().default(true),
+  [EntityKey.STATUS]: z.enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED]).default(EntryStatus.PENDING),
   [EntityKey.IMAGES]: z.array(z.string()).optional(),
 })
 
-export const editWeighmentSchema = addWeighmentSchema
-  .omit({ is_active: true })
-  .partial()
-  .extend({ [EntityKey.IS_ACTIVE]: z.boolean().optional() })
+export const editEntrySchema = z.object({
+  [EntityKey.VEHICLE_NUMBER]: z.string().optional(),
+  [EntityKey.CUSTOMER_ID]: optionalIntegerIdSchema(ColumnLabel.CUSTOMER),
+  [EntityKey.STATUS]: z.enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED]).optional(),
+  [EntityKey.IMAGES]: z.array(z.string()).optional(),
+})
 
+export const addWeighmentSchema = z.object({
+  [EntityKey.IN_ENTRY_ID]: integerIdSchema("In-Entry"),
+  [EntityKey.OUT_ENTRY_ID]: integerIdSchema("Out-Entry"),
+  [EntityKey.UNIT]: z.enum([Unit.KG, Unit.Q, Unit.GAL]).default(Unit.KG),
+  [EntityKey.TYPE]: z.enum([WeighmentType.UNASSIGNED, WeighmentType.IN, WeighmentType.OUT]).default(WeighmentType.UNASSIGNED),
+})
+
+export const editWeighmentSchema = z.object({
+  [EntityKey.UNIT]: z.enum([Unit.KG, Unit.Q, Unit.GAL]).optional(),
+  [EntityKey.TYPE]: z.enum([WeighmentType.UNASSIGNED, WeighmentType.IN, WeighmentType.OUT]).optional(),
+})

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import axios from "axios"
 import { deleteRows, fetchEntityPaginatedFromApi } from "./common";
-import { ProjectSlug } from "@/lib/constants/enums"
+import { ProjectSlug, Unit } from "@/lib/constants/enums"
 
 vi.mock("axios", () => ({
   default: {
@@ -30,7 +30,7 @@ describe("fetchEntityPaginatedFromApi", () => {
       search: "al",
       sortColumn: "name",
       sortDesc: true,
-      filters: { unit: "kg" },
+      filters: { unit: Unit.KG },
     })
 
     expect(axios.get).toHaveBeenCalledWith("/api/centers", {
@@ -40,7 +40,7 @@ describe("fetchEntityPaginatedFromApi", () => {
         search: "al",
         sort_column: "name",
         sort_desc: true,
-        unit: "kg",
+        unit: Unit.KG,
       },
     })
 

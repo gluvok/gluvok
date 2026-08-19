@@ -15,7 +15,7 @@ import { type EntityRecord } from "@/types"
 import { type ColumnActionsCallbacks } from "./index"
 
 import { type Permission, useAuthStore, type AuthUser } from "@/lib/store"
-import { ProjectSlug, EntityKey, Role } from "@/lib/constants/enums"
+import { ProjectSlug, EntityKey, Role, WeighmentType } from "@/lib/constants/enums"
 
 /**
  * hasRowModifyPermission
@@ -74,7 +74,18 @@ function ActionCell<T extends EntityRecord>({
   const currentUser = useAuthStore((state) => state.user)
 
   const canModifyRow = hasRowModifyPermission(item, projectSlug, currentUser)
-  const hasRowWrite = canWrite && canModifyRow
+  let hasRowWrite = canWrite && canModifyRow
+
+  if (projectSlug === ProjectSlug.WEIGHMENTS) {
+    const rateId = getField(item, EntityKey.RATE_ID)
+    const typeVal = getField(item, EntityKey.TYPE)
+    const isRateFixed = rateId !== null && rateId !== undefined && rateId !== ""
+    const isTypeFixed = typeVal !== null && typeVal !== undefined && typeVal !== "" && typeVal !== WeighmentType.UNASSIGNED
+    if (isRateFixed && isTypeFixed) {
+      hasRowWrite = false
+    }
+  }
+
   const hasRowDelete = canDelete && canModifyRow
 
   return (

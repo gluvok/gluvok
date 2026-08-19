@@ -19,7 +19,6 @@ import {
   ShieldCheck,
   AlertTriangle,
   SlidersHorizontal,
-  TableProperties,
   Sparkles,
   Link,
   TrendingUp,
@@ -50,7 +49,7 @@ const capabilityIconWrapper = cn(iconWrapperBase, "h-8 w-8 rounded-lg")
 // Capability card styles
 const capabilityCardStyles = "flex items-start gap-3.5 p-4 rounded-xl border bg-card shadow-sm hover:shadow-md transition-all duration-200"
 const capabilityTitleStyles = cn(jakarta.className, "text-sm font-bold text-foreground")
-const capabilityDescStyles = cn(inter.className, "text-xs text-muted-foreground leading-relaxed")
+const capabilityDescStyles = cn(inter.className, "text-xs text-muted-foreground leading-relaxed hyphens-auto")
 
 // Icon size shorthands reused inside SERVICES data
 const serviceIconCls = "h-5 w-5"
@@ -138,7 +137,7 @@ function ServiceCard({
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground leading-relaxed">
+      <p className="text-sm text-muted-foreground leading-relaxed hyphens-auto">
         {description}
       </p>
 
@@ -170,7 +169,7 @@ function ServiceCard({
           )}
           <p
             className={cn(
-              "text-xs leading-relaxed",
+              "text-xs leading-relaxed hyphens-auto",
               caveatType === "warning"
                 ? "text-amber-800 dark:text-amber-300"
                 : "text-destructive/90",
@@ -184,7 +183,7 @@ function ServiceCard({
       {successNote && (
         <div className="flex items-start gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 mt-auto">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-          <p className="text-xs leading-relaxed text-emerald-700 dark:text-emerald-400">
+          <p className="text-xs leading-relaxed hyphens-auto text-emerald-700 dark:text-emerald-400">
             {successNote}
           </p>
         </div>
@@ -240,7 +239,7 @@ const SERVICES: ServiceCardProps[] = [
       { text: "Isolate application traffic within local networks.",         icon: <Lock     className={featureIconCls} /> },
     ],
     caveat:
-      "Any server crashes, hardware bottlenecks, configuration errors, or log issues arising from your self-hosted infrastructure are your sole responsibility. We do not provide server maintenance.",
+      "Any server crashes, hardware bottlenecks, or configuration errors arising from your self-hosted infrastructure are your sole responsibility. We do not provide server maintenance.",
     accentClass: accentBorder("indigo"),
     badgeText: "Maximum Privacy",
     badgeIcon: <Shield className={badgeIconCls} />,
@@ -282,7 +281,7 @@ export default function ServicesPage() {
                 <Compass className="h-7 w-7 text-primary/80 shrink-0" />
                 How We Work With You
               </h1>
-              <p className={cn(inter.className, "text-muted-foreground text-sm leading-relaxed max-w-xl")}>
+              <p className={cn(inter.className, "text-muted-foreground text-sm leading-relaxed max-w-xl hyphens-auto")}>
                 Choose the deployment model that fits your team. Whether you own your infrastructure, want us to handle
                 everything, or need a self-hosted setup — we have an option for you.
               </p>
@@ -294,7 +293,7 @@ export default function ServicesPage() {
             <h2 className={cn(jakarta.className, "text-xs font-bold uppercase tracking-wider text-muted-foreground")}>
               Standard Capabilities Across All Models
             </h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            <div className="grid grid-cols-1">
               <div className={capabilityCardStyles}>
                 <div className={capabilityIconWrapper}>
                   <SlidersHorizontal className="h-4 w-4" />
@@ -303,17 +302,6 @@ export default function ServicesPage() {
                   <h3 className={capabilityTitleStyles}>Granular Fields</h3>
                   <p className={capabilityDescStyles}>
                     Hide specific fields per entity (e.g., exclude govt_id for customers so it won&apos;t appear).
-                  </p>
-                </div>
-              </div>
-              <div className={capabilityCardStyles}>
-                <div className={capabilityIconWrapper}>
-                  <TableProperties className="h-4 w-4" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className={capabilityTitleStyles}>Entity Opt-outs</h3>
-                  <p className={capabilityDescStyles}>
-                    Opt out of tables completely (e.g., disable rates table entirely if you don&apos;t use it).
                   </p>
                 </div>
               </div>

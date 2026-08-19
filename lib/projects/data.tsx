@@ -21,7 +21,8 @@ export const PROJECTS: ProjectMetadata[] = [
   { slug: ProjectSlug.COMMODITIES, name: ProjectName.COMMODITIES, desc: "Track trading products and goods catalog", icon: Tag, color: "text-amber-500" },
   { slug: ProjectSlug.RATES, name: ProjectName.RATES, desc: "Track unit rates of commodities at factories", icon: IndianRupee, color: "text-yellow-500" },
   { slug: ProjectSlug.CUSTOMERS, name: ProjectName.CUSTOMERS, desc: "Directory of client accounts and details", icon: Users, color: "text-green-500" },
-  { slug: ProjectSlug.WEIGHMENTS, name: ProjectName.WEIGHMENTS, desc: "Input logs, sheets and record metrics", icon: ClipboardList, color: "text-purple-500" },
+  { slug: ProjectSlug.ENTRIES, name: ProjectName.ENTRIES, desc: "Raw entry logs and vehicle scan records", icon: ClipboardList, color: "text-indigo-500" },
+  { slug: ProjectSlug.WEIGHMENTS, name: ProjectName.WEIGHMENTS, desc: "Merged double-entry weighment records", icon: ClipboardList, color: "text-purple-500" },
   { slug: ProjectSlug.PROFILES, name: ProjectName.PROFILES, desc: "Manage user profiles and credentials", icon: UserCog, color: "text-pink-500" },
   { slug: ProjectSlug.SETTINGS, name: ProjectName.SETTINGS, desc: "Manage factory settings and requirement modes", icon: Settings, color: "text-slate-500" },
 ]

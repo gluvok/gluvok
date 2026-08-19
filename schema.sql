@@ -1,7 +1,24 @@
 -- ==============================================================================
 -- SUPABASE COMPLETE DATABASE SCHEMA & RLS SETUP
--- Idempotent PostgreSQL / Supabase Schema Definition
+-- Destructive & Idempotent PostgreSQL / Supabase Schema Definition
 -- ==============================================================================
+
+-- 0. DESTRUCTIVE CLEANUP (Drop existing tables, types, and views to ensure a fresh schema build)
+DROP TABLE IF EXISTS weighments CASCADE;
+DROP TABLE IF EXISTS entries CASCADE;
+DROP TABLE IF EXISTS rates CASCADE;
+DROP TABLE IF EXISTS customers CASCADE;
+DROP TABLE IF EXISTS profiles CASCADE;
+DROP TABLE IF EXISTS centers CASCADE;
+DROP TABLE IF EXISTS commodities CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS factories CASCADE;
+
+DROP TYPE IF EXISTS entry_status CASCADE;
+DROP TYPE IF EXISTS weighment_type CASCADE;
+DROP TYPE IF EXISTS field_requirement_mode CASCADE;
+DROP TYPE IF EXISTS unit_enum CASCADE;
+DROP TYPE IF EXISTS role_enum CASCADE;
 
 -- 1. CREATE ENUM TYPES (IF NOT EXISTS)
 DO $$
@@ -13,10 +30,13 @@ BEGIN
         CREATE TYPE unit_enum AS ENUM ('kg', 'q', 'gal');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'weighment_type') THEN
-        CREATE TYPE weighment_type AS ENUM ('in', 'out');
+        CREATE TYPE weighment_type AS ENUM ('unassigned', 'in', 'out');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'field_requirement_mode') THEN
         CREATE TYPE field_requirement_mode AS ENUM ('mandatory', 'optional', 'not_required');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'entry_status') THEN
+        CREATE TYPE entry_status AS ENUM ('pending', 'approved', 'rejected');
     END IF;
 END $$;
 
@@ -96,33 +116,96 @@ CREATE TABLE IF NOT EXISTS rates (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- WEIGHMENTS TABLE
-CREATE TABLE IF NOT EXISTS weighments (
+-- ENTRIES TABLE (Raw weighment events)
+CREATE TABLE IF NOT EXISTS entries (
     id SERIAL PRIMARY KEY,
+    detected_vehicle_number TEXT NOT NULL,
     vehicle_number TEXT NOT NULL,
     weight NUMERIC(10, 2) NOT NULL,
-    unit unit_enum NOT NULL DEFAULT 'kg',
-    type weighment_type NOT NULL DEFAULT 'in',
-    rate_id INT REFERENCES rates(id) ON DELETE RESTRICT,
     center_id INT NOT NULL REFERENCES centers(id) ON DELETE RESTRICT,
     profile_id INT NOT NULL REFERENCES profiles(id) ON DELETE RESTRICT,
     customer_id INT REFERENCES customers(id) ON DELETE RESTRICT,
     factory_id INT REFERENCES factories(id) ON DELETE RESTRICT,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    status entry_status NOT NULL DEFAULT 'pending',
     images TEXT[] DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS idx_entries_factory_vehicle 
+ON entries (factory_id, vehicle_number, status, created_at DESC);
+
+-- WEIGHMENTS TABLE (Merged double-entry pair)
+CREATE TABLE IF NOT EXISTS weighments (
+    id SERIAL PRIMARY KEY,
+    in_entry_id INT NOT NULL UNIQUE REFERENCES entries(id) ON DELETE RESTRICT,
+    out_entry_id INT NOT NULL UNIQUE REFERENCES entries(id) ON DELETE RESTRICT,
+    unit unit_enum NOT NULL DEFAULT 'kg',
+    type weighment_type NOT NULL DEFAULT 'unassigned',
+    rate_id INT REFERENCES rates(id) ON DELETE RESTRICT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- COMPUTED COLUMNS FOR WEIGHMENTS DERIVED WEIGHTS (Enables PostgREST DB-level ORDER BY for gross_weight, tare_weight, net_weight)
+DROP FUNCTION IF EXISTS public.gross_weight(weighments);
+CREATE OR REPLACE FUNCTION gross_weight(w weighments) 
+RETURNS numeric 
+LANGUAGE plpgsql 
+STABLE
+AS $$
+BEGIN
+    RETURN (
+        SELECT GREATEST(e1.weight, e2.weight)
+        FROM entries e1
+        JOIN entries e2 ON e2.id = w.out_entry_id
+        WHERE e1.id = w.in_entry_id
+    );
+END;
+$$;
+
+DROP FUNCTION IF EXISTS public.tare_weight(weighments);
+CREATE OR REPLACE FUNCTION tare_weight(w weighments) 
+RETURNS numeric 
+LANGUAGE plpgsql 
+STABLE
+AS $$
+BEGIN
+    RETURN (
+        SELECT LEAST(e1.weight, e2.weight)
+        FROM entries e1
+        JOIN entries e2 ON e2.id = w.out_entry_id
+        WHERE e1.id = w.in_entry_id
+    );
+END;
+$$;
+
+DROP FUNCTION IF EXISTS public.net_weight(weighments);
+CREATE OR REPLACE FUNCTION net_weight(w weighments) 
+RETURNS numeric 
+LANGUAGE plpgsql 
+STABLE
+AS $$
+BEGIN
+    RETURN (
+        SELECT ABS(e1.weight - e2.weight)
+        FROM entries e1
+        JOIN entries e2 ON e2.id = w.out_entry_id
+        WHERE e1.id = w.in_entry_id
+    );
+END;
+$$;
+
 -- 3. ENABLE ROW LEVEL SECURITY (RLS)
-ALTER TABLE factories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE centers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE commodities ENABLE ROW LEVEL SECURITY;
-ALTER TABLE rates ENABLE ROW LEVEL SECURITY;
-ALTER TABLE weighments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS factories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS centers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS commodities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS rates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS weighments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS entries ENABLE ROW LEVEL SECURITY;
 
 -- 4. THIN RLS POLICIES (Access control & tenant isolation managed in backend Next.js API)
 DROP POLICY IF EXISTS "Allow Read Users" ON users;
@@ -137,6 +220,7 @@ DROP POLICY IF EXISTS "Allow Write Commodities" ON commodities;
 DROP POLICY IF EXISTS "Allow Commodities Access" ON commodities;
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Rates" ON rates;
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Weighments" ON weighments;
+DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Entries" ON entries;
 
 DROP POLICY IF EXISTS "Allow access factories" ON factories;
 DROP POLICY IF EXISTS "Allow access users" ON users;
@@ -146,6 +230,7 @@ DROP POLICY IF EXISTS "Allow access centers" ON centers;
 DROP POLICY IF EXISTS "Allow access commodities" ON commodities;
 DROP POLICY IF EXISTS "Allow access rates" ON rates;
 DROP POLICY IF EXISTS "Allow access weighments" ON weighments;
+DROP POLICY IF EXISTS "Allow access entries" ON entries;
 
 CREATE POLICY "Allow access factories" ON factories FOR ALL USING (true);
 CREATE POLICY "Allow access users" ON users FOR ALL USING (true);
@@ -155,6 +240,7 @@ CREATE POLICY "Allow access centers" ON centers FOR ALL USING (true);
 CREATE POLICY "Allow access commodities" ON commodities FOR ALL USING (true);
 CREATE POLICY "Allow access rates" ON rates FOR ALL USING (true);
 CREATE POLICY "Allow access weighments" ON weighments FOR ALL USING (true);
+CREATE POLICY "Allow access entries" ON entries FOR ALL USING (true);
 
 -- 5. AUTO-INCREMENT SEQUENCE RESET FUNCTIONS
 DROP FUNCTION IF EXISTS public.reset_table_sequence(text);
@@ -472,4 +558,8 @@ BEGIN
     RETURN v_deleted_count;
 END;
 $$;
+
+-- 8. NOTIFY SUPABASE POSTGREST TO RELOAD SCHEMA CACHE IMMEDIATELY
+NOTIFY pgrst, 'reload schema';
+
 

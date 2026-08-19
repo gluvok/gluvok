@@ -35,6 +35,20 @@ export const PATCH = withAuth(
     if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.WRITE))
       return forbiddenError()
 
+    // Check if this rate is associated with any weighment
+    const { data: linkedWeighments } = await client
+      .from(TableName.WEIGHMENTS)
+      .select(EntityKey.ID)
+      .eq(EntityKey.RATE_ID, entityId)
+      .limit(1)
+
+    if (linkedWeighments && linkedWeighments.length > 0) {
+      return apiError(
+        "This rate is associated with weighment record(s) and cannot be edited.",
+        StatusCodes.FORBIDDEN
+      )
+    }
+
     const { unit_price, unit, commodity_id } = await req.json()
 
     const query = client

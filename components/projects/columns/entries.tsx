@@ -4,8 +4,8 @@
  */
 
 import { ColumnDef } from "@tanstack/react-table"
-import { Tag, Car, Weight, Building, User, Users, Image, ShieldCheck, Clock } from "lucide-react"
-import { EntityKey, ColumnLabel, EntryStatus } from "@/lib/constants/enums"
+import { Tag, Car, Weight, Building, User, Users, Image, ShieldCheck, Clock, Sliders } from "lucide-react"
+import { EntityKey, ColumnLabel, EntryStatus, EntryType } from "@/lib/constants/enums"
 import { cn } from "@/lib/utils"
 import { createTextColumn, createBaseColumn, createCustomColumn, createIdColumn, badgeBaseClass } from "./helpers"
 import { WeighmentImagesCell } from "./weighments-cell"
@@ -13,6 +13,20 @@ import { WeighmentImagesCell } from "./weighments-cell"
 export function getEntriesColumns<T>(): ColumnDef<T>[] {
   return [
     createIdColumn(EntityKey.ID, ColumnLabel.ID, Tag),
+    createCustomColumn(EntityKey.TYPE, ColumnLabel.TYPE, Sliders, (val) => {
+      const type = String(val || EntryType.AUTOMATIC).toLowerCase()
+      let typeClass = "bg-muted text-muted-foreground border border-border"
+      if (type === EntryType.AUTOMATIC) {
+        typeClass = "bg-purple-50 text-purple-700 border border-purple-200/50 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800/30"
+      } else if (type === EntryType.MANUAL) {
+        typeClass = "bg-blue-50 text-blue-700 border border-blue-200/50 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/30"
+      }
+      return (
+        <span className={cn(badgeBaseClass, "capitalize", typeClass)}>
+          {type}
+        </span>
+      )
+    }),
     createTextColumn(EntityKey.DETECTED_VEHICLE_NUMBER, ColumnLabel.DETECTED_VEHICLE_NUMBER, Car),
     createTextColumn(EntityKey.VEHICLE_NUMBER, ColumnLabel.VEHICLE_NUMBER, Car),
     createBaseColumn(

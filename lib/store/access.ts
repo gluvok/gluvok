@@ -72,7 +72,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       read: true,
       write: true,
       delete: true,
-      create: false,
+      create: true,
       show: true,
       filter: true,
     },
@@ -139,7 +139,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       read: true,
       write: true,
       delete: false,
-      create: false,
+      create: true,
       show: true,
       filter: true,
     },
@@ -205,7 +205,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       read: true,
       write: true,
       delete: false,
-      create: false,
+      create: true,
       show: true,
       filter: true,
     },
@@ -312,7 +312,6 @@ export function hasPageAccess(role: Role | null | undefined, projectSlug: string
 export function hasCreateAccess(role: Role | null | undefined, projectSlug: string): boolean {
   if (
     projectSlug === ProjectSlug.COMMODITIES ||
-    projectSlug === ProjectSlug.ENTRIES ||
     projectSlug === ProjectSlug.WEIGHMENTS
   ) {
     return false

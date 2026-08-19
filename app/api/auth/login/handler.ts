@@ -40,6 +40,12 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
     const factoryId = user.factory_id ?? null
     let profileId: number | undefined
 
+    const { data: profile } = await db
+      .from(TableName.PROFILES)
+      .select(EntityKey.ID)
+      .eq(EntityKey.USER_ID, user.id)
+      .maybeSingle()
+
     if (client === LoginClient.DEVICE) {
       if (user.role !== Role.OPERATOR) {
         return NextResponse.json(
@@ -48,15 +54,12 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
         )
       }
 
-      const { data: profile } = await db
-        .from(TableName.PROFILES)
-        .select(EntityKey.ID)
-        .eq(EntityKey.USER_ID, user.id)
-        .maybeSingle()
-
       if (!profile) {
         return NextResponse.json({ error: AuthErrorMessage.OPERATOR_PROFILE_NOT_FOUND }, { status: 404 })
       }
+    }
+
+    if (profile) {
       profileId = profile.id
     }
 

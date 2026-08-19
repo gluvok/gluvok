@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { EntityKey, Unit, EntryStatus } from "@/lib/constants/enums"
+import { EntityKey, Unit, EntryStatus, EntryType } from "@/lib/constants/enums"
 import { addEntrySchema, editEntrySchema, editWeighmentSchema } from "./weighments"
 
 const validEntry = {
@@ -16,6 +16,21 @@ describe("entries & weighments validation", () => {
 
     expect(result[EntityKey.STATUS]).toBe(EntryStatus.PENDING)
     expect(result[EntityKey.CUSTOMER_ID]).toBeNull()
+  })
+
+  it("parses valid manual entry with omitted detected_vehicle_number and profile_id", () => {
+    const result = addEntrySchema.parse({
+      [EntityKey.VEHICLE_NUMBER]: "MH12AB1234",
+      [EntityKey.WEIGHT]: "15000",
+      [EntityKey.CENTER_ID]: "1",
+      [EntityKey.TYPE]: EntryType.MANUAL,
+    })
+
+    expect(result[EntityKey.VEHICLE_NUMBER]).toBe("MH12AB1234")
+    expect(result[EntityKey.WEIGHT]).toBe(15000)
+    expect(result[EntityKey.CENTER_ID]).toBe(1)
+    expect(result[EntityKey.TYPE]).toBe(EntryType.MANUAL)
+    expect(result[EntityKey.STATUS]).toBe(EntryStatus.PENDING)
   })
 
   it("allows partial edits for entry customer", () => {

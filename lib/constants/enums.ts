@@ -33,6 +33,11 @@ export enum EntryStatus {
   REJECTED = "rejected",
 }
 
+export enum EntryType {
+  MANUAL = "manual",
+  AUTOMATIC = "automatic",
+}
+
 export enum WeighmentType {
   UNASSIGNED = "unassigned",
   IN = "in",
@@ -146,6 +151,7 @@ export enum ApiRoutes {
   CENTERS = "/api/centers",
   RATES = "/api/rates",
   ENTRIES = "/api/entries",
+  DEVICE_ENTRIES = "/api/device/entries",
   WEIGHMENTS = "/api/weighments",
   COMMODITIES = "/api/commodities",
   USERS = "/api/users",
@@ -290,6 +296,7 @@ export enum DatePreset {
 export enum DbEnum {
   ROLE = "role_enum",
   UNIT = "unit_enum",
+  ENTRY_TYPE = "entry_type",
   WEIGHMENT_TYPE = "weighment_type",
   FIELD_REQUIREMENT_MODE = "field_requirement_mode",
   ENTRY_STATUS = "entry_status",

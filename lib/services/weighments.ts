@@ -4,23 +4,30 @@
  */
 
 import { supabase } from "@/db"
-import { TableName, EntryStatus, EntityKey, Unit } from "@/lib/constants/enums"
+import { TableName, EntryStatus, EntryType, EntityKey, Unit } from "@/lib/constants/enums"
 
 export async function validateSequentialApproval(
   client: typeof supabase,
   factoryId: number,
   vehicleNumber: string,
   targetCreatedAt: string,
-  targetEntryId: number
+  targetEntryId: number,
+  entryType?: EntryType
 ): Promise<void> {
-  const { data: earlierPending, error } = await client
+  let query = client
     .from(TableName.ENTRIES)
-    .select(`${EntityKey.ID}, ${EntityKey.CREATED_AT}`)
+    .select(`${EntityKey.ID}, ${EntityKey.CREATED_AT}, ${EntityKey.TYPE}`)
     .eq(EntityKey.FACTORY_ID, factoryId)
     .eq(EntityKey.VEHICLE_NUMBER, vehicleNumber)
     .eq(EntityKey.STATUS, EntryStatus.PENDING)
     .lt(EntityKey.CREATED_AT, targetCreatedAt)
     .neq(EntityKey.ID, targetEntryId)
+
+  if (entryType) {
+    query = query.eq(EntityKey.TYPE, entryType)
+  }
+
+  const { data: earlierPending, error } = await query
     .order(EntityKey.CREATED_AT, { ascending: true })
     .limit(1)
     .maybeSingle()
@@ -31,8 +38,9 @@ export async function validateSequentialApproval(
   }
 
   if (earlierPending) {
+    const typeLabel = earlierPending.type ? `${earlierPending.type} ` : ""
     throw new Error(
-      `Cannot approve entry #${targetEntryId} because earlier entry #${earlierPending.id} (from ${new Date(
+      `Cannot approve entry #${targetEntryId} because earlier ${typeLabel}entry #${earlierPending.id} (from ${new Date(
         earlierPending.created_at
       ).toLocaleString()}) for vehicle "${vehicleNumber}" is still pending. Please approve entries in sequential order.`
     )
@@ -67,8 +75,8 @@ export async function tryMergeEntries(
     return null
   }
 
-  // 3. Find latest preceding approved entry E1 for the same vehicle in this factory
-  const { data: e1Candidates, error: e1Err } = await client
+  // 3. Find latest preceding approved entry E1 for the same vehicle, factory, AND matching entry type
+  let e1Query = client
     .from(TableName.ENTRIES)
     .select("*")
     .eq(EntityKey.FACTORY_ID, factoryId)
@@ -76,6 +84,12 @@ export async function tryMergeEntries(
     .eq(EntityKey.STATUS, EntryStatus.APPROVED)
     .lt(EntityKey.CREATED_AT, e2.created_at)
     .neq(EntityKey.ID, entryId)
+
+  if (e2.type) {
+    e1Query = e1Query.eq(EntityKey.TYPE, e2.type)
+  }
+
+  const { data: e1Candidates, error: e1Err } = await e1Query
     .order(EntityKey.CREATED_AT, { ascending: false })
     .limit(1)
 

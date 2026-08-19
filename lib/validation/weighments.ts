@@ -4,7 +4,7 @@
  */
 
 import * as z from "zod"
-import { ColumnLabel, Unit, EntryStatus, EntityKey, WeighmentType } from "@/lib/constants/enums"
+import { ColumnLabel, Unit, EntryStatus, EntryType, EntityKey, WeighmentType } from "@/lib/constants/enums"
 import { integerIdSchema, optionalIntegerIdSchema } from "./helpers"
 
 const STATE_CODES = [
@@ -17,7 +17,7 @@ const INDIAN_PLATE_REGEX =
   /^(?:([A-Z]{2})[\s.-]?([A-Z0-9]{1,2})[\s.-]?([A-Za-z]{1,3})[\s.-]?(\d{3,4})|(\d{2})[\s.-]?(BH)[\s.-]?(\d{4})[\s.-]?([A-Za-z]{1,2}))$/i
 
 export const addEntrySchema = z.object({
-  [EntityKey.DETECTED_VEHICLE_NUMBER]: z.string().min(1, `${ColumnLabel.DETECTED_VEHICLE_NUMBER} is required`),
+  [EntityKey.DETECTED_VEHICLE_NUMBER]: z.string().optional().nullable(),
   [EntityKey.VEHICLE_NUMBER]: z
     .string()
     .min(1, `${ColumnLabel.VEHICLE_NUMBER} plate number is required`)
@@ -36,8 +36,9 @@ export const addEntrySchema = z.object({
       }
     ),
   [EntityKey.WEIGHT]: z.coerce.number({ message: `${ColumnLabel.WEIGHT} must be a number` }).positive(`Measured ${ColumnLabel.WEIGHT.toLowerCase()} must be a positive number`),
+  [EntityKey.TYPE]: z.enum([EntryType.MANUAL, EntryType.AUTOMATIC]).optional(),
   [EntityKey.CENTER_ID]: integerIdSchema(ColumnLabel.CENTER),
-  [EntityKey.PROFILE_ID]: integerIdSchema(ColumnLabel.PROFILE),
+  [EntityKey.PROFILE_ID]: optionalIntegerIdSchema(ColumnLabel.PROFILE),
   [EntityKey.CUSTOMER_ID]: optionalIntegerIdSchema(ColumnLabel.CUSTOMER),
   [EntityKey.STATUS]: z.enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED]).default(EntryStatus.PENDING),
   [EntityKey.IMAGES]: z.array(z.string()).optional(),

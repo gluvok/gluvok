@@ -80,9 +80,10 @@ describe("RBAC Access Controls", () => {
   })
 
   describe("hasCreateAccess", () => {
-    it("should return false for WEIGHMENTS, ENTRIES, COMMODITIES and true for CUSTOMERS", () => {
+    it("should return false for WEIGHMENTS, COMMODITIES and true for CUSTOMERS, ENTRIES", () => {
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.WEIGHMENTS)).toBe(false);
-      expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.ENTRIES)).toBe(false);
+      expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.ENTRIES)).toBe(true);
+      expect(hasCreateAccess(Role.ADMIN, ProjectSlug.ENTRIES)).toBe(true);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.COMMODITIES)).toBe(false);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.CUSTOMERS)).toBe(true);
     })

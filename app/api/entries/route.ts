@@ -11,6 +11,7 @@ import {
   EntityKey,
   QueryParam,
   EntryStatus,
+  EntryType,
   FilterValue,
 } from "@/lib/constants/enums"
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments"
@@ -19,6 +20,7 @@ export const GET = withAuth(async (req, user, client) => {
   const pagination = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
   const statusParam = req.nextUrl.searchParams.get(EntityKey.STATUS)
+  const typeParam = req.nextUrl.searchParams.get(EntityKey.TYPE)
   const centerIdParam = req.nextUrl.searchParams.get(EntityKey.CENTER_ID)
   const profileIdParam = req.nextUrl.searchParams.get(EntityKey.PROFILE_ID)
   const customerIdParam = req.nextUrl.searchParams.get(EntityKey.CUSTOMER_ID)
@@ -38,6 +40,10 @@ export const GET = withAuth(async (req, user, client) => {
 
   if (statusParam && statusParam !== FilterValue.ALL) {
     query = query.eq(EntityKey.STATUS, statusParam)
+  }
+
+  if (typeParam && typeParam !== FilterValue.ALL) {
+    query = query.eq(EntityKey.TYPE, typeParam)
   }
 
   if (centerIdParam && centerIdParam !== FilterValue.ALL) {
@@ -78,30 +84,39 @@ export const GET = withAuth(async (req, user, client) => {
 
 export const POST = withAuth(async (req, user, client) => {
   try {
-    const deviceSecret = req.headers.get("x-microcontroller-secret")
-    const expectedSecret = process.env.MICROCONTROLLER_SECRET || "default-pi-secret-key"
-
-    if (deviceSecret !== expectedSecret) {
-      return apiError(
-        "Access denied: Invalid or missing microcontroller device secret.",
-        StatusCodes.FORBIDDEN
-      )
-    }
-
     const body = await req.json()
     const {
-      detected_vehicle_number,
       vehicle_number,
       weight,
       center_id,
-      profile_id,
       customer_id,
       status = EntryStatus.PENDING,
       images = [],
     } = body
 
-    if (!detected_vehicle_number || !vehicle_number || weight === undefined || !center_id || !profile_id) {
-      return apiError("Missing required entry fields.", StatusCodes.BAD_REQUEST)
+    if (!vehicle_number || weight === undefined || weight === null || weight === "") {
+      return apiError("Vehicle number and weight are required.", StatusCodes.BAD_REQUEST)
+    }
+
+    if (!center_id) {
+      return apiError("Center ID is required.", StatusCodes.BAD_REQUEST)
+    }
+
+    // Verify center_id belongs to the user's factory
+    const { data: centerRecord } = await client
+      .from(TableName.CENTERS)
+      .select(EntityKey.ID)
+      .eq(EntityKey.ID, Number(center_id))
+      .eq(EntityKey.FACTORY_ID, user.factory_id!)
+      .maybeSingle()
+
+    if (!centerRecord) {
+      return apiError("Invalid center ID or center does not belong to user factory.", StatusCodes.FORBIDDEN)
+    }
+
+    const profileId = user.profile_id
+    if (!profileId) {
+      return apiError("Profile ID not found in user session.", StatusCodes.UNAUTHORIZED)
     }
 
     const nowStr = new Date().toISOString()
@@ -112,18 +127,20 @@ export const POST = withAuth(async (req, user, client) => {
         user.factory_id!,
         vehicle_number,
         nowStr,
-        0
+        0,
+        EntryType.MANUAL
       )
     }
 
     const { data: newEntry, error: insertErr } = await client
       .from(TableName.ENTRIES)
       .insert({
-        [EntityKey.DETECTED_VEHICLE_NUMBER]: detected_vehicle_number,
+        [EntityKey.DETECTED_VEHICLE_NUMBER]: null,
         [EntityKey.VEHICLE_NUMBER]: vehicle_number,
         [EntityKey.WEIGHT]: Number(weight),
+        [EntityKey.TYPE]: EntryType.MANUAL,
         [EntityKey.CENTER_ID]: Number(center_id),
-        [EntityKey.PROFILE_ID]: Number(profile_id),
+        [EntityKey.PROFILE_ID]: profileId,
         [EntityKey.CUSTOMER_ID]: customer_id ? Number(customer_id) : null,
         [EntityKey.FACTORY_ID]: user.factory_id!,
         [EntityKey.STATUS]: status,
@@ -135,7 +152,7 @@ export const POST = withAuth(async (req, user, client) => {
       .single()
 
     if (insertErr || !newEntry) {
-      console.error("Failed to insert entry:", insertErr)
+      console.error("Failed to insert manual entry:", insertErr)
       return apiError("Failed to create entry.", StatusCodes.INTERNAL_SERVER_ERROR)
     }
 

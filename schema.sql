@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS commodities CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS factories CASCADE;
 
+DROP TYPE IF EXISTS entry_type CASCADE;
 DROP TYPE IF EXISTS entry_status CASCADE;
 DROP TYPE IF EXISTS weighment_type CASCADE;
 DROP TYPE IF EXISTS field_requirement_mode CASCADE;
@@ -28,6 +29,9 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'unit_enum') THEN
         CREATE TYPE unit_enum AS ENUM ('kg', 'q', 'gal');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'entry_type') THEN
+        CREATE TYPE entry_type AS ENUM ('manual', 'automatic');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'weighment_type') THEN
         CREATE TYPE weighment_type AS ENUM ('unassigned', 'in', 'out');
@@ -120,9 +124,10 @@ CREATE TABLE IF NOT EXISTS rates (
 -- ENTRIES TABLE (Raw weighment events)
 CREATE TABLE IF NOT EXISTS entries (
     id SERIAL PRIMARY KEY,
-    detected_vehicle_number TEXT NOT NULL,
+    detected_vehicle_number TEXT,
     vehicle_number TEXT NOT NULL,
     weight NUMERIC(10, 2) NOT NULL,
+    type entry_type NOT NULL DEFAULT 'automatic',
     center_id INT NOT NULL REFERENCES centers(id) ON DELETE RESTRICT,
     profile_id INT NOT NULL REFERENCES profiles(id) ON DELETE RESTRICT,
     customer_id INT REFERENCES customers(id) ON DELETE RESTRICT,
@@ -134,7 +139,7 @@ CREATE TABLE IF NOT EXISTS entries (
 );
 
 CREATE INDEX IF NOT EXISTS idx_entries_factory_vehicle 
-ON entries (factory_id, vehicle_number, status, created_at DESC);
+ON entries (factory_id, vehicle_number, type, status, created_at DESC);
 
 -- WEIGHMENTS TABLE (Merged double-entry pair)
 CREATE TABLE IF NOT EXISTS weighments (

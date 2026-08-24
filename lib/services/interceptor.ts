@@ -6,6 +6,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios"
 import { useAuthStore } from "@/lib/store/auth"
 import { ApiRoutes, AppRoutes } from "@/lib/constants/enums"
+import { AuthErrorMessage } from "@/lib/constants/messages"
 
 interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean
@@ -28,29 +29,24 @@ const processQueue = (error: Error | null) => {
   failedQueue = []
 }
 
-let isInterceptorConfigured = false
-
 export function setupAxiosInterceptors() {
-  if (isInterceptorConfigured) return
-  isInterceptorConfigured = true
-
   axios.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
       const originalRequest = error.config as CustomAxiosRequestConfig
 
-      if (!originalRequest || !error.response) {
+      if (!originalRequest) {
         return Promise.reject(error)
       }
 
-      const requestUrl = originalRequest.url || ""
-      const isAuthRoute =
-        requestUrl.includes(ApiRoutes.AUTH_LOGIN) ||
-        requestUrl.includes(ApiRoutes.AUTH_REFRESH) ||
-        requestUrl.includes(ApiRoutes.AUTH_LOGOUT) ||
-        requestUrl.includes(ApiRoutes.AUTH_ME)
+      if (
+        originalRequest.url?.includes(ApiRoutes.AUTH_LOGIN) ||
+        originalRequest.url?.includes(ApiRoutes.AUTH_REFRESH)
+      ) {
+        return Promise.reject(error)
+      }
 
-      if (error.response.status === 401 && !originalRequest._retry && !isAuthRoute) {
+      if (error.response?.status === 401 && !originalRequest._retry) {
         if (isRefreshing) {
           return new Promise((resolve, reject) => {
             failedQueue.push({ resolve, reject })
@@ -74,10 +70,10 @@ export function setupAxiosInterceptors() {
             return axios(originalRequest)
           }
 
-          throw new Error("Token refresh failed")
+          throw new Error(AuthErrorMessage.TOKEN_REFRESH_FAILED)
         } catch (refreshErr) {
           processQueue(
-            refreshErr instanceof Error ? refreshErr : new Error("Token refresh failed")
+            refreshErr instanceof Error ? refreshErr : new Error(AuthErrorMessage.TOKEN_REFRESH_FAILED)
           )
           useAuthStore.getState().logout()
           if (

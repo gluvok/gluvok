@@ -82,8 +82,19 @@ export const DELETE = withAuth(async (req, user, client) => {
       StatusCodes.BAD_REQUEST
     )
 
+  // Check if any entries are linked to any of the selected centers
+  const { data: linkedEntries } = await client
+    .from(TableName.ENTRIES)
+    .select(EntityKey.ID)
+    .in(EntityKey.CENTER_ID, ids)
+    .limit(1)
+
+  if (linkedEntries && linkedEntries.length > 0) {
+    return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_CENTERS, StatusCodes.BAD_REQUEST)
+  }
+
   try {
-    const query = client.from(TableName.CENTERS).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
+    const query = client.from(TableName.CENTERS).delete().in(EntityKey.ID, ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
 
     const { data, error } = await query.select("id")
     if (error) throw error

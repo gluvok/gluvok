@@ -38,6 +38,20 @@ const sampleUser = {
 const context = { params: Promise.resolve({ id: "1" }) }
 const request = new Request("http://localhost/api/profiles/1")
 
+const mockDb = {
+  from: vi.fn(() => ({
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { id: 1, user_id: 999, name: "Other User" },
+          }),
+        })),
+      })),
+    })),
+  })),
+}
+
 describe("Profile mutation guards", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -54,7 +68,7 @@ describe("Profile mutation guards", () => {
       const response = await handler(
         request,
         sampleUser,
-        {},
+        mockDb,
         context,
       );
 

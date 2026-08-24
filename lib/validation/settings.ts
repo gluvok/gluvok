@@ -19,5 +19,3 @@ export const addSettingsSchema = z.object({
 })
 
 export const editSettingsSchema = addSettingsSchema
-export const addConfigSchema = addSettingsSchema
-export const editConfigSchema = editSettingsSchema

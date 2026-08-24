@@ -22,19 +22,57 @@ describe("RBAC Access Controls", () => {
       })
     })
 
-    it("should grant Manager correct permissions (can write/create but not delete rates, customers)", () => {
-      const ratePerms = getPermissions(Role.MANAGER, ProjectSlug.RATES)
-      expect(ratePerms).toMatchObject({
+    it("should grant Manager correct permissions (can write/create/delete profiles and centers)", () => {
+      const profilePerms = getPermissions(Role.MANAGER, ProjectSlug.PROFILES)
+      expect(profilePerms).toMatchObject({
         read: true,
         write: true,
-        delete: false,
+        delete: true,
         create: true,
         show: true,
         filter: true,
       })
+
+      const centerPerms = getPermissions(Role.MANAGER, ProjectSlug.CENTERS)
+      expect(centerPerms).toMatchObject({
+        read: true,
+        write: true,
+        delete: true,
+        create: true,
+        show: true,
+        filter: true,
+      })
+
+      const settingsPerms = getPermissions(Role.MANAGER, ProjectSlug.SETTINGS)
+      expect(settingsPerms).toMatchObject({
+        read: true,
+        write: true,
+        delete: false,
+        create: false,
+        show: true,
+      })
     })
 
-    it("should grant Operator correct permissions (read-only rates/centers, write customers)", () => {
+    it("should grant Operator correct permissions (CRUD centers, write settings & customers, read-only rates)", () => {
+      const centerPerms = getPermissions(Role.OPERATOR, ProjectSlug.CENTERS)
+      expect(centerPerms).toMatchObject({
+        read: true,
+        write: true,
+        delete: true,
+        create: true,
+        show: true,
+        filter: true,
+      })
+
+      const settingsPerms = getPermissions(Role.OPERATOR, ProjectSlug.SETTINGS)
+      expect(settingsPerms).toMatchObject({
+        read: true,
+        write: true,
+        delete: false,
+        create: false,
+        show: true,
+      })
+
       const weighmentPerms = getPermissions(Role.OPERATOR, ProjectSlug.WEIGHMENTS)
       expect(weighmentPerms).toMatchObject({
         read: true,
@@ -74,16 +112,19 @@ describe("RBAC Access Controls", () => {
   describe("hasPageAccess", () => {
     it("should use show permission for page access", () => {
       expect(hasPageAccess(Role.OPERATOR, ProjectSlug.WEIGHMENTS)).toBe(true)
+      expect(hasPageAccess(Role.OPERATOR, ProjectSlug.CENTERS)).toBe(true)
       expect(hasPageAccess(Role.OPERATOR, ProjectSlug.RATES)).toBe(false)
       expect(hasPageAccess(Role.BASE, ProjectSlug.WEIGHMENTS)).toBe(true)
     })
   })
 
   describe("hasCreateAccess", () => {
-    it("should return false for WEIGHMENTS, COMMODITIES and true for CUSTOMERS, ENTRIES", () => {
+    it("should return false for WEIGHMENTS, COMMODITIES and true for CENTERS, PROFILES, CUSTOMERS, ENTRIES", () => {
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.WEIGHMENTS)).toBe(false);
+      expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.CENTERS)).toBe(true);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.ENTRIES)).toBe(true);
       expect(hasCreateAccess(Role.ADMIN, ProjectSlug.ENTRIES)).toBe(true);
+      expect(hasCreateAccess(Role.MANAGER, ProjectSlug.PROFILES)).toBe(true);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.COMMODITIES)).toBe(false);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.CUSTOMERS)).toBe(true);
     })

@@ -91,6 +91,18 @@ export const DELETE = withAuth(
     if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.DELETE))
       return forbiddenError()
 
+    // Check if any entries are linked to this customer
+    const { data: linkedEntry } = await client
+      .from(TableName.ENTRIES)
+      .select(EntityKey.ID)
+      .eq(EntityKey.CUSTOMER_ID, entityId)
+      .limit(1)
+      .maybeSingle()
+
+    if (linkedEntry) {
+      return apiError(ApiErrorMessage.CANNOT_DELETE_CUSTOMER, StatusCodes.BAD_REQUEST)
+    }
+
     try {
       const { data: deletedCount, error } = await client.rpc("delete_customers_with_user", {
         p_customer_ids: [entityId],

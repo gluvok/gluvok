@@ -23,9 +23,6 @@ import { ApiErrorMessage } from "@/lib/constants/messages"
 
 export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
-    if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.WRITE))
-      return forbiddenError()
-
     const existingQuery = client
       .from(TableName.PROFILES)
       .select(`${EntityKey.ID}, ${EntityKey.USER_ID}, ${EntityKey.NAME}, ${TableName.USERS}!inner(${EntityKey.USERNAME}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID})`)
@@ -34,6 +31,14 @@ export const PATCH = withAuth(
 
     const { data: existing } = await existingQuery.maybeSingle()
     if (!existing) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
+
+    const isOwn =
+      (existing.user_id != null && String(existing.user_id) === String(user.sub)) ||
+      (user.profile_id != null && user.profile_id === entityId)
+
+    if (!isOwn && !hasPermission(user, ProjectSlug.PROFILES, PermissionKey.WRITE)) {
+      return forbiddenError()
+    }
 
     const body = await req.json()
     const factory = await getFactory(client, user.factory_id);
@@ -75,8 +80,34 @@ export const PATCH = withAuth(
 
 export const DELETE = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
-    if (!hasPermission(user, ProjectSlug.PROFILES, PermissionKey.DELETE))
+    const existingQuery = client
+      .from(TableName.PROFILES)
+      .select(`${EntityKey.ID}, ${EntityKey.USER_ID}`)
+      .eq(EntityKey.ID, entityId)
+      .eq(EntityKey.FACTORY_ID, factoryId!)
+
+    const { data: existing } = await existingQuery.maybeSingle()
+    if (!existing) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
+
+    const isOwn =
+      (existing.user_id != null && String(existing.user_id) === String(user.sub)) ||
+      (user.profile_id != null && user.profile_id === entityId)
+
+    if (!isOwn && !hasPermission(user, ProjectSlug.PROFILES, PermissionKey.DELETE)) {
       return forbiddenError()
+    }
+
+    // Check if any entries are linked to this profile
+    const { data: linkedEntry } = await client
+      .from(TableName.ENTRIES)
+      .select(EntityKey.ID)
+      .eq(EntityKey.PROFILE_ID, entityId)
+      .limit(1)
+      .maybeSingle()
+
+    if (linkedEntry) {
+      return apiError(ApiErrorMessage.CANNOT_DELETE_PROFILE, StatusCodes.BAD_REQUEST)
+    }
 
     try {
       const { data: deletedCount, error } = await client.rpc("delete_profiles_with_user", {

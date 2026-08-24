@@ -3,6 +3,7 @@ import axios from "axios"
 import { setupAxiosInterceptors } from "./interceptor"
 import { useAuthStore } from "@/lib/store/auth"
 import { ApiRoutes } from "@/lib/constants/enums"
+import { AuthErrorMessage } from "@/lib/constants/messages"
 
 describe("Axios Response Interceptor", () => {
   beforeEach(() => {
@@ -65,7 +66,7 @@ describe("Axios Response Interceptor", () => {
       handlers: Array<{ rejected: (err: unknown) => Promise<unknown> }>
     }).handlers[0].rejected
 
-    await expect(errorHandler(error)).rejects.toThrow("Token refresh failed")
+    await expect(errorHandler(error)).rejects.toThrow(AuthErrorMessage.TOKEN_REFRESH_FAILED)
     expect(logoutSpy).toHaveBeenCalled()
   })
 })

@@ -40,11 +40,23 @@ export const DELETE = withAuth(
     if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.DELETE))
       return forbiddenError()
 
+    // Check if any entries are linked to this center
+    const { data: linkedEntry } = await client
+      .from(TableName.ENTRIES)
+      .select(EntityKey.ID)
+      .eq(EntityKey.CENTER_ID, entityId)
+      .limit(1)
+      .maybeSingle()
+
+    if (linkedEntry) {
+      return apiError(ApiErrorMessage.CANNOT_DELETE_CENTER, StatusCodes.BAD_REQUEST)
+    }
+
     try {
       const query = client
         .from(TableName.CENTERS)
         .delete()
-        .eq("id", entityId)
+        .eq(EntityKey.ID, entityId)
         .eq(EntityKey.FACTORY_ID, factoryId!)
 
       const { data, error } = await query.select("id")

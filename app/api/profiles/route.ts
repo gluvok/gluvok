@@ -142,6 +142,17 @@ export const DELETE = withAuth(async (req, user, client) => {
       StatusCodes.BAD_REQUEST
     )
 
+  // Check if any entries are linked to any of the selected profiles
+  const { data: linkedEntries } = await client
+    .from(TableName.ENTRIES)
+    .select(EntityKey.ID)
+    .in(EntityKey.PROFILE_ID, ids)
+    .limit(1)
+
+  if (linkedEntries && linkedEntries.length > 0) {
+    return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_PROFILES, StatusCodes.BAD_REQUEST)
+  }
+
   try {
     const { data: deletedCount, error } = await client.rpc("delete_profiles_with_user", {
       p_profile_ids: ids,

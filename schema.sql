@@ -53,7 +53,8 @@ CREATE TABLE IF NOT EXISTS factories (
     aadhar_number_mode field_requirement_mode NOT NULL DEFAULT 'mandatory',
     govt_id_mode field_requirement_mode NOT NULL DEFAULT 'mandatory',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
 );
 
 -- USERS TABLE (Custom authentication table)
@@ -66,7 +67,8 @@ CREATE TABLE IF NOT EXISTS users (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
 );
 
 -- PROFILES TABLE
@@ -78,7 +80,8 @@ CREATE TABLE IF NOT EXISTS profiles (
     role role_enum NOT NULL DEFAULT 'operator',
     factory_id INT REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
 );
 
 -- CUSTOMERS TABLE
@@ -90,7 +93,8 @@ CREATE TABLE IF NOT EXISTS customers (
     user_id INT REFERENCES users(id) ON DELETE RESTRICT,
     factory_id INT REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
 );
 
 -- CENTERS TABLE
@@ -99,7 +103,8 @@ CREATE TABLE IF NOT EXISTS centers (
     name TEXT NOT NULL,
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
 );
 
 -- COMMODITIES TABLE
@@ -107,7 +112,8 @@ CREATE TABLE IF NOT EXISTS commodities (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
 );
 
 -- RATES TABLE
@@ -118,7 +124,8 @@ CREATE TABLE IF NOT EXISTS rates (
     unit unit_enum NOT NULL DEFAULT 'kg',
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
 );
 
 -- ENTRIES TABLE (Raw weighment events)
@@ -135,7 +142,8 @@ CREATE TABLE IF NOT EXISTS entries (
     status entry_status NOT NULL DEFAULT 'pending',
     images TEXT[] DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
 );
 
 CREATE INDEX IF NOT EXISTS idx_entries_factory_vehicle 
@@ -150,7 +158,8 @@ CREATE TABLE IF NOT EXISTS weighments (
     type weighment_type NOT NULL DEFAULT 'unassigned',
     rate_id INT REFERENCES rates(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
 );
 
 -- COMPUTED COLUMNS FOR WEIGHMENTS DERIVED WEIGHTS (Enables PostgREST DB-level ORDER BY for gross_weight, tare_weight, net_weight)

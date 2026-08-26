@@ -7,7 +7,7 @@
 
 import * as React from "react"
 import { Table } from "@tanstack/react-table"
-import { EntityKey, Unit, WeighmentType } from "@/lib/constants/enums"
+import { EntityKey, Unit, WeighmentType, FilterValue, FieldType, ProjectSlug } from "@/lib/constants/enums"
 import { useEntitiesStore } from "@/lib/store"
 import { IndianRupee, Ruler } from "lucide-react"
 import { BaseCombobox } from "@/components/combobox/base"
@@ -49,7 +49,7 @@ export function WeighmentsFilters<TData>({ table }: WeighmentsFiltersProps<TData
 
   const typeOptions = React.useMemo(() => {
     return [
-      { value: "all", label: "All Types" },
+      { value: FilterValue.ALL, label: "All Types" },
       { value: WeighmentType.IN, label: "In" },
       { value: WeighmentType.OUT, label: "Out" },
       { value: WeighmentType.UNASSIGNED, label: "Unassigned" },
@@ -58,7 +58,7 @@ export function WeighmentsFilters<TData>({ table }: WeighmentsFiltersProps<TData
 
   const unitOptions = React.useMemo(() => {
     return [
-      { value: "all", label: "All Units" },
+      { value: FilterValue.ALL, label: "All Units" },
       ...Object.values(Unit).map((u) => ({
         value: u,
         label: u,
@@ -68,7 +68,7 @@ export function WeighmentsFilters<TData>({ table }: WeighmentsFiltersProps<TData
 
   const rateOptions = React.useMemo(() => {
     return [
-      { value: "all", label: "All Rates" },
+      { value: FilterValue.ALL, label: "All Rates" },
       ...rates.map((r) => ({
         value: String(r.id),
         label: r.label,
@@ -83,9 +83,9 @@ export function WeighmentsFilters<TData>({ table }: WeighmentsFiltersProps<TData
 
       {/* Type */}
       <BaseCombobox
-        type="type"
-        value={currentType ? String(currentType) : "all"}
-        onChange={(val) => setColumnFilter(EntityKey.TYPE, val === "all" ? undefined : val)}
+        type={FieldType.TYPE}
+        value={currentType ? String(currentType) : FilterValue.ALL}
+        onChange={(val) => setColumnFilter(EntityKey.TYPE, val === FilterValue.ALL ? undefined : val)}
         data={typeOptions}
         placeholder="All Types"
         searchPlaceholder="Search type..."
@@ -96,9 +96,9 @@ export function WeighmentsFilters<TData>({ table }: WeighmentsFiltersProps<TData
 
       {/* Unit */}
       <BaseCombobox
-        type="unit"
-        value={currentUnit ? String(currentUnit) : "all"}
-        onChange={(val) => setColumnFilter(EntityKey.UNIT, val === "all" ? undefined : val)}
+        type={FieldType.UNIT}
+        value={currentUnit ? String(currentUnit) : FilterValue.ALL}
+        onChange={(val) => setColumnFilter(EntityKey.UNIT, val === FilterValue.ALL ? undefined : val)}
         data={unitOptions}
         placeholder="All Units"
         searchPlaceholder="Search unit..."
@@ -109,9 +109,9 @@ export function WeighmentsFilters<TData>({ table }: WeighmentsFiltersProps<TData
 
       {/* Rate */}
       <BaseCombobox
-        type="rate"
-        value={currentRateId ? String(currentRateId) : "all"}
-        onChange={(val) => setColumnFilter(EntityKey.RATE_ID, val === "all" ? undefined : Number(val))}
+        type={ProjectSlug.RATES}
+        value={currentRateId ? String(currentRateId) : FilterValue.ALL}
+        onChange={(val) => setColumnFilter(EntityKey.RATE_ID, val === FilterValue.ALL ? undefined : Number(val))}
         data={rateOptions}
         placeholder="All Rates"
         searchPlaceholder="Search rate..."

@@ -25,7 +25,7 @@ import { ApiErrorMessage } from "@/lib/constants/messages"
 export const GET = withAuth(async (req, user, client) => {
   const pagination = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at"
+  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT
   const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
   const commodityIdParam = req.nextUrl.searchParams.get(EntityKey.COMMODITY_ID)
   const unitParam = req.nextUrl.searchParams.get(EntityKey.UNIT)
@@ -39,24 +39,24 @@ export const GET = withAuth(async (req, user, client) => {
     .eq(EntityKey.FACTORY_ID, user.factory_id!)
 
   if (commodityIdParam && commodityIdParam !== FilterValue.ALL) {
-    query = query.eq("commodity_id", Number(commodityIdParam))
+    query = query.eq(EntityKey.COMMODITY_ID, Number(commodityIdParam))
   }
   if (unitParam && unitParam !== FilterValue.ALL) {
-    query = query.eq("unit", unitParam)
+    query = query.eq(EntityKey.UNIT, unitParam)
   }
   if (startDateParam) {
-    query = query.gte("created_at", startDateParam)
+    query = query.gte(EntityKey.CREATED_AT, startDateParam)
   }
   if (endDateParam) {
-    query = query.lte("created_at", endDateParam)
+    query = query.lte(EntityKey.CREATED_AT, endDateParam)
   }
 
   if (search) {
     const searchNum = parseInt(search, 10)
     if (!isNaN(searchNum)) {
-      query = query.or(`unit_price.ilike.%${search}%,id.eq.${searchNum}`)
+      query = query.or(`${EntityKey.UNIT_PRICE}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`)
     } else {
-      query = query.ilike("unit_price", `%${search}%`)
+      query = query.ilike(EntityKey.UNIT_PRICE, `%${search}%`)
     }
   }
 
@@ -72,9 +72,9 @@ export const POST = withAuth(async (req, user, client) => {
 
   const { commodity_id, unit_price, unit } = body
   const insertValues: Record<string, unknown> = {
-    commodity_id: Number(commodity_id),
-    unit_price: String(unit_price),
-    unit,
+    [EntityKey.COMMODITY_ID]: Number(commodity_id),
+    [EntityKey.UNIT_PRICE]: String(unit_price),
+    [EntityKey.UNIT]: unit,
     [EntityKey.FACTORY_ID]: user.factory_id!,
   }
 
@@ -103,9 +103,9 @@ export const DELETE = withAuth(async (req, user, client) => {
     )
 
   try {
-    const query = client.from(TableName.RATES).delete().in("id", ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
+    const query = client.from(TableName.RATES).delete().in(EntityKey.ID, ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
 
-    const { data, error } = await query.select("id")
+    const { data, error } = await query.select(EntityKey.ID)
     if (error) throw error
 
     if (!data || data.length !== ids.length) {

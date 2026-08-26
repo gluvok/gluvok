@@ -57,7 +57,7 @@ export const GET = withAuth(async (_req, user, client) => {
       [EntityKey.ID]: r.id,
       [EntityKey.UNIT_PRICE]: r.unit_price,
       [EntityKey.UNIT]: r.unit,
-      commodity_name: commodity_name || null,
+      [EntityKey.COMMODITY_NAME]: commodity_name || null,
     }
   })
 

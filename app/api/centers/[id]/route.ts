@@ -22,8 +22,8 @@ export const PATCH = withAuth(
     const query = client
       .from(TableName.CENTERS)
       .update({
-        ...(name ? { name } : {}),
-        updated_at: new Date().toISOString(),
+        ...(name ? { [EntityKey.NAME]: name } : {}),
+        [EntityKey.UPDATED_AT]: new Date().toISOString(),
       })
       .eq(EntityKey.ID, entityId)
       .eq(EntityKey.FACTORY_ID, factoryId!)
@@ -59,7 +59,7 @@ export const DELETE = withAuth(
         .eq(EntityKey.ID, entityId)
         .eq(EntityKey.FACTORY_ID, factoryId!)
 
-      const { data, error } = await query.select("id")
+      const { data, error } = await query.select(EntityKey.ID)
       if (error) throw error
 
       if (!data || data.length === 0) {

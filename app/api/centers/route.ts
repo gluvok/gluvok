@@ -24,7 +24,7 @@ import { ApiErrorMessage } from "@/lib/constants/messages"
 export const GET = withAuth(async (req, user, client) => {
   const pagination = getPaginationParams(req.nextUrl)
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at"
+  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT
   const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
 
   let query = client
@@ -36,9 +36,9 @@ export const GET = withAuth(async (req, user, client) => {
   if (search) {
     const searchNum = parseInt(search, 10)
     if (!isNaN(searchNum)) {
-      query = query.or(`name.ilike.%${search}%,id.eq.${searchNum}`)
+      query = query.or(`${EntityKey.NAME}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`)
     } else {
-      query = query.ilike("name", `%${search}%`)
+      query = query.ilike(EntityKey.NAME, `%${search}%`)
     }
   }
 
@@ -54,7 +54,7 @@ export const POST = withAuth(async (req, user, client) => {
 
   const { name } = body
   const insertValues: Record<string, unknown> = {
-    name,
+    [EntityKey.NAME]: name,
     [EntityKey.FACTORY_ID]: user.factory_id,
   }
 
@@ -96,7 +96,7 @@ export const DELETE = withAuth(async (req, user, client) => {
   try {
     const query = client.from(TableName.CENTERS).delete().in(EntityKey.ID, ids).eq(EntityKey.FACTORY_ID, user.factory_id!)
 
-    const { data, error } = await query.select("id")
+    const { data, error } = await query.select(EntityKey.ID)
     if (error) throw error
 
     if (!data || data.length !== ids.length) {

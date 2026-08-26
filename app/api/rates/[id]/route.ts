@@ -54,12 +54,12 @@ export const PATCH = withAuth(
     const query = client
       .from(TableName.RATES)
       .update({
-        ...(unit_price ? { unit_price: String(unit_price) } : {}),
-        ...(unit ? { unit } : {}),
-        ...(commodity_id ? { commodity_id: Number(commodity_id) } : {}),
-        updated_at: new Date().toISOString(),
+        ...(unit_price ? { [EntityKey.UNIT_PRICE]: String(unit_price) } : {}),
+        ...(unit ? { [EntityKey.UNIT]: unit } : {}),
+        ...(commodity_id ? { [EntityKey.COMMODITY_ID]: Number(commodity_id) } : {}),
+        [EntityKey.UPDATED_AT]: new Date().toISOString(),
       })
-      .eq("id", entityId)
+      .eq(EntityKey.ID, entityId)
       .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: updated, error } = await query.select().maybeSingle()
@@ -78,10 +78,10 @@ export const DELETE = withAuth(
       const query = client
         .from(TableName.RATES)
         .delete()
-        .eq("id", entityId)
+        .eq(EntityKey.ID, entityId)
         .eq(EntityKey.FACTORY_ID, factoryId!)
 
-      const { data, error } = await query.select("id")
+      const { data, error } = await query.select(EntityKey.ID)
       if (error) throw error
 
       if (!data || data.length === 0) {

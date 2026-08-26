@@ -3,19 +3,23 @@
  * @description Toolbar section displayed above the table grid, housing filters, search input, reload button, view controls, and action buttons.
  */
 
-import { Table } from "@tanstack/react-table"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Search, Plus, RotateCw, X } from "lucide-react"
-import { DataTableViewOptions } from "@/components/data-table"
-import { BulkActions } from "./bulk-actions"
-import { ProjectFilters } from "@/components/projects/filters"
-import { ProjectSlug } from "@/lib/constants/enums"
-import { useAuthStore, getPermissions } from "@/lib/store"
+import { Table } from "@tanstack/react-table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, Plus, RotateCw, X } from "lucide-react";
+import { DataTableViewOptions } from "@/components/data-table";
+import { BulkActions } from "./bulk-actions";
+import { ProjectFilters } from "@/components/projects/filters";
+import { ProjectSlug } from "@/lib/constants/enums";
+import { useAuthStore, getPermissions } from "@/lib/store";
 
 interface ProjectToolbarProps<TData> {
-  table: Table<TData>; projectSlug: string; projectName: string
-  primaryIdKey: string; setCreating: (open: boolean) => void; onReload: () => void
+  table: Table<TData>;
+  projectSlug: string;
+  projectName: string;
+  primaryIdKey: string;
+  setCreating: (open: boolean) => void;
+  onReload: () => void;
 }
 
 /**
@@ -23,16 +27,21 @@ interface ProjectToolbarProps<TData> {
  * Renders search bar, reload, bulk actions (if rows selected), view options, and creation triggers based on user permissions.
  */
 export function ProjectToolbar<TData>({
-  table, projectSlug, projectName, primaryIdKey, setCreating, onReload
+  table,
+  projectSlug,
+  projectName,
+  primaryIdKey,
+  setCreating,
+  onReload,
 }: ProjectToolbarProps<TData>) {
-  const selectedRows = table.getFilteredSelectedRowModel().rows
-  const user = useAuthStore((state) => state.user)
-  const permissions = getPermissions(user?.role, projectSlug)
-  const isSettingsTable = projectSlug === ProjectSlug.SETTINGS
-  const hideAddForConfig = isSettingsTable && table.getPreFilteredRowModel().rows.length > 0
-  const canCreate = permissions.create && !hideAddForConfig
+  const selectedRows = table.getFilteredSelectedRowModel().rows;
+  const user = useAuthStore((state) => state.user);
+  const permissions = getPermissions(user?.role, projectSlug);
+  const isSettingsTable = projectSlug === ProjectSlug.SETTINGS;
+  const hideAddForConfig = isSettingsTable && table.getPreFilteredRowModel().rows.length > 0;
+  const canCreate = permissions.create && !hideAddForConfig;
 
-  const isFiltered = table.getState().columnFilters.length > 0 || !!table.getState().globalFilter
+  const isFiltered = table.getState().columnFilters.length > 0 || !!table.getState().globalFilter;
 
   return (
     <div className="flex flex-col gap-3">
@@ -54,9 +63,7 @@ export function ProjectToolbar<TData>({
                   id={`search-input-${projectSlug}`}
                   placeholder="Search..."
                   value={(table.getState().globalFilter as string) ?? ""}
-                  onChange={(event) =>
-                    table.setGlobalFilter(event.target.value)
-                  }
+                  onChange={(event) => table.setGlobalFilter(event.target.value)}
                   className="pl-9 pr-4 h-9 text-xs bg-background border border-input focus-visible:ring-1 focus-visible:ring-primary/50 transition-shadow"
                 />
               </div>

@@ -33,12 +33,19 @@ export function ProjectHeader({ projectSlug, projectName, Icon }: ProjectHeaderP
     <header className="flex h-16 shrink-0 items-center gap-2 border-b">
       <div className="flex items-center gap-2 px-4">
         <SidebarTrigger id={`sidebar-trigger-${projectSlug}`} className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 data-vertical:h-4 data-vertical:self-auto" />
+        <Separator
+          orientation="vertical"
+          className="mr-2 data-vertical:h-4 data-vertical:self-auto"
+        />
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link id={`breadcrumb-home-${projectSlug}`} href="/" className="flex items-center gap-1">
+                <Link
+                  id={`breadcrumb-home-${projectSlug}`}
+                  href="/"
+                  className="flex items-center gap-1"
+                >
                   <LayoutDashboard className="h-3 w-3" /> Home
                 </Link>
               </BreadcrumbLink>

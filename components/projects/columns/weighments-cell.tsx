@@ -3,19 +3,19 @@
  * @description Column definitions and rendering helpers for the Weighments-cell entity table.
  */
 
-"use client"
+"use client";
 
-import * as React from "react"
-import Image from "next/image"
-import { Image as ImageIcon, ImageOff } from "lucide-react"
-import { getDisplayName, splitFileName } from "@/lib/utils"
+import * as React from "react";
+import Image from "next/image";
+import { Image as ImageIcon, ImageOff } from "lucide-react";
+import { getDisplayName, splitFileName } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   Carousel,
   CarouselContent,
@@ -23,46 +23,48 @@ import {
   CarouselPrevious,
   CarouselNext,
   type CarouselApi,
-} from "@/components/ui/carousel"
+} from "@/components/ui/carousel";
 
 interface WeighmentImagesCellProps {
-  images?: string[]
-  vehicleNumber: string
+  images?: string[];
+  vehicleNumber: string;
 }
 
 export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentImagesCellProps) {
-  const [isOpen, setIsOpen] = React.useState(false)
-  const [api, setApi] = React.useState<CarouselApi>()
-  const [current, setCurrent] = React.useState(0)
-  const [count, setCount] = React.useState(0)
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [api, setApi] = React.useState<CarouselApi>();
+  const [current, setCurrent] = React.useState(0);
+  const [count, setCount] = React.useState(0);
 
   React.useEffect(() => {
     if (!api) {
-      return
+      return;
     }
 
     const updateSlide = () => {
-      setCount(api.scrollSnapList().length)
-      setCurrent(api.selectedScrollSnap() + 1)
-    }
+      setCount(api.scrollSnapList().length);
+      setCurrent(api.selectedScrollSnap() + 1);
+    };
 
     // Defer the initial read so setState is not called synchronously in the effect body
-    const id = setTimeout(updateSlide, 0)
+    const id = setTimeout(updateSlide, 0);
 
-    api.on("select", updateSlide)
-    api.on("reInit", updateSlide)
+    api.on("select", updateSlide);
+    api.on("reInit", updateSlide);
 
     return () => {
-      clearTimeout(id)
-      api.off("select", updateSlide)
-      api.off("reInit", updateSlide)
-    }
-  }, [api, isOpen])
+      clearTimeout(id);
+      api.off("select", updateSlide);
+      api.off("reInit", updateSlide);
+    };
+  }, [api, isOpen]);
 
-  const hasImages = images && images.length > 0
+  const hasImages = images && images.length > 0;
   const firstImage = hasImages
-    ? (images[0].startsWith("/") || images[0].startsWith("http") ? images[0] : `/${images[0]}`)
-    : null
+    ? images[0].startsWith("/") || images[0].startsWith("http")
+      ? images[0]
+      : `/${images[0]}`
+    : null;
 
   return (
     <>
@@ -103,7 +105,10 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
                 <span>Weighment Photos</span>
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Vehicle: <span className="font-mono font-medium text-foreground bg-muted px-1.5 py-0.5 rounded text-[10px]">{vehicleNumber}</span>
+                Vehicle:{" "}
+                <span className="font-mono font-medium text-foreground bg-muted px-1.5 py-0.5 rounded text-[10px]">
+                  {vehicleNumber}
+                </span>
               </DialogDescription>
             </DialogHeader>
 
@@ -111,9 +116,12 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
               <Carousel setApi={setApi} className="w-full max-w-full relative px-10">
                 <CarouselContent>
                   {images.map((img, i) => {
-                    const src = img.startsWith("/") || img.startsWith("http") ? img : `/${img}`
+                    const src = img.startsWith("/") || img.startsWith("http") ? img : `/${img}`;
                     return (
-                      <CarouselItem key={i} className="flex flex-col items-center justify-center min-w-0">
+                      <CarouselItem
+                        key={i}
+                        className="flex flex-col items-center justify-center min-w-0"
+                      >
                         <div className="relative aspect-[4/3] w-full rounded-xl border border-muted-foreground/10 bg-card overflow-hidden shadow-md group">
                           <Image
                             src={src}
@@ -129,11 +137,15 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
                           title={getDisplayName(img, undefined, i)}
                           className="mt-2 flex justify-center text-[11px] font-mono text-muted-foreground w-full px-2 overflow-hidden whitespace-nowrap"
                         >
-                          <span className="truncate">{splitFileName(getDisplayName(img, undefined, i))[0]}</span>
-                          <span className="shrink-0">{splitFileName(getDisplayName(img, undefined, i))[1]}</span>
+                          <span className="truncate">
+                            {splitFileName(getDisplayName(img, undefined, i))[0]}
+                          </span>
+                          <span className="shrink-0">
+                            {splitFileName(getDisplayName(img, undefined, i))[1]}
+                          </span>
                         </div>
                       </CarouselItem>
-                    )
+                    );
                   })}
                 </CarouselContent>
                 {images.length > 1 && (
@@ -152,5 +164,5 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
         </Dialog>
       )}
     </>
-  )
+  );
 }

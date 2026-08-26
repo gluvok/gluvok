@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
 /**
  * @file components/combobox/role.tsx
  * @description Combobox selector specifically built for selecting user roles.
  */
 
-import { BaseCombobox } from "./base"
+import { BaseCombobox } from "./base";
 import { Role } from "@/lib/constants/enums";
-import { getRoleIcon } from "@/lib/fields/helpers"
+import { getRoleIcon } from "@/lib/fields/helpers";
 
 interface RoleComboboxProps {
-  value: string
-  onChange: (value: string) => void
-  id?: string
-  disabled?: boolean
+  value: string;
+  onChange: (value: string) => void;
+  id?: string;
+  disabled?: boolean;
 }
 
 export function RoleCombobox({ value, onChange, id, disabled }: RoleComboboxProps) {
@@ -24,7 +24,7 @@ export function RoleCombobox({ value, onChange, id, disabled }: RoleComboboxProp
     { value: Role.BASE, label: Role.BASE },
   ];
 
-  const ActiveIcon = getRoleIcon(value)
+  const ActiveIcon = getRoleIcon(value);
 
   return (
     <BaseCombobox
@@ -37,5 +37,5 @@ export function RoleCombobox({ value, onChange, id, disabled }: RoleComboboxProp
       id={id}
       disabled={disabled}
     />
-  )
+  );
 }

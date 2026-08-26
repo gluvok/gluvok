@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 /**
  * @file components/combobox/mode.tsx
@@ -6,21 +6,21 @@
  * Each mode option renders with a distinct icon for quick visual identification.
  */
 
-import { BaseCombobox } from "./base"
-import { FieldRequirementMode } from "@/lib/constants/enums"
-import { getModeIcon, getModeColorClass } from "@/lib/fields"
+import { BaseCombobox } from "./base";
+import { FieldRequirementMode } from "@/lib/constants/enums";
+import { getModeIcon, getModeColorClass } from "@/lib/fields";
 
 interface ModeComboboxProps {
-  value: string
-  onChange: (value: string) => void
-  id?: string
+  value: string;
+  onChange: (value: string) => void;
+  id?: string;
 }
 
 const MODE_OPTIONS = [
   { value: FieldRequirementMode.MANDATORY, label: "Mandatory" },
   { value: FieldRequirementMode.OPTIONAL, label: "Optional" },
   { value: FieldRequirementMode.NOT_REQUIRED, label: "Not Required" },
-]
+];
 
 /**
  * ModeCombobox Component
@@ -28,8 +28,8 @@ const MODE_OPTIONS = [
  * Each option shows a contextual colored icon: CheckCircle2 (emerald), HelpCircle (amber), or Ban (rose).
  */
 export function ModeCombobox({ value, onChange, id }: ModeComboboxProps) {
-  const selectedIcon = getModeIcon(value)
-  const iconColorClass = getModeColorClass(value)
+  const selectedIcon = getModeIcon(value);
+  const iconColorClass = getModeColorClass(value);
 
   return (
     <BaseCombobox
@@ -42,5 +42,5 @@ export function ModeCombobox({ value, onChange, id }: ModeComboboxProps) {
       placeholder="Select mode..."
       id={id}
     />
-  )
+  );
 }

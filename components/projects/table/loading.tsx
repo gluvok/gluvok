@@ -3,7 +3,7 @@
  * @description Simple spinner shown while table data is loading.
  */
 
-import { Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react";
 
 /**
  * ProjectTableLoading Component
@@ -14,5 +14,5 @@ export function ProjectTableLoading() {
     <div className="flex items-center justify-center py-24">
       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
     </div>
-  )
+  );
 }

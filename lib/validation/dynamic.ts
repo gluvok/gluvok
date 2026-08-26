@@ -3,17 +3,16 @@
  * @description Dynamic Zod validation schema generator based on the active factory.
  */
 
-import * as z from "zod"
-import { EntityKey, ColumnLabel, FieldRequirementMode, Role } from "@/lib/constants/enums"
+import * as z from "zod";
+import { EntityKey, ColumnLabel, FieldRequirementMode, Role } from "@/lib/constants/enums";
 import { type Factory } from "@/types";
-import { integerIdSchema, nameSchema } from "./helpers"
+import { integerIdSchema, nameSchema } from "./helpers";
 
 /**
  * Dynamic Aadhaar schema generator based on active configuration mode.
  */
 function buildAadharSchema(factory: Factory | null): z.ZodTypeAny {
-  const aadharMode =
-    factory?.aadhar_number_mode ?? FieldRequirementMode.MANDATORY;
+  const aadharMode = factory?.aadhar_number_mode ?? FieldRequirementMode.MANDATORY;
 
   if (aadharMode === FieldRequirementMode.MANDATORY) {
     return z.preprocess(
@@ -27,10 +26,7 @@ function buildAadharSchema(factory: Factory | null): z.ZodTypeAny {
         .string({ message: `${ColumnLabel.AADHAR_NUMBER} is required` })
         .min(1, `${ColumnLabel.AADHAR_NUMBER} is required`)
         .length(12, `${ColumnLabel.AADHAR_NUMBER} must be exactly 12 digits`)
-        .regex(
-          /^\d+$/,
-          `${ColumnLabel.AADHAR_NUMBER} must contain only digits`,
-        ),
+        .regex(/^\d+$/, `${ColumnLabel.AADHAR_NUMBER} must contain only digits`),
     );
   }
 
@@ -41,10 +37,7 @@ function buildAadharSchema(factory: Factory | null): z.ZodTypeAny {
         z
           .string()
           .length(12, `${ColumnLabel.AADHAR_NUMBER} must be exactly 12 digits`)
-          .regex(
-            /^\d+$/,
-            `${ColumnLabel.AADHAR_NUMBER} must contain only digits`,
-          )
+          .regex(/^\d+$/, `${ColumnLabel.AADHAR_NUMBER} must contain only digits`)
           .optional()
           .nullable()
           .or(z.literal("")),
@@ -70,18 +63,23 @@ function buildAadharSchema(factory: Factory | null): z.ZodTypeAny {
  *   - If new password is provided -> must be >= 6 chars, confirmPassword required, and must match
  */
 export function validatePasswordRefinement(
-  data: { [EntityKey.USERNAME]?: string; [EntityKey.PASSWORD]?: string; [EntityKey.CONFIRM_PASSWORD]?: string; confirm_password?: string },
+  data: {
+    [EntityKey.USERNAME]?: string;
+    [EntityKey.PASSWORD]?: string;
+    [EntityKey.CONFIRM_PASSWORD]?: string;
+    confirm_password?: string;
+  },
   ctx: z.RefinementCtx,
   isEdit: boolean,
-  requireUsername = true
+  requireUsername = true,
 ) {
-  const rawUsername = data[EntityKey.USERNAME]
-  const rawPassword = data[EntityKey.PASSWORD]
-  const rawConfirm = data[EntityKey.CONFIRM_PASSWORD] ?? data.confirm_password
+  const rawUsername = data[EntityKey.USERNAME];
+  const rawPassword = data[EntityKey.PASSWORD];
+  const rawConfirm = data[EntityKey.CONFIRM_PASSWORD] ?? data.confirm_password;
 
-  const hasUsername = Boolean(rawUsername && rawUsername.trim().length > 0)
-  const hasPassword = Boolean(rawPassword && rawPassword.trim().length > 0)
-  const hasConfirm = Boolean(rawConfirm && rawConfirm.trim().length > 0)
+  const hasUsername = Boolean(rawUsername && rawUsername.trim().length > 0);
+  const hasPassword = Boolean(rawPassword && rawPassword.trim().length > 0);
+  const hasConfirm = Boolean(rawConfirm && rawConfirm.trim().length > 0);
 
   // 1. Username validation
   if (!hasUsername) {
@@ -92,24 +90,24 @@ export function validatePasswordRefinement(
           ? `${ColumnLabel.USERNAME} is required when setting a password`
           : `${ColumnLabel.USERNAME} is required`,
         path: [EntityKey.USERNAME],
-      })
+      });
     }
   } else if (rawUsername!.trim().length < 3) {
     ctx.addIssue({
       code: "custom",
       message: `${ColumnLabel.USERNAME} must be at least 3 characters`,
       path: [EntityKey.USERNAME],
-    })
+    });
   }
 
   // 2. Password presence check
-  const isPasswordRequired = !isEdit && (requireUsername || hasUsername)
+  const isPasswordRequired = !isEdit && (requireUsername || hasUsername);
   if (isPasswordRequired && !hasPassword) {
     ctx.addIssue({
       code: "custom",
       message: `${ColumnLabel.PASSWORD} is required`,
       path: [EntityKey.PASSWORD],
-    })
+    });
   }
 
   // 3. Password length check (if provided)
@@ -118,30 +116,27 @@ export function validatePasswordRefinement(
       code: "custom",
       message: `${ColumnLabel.PASSWORD} must be at least 6 characters`,
       path: [EntityKey.PASSWORD],
-    })
+    });
   }
 
   // 4. Confirm password check & equality check
-  const isConfirmRequired = hasPassword || isPasswordRequired
+  const isConfirmRequired = hasPassword || isPasswordRequired;
   if (isConfirmRequired && !hasConfirm) {
     ctx.addIssue({
       code: "custom",
       message: "Please confirm your password",
       path: [EntityKey.CONFIRM_PASSWORD],
-    })
+    });
   } else if (hasPassword && rawPassword !== rawConfirm) {
     ctx.addIssue({
       code: "custom",
       message: "Passwords do not match",
       path: [EntityKey.CONFIRM_PASSWORD],
-    })
+    });
   }
 }
 
-export function getDynamicCustomerSchema(
-  factory: Factory | null,
-  isEdit = false,
-) {
+export function getDynamicCustomerSchema(factory: Factory | null, isEdit = false) {
   const govtIdMode = factory?.govt_id_mode ?? FieldRequirementMode.MANDATORY;
 
   let govtIdSchema: z.ZodTypeAny;
@@ -175,10 +170,7 @@ export function getDynamicCustomerSchema(
     });
 }
 
-export function getDynamicProfileSchema(
-  factory: Factory | null,
-  isEdit = false,
-) {
+export function getDynamicProfileSchema(factory: Factory | null, isEdit = false) {
   const aadharSchema = buildAadharSchema(factory);
 
   return z
@@ -194,7 +186,5 @@ export function getDynamicProfileSchema(
       [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
       ...(isEdit ? { [EntityKey.IS_ACTIVE]: z.boolean().optional() } : {}),
     })
-    .superRefine((data, ctx) =>
-      validatePasswordRefinement(data, ctx, isEdit, true),
-    );
+    .superRefine((data, ctx) => validatePasswordRefinement(data, ctx, isEdit, true));
 }

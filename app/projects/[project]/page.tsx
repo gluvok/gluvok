@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedParams = await params;
   const projectSlug = resolvedParams?.project || "";
   const config = PROJECT_REGISTRY[projectSlug];
-  
+
   if (!config) return { title: "Not Found | gluvok Dashboard" };
 
   return {
@@ -49,15 +49,16 @@ export default async function ProjectPage({ params }: Props) {
     <>
       {/* Navigation header for the project */}
       <ProjectHeader projectSlug={projectSlug} projectName={projectName} Icon={IconComponent} />
-      
+
       {/* Main dashboard content container */}
       <main className="p-6 w-full min-w-0">
-        <ProjectTitle projectName={projectName} projectSlug={projectSlug} desc={desc} Icon={IconComponent} />
-        <ProjectClient
-          key={projectSlug}
+        <ProjectTitle
           projectName={projectName}
           projectSlug={projectSlug}
+          desc={desc}
+          Icon={IconComponent}
         />
+        <ProjectClient key={projectSlug} projectName={projectName} projectSlug={projectSlug} />
       </main>
     </>
   );

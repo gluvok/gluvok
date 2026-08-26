@@ -1,9 +1,4 @@
-import {
-  LoaderCircleIcon,
-  LoaderIcon,
-  LoaderPinwheelIcon,
-  type LucideProps,
-} from "lucide-react";
+import { LoaderCircleIcon, LoaderIcon, LoaderPinwheelIcon, type LucideProps } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type SpinnerVariantProps = Omit<SpinnerProps, "variant">;
@@ -16,11 +11,7 @@ const Pinwheel = ({ className, ...props }: SpinnerVariantProps) => (
   <LoaderPinwheelIcon className={cn("animate-spin", className)} {...props} />
 );
 
-const CircleFilled = ({
-  className,
-  size = 24,
-  ...props
-}: SpinnerVariantProps) => (
+const CircleFilled = ({ className, size = 24, ...props }: SpinnerVariantProps) => (
   <div className="relative" style={{ width: size, height: size }}>
     <div className="absolute inset-0 rotate-180">
       <LoaderCircleIcon
@@ -29,11 +20,7 @@ const CircleFilled = ({
         {...props}
       />
     </div>
-    <LoaderCircleIcon
-      className={cn("relative animate-spin", className)}
-      size={size}
-      {...props}
-    />
+    <LoaderCircleIcon className={cn("relative animate-spin", className)} size={size} {...props} />
   </div>
 );
 
@@ -143,13 +130,7 @@ const Ring = ({ size = 24, ...props }: SpinnerVariantProps) => (
 );
 
 const Bars = ({ size = 24, ...props }: SpinnerVariantProps) => (
-  <svg
-    height={size}
-    viewBox="0 0 24 24"
-    width={size}
-    xmlns="http://www.w3.org/2000/svg"
-    {...props}
-  >
+  <svg height={size} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg" {...props}>
     <title>Loading...</title>
     <style>{`
       .spinner-bar {
@@ -174,14 +155,7 @@ const Bars = ({ size = 24, ...props }: SpinnerVariantProps) => (
         }
       }
     `}</style>
-    <rect
-      className="spinner-bar"
-      fill="currentColor"
-      height="22"
-      width="6"
-      x="1"
-      y="1"
-    />
+    <rect className="spinner-bar" fill="currentColor" height="22" width="6" x="1" y="1" />
     <rect
       className="spinner-bar spinner-bars-2"
       fill="currentColor"
@@ -263,8 +237,6 @@ export const Spinner = ({ variant, ...props }: SpinnerProps) => {
     case "infinite":
       return <Infinite {...props} />;
     default:
-      return (
-        <LoaderCircleIcon className={cn("size-6 animate-spin", props.className)} {...props} />
-      );
+      return <LoaderCircleIcon className={cn("size-6 animate-spin", props.className)} {...props} />;
   }
 };

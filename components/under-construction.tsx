@@ -1,26 +1,31 @@
-"use client"
+"use client";
 
 /**
  * @file components/under-construction.tsx
  * @description Reusable "Under Construction" page wrapper for pending platform routes.
  */
 
-import Link from "next/link"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
-import { Construction, Clock, ArrowLeft, Layers, type LucideIcon } from "lucide-react"
-import { jakarta, inter } from "@/lib/fonts"
-import { cn } from "@/lib/utils"
-import { AppRoutes } from "@/lib/constants/enums"
+import Link from "next/link";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { Construction, Clock, ArrowLeft, Layers, type LucideIcon } from "lucide-react";
+import { jakarta, inter } from "@/lib/fonts";
+import { cn } from "@/lib/utils";
+import { AppRoutes } from "@/lib/constants/enums";
 
 interface UnderConstructionPageProps {
-  title: string
-  breadcrumbTitle: string
-  description: string
-  icon: LucideIcon
-  triggerId: string
+  title: string;
+  breadcrumbTitle: string;
+  description: string;
+  icon: LucideIcon;
+  triggerId: string;
 }
 
 export function UnderConstructionPage({
@@ -34,7 +39,10 @@ export function UnderConstructionPage({
     <>
       <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
         <SidebarTrigger id={triggerId} className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 data-vertical:h-4 data-vertical:self-auto" />
+        <Separator
+          orientation="vertical"
+          className="mr-2 data-vertical:h-4 data-vertical:self-auto"
+        />
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -65,7 +73,12 @@ export function UnderConstructionPage({
 
           {/* Heading & Subtext */}
           <div className="space-y-2">
-            <h1 className={cn(jakarta.className, "text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl")}>
+            <h1
+              className={cn(
+                jakarta.className,
+                "text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl",
+              )}
+            >
               {title}
             </h1>
             <p className={cn(inter.className, "text-sm text-muted-foreground leading-relaxed")}>
@@ -91,5 +104,5 @@ export function UnderConstructionPage({
         </div>
       </main>
     </>
-  )
+  );
 }

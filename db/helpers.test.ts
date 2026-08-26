@@ -49,7 +49,7 @@ describe("withEntityScope", () => {
       new Request("http://localhost") as never,
       sampleUser,
       {} as never,
-      { params: Promise.resolve({ id: "invalid" }) }
+      { params: Promise.resolve({ id: "invalid" }) },
     );
 
     expect(invalidResponse.status).toBe(400);
@@ -64,7 +64,7 @@ describe("withEntityScope", () => {
       new Request("http://localhost") as never,
       sampleUser,
       {} as never,
-      { params: Promise.resolve({ id: "5" }) }
+      { params: Promise.resolve({ id: "5" }) },
     );
 
     expect(validResponse.status).toBe(200);
@@ -73,7 +73,7 @@ describe("withEntityScope", () => {
       sampleUser,
       expect.anything(),
       expect.anything(),
-      { entityId: 5, factoryId: 1 }
+      { entityId: 5, factoryId: 1 },
     );
   });
 });

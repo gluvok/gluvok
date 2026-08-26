@@ -4,10 +4,10 @@
  */
 
 export interface PaginatedParams {
-  page: number
-  pageSize: number
-  sortColumn?: string
-  sortDesc?: boolean
-  search?: string
-  filters?: Record<string, unknown>
+  page: number;
+  pageSize: number;
+  sortColumn?: string;
+  sortDesc?: boolean;
+  search?: string;
+  filters?: Record<string, unknown>;
 }

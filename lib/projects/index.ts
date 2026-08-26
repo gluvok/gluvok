@@ -3,6 +3,6 @@
  * @description Helper component or configuration for project dashboards (index).
  */
 
-export * from "./types"
-export * from "./data"
-export * from "./registry"
+export * from "./types";
+export * from "./data";
+export * from "./registry";

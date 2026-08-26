@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
 /**
  * @file components/auth/common.tsx
  * @description Common layout and input sub-components utilized across various authentication pages.
  */
 
-import * as React from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Field, FieldLabel, FieldError, FieldDescription } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { UseFormRegisterReturn, FieldError as HookFieldError } from "react-hook-form"
-import { LogoVertical } from "@/components/logo"
-import Link from "next/link"
+import * as React from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldLabel, FieldError, FieldDescription } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { UseFormRegisterReturn, FieldError as HookFieldError } from "react-hook-form";
+import { LogoVertical } from "@/components/logo";
+import Link from "next/link";
 
 interface AuthCardProps {
-  title: string
-  description: string
-  children: React.ReactNode
-  footer?: React.ReactNode
+  title: string;
+  description: string;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
 }
 
 /**
@@ -39,18 +39,18 @@ export function AuthCard({ title, description, children, footer }: AuthCardProps
         </CardContent>
       </Card>
       <FieldDescription className="px-6 text-center">
-        By clicking continue, you agree to our <Link href="#">Terms of Service</Link>{" "}
-        and <Link href="#">Privacy Policy</Link>.
+        By clicking continue, you agree to our <Link href="#">Terms of Service</Link> and{" "}
+        <Link href="#">Privacy Policy</Link>.
       </FieldDescription>
     </div>
-  )
+  );
 }
 
 interface AuthInputProps extends React.ComponentProps<typeof Input> {
-  label: string
-  error?: HookFieldError
-  registration: UseFormRegisterReturn
-  labelRight?: React.ReactNode
+  label: string;
+  error?: HookFieldError;
+  registration: UseFormRegisterReturn;
+  labelRight?: React.ReactNode;
 }
 
 /**
@@ -58,9 +58,16 @@ interface AuthInputProps extends React.ComponentProps<typeof Input> {
  * Wrapper around standard form inputs, attaching labels, inline errors,
  * react-hook-form integration, and secondary actions (like "Forgot password?" links).
  */
-export function AuthInput({ label, error, registration, id, labelRight, ...props }: AuthInputProps) {
+export function AuthInput({
+  label,
+  error,
+  registration,
+  id,
+  labelRight,
+  ...props
+}: AuthInputProps) {
   return (
-    <Field { ...{ id } }>
+    <Field {...{ id }}>
       <div className="flex items-center justify-between">
         <FieldLabel htmlFor={id}>{label}</FieldLabel>
         {labelRight}
@@ -68,11 +75,11 @@ export function AuthInput({ label, error, registration, id, labelRight, ...props
       <Input id={id} {...props} {...registration} />
       {error && <FieldError>{error.message}</FieldError>}
     </Field>
-  )
+  );
 }
 
 interface AuthPageLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 /**
@@ -85,10 +92,10 @@ export function AuthPageLayout({ children }: AuthPageLayoutProps) {
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
       <div className="flex w-full max-w-sm flex-col gap-6">
         <Link href="#" className="flex items-center gap-2 self-center font-medium">
-          <LogoVertical size={100}/>
+          <LogoVertical size={100} />
         </Link>
         {children}
       </div>
     </div>
-  )
+  );
 }

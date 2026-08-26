@@ -61,8 +61,8 @@ export const SingularEntityName = {
   PROFILE: "Profile",
   USER: "User",
   SETTING: "Setting",
-} as const
-export type SingularEntityName = typeof SingularEntityName[keyof typeof SingularEntityName]
+} as const;
+export type SingularEntityName = (typeof SingularEntityName)[keyof typeof SingularEntityName];
 
 export const ColumnLabel = {
   ...SingularEntityName,
@@ -120,8 +120,8 @@ export const ColumnLabel = {
   IN_CUSTOMER_NAME: "In-Customer Name",
   OUT_CUSTOMER_ID: "Out-Customer ID",
   OUT_CUSTOMER_NAME: "Out-Customer Name",
-} as const
-export type ColumnLabel = typeof ColumnLabel[keyof typeof ColumnLabel]
+} as const;
+export type ColumnLabel = (typeof ColumnLabel)[keyof typeof ColumnLabel];
 
 export enum DialogMode {
   CREATE = "create",

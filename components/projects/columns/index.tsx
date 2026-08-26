@@ -3,41 +3,50 @@
  * @description Column definitions and rendering helpers for the Index entity table.
  */
 
-import { ColumnDef } from "@tanstack/react-table"
-import { type EntityRecord } from "@/types"
-import { ProjectSlug } from "@/lib/constants/enums"
-import { useAuthStore, isColumnVisible, type Permission } from "@/lib/store"
+import { ColumnDef } from "@tanstack/react-table";
+import { type EntityRecord } from "@/types";
+import { ProjectSlug } from "@/lib/constants/enums";
+import { useAuthStore, isColumnVisible, type Permission } from "@/lib/store";
 
-import { getSelectColumn } from "./select"
-import { getSystemColumns } from "./system"
-import { getActionsColumn } from "./actions"
+import { getSelectColumn } from "./select";
+import { getSystemColumns } from "./system";
+import { getActionsColumn } from "./actions";
 
-import { getCentersColumns } from "./centers"
-import { getCommoditiesColumns } from "./commodities"
-import { getRatesColumns } from "./rates"
-import { getCustomersColumns } from "./customers"
-import { getEntriesColumns } from "./entries"
-import { getWeighmentsColumns } from "./weighments"
-import { getProfilesColumns } from "./profiles"
-import { getSettingsColumns } from "./settings"
+import { getCentersColumns } from "./centers";
+import { getCommoditiesColumns } from "./commodities";
+import { getRatesColumns } from "./rates";
+import { getCustomersColumns } from "./customers";
+import { getEntriesColumns } from "./entries";
+import { getWeighmentsColumns } from "./weighments";
+import { getProfilesColumns } from "./profiles";
+import { getSettingsColumns } from "./settings";
 
 export interface ColumnActionsCallbacks<T = EntityRecord> {
-  onEdit: (item: T) => void
-  onDelete: (item: T) => void
+  onEdit: (item: T) => void;
+  onDelete: (item: T) => void;
 }
 
 function getSpecificColumns<T>(projectSlug: string): ColumnDef<T>[] {
   switch (projectSlug) {
-    case ProjectSlug.CENTERS: return getCentersColumns<T>()
-    case ProjectSlug.COMMODITIES: return getCommoditiesColumns<T>()
-    case ProjectSlug.RATES: return getRatesColumns<T>()
-    case ProjectSlug.CUSTOMERS: return getCustomersColumns<T>()
-    case ProjectSlug.ENTRIES: return getEntriesColumns<T>()
-    case ProjectSlug.WEIGHMENTS: return getWeighmentsColumns<T>()
-    case ProjectSlug.PROFILES: return getProfilesColumns<T>()
-    case ProjectSlug.SETTINGS: return getSettingsColumns<T>()
+    case ProjectSlug.CENTERS:
+      return getCentersColumns<T>();
+    case ProjectSlug.COMMODITIES:
+      return getCommoditiesColumns<T>();
+    case ProjectSlug.RATES:
+      return getRatesColumns<T>();
+    case ProjectSlug.CUSTOMERS:
+      return getCustomersColumns<T>();
+    case ProjectSlug.ENTRIES:
+      return getEntriesColumns<T>();
+    case ProjectSlug.WEIGHMENTS:
+      return getWeighmentsColumns<T>();
+    case ProjectSlug.PROFILES:
+      return getProfilesColumns<T>();
+    case ProjectSlug.SETTINGS:
+      return getSettingsColumns<T>();
 
-    default: return []
+    default:
+      return [];
   }
 }
 
@@ -46,10 +55,10 @@ export function getProjectColumns<T extends EntityRecord = EntityRecord>(
   primaryIdKey: string,
   projectName: string,
   callbacks: ColumnActionsCallbacks<T>,
-  permissions?: Permission
+  permissions?: Permission,
 ): ColumnDef<T>[] {
-  const userRole = useAuthStore.getState().user?.role
-  const systemCols = getSystemColumns<T>(primaryIdKey)
+  const userRole = useAuthStore.getState().user?.role;
+  const systemCols = getSystemColumns<T>(primaryIdKey);
 
   const columns: ColumnDef<T>[] = [
     getSelectColumn<T>(),
@@ -58,14 +67,14 @@ export function getProjectColumns<T extends EntityRecord = EntityRecord>(
     systemCols[1], // Created At
     systemCols[2], // Updated At
     getActionsColumn<T>(projectSlug, primaryIdKey, projectName, callbacks, permissions),
-  ]
+  ];
 
-  return columns.filter((col) => {
-    const colKey = (col.id || (col as { accessorKey?: string }).accessorKey) as string
-    return isColumnVisible(userRole, projectSlug, colKey)
-  }).map((column) => (
-    projectSlug === ProjectSlug.SETTINGS
-      ? { ...column, enableSorting: false }
-      : column
-  ))
+  return columns
+    .filter((col) => {
+      const colKey = (col.id || (col as { accessorKey?: string }).accessorKey) as string;
+      return isColumnVisible(userRole, projectSlug, colKey);
+    })
+    .map((column) =>
+      projectSlug === ProjectSlug.SETTINGS ? { ...column, enableSorting: false } : column,
+    );
 }

@@ -3,10 +3,9 @@
  * @description General configuration constants and barrel exports.
  */
 
-export * from "./enums"
-export * from "./routes"
-export * from "./messages"
+export * from "./enums";
+export * from "./routes";
+export * from "./messages";
 
 /** Default avatar image path used throughout the platform */
-export const DEFAULT_AVATAR = "/avatars/default.jpg"
-
+export const DEFAULT_AVATAR = "/avatars/default.jpg";

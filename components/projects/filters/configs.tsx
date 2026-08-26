@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 /**
  * @file components/projects/filters/configs.tsx
@@ -6,5 +6,5 @@
  */
 
 export function ConfigsFilters() {
-  return null
+  return null;
 }

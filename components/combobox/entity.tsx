@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 /**
  * @file components/combobox/entity.tsx
@@ -6,17 +6,17 @@
  * Fetches option rows asynchronously and maps them to a selectable combobox list.
  */
 
-import { BaseCombobox } from "./base"
-import { useEntityOptions } from "./use-entity-options"
+import { BaseCombobox } from "./base";
+import { useEntityOptions } from "./use-entity-options";
 
 interface EntityComboboxProps {
-  entitySlug: string
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  id?: string
-  contextSlug?: string
-  fieldKey?: string
+  entitySlug: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  id?: string;
+  contextSlug?: string;
+  fieldKey?: string;
 }
 
 /**
@@ -33,7 +33,7 @@ export function EntityCombobox({
   contextSlug,
   fieldKey,
 }: EntityComboboxProps) {
-  const { options, loading } = useEntityOptions(entitySlug, contextSlug, fieldKey, value)
+  const { options, loading } = useEntityOptions(entitySlug, contextSlug, fieldKey, value);
 
   return (
     <BaseCombobox
@@ -44,5 +44,5 @@ export function EntityCombobox({
       placeholder={loading ? "Loading..." : placeholder}
       id={id}
     />
-  )
+  );
 }

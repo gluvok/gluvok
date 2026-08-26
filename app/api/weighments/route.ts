@@ -1,10 +1,5 @@
-import { NextResponse } from "next/server"
-import {
-  withAuth,
-  getPaginationParams,
-  apiError,
-  StatusCodes,
-} from "@/db/helpers"
+import { NextResponse } from "next/server";
+import { withAuth, getPaginationParams, apiError, StatusCodes } from "@/db/helpers";
 import {
   QueryParam,
   EntityKey,
@@ -13,46 +8,46 @@ import {
   FilterValue,
   WeighmentType,
   Unit,
-} from "@/lib/constants/enums"
+} from "@/lib/constants/enums";
 
 export const GET = withAuth(async (req, user, client) => {
-  const pagination = getPaginationParams(req.nextUrl)
-  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH)
-  const typeParam = req.nextUrl.searchParams.get(EntityKey.TYPE)
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT
-  const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
-  const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE)
-  const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE)
+  const pagination = getPaginationParams(req.nextUrl);
+  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
+  const typeParam = req.nextUrl.searchParams.get(EntityKey.TYPE);
+  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT;
+  const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true";
+  const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE);
+  const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE);
 
   // Query weighments joined with in_entry and out_entry and their related centers, users, customers
   let query = client
     .from(TableName.WEIGHMENTS)
     .select(
       `*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.USERS}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME})), ${RelationAlias.OUT_ENTRY}:${TableName.ENTRIES}!out_entry_id(*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.USERS}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME}))`,
-      { count: "exact" }
+      { count: "exact" },
     )
-    .eq(`${RelationAlias.IN_ENTRY}.${EntityKey.FACTORY_ID}`, user.factory_id!)
+    .eq(`${RelationAlias.IN_ENTRY}.${EntityKey.FACTORY_ID}`, user.factory_id!);
 
   if (typeParam && typeParam !== FilterValue.ALL) {
-    query = query.eq(EntityKey.TYPE, typeParam)
+    query = query.eq(EntityKey.TYPE, typeParam);
   }
 
   if (startDateParam) {
-    query = query.gte(EntityKey.CREATED_AT, startDateParam)
+    query = query.gte(EntityKey.CREATED_AT, startDateParam);
   }
 
   if (endDateParam) {
-    query = query.lte(EntityKey.CREATED_AT, endDateParam)
+    query = query.lte(EntityKey.CREATED_AT, endDateParam);
   }
 
   if (search) {
-    const searchNum = parseInt(search, 10)
+    const searchNum = parseInt(search, 10);
     if (!isNaN(searchNum)) {
       query = query.or(
-        `${EntityKey.IN_ENTRY_ID}.eq.${searchNum},${EntityKey.OUT_ENTRY_ID}.eq.${searchNum},${RelationAlias.IN_ENTRY}.${EntityKey.VEHICLE_NUMBER}.ilike.%${search}%`
-      )
+        `${EntityKey.IN_ENTRY_ID}.eq.${searchNum},${EntityKey.OUT_ENTRY_ID}.eq.${searchNum},${RelationAlias.IN_ENTRY}.${EntityKey.VEHICLE_NUMBER}.ilike.%${search}%`,
+      );
     } else {
-      query = query.or(`${RelationAlias.IN_ENTRY}.${EntityKey.VEHICLE_NUMBER}.ilike.%${search}%`)
+      query = query.or(`${RelationAlias.IN_ENTRY}.${EntityKey.VEHICLE_NUMBER}.ilike.%${search}%`);
     }
   }
 
@@ -67,45 +62,49 @@ export const GET = withAuth(async (req, user, client) => {
     sortColumn === EntityKey.TARE_WEIGHT ||
     sortColumn === EntityKey.NET_WEIGHT
   ) {
-    query = query.order(sortColumn, { ascending: !sortDesc })
+    query = query.order(sortColumn, { ascending: !sortDesc });
   } else if (sortColumn === EntityKey.IN_ENTRY_CREATED_AT) {
-    query = query.order(`${RelationAlias.IN_ENTRY}.${EntityKey.CREATED_AT}`, { ascending: !sortDesc })
+    query = query.order(`${RelationAlias.IN_ENTRY}.${EntityKey.CREATED_AT}`, {
+      ascending: !sortDesc,
+    });
   } else if (sortColumn === EntityKey.OUT_ENTRY_CREATED_AT) {
-    query = query.order(`${RelationAlias.OUT_ENTRY}.${EntityKey.CREATED_AT}`, { ascending: !sortDesc })
+    query = query.order(`${RelationAlias.OUT_ENTRY}.${EntityKey.CREATED_AT}`, {
+      ascending: !sortDesc,
+    });
   } else {
-    query = query.order(EntityKey.CREATED_AT, { ascending: false })
+    query = query.order(EntityKey.CREATED_AT, { ascending: false });
   }
 
-  const { page, limit, offset } = pagination
-  const { data, count, error } = await query.range(offset, offset + limit - 1)
+  const { page, limit, offset } = pagination;
+  const { data, count, error } = await query.range(offset, offset + limit - 1);
 
   if (error) {
-    console.error("Supabase query error:", error)
-    return apiError(error.message || "Database query failed", StatusCodes.INTERNAL_SERVER_ERROR)
+    console.error("Supabase query error:", error);
+    return apiError(error.message || "Database query failed", StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
   // Format response rows with computed derived fields
   const formattedData = (data || []).map((row: Record<string, unknown>) => {
-    const inEntry = (row[RelationAlias.IN_ENTRY] as Record<string, unknown>) || {}
-    const outEntry = (row[RelationAlias.OUT_ENTRY] as Record<string, unknown>) || {}
+    const inEntry = (row[RelationAlias.IN_ENTRY] as Record<string, unknown>) || {};
+    const outEntry = (row[RelationAlias.OUT_ENTRY] as Record<string, unknown>) || {};
 
-    const inWeight = Number(inEntry.weight || 0)
-    const outWeight = Number(outEntry.weight || 0)
+    const inWeight = Number(inEntry.weight || 0);
+    const outWeight = Number(outEntry.weight || 0);
 
-    const grossWeight = Math.max(inWeight, outWeight)
-    const tareWeight = Math.min(inWeight, outWeight)
-    const netWeight = grossWeight - tareWeight
+    const grossWeight = Math.max(inWeight, outWeight);
+    const tareWeight = Math.min(inWeight, outWeight);
+    const netWeight = grossWeight - tareWeight;
 
-    const inImages = Array.isArray(inEntry.images) ? (inEntry.images as string[]) : []
-    const outImages = Array.isArray(outEntry.images) ? (outEntry.images as string[]) : []
-    const combinedImages = Array.from(new Set([...inImages, ...outImages]))
+    const inImages = Array.isArray(inEntry.images) ? (inEntry.images as string[]) : [];
+    const outImages = Array.isArray(outEntry.images) ? (outEntry.images as string[]) : [];
+    const combinedImages = Array.from(new Set([...inImages, ...outImages]));
 
-    const inCenters = inEntry.centers as Record<string, unknown> | undefined
-    const outCenters = outEntry.centers as Record<string, unknown> | undefined
-    const inUsers = inEntry.users as Record<string, unknown> | undefined
-    const outUsers = outEntry.users as Record<string, unknown> | undefined
-    const inCustomers = inEntry.customers as Record<string, unknown> | undefined
-    const outCustomers = outEntry.customers as Record<string, unknown> | undefined
+    const inCenters = inEntry.centers as Record<string, unknown> | undefined;
+    const outCenters = outEntry.centers as Record<string, unknown> | undefined;
+    const inUsers = inEntry.users as Record<string, unknown> | undefined;
+    const outUsers = outEntry.users as Record<string, unknown> | undefined;
+    const inCustomers = inEntry.customers as Record<string, unknown> | undefined;
+    const outCustomers = outEntry.customers as Record<string, unknown> | undefined;
 
     return {
       [EntityKey.ID]: row.id,
@@ -134,12 +133,12 @@ export const GET = withAuth(async (req, user, client) => {
       [EntityKey.VEHICLE_NUMBER]: inEntry.vehicle_number || outEntry.vehicle_number || "",
       [EntityKey.CREATED_AT]: row.created_at,
       [EntityKey.UPDATED_AT]: row.updated_at,
-    }
-  })
+    };
+  });
 
-  const total = count ?? formattedData.length
+  const total = count ?? formattedData.length;
   return NextResponse.json({
     data: formattedData,
     pagination: { page, limit, total },
-  })
-})
+  });
+});

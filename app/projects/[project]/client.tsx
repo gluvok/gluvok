@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 /**
  * @file app/projects/[project]/client.tsx
@@ -6,9 +6,9 @@
  * Coordinates the toolbar, data table, pagination, and modals/dialogs for the selected project.
  */
 
-import * as React from "react"
-import { getPrimaryIdKey } from "@/lib/fields"
-import { DataTablePagination } from "@/components/data-table"
+import * as React from "react";
+import { getPrimaryIdKey } from "@/lib/fields";
+import { DataTablePagination } from "@/components/data-table";
 import {
   SettingsSummary,
   ProjectToolbar,
@@ -16,11 +16,11 @@ import {
   ProjectTable,
   useProjectTable,
 } from "@/components/projects";
-import { Spinner } from "@/components/kibo-ui/spinner"
+import { Spinner } from "@/components/kibo-ui/spinner";
 import { useEntitiesStore, useFactoryStore } from "@/lib/store";
-import { ProjectSlug } from "@/lib/constants/enums"
+import { ProjectSlug } from "@/lib/constants/enums";
 import { type Settings } from "@/types";
-import { useProjectDialogStates } from "@/components/projects/table/use-helpers"
+import { useProjectDialogStates } from "@/components/projects/table/use-helpers";
 
 interface ProjectClientProps {
   projectName: string;
@@ -30,8 +30,9 @@ interface ProjectClientProps {
 /** Settings page reads the active factory directly from the Zustand store. */
 function SettingsClient({ projectName, projectSlug }: ProjectClientProps) {
   const { factory, factoryLoading, fetchFactory } = useFactoryStore();
-  const { creating, setCreating, editingItem, setEditingItem, deletingItem, setDeletingItem } = useProjectDialogStates()
-  const primaryIdKey = getPrimaryIdKey(projectSlug)
+  const { creating, setCreating, editingItem, setEditingItem, deletingItem, setDeletingItem } =
+    useProjectDialogStates();
+  const primaryIdKey = getPrimaryIdKey(projectSlug);
 
   React.useEffect(() => {
     fetchFactory();
@@ -74,8 +75,8 @@ function SettingsClient({ projectName, projectSlug }: ProjectClientProps) {
 }
 
 function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps) {
-  const primaryIdKey = getPrimaryIdKey(projectSlug)
-  const pt = useProjectTable({ projectSlug, primaryIdKey, projectName })
+  const primaryIdKey = getPrimaryIdKey(projectSlug);
+  const pt = useProjectTable({ projectSlug, primaryIdKey, projectName });
   const {
     table,
     isLoading,
@@ -90,26 +91,28 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
     handleReload,
   } = pt;
 
-  const isFiltersLoading = useEntitiesStore((state) => state.filtersLoading)
+  const isFiltersLoading = useEntitiesStore((state) => state.filtersLoading);
 
-  const [hasLoadedOnce, setHasLoadedOnce] = React.useState(false)
+  const [hasLoadedOnce, setHasLoadedOnce] = React.useState(false);
 
   React.useEffect(() => {
     if (!isLoading && isReady && !isFiltersLoading) {
       const timer = setTimeout(() => {
-        setHasLoadedOnce(true)
-      }, 0)
-      return () => clearTimeout(timer)
+        setHasLoadedOnce(true);
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [isLoading, isReady, isFiltersLoading])
+  }, [isLoading, isReady, isFiltersLoading]);
 
   if (!isReady || !hasLoadedOnce) {
     return (
       <div className="min-h-96 flex flex-col items-center justify-center gap-3">
         <Spinner />
-        <span className="text-xs font-medium text-muted-foreground/70">Loading {projectName.toLowerCase()}...</span>
+        <span className="text-xs font-medium text-muted-foreground/70">
+          Loading {projectName.toLowerCase()}...
+        </span>
       </div>
-    )
+    );
   }
 
   return (
@@ -125,12 +128,7 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
       />
 
       {/* Main data representation grid/table */}
-      <ProjectTable
-        table={table}
-        isLoading={isLoading}
-        error={error}
-        onRetry={handleReload}
-      />
+      <ProjectTable table={table} isLoading={isLoading} error={error} onRetry={handleReload} />
 
       {/* Pagination controls */}
       {table.getRowModel().rows?.length > 0 && (
@@ -161,7 +159,7 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
  */
 export function ProjectClient({ projectName, projectSlug }: ProjectClientProps) {
   if (projectSlug === ProjectSlug.SETTINGS) {
-    return <SettingsClient projectName={projectName} projectSlug={projectSlug} />
+    return <SettingsClient projectName={projectName} projectSlug={projectSlug} />;
   }
-  return <StandardProjectClient projectName={projectName} projectSlug={projectSlug} />
+  return <StandardProjectClient projectName={projectName} projectSlug={projectSlug} />;
 }

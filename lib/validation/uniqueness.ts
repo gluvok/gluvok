@@ -4,8 +4,8 @@
  */
 
 export interface UniquenessError {
-  field: string
-  message: string
+  field: string;
+  message: string;
 }
 
 /**
@@ -14,10 +14,10 @@ export interface UniquenessError {
 export function checkEditUniqueness(
   projectSlug: unknown,
   item: unknown,
-  values: unknown
+  values: unknown,
 ): UniquenessError | null {
-  void projectSlug
-  void item
-  void values
-  return null
+  void projectSlug;
+  void item;
+  void values;
+  return null;
 }

@@ -3,21 +3,24 @@
  * @description Header cell renderer for DataTable columns supporting sorting controls and hide actions.
  */
 
-import { type Column } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ChevronsUpDown, EyeOff } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { type Column } from "@tanstack/react-table";
+import { ArrowDown, ArrowUp, ChevronsUpDown, EyeOff } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
-interface DataTableColumnHeaderProps<TData, TValue> extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {
-  column: Column<TData, TValue>
-  title: React.ReactNode
+interface DataTableColumnHeaderProps<TData, TValue> extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  "title"
+> {
+  column: Column<TData, TValue>;
+  title: React.ReactNode;
 }
 
 /**
@@ -25,15 +28,21 @@ interface DataTableColumnHeaderProps<TData, TValue> extends Omit<React.HTMLAttri
  * Column header cell wrapper rendering sort toggle dropdowns and visibility hide button.
  */
 export function DataTableColumnHeader<TData, TValue>({
-  column, title, className,
+  column,
+  title,
+  className,
 }: DataTableColumnHeaderProps<TData, TValue>) {
-  if (!column.getCanSort()) return <div className={cn(className)}>{title}</div>
+  if (!column.getCanSort()) return <div className={cn(className)}>{title}</div>;
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent text-xs font-semibold">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="-ml-3 h-8 data-[state=open]:bg-accent text-xs font-semibold"
+          >
             <span>{title}</span>
             {column.getIsSorted() === "desc" ? (
               <ArrowDown className="ml-2 h-4 w-4" />
@@ -58,5 +67,5 @@ export function DataTableColumnHeader<TData, TValue>({
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  )
+  );
 }

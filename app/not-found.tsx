@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 /**
  * @file app/not-found.tsx
@@ -6,7 +6,12 @@
  * Rendered by Next.js automatically when a route is not matched.
  */
 
-import { NotFoundHeader, NotFoundIllustration, NotFoundMessage, NotFoundActions } from "@/components/not-found"
+import {
+  NotFoundHeader,
+  NotFoundIllustration,
+  NotFoundMessage,
+  NotFoundActions,
+} from "@/components/not-found";
 
 /**
  * NotFound Component
@@ -25,5 +30,5 @@ export default function NotFound() {
         </div>
       </main>
     </>
-  )
+  );
 }

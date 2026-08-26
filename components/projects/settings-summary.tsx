@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 /**
  * @file components/projects/settings-summary.tsx
@@ -7,12 +7,19 @@
 
 import * as React from "react";
 import { Pencil, Plus, RotateCw, Fingerprint, ShieldCheck, Building } from "lucide-react";
-import { Button } from "@/components/ui/button"
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Spinner } from "@/components/kibo-ui/spinner"
-import { getFieldRequirementModeLabel, getModeColorClass, getModeIcon } from "@/lib/fields"
-import { EntityKey, FieldRequirementMode } from "@/lib/constants/enums"
-import { type Settings, type EntityRecord } from "@/types"
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Spinner } from "@/components/kibo-ui/spinner";
+import { getFieldRequirementModeLabel, getModeColorClass, getModeIcon } from "@/lib/fields";
+import { EntityKey, FieldRequirementMode } from "@/lib/constants/enums";
+import { type Settings, type EntityRecord } from "@/types";
 
 interface SettingsSummaryProps {
   settings?: Settings;
@@ -26,9 +33,9 @@ interface SettingsSummaryProps {
 }
 
 interface SettingsFieldProps {
-  label: string
-  mode: FieldRequirementMode
-  icon: React.ComponentType<{ className?: string }>
+  label: string;
+  mode: FieldRequirementMode;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 function SettingsField({ label, mode, icon: Icon }: SettingsFieldProps) {
@@ -75,12 +82,7 @@ export function SettingsSummary({
     return (
       <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center">
         <p className="text-sm text-destructive">{error}</p>
-        <Button
-          onClick={onRetry}
-          size="sm"
-          variant="outline"
-          className="gap-1.5"
-        >
+        <Button onClick={onRetry} size="sm" variant="outline" className="gap-1.5">
           <RotateCw className="h-4 w-4" />
           Retry
         </Button>
@@ -91,9 +93,7 @@ export function SettingsSummary({
   if (!settings) {
     return (
       <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center">
-        <p className="text-sm text-muted-foreground">
-          No settings have been created yet.
-        </p>
+        <p className="text-sm text-muted-foreground">No settings have been created yet.</p>
         {canCreate && (
           <Button onClick={onCreate} size="sm" className="gap-1.5">
             <Plus className="h-4 w-4" />
@@ -105,10 +105,8 @@ export function SettingsSummary({
   }
 
   const factoryName = String(settings.name || settings.factory_name || "Factory");
-  const aadharNumberMode =
-    settings[EntityKey.AADHAR_NUMBER_MODE] ?? FieldRequirementMode.MANDATORY;
-  const govtIdMode =
-    settings[EntityKey.GOVT_ID_MODE] ?? FieldRequirementMode.MANDATORY;
+  const aadharNumberMode = settings[EntityKey.AADHAR_NUMBER_MODE] ?? FieldRequirementMode.MANDATORY;
+  const govtIdMode = settings[EntityKey.GOVT_ID_MODE] ?? FieldRequirementMode.MANDATORY;
 
   return (
     <Card className="w-full max-w-2xl">

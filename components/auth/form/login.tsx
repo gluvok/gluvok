@@ -1,39 +1,36 @@
-"use client"
+"use client";
 
 /**
  * @file components/auth/form/login.tsx
  * @description Sign in form component using username and password with Argon2/JWT backend.
  */
 
-import { useForm } from "react-hook-form"
-import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
-import { z } from "zod"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { FieldGroup } from "@/components/ui/field"
-import { AuthCard, AuthInput } from "@/components/auth/common"
-import { useAuthStore } from "@/lib/store"
-import { cn, getNextParam } from "@/lib/utils"
-import { AppRoutes } from "@/lib/constants/enums"
+import { useForm } from "react-hook-form";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
+import { z } from "zod";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { FieldGroup } from "@/components/ui/field";
+import { AuthCard, AuthInput } from "@/components/auth/common";
+import { useAuthStore } from "@/lib/store";
+import { cn, getNextParam } from "@/lib/utils";
+import { AppRoutes } from "@/lib/constants/enums";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
-})
+});
 
-type LoginInput = z.infer<typeof loginSchema>
+type LoginInput = z.infer<typeof loginSchema>;
 
 /**
  * LoginForm Component
  * Handles the login interface, input validation, authentication request,
  * and redirecting the user upon success.
  */
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
-  const router = useRouter()
-  const login = useAuthStore((state) => state.login)
+export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
+  const router = useRouter();
+  const login = useAuthStore((state) => state.login);
 
   const form = useForm<LoginInput>({
     resolver: standardSchemaResolver(loginSchema),
@@ -41,16 +38,16 @@ export function LoginForm({
       username: "",
       password: "",
     },
-  })
+  });
 
   const onSubmit = async (data: LoginInput) => {
-    const targetRedirect = getNextParam() || AppRoutes.HOME
-    const success = await login(data.username, data.password)
+    const targetRedirect = getNextParam() || AppRoutes.HOME;
+    const success = await login(data.username, data.password);
 
     if (success) {
-      router.push(targetRedirect)
+      router.push(targetRedirect);
     }
-  }
+  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -76,16 +73,12 @@ export function LoginForm({
               registration={form.register("password")}
               error={form.formState.errors.password}
             />
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={form.formState.isSubmitting}
-            >
+            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting ? "Logging in..." : "Login"}
             </Button>
           </FieldGroup>
         </form>
       </AuthCard>
     </div>
-  )
+  );
 }

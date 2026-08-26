@@ -301,21 +301,9 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
 export const REQUIRED_CREATE_FIELDS: Record<string, EntityKey[]> = {
   [ProjectSlug.CENTERS]: [EntityKey.NAME],
   [ProjectSlug.COMMODITIES]: [EntityKey.NAME],
-  [ProjectSlug.RATES]: [
-    EntityKey.COMMODITY_ID,
-    EntityKey.UNIT_PRICE,
-    EntityKey.UNIT,
-  ],
-  [ProjectSlug.CUSTOMERS]: [
-    EntityKey.GOVT_ID,
-    EntityKey.NAME,
-    EntityKey.FATHER_NAME,
-  ],
-  [ProjectSlug.ENTRIES]: [
-    EntityKey.VEHICLE_NUMBER,
-    EntityKey.WEIGHT,
-    EntityKey.CENTER_ID,
-  ],
+  [ProjectSlug.RATES]: [EntityKey.COMMODITY_ID, EntityKey.UNIT_PRICE, EntityKey.UNIT],
+  [ProjectSlug.CUSTOMERS]: [EntityKey.GOVT_ID, EntityKey.NAME, EntityKey.FATHER_NAME],
+  [ProjectSlug.ENTRIES]: [EntityKey.VEHICLE_NUMBER, EntityKey.WEIGHT, EntityKey.CENTER_ID],
   [ProjectSlug.WEIGHMENTS]: [
     EntityKey.VEHICLE_NUMBER,
     EntityKey.CENTER_ID,

@@ -16,10 +16,7 @@ export const Status = ({ className, status, ...props }: StatusProps) => (
 
 export type StatusIndicatorProps = HTMLAttributes<HTMLSpanElement>;
 
-export const StatusIndicator = ({
-  className,
-  ...props
-}: StatusIndicatorProps) => (
+export const StatusIndicator = ({ className, ...props }: StatusIndicatorProps) => (
   <span className={cn("relative flex h-2 w-2", className)} {...props}>
     <span
       className={cn(
@@ -27,7 +24,7 @@ export const StatusIndicator = ({
         "group-[.online]:bg-emerald-500",
         "group-[.offline]:bg-red-500",
         "group-[.maintenance]:bg-blue-500",
-        "group-[.degraded]:bg-amber-500"
+        "group-[.degraded]:bg-amber-500",
       )}
     />
     <span
@@ -36,7 +33,7 @@ export const StatusIndicator = ({
         "group-[.online]:bg-emerald-500",
         "group-[.offline]:bg-red-500",
         "group-[.maintenance]:bg-blue-500",
-        "group-[.degraded]:bg-amber-500"
+        "group-[.degraded]:bg-amber-500",
       )}
     />
   </span>
@@ -44,11 +41,7 @@ export const StatusIndicator = ({
 
 export type StatusLabelProps = HTMLAttributes<HTMLSpanElement>;
 
-export const StatusLabel = ({
-  className,
-  children,
-  ...props
-}: StatusLabelProps) => (
+export const StatusLabel = ({ className, children, ...props }: StatusLabelProps) => (
   <span className={cn("text-muted-foreground", className)} {...props}>
     {children ?? (
       <>

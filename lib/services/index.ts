@@ -3,6 +3,6 @@
  * @description Barrel export for all service utilities.
  */
 
-export * from "./common"
-export * from "./scoping"
-export * from "./interceptor"
+export * from "./common";
+export * from "./scoping";
+export * from "./interceptor";

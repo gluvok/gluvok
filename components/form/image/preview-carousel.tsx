@@ -1,29 +1,29 @@
-"use client"
+"use client";
 
 /**
  * @file components/form/image/preview-carousel.tsx
  * @description Image carousel rendering uploaded previews, displaying metadata, and handling image removals.
  */
 
-import { useState } from "react"
-import Image from "next/image"
-import { X as XIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import Image from "next/image";
+import { X as XIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from "@/components/ui/carousel"
-import { getDisplayName, splitFileName } from "@/lib/utils"
-import { DeleteEntityDialog } from "@/components/projects/dialog/delete"
+} from "@/components/ui/carousel";
+import { getDisplayName, splitFileName } from "@/lib/utils";
+import { DeleteEntityDialog } from "@/components/projects/dialog/delete";
 
 interface ImagePreviewCarouselProps {
-  images: string[]
-  fileNames?: string[]
-  disabled?: boolean
-  onRemove: (index: number) => void
+  images: string[];
+  fileNames?: string[];
+  disabled?: boolean;
+  onRemove: (index: number) => void;
 }
 
 /**
@@ -36,21 +36,30 @@ export function ImagePreviewCarousel({
   disabled,
   onRemove,
 }: ImagePreviewCarouselProps) {
-  const [imageToDelete, setImageToDelete] = useState<number | null>(null)
+  const [imageToDelete, setImageToDelete] = useState<number | null>(null);
 
-  if (!images || images.length === 0) return null
+  if (!images || images.length === 0) return null;
   return (
     <div className="flex justify-center w-full px-2 sm:px-4 overflow-hidden">
-      <Carousel opts={{ align: "start" }} className="w-full relative px-8 sm:px-10 max-w-[220px] sm:max-w-[260px]">
+      <Carousel
+        opts={{ align: "start" }}
+        className="w-full relative px-8 sm:px-10 max-w-[220px] sm:max-w-[260px]"
+      >
         <CarouselContent>
           {images.map((src, index) => {
             const imageSrc =
-              src.startsWith("data:") || src.startsWith("blob:") || src.startsWith("/") || src.startsWith("http")
+              src.startsWith("data:") ||
+              src.startsWith("blob:") ||
+              src.startsWith("/") ||
+              src.startsWith("http")
                 ? src
-                : `/${src}`
-            const displayName = getDisplayName(src, fileNames?.[index], index)
+                : `/${src}`;
+            const displayName = getDisplayName(src, fileNames?.[index], index);
             return (
-              <CarouselItem key={index} className="basis-full min-w-0 flex flex-col items-center justify-center">
+              <CarouselItem
+                key={index}
+                className="basis-full min-w-0 flex flex-col items-center justify-center"
+              >
                 <div className="p-1 w-full">
                   {/* Image container — fixed aspect ratio keeps fill from overflowing */}
                   <div className="relative aspect-[4/3] w-full rounded-xl border border-muted-foreground/15 bg-card overflow-hidden shadow-sm group">
@@ -90,7 +99,7 @@ export function ImagePreviewCarousel({
                   </div>
                 </div>
               </CarouselItem>
-            )
+            );
           })}
         </CarouselContent>
         {images.length > 1 && (
@@ -111,17 +120,20 @@ export function ImagePreviewCarousel({
         <DeleteEntityDialog
           open={true}
           onOpenChange={(open) => {
-            if (!open) setImageToDelete(null)
+            if (!open) setImageToDelete(null);
           }}
           size="sm"
           projectName="Image"
-          customDisplayName={fileNames?.[imageToDelete] || getDisplayName(images[imageToDelete], undefined, imageToDelete)}
+          customDisplayName={
+            fileNames?.[imageToDelete] ||
+            getDisplayName(images[imageToDelete], undefined, imageToDelete)
+          }
           onConfirm={() => {
-            onRemove(imageToDelete)
-            setImageToDelete(null)
+            onRemove(imageToDelete);
+            setImageToDelete(null);
           }}
         />
       )}
     </div>
-  )
+  );
 }

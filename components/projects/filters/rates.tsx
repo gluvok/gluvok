@@ -1,38 +1,38 @@
-"use client"
+"use client";
 
 /**
  * @file components/projects/filters/rates.tsx
  * @description Filter controls for the Rates entity table.
  */
 
-import * as React from "react"
-import { Table } from "@tanstack/react-table"
-import { Unit, EntityKey, FilterValue, FieldType, ProjectSlug } from "@/lib/constants/enums"
-import { useEntitiesStore } from "@/lib/store"
-import { Package, Ruler } from "lucide-react"
-import { BaseCombobox } from "@/components/combobox/base"
-import { DateRangeFilter } from "./date-range-filter"
+import * as React from "react";
+import { Table } from "@tanstack/react-table";
+import { Unit, EntityKey, FilterValue, FieldType, ProjectSlug } from "@/lib/constants/enums";
+import { useEntitiesStore } from "@/lib/store";
+import { Package, Ruler } from "lucide-react";
+import { BaseCombobox } from "@/components/combobox/base";
+import { DateRangeFilter } from "./date-range-filter";
 
 interface RatesFiltersProps<TData> {
-  table: Table<TData>
+  table: Table<TData>;
 }
 
 export function RatesFilters<TData>({ table }: RatesFiltersProps<TData>) {
-  const commodities = useEntitiesStore((state) => state.commodities)
+  const commodities = useEntitiesStore((state) => state.commodities);
 
-  const columnFilters = table.getState().columnFilters
-  const currentCommodityId = columnFilters.find((f) => f.id === EntityKey.COMMODITY_ID)?.value
-  const currentUnit = columnFilters.find((f) => f.id === EntityKey.UNIT)?.value
+  const columnFilters = table.getState().columnFilters;
+  const currentCommodityId = columnFilters.find((f) => f.id === EntityKey.COMMODITY_ID)?.value;
+  const currentUnit = columnFilters.find((f) => f.id === EntityKey.UNIT)?.value;
 
   const setColumnFilter = (id: string, value: unknown) => {
     table.setColumnFilters((prev) => {
-      const filtered = prev.filter((f) => f.id !== id)
+      const filtered = prev.filter((f) => f.id !== id);
       if (value !== undefined && value !== null && value !== "") {
-        return [...filtered, { id, value }]
+        return [...filtered, { id, value }];
       }
-      return filtered
-    })
-  }
+      return filtered;
+    });
+  };
 
   const commodityOptions = React.useMemo(() => {
     return [
@@ -41,8 +41,8 @@ export function RatesFilters<TData>({ table }: RatesFiltersProps<TData>) {
         value: String(c.id),
         label: c.name,
       })),
-    ]
-  }, [commodities])
+    ];
+  }, [commodities]);
 
   const unitOptions = React.useMemo(() => {
     return [
@@ -51,8 +51,8 @@ export function RatesFilters<TData>({ table }: RatesFiltersProps<TData>) {
         value: u,
         label: u,
       })),
-    ]
-  }, [])
+    ];
+  }, []);
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -63,7 +63,9 @@ export function RatesFilters<TData>({ table }: RatesFiltersProps<TData>) {
       <BaseCombobox
         type={ProjectSlug.COMMODITIES}
         value={currentCommodityId ? String(currentCommodityId) : FilterValue.ALL}
-        onChange={(val) => setColumnFilter(EntityKey.COMMODITY_ID, val === FilterValue.ALL ? undefined : Number(val))}
+        onChange={(val) =>
+          setColumnFilter(EntityKey.COMMODITY_ID, val === FilterValue.ALL ? undefined : Number(val))
+        }
         data={commodityOptions}
         placeholder="All Commodities"
         searchPlaceholder="Search commodity..."
@@ -76,7 +78,9 @@ export function RatesFilters<TData>({ table }: RatesFiltersProps<TData>) {
       <BaseCombobox
         type={FieldType.UNIT}
         value={currentUnit ? String(currentUnit) : FilterValue.ALL}
-        onChange={(val) => setColumnFilter(EntityKey.UNIT, val === FilterValue.ALL ? undefined : val)}
+        onChange={(val) =>
+          setColumnFilter(EntityKey.UNIT, val === FilterValue.ALL ? undefined : val)
+        }
         data={unitOptions}
         placeholder="All Units"
         searchPlaceholder="Search unit..."
@@ -85,5 +89,5 @@ export function RatesFilters<TData>({ table }: RatesFiltersProps<TData>) {
         id="filter-unit-combobox"
       />
     </div>
-  )
+  );
 }

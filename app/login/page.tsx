@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 /**
  * @file app/login/page.tsx
@@ -6,8 +6,8 @@
  * Renders the LoginForm within the common AuthPageLayout wrapper.
  */
 
-import { LoginForm } from "@/components/auth/form"
-import { AuthPageLayout } from "@/components/auth/common"
+import { LoginForm } from "@/components/auth/form";
+import { AuthPageLayout } from "@/components/auth/common";
 
 /**
  * LoginPage Component
@@ -18,5 +18,5 @@ export default function LoginPage() {
     <AuthPageLayout>
       <LoginForm />
     </AuthPageLayout>
-  )
+  );
 }

@@ -3,13 +3,13 @@
  * @description Master pagination control bar for DataTable, assembling rows counts, page size dropdowns, and navigation buttons.
  */
 
-import { type Table } from "@tanstack/react-table"
-import { DataTablePaginationRowsCount } from "./rows-count"
-import { DataTablePaginationPageSize } from "./page-size"
-import { DataTablePaginationButtons } from "./buttons"
+import { type Table } from "@tanstack/react-table";
+import { DataTablePaginationRowsCount } from "./rows-count";
+import { DataTablePaginationPageSize } from "./page-size";
+import { DataTablePaginationButtons } from "./buttons";
 
 interface DataTablePaginationProps<TData> {
-  table: Table<TData>
+  table: Table<TData>;
 }
 
 /**
@@ -25,5 +25,5 @@ export function DataTablePagination<TData>({ table }: DataTablePaginationProps<T
         <DataTablePaginationButtons table={table} />
       </div>
     </div>
-  )
+  );
 }

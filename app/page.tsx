@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 /**
  * @file app/page.tsx
@@ -6,16 +6,21 @@
  * Displays authorized projects/tables in a grid configuration based on RBAC (Role-Based Access Control) matrix filters.
  */
 
-import React from "react"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
-import { LayoutDashboard, RefreshCw, Loader2 } from "lucide-react"
-import { PROJECTS } from "@/lib/projects"
-import { DashboardCard } from "@/components/dashboard"
-import { useAuthStore, hasPageAccess } from "@/lib/store"
-import { useEntitiesStore } from "@/lib/store"
+import React from "react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { LayoutDashboard, RefreshCw, Loader2 } from "lucide-react";
+import { PROJECTS } from "@/lib/projects";
+import { DashboardCard } from "@/components/dashboard";
+import { useAuthStore, hasPageAccess } from "@/lib/store";
+import { useEntitiesStore } from "@/lib/store";
 
 /**
  * Page Component
@@ -23,25 +28,30 @@ import { useEntitiesStore } from "@/lib/store"
  * to only show the links the user has authorization to access.
  */
 export default function Page() {
-  const user = useAuthStore((state) => state.user)
-  const hydrated = useAuthStore((state) => state.hydrated)
-  const filtersLoading = useEntitiesStore((state) => state.filtersLoading)
-  const preloadAllFilters = useEntitiesStore((state) => state.preloadAllFilters)
+  const user = useAuthStore((state) => state.user);
+  const hydrated = useAuthStore((state) => state.hydrated);
+  const filtersLoading = useEntitiesStore((state) => state.filtersLoading);
+  const preloadAllFilters = useEntitiesStore((state) => state.preloadAllFilters);
 
-  const handleSyncData = () => { preloadAllFilters() }
+  const handleSyncData = () => {
+    preloadAllFilters();
+  };
 
   // Filters projects dynamically based on user role authorization and hydration state
   const filteredProjects = React.useMemo(() => {
-    if (!hydrated || !user) return []
-    return PROJECTS.filter((p) => hasPageAccess(user.role, p.slug))
-  }, [hydrated, user])
+    if (!hydrated || !user) return [];
+    return PROJECTS.filter((p) => hasPageAccess(user.role, p.slug));
+  }, [hydrated, user]);
 
   return (
     <>
       <header className="flex h-16 shrink-0 items-center gap-2 border-b">
         <div className="flex items-center gap-2 px-4">
           <SidebarTrigger id="sidebar-trigger-home" className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 data-vertical:h-4 data-vertical:self-auto" />
+          <Separator
+            orientation="vertical"
+            className="mr-2 data-vertical:h-4 data-vertical:self-auto"
+          />
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -58,9 +68,7 @@ export default function Page() {
       <main className="p-8 w-full min-w-0 space-y-8">
         <div className="space-y-2 flex flex-col items-start text-left">
           <div className="flex items-center justify-between w-full">
-            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
-              Dashboard
-            </h1>
+            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Dashboard</h1>
             <Button
               id="sync-data-btn"
               variant="outline"
@@ -78,7 +86,8 @@ export default function Page() {
             </Button>
           </div>
           <p className="text-muted-foreground text-sm max-w-xl">
-            Welcome back. Access the platform tools, manage entities, configure visibility settings, and track operations.
+            Welcome back. Access the platform tools, manage entities, configure visibility settings,
+            and track operations.
           </p>
         </div>
 
@@ -96,5 +105,5 @@ export default function Page() {
         </div>
       </main>
     </>
-  )
+  );
 }

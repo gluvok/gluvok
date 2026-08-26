@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi } from "vitest"
-import { TableName, EntityKey } from "@/lib/constants/enums"
+import { describe, it, expect, vi } from "vitest";
+import { TableName, EntityKey } from "@/lib/constants/enums";
 
 describe("Rate edit lock rules", () => {
   it("should detect when a rate is linked to weighment records", async () => {
@@ -14,19 +14,19 @@ describe("Rate edit lock rules", () => {
               data: [{ [EntityKey.ID]: 101 }],
               error: null,
             }),
-          }
+          };
         }
-        return {}
+        return {};
       }),
-    }
+    };
 
     const { data: linkedWeighments } = await mockClient
       .from(TableName.WEIGHMENTS)
       .select(EntityKey.ID)
       .eq(EntityKey.RATE_ID, 5)
-      .limit(1)
+      .limit(1);
 
-    expect(linkedWeighments).toHaveLength(1)
-    expect(linkedWeighments[0][EntityKey.ID]).toBe(101)
-  })
-})
+    expect(linkedWeighments).toHaveLength(1);
+    expect(linkedWeighments[0][EntityKey.ID]).toBe(101);
+  });
+});

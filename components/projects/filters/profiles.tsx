@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
 /**
  * @file components/projects/filters/profiles.tsx
  * @description Filter controls for the Profiles entity table.
  */
 
-import * as React from "react"
-import { Table } from "@tanstack/react-table"
+import * as React from "react";
+import { Table } from "@tanstack/react-table";
 import { Role, EntityKey, FilterValue, FieldType } from "@/lib/constants/enums";
-import { Shield } from "lucide-react"
-import { BaseCombobox } from "@/components/combobox/base"
+import { Shield } from "lucide-react";
+import { BaseCombobox } from "@/components/combobox/base";
 
 interface ProfilesFiltersProps<TData> {
-  table: Table<TData>
+  table: Table<TData>;
 }
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
@@ -23,18 +23,20 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
 ];
 
 export function ProfilesFilters<TData>({ table }: ProfilesFiltersProps<TData>) {
-  const columnFilters = table.getState().columnFilters
-  const currentRole = columnFilters.find((f) => f.id === EntityKey.ROLE)?.value as string | undefined
+  const columnFilters = table.getState().columnFilters;
+  const currentRole = columnFilters.find((f) => f.id === EntityKey.ROLE)?.value as
+    | string
+    | undefined;
 
   const setColumnFilter = (id: string, value: unknown) => {
     table.setColumnFilters((prev) => {
-      const filtered = prev.filter((f) => f.id !== id)
+      const filtered = prev.filter((f) => f.id !== id);
       if (value !== undefined && value !== null && value !== "") {
-        return [...filtered, { id, value }]
+        return [...filtered, { id, value }];
       }
-      return filtered
-    })
-  }
+      return filtered;
+    });
+  };
 
   const roleOptions = React.useMemo(() => {
     return [
@@ -43,15 +45,17 @@ export function ProfilesFilters<TData>({ table }: ProfilesFiltersProps<TData>) {
         value: r.value,
         label: r.label,
       })),
-    ]
-  }, [])
+    ];
+  }, []);
 
   return (
     <div className="flex items-center gap-2">
       <BaseCombobox
         type={FieldType.ROLE}
         value={currentRole ?? FilterValue.ALL}
-        onChange={(val) => setColumnFilter(EntityKey.ROLE, val === FilterValue.ALL ? undefined : val)}
+        onChange={(val) =>
+          setColumnFilter(EntityKey.ROLE, val === FilterValue.ALL ? undefined : val)
+        }
         data={roleOptions}
         placeholder="All Roles"
         searchPlaceholder="Search role..."
@@ -60,5 +64,5 @@ export function ProfilesFilters<TData>({ table }: ProfilesFiltersProps<TData>) {
         id="filter-role-combobox"
       />
     </div>
-  )
+  );
 }

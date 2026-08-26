@@ -3,11 +3,11 @@
  * @description API route to clear authentication JWT cookie and sign out.
  */
 
-import { NextResponse } from "next/server"
+import { NextResponse } from "next/server";
 import { CookieName } from "@/lib/constants/enums";
 
 export async function POST() {
-  const response = NextResponse.json({ success: true })
+  const response = NextResponse.json({ success: true });
 
   const cookieOptions = {
     httpOnly: true,
@@ -15,7 +15,7 @@ export async function POST() {
     sameSite: "lax" as const,
     path: "/",
     expires: new Date(0),
-  }
+  };
 
   response.cookies.set(CookieName.TOKEN, "", cookieOptions);
   response.cookies.set(CookieName.AUTH_TOKEN, "", cookieOptions);
@@ -23,5 +23,5 @@ export async function POST() {
     ...cookieOptions,
     path: "/api/auth",
   });
-  return response
+  return response;
 }

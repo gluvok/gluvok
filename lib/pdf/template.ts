@@ -3,19 +3,22 @@
  * @description PDF generation template or style definition for exports (template).
  */
 
-import { PDF_STYLES } from "./styles"
+import { PDF_STYLES } from "./styles";
 
 export function generatePdfHtml(
   projectName: string,
   headersHtml: string,
   rowsHtml: string,
   selectedCount: number,
-  imagesHtml?: string
+  imagesHtml?: string,
 ): string {
-  const logoUrl = typeof window !== "undefined" ? `${window.location.origin}/logo-horizontal.png` : "/logo-horizontal.png"
+  const logoUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/logo-horizontal.png`
+      : "/logo-horizontal.png";
   const logoHtml = `
     <img src="${logoUrl}" height="36" alt="gluvok logo" style="object-fit: contain;" />
-  `
+  `;
   return `
     <!DOCTYPE html>
     <html>
@@ -48,5 +51,5 @@ export function generatePdfHtml(
         </footer>
       </body>
     </html>
-  `
+  `;
 }

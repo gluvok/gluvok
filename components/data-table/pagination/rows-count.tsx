@@ -3,8 +3,8 @@
  * @description Row selection status text for the DataTable pagination component.
  */
 
-import { type Table } from "@tanstack/react-table"
-import { CheckSquare } from "lucide-react"
+import { type Table } from "@tanstack/react-table";
+import { CheckSquare } from "lucide-react";
 
 /**
  * DataTablePaginationRowsCount Component
@@ -19,5 +19,5 @@ export function DataTablePaginationRowsCount<TData>({ table }: { table: Table<TD
         {table.getFilteredRowModel().rows.length} row(s) selected.
       </span>
     </div>
-  )
+  );
 }

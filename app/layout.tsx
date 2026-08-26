@@ -17,7 +17,8 @@ import { geist, outfit } from "@/lib/fonts";
  */
 export const metadata: Metadata = {
   title: "gluvok Dashboard | Platform Operations",
-  description: "Access the gluvok platform tools, manage entities, configure visibility settings, and track operations.",
+  description:
+    "Access the gluvok platform tools, manage entities, configure visibility settings, and track operations.",
   icons: {
     icon: "/logo.png",
   },
@@ -38,9 +39,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col antialiased">
         <TooltipProvider>
           {/* MainLayout handles sidebar and general content structures */}
-          <MainLayout>
-            {children}
-          </MainLayout>
+          <MainLayout>{children}</MainLayout>
         </TooltipProvider>
         {/* Global toast notification system wrapper */}
         <Toaster

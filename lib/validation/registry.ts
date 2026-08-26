@@ -3,14 +3,19 @@
  * @description Zod schema and validation rules for Registry entities.
  */
 
-import { ProjectSlug } from "@/lib/constants/enums"
-import { addCenterSchema, editCenterSchema } from "./centers"
-import { addCommoditySchema, editCommoditySchema } from "./commodities"
-import { addRateSchema, editRateSchema } from "./rates"
-import { addCustomerSchema, editCustomerSchema } from "./customers"
-import { addEntrySchema, editEntrySchema, addWeighmentSchema, editWeighmentSchema } from "./weighments"
-import { addProfileSchema, editProfileSchema } from "./profiles"
-import { addSettingsSchema, editSettingsSchema } from "./settings"
+import { ProjectSlug } from "@/lib/constants/enums";
+import { addCenterSchema, editCenterSchema } from "./centers";
+import { addCommoditySchema, editCommoditySchema } from "./commodities";
+import { addRateSchema, editRateSchema } from "./rates";
+import { addCustomerSchema, editCustomerSchema } from "./customers";
+import {
+  addEntrySchema,
+  editEntrySchema,
+  addWeighmentSchema,
+  editWeighmentSchema,
+} from "./weighments";
+import { addProfileSchema, editProfileSchema } from "./profiles";
+import { addSettingsSchema, editSettingsSchema } from "./settings";
 
 export type EntityAddSchema =
   | typeof addCenterSchema
@@ -20,7 +25,7 @@ export type EntityAddSchema =
   | typeof addEntrySchema
   | typeof addWeighmentSchema
   | typeof addProfileSchema
-  | typeof addSettingsSchema
+  | typeof addSettingsSchema;
 
 export type EntityEditSchema =
   | typeof editCenterSchema
@@ -30,7 +35,7 @@ export type EntityEditSchema =
   | typeof editEntrySchema
   | typeof editWeighmentSchema
   | typeof editProfileSchema
-  | typeof editSettingsSchema
+  | typeof editSettingsSchema;
 
 export const ENTITY_ADD_SCHEMAS: Record<ProjectSlug, EntityAddSchema> = {
   [ProjectSlug.CENTERS]: addCenterSchema,
@@ -41,7 +46,7 @@ export const ENTITY_ADD_SCHEMAS: Record<ProjectSlug, EntityAddSchema> = {
   [ProjectSlug.WEIGHMENTS]: addWeighmentSchema,
   [ProjectSlug.PROFILES]: addProfileSchema,
   [ProjectSlug.SETTINGS]: addSettingsSchema,
-}
+};
 
 export const ENTITY_EDIT_SCHEMAS: Record<ProjectSlug, EntityEditSchema> = {
   [ProjectSlug.CENTERS]: editCenterSchema,
@@ -52,4 +57,4 @@ export const ENTITY_EDIT_SCHEMAS: Record<ProjectSlug, EntityEditSchema> = {
   [ProjectSlug.WEIGHMENTS]: editWeighmentSchema,
   [ProjectSlug.PROFILES]: editProfileSchema,
   [ProjectSlug.SETTINGS]: editSettingsSchema,
-}
+};

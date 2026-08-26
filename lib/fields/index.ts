@@ -3,6 +3,6 @@
  * @description Helper definitions or configuration for entity table fields (index).
  */
 
-export * from "./types"
-export * from "./config"
-export * from "./helpers"
+export * from "./types";
+export * from "./config";
+export * from "./helpers";

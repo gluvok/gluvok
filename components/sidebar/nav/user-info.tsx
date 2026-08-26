@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
 /**
  * @file components/sidebar/nav/user-info.tsx
  * @description Small avatar block displaying user name, username, role badge, and profile avatar image.
  */
 
-import { type LucideIcon } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useAuthStore } from "@/lib/store"
-import { getRoleIcon } from "@/lib/fields/helpers"
+import { type LucideIcon } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuthStore } from "@/lib/store";
+import { getRoleIcon } from "@/lib/fields/helpers";
 
 export interface UserInfo {
   username: string;
@@ -16,8 +16,14 @@ export interface UserInfo {
   avatar: string;
 }
 
-export function RenderRoleIcon({ icon: Icon, className }: { icon: LucideIcon; className?: string }) {
-  return <Icon className={className} />
+export function RenderRoleIcon({
+  icon: Icon,
+  className,
+}: {
+  icon: LucideIcon;
+  className?: string;
+}) {
+  return <Icon className={className} />;
 }
 
 /**
@@ -26,10 +32,10 @@ export function RenderRoleIcon({ icon: Icon, className }: { icon: LucideIcon; cl
  */
 export function UserAvatarInfo({ user }: { user: UserInfo }) {
   const authUser = useAuthStore((state) => state.user);
-  const username = user.username || authUser?.username || ""
-  const rawRole = user.role || authUser?.role || "admin"
+  const username = user.username || authUser?.username || "";
+  const rawRole = user.role || authUser?.role || "admin";
 
-  const roleIcon = getRoleIcon(rawRole)
+  const roleIcon = getRoleIcon(rawRole);
 
   return (
     <>
@@ -47,10 +53,7 @@ export function UserAvatarInfo({ user }: { user: UserInfo }) {
           {username && <span className="truncate font-mono">@{username}</span>}
           {username && <span>•</span>}
           <div className="flex items-center gap-1 shrink-0">
-            <RenderRoleIcon
-              icon={roleIcon}
-              className="size-3! shrink-0 text-muted-foreground"
-            />
+            <RenderRoleIcon icon={roleIcon} className="size-3! shrink-0 text-muted-foreground" />
             <span>{rawRole}</span>
           </div>
         </div>

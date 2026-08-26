@@ -21,5 +21,5 @@ export const PROJECT_REGISTRY: Record<string, ProjectConfig> = PROJECTS.reduce(
     };
     return acc;
   },
-  {} as Record<string, ProjectConfig>
+  {} as Record<string, ProjectConfig>,
 );

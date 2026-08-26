@@ -1,32 +1,28 @@
-"use client"
+"use client";
 
 /**
  * @file components/projects/filters/date-range-filter.tsx
  * @description Reusable Date Range filter component with quick presets (Today, Yesterday, Last 7 Days, This Month) and disabled future dates.
  */
 
-import * as React from "react"
-import { format, subDays, startOfMonth, startOfDay, endOfDay } from "date-fns"
-import { type DateRange } from "react-day-picker"
-import { Table } from "@tanstack/react-table"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Calendar as CalendarIcon, X, Zap, CalendarCheck } from "lucide-react"
-import { DatePreset, QueryParam } from "@/lib/constants/enums"
+import * as React from "react";
+import { format, subDays, startOfMonth, startOfDay, endOfDay } from "date-fns";
+import { type DateRange } from "react-day-picker";
+import { Table } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarIcon, X, Zap, CalendarCheck } from "lucide-react";
+import { DatePreset, QueryParam } from "@/lib/constants/enums";
 
 interface DateRangeFilterProps<TData> {
-  table: Table<TData>
-  startKey?: string
-  endKey?: string
-  className?: string
+  table: Table<TData>;
+  startKey?: string;
+  endKey?: string;
+  className?: string;
 }
 
-const DISPLAY_DATE_FORMAT = "LLL dd, y"
+const DISPLAY_DATE_FORMAT = "LLL dd, y";
 
 const PRESET_OPTIONS: { id: DatePreset; label: string }[] = [
   { id: DatePreset.TODAY, label: "Today" },
@@ -34,7 +30,7 @@ const PRESET_OPTIONS: { id: DatePreset; label: string }[] = [
   { id: DatePreset.LAST_2_DAYS, label: "Last 2 Days" },
   { id: DatePreset.LAST_7_DAYS, label: "Last 7 Days" },
   { id: DatePreset.THIS_MONTH, label: "This Month" },
-]
+];
 
 export function DateRangeFilter<TData>({
   table,
@@ -42,55 +38,57 @@ export function DateRangeFilter<TData>({
   endKey = QueryParam.END_DATE,
   className = "w-auto",
 }: DateRangeFilterProps<TData>) {
-  const columnFilters = table.getState().columnFilters
-  const currentStartDateVal = columnFilters.find((f) => f.id === startKey)?.value as string | undefined
-  const currentEndDateVal = columnFilters.find((f) => f.id === endKey)?.value as string | undefined
+  const columnFilters = table.getState().columnFilters;
+  const currentStartDateVal = columnFilters.find((f) => f.id === startKey)?.value as
+    | string
+    | undefined;
+  const currentEndDateVal = columnFilters.find((f) => f.id === endKey)?.value as string | undefined;
 
   const dateRange: DateRange | undefined = React.useMemo(() => {
-    const from = currentStartDateVal ? new Date(currentStartDateVal) : undefined
-    const to = currentEndDateVal ? new Date(currentEndDateVal) : undefined
-    if (!from && !to) return undefined
-    return { from, to }
-  }, [currentStartDateVal, currentEndDateVal])
+    const from = currentStartDateVal ? new Date(currentStartDateVal) : undefined;
+    const to = currentEndDateVal ? new Date(currentEndDateVal) : undefined;
+    if (!from && !to) return undefined;
+    return { from, to };
+  }, [currentStartDateVal, currentEndDateVal]);
 
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(false);
 
   const applyRange = (range: DateRange | undefined) => {
     table.setColumnFilters((prev) => {
-      const filtered = prev.filter((f) => f.id !== startKey && f.id !== endKey)
+      const filtered = prev.filter((f) => f.id !== startKey && f.id !== endKey);
       if (range?.from) {
-        filtered.push({ id: startKey, value: startOfDay(range.from).toISOString() })
+        filtered.push({ id: startKey, value: startOfDay(range.from).toISOString() });
       }
       if (range?.to) {
-        filtered.push({ id: endKey, value: endOfDay(range.to).toISOString() })
+        filtered.push({ id: endKey, value: endOfDay(range.to).toISOString() });
       }
-      return filtered
-    })
-  }
+      return filtered;
+    });
+  };
 
   const handleClear = (e?: React.MouseEvent) => {
-    e?.stopPropagation()
-    applyRange(undefined)
-  }
+    e?.stopPropagation();
+    applyRange(undefined);
+  };
 
   const handlePresetSelect = (preset: DatePreset) => {
-    const now = new Date()
+    const now = new Date();
 
     switch (preset) {
       case DatePreset.TODAY:
-        return applyRange({ from: now, to: now })
+        return applyRange({ from: now, to: now });
       case DatePreset.YESTERDAY: {
-        const yest = subDays(now, 1)
-        return applyRange({ from: yest, to: yest })
+        const yest = subDays(now, 1);
+        return applyRange({ from: yest, to: yest });
       }
       case DatePreset.LAST_2_DAYS:
-        return applyRange({ from: subDays(now, 1), to: now })
+        return applyRange({ from: subDays(now, 1), to: now });
       case DatePreset.LAST_7_DAYS:
-        return applyRange({ from: subDays(now, 6), to: now })
+        return applyRange({ from: subDays(now, 6), to: now });
       case DatePreset.THIS_MONTH:
-        return applyRange({ from: startOfMonth(now), to: now })
+        return applyRange({ from: startOfMonth(now), to: now });
     }
-  }
+  };
 
   return (
     <div className={className}>
@@ -108,7 +106,8 @@ export function DateRangeFilter<TData>({
                 {dateRange?.from ? (
                   dateRange.to ? (
                     <>
-                      {format(dateRange.from, DISPLAY_DATE_FORMAT)} - {format(dateRange.to, DISPLAY_DATE_FORMAT)}
+                      {format(dateRange.from, DISPLAY_DATE_FORMAT)} -{" "}
+                      {format(dateRange.to, DISPLAY_DATE_FORMAT)}
                     </>
                   ) : (
                     format(dateRange.from, DISPLAY_DATE_FORMAT)
@@ -179,8 +178,8 @@ export function DateRangeFilter<TData>({
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  handleClear()
-                  setOpen(false)
+                  handleClear();
+                  setOpen(false);
                 }}
                 className="h-6 text-xs px-2 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
               >
@@ -192,5 +191,5 @@ export function DateRangeFilter<TData>({
         </PopoverContent>
       </Popover>
     </div>
-  )
+  );
 }

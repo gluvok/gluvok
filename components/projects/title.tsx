@@ -3,9 +3,9 @@
  * @description Heading component displayed at the top of each project dashboard.
  */
 
-import * as React from "react"
+import * as React from "react";
 
-import { PROJECTS } from "@/lib/projects"
+import { PROJECTS } from "@/lib/projects";
 
 interface ProjectTitleProps {
   projectName: string;
@@ -20,9 +20,12 @@ interface ProjectTitleProps {
  */
 export function ProjectTitle({ projectName, Icon, projectSlug, desc }: ProjectTitleProps) {
   const projectMeta = PROJECTS.find(
-    (p) => (projectSlug && p.slug === projectSlug) || p.name === projectName
-  )
-  const description = desc || projectMeta?.desc || `Manage the directory of ${projectName.toLowerCase()}, edit records, and configure settings.`
+    (p) => (projectSlug && p.slug === projectSlug) || p.name === projectName,
+  );
+  const description =
+    desc ||
+    projectMeta?.desc ||
+    `Manage the directory of ${projectName.toLowerCase()}, edit records, and configure settings.`;
 
   return (
     <div className="flex flex-col gap-1.5 mb-6">
@@ -30,9 +33,7 @@ export function ProjectTitle({ projectName, Icon, projectSlug, desc }: ProjectTi
         <Icon className="h-6 w-6 text-primary" />
         {projectName}
       </h1>
-      <p className="text-sm text-muted-foreground">
-        {description}
-      </p>
+      <p className="text-sm text-muted-foreground">{description}</p>
     </div>
-  )
+  );
 }

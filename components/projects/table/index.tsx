@@ -3,11 +3,18 @@
  * @description Renders the core table grid with loading and empty fallbacks using TanStack React Table context.
  */
 
-import { Table, flexRender } from "@tanstack/react-table"
-import { Table as TableGrid, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, flexRender } from "@tanstack/react-table";
+import {
+  Table as TableGrid,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ProjectTableLoading } from "./loading"
-import { ProjectTableEmpty } from "./empty"
+import { ProjectTableLoading } from "./loading";
+import { ProjectTableEmpty } from "./empty";
 
 interface ProjectTableProps<TData> {
   table: Table<TData>;
@@ -50,21 +57,12 @@ export function ProjectTable<TData>({
       <TableGrid>
         <TableHeader className="bg-card sticky top-0 z-10 border-b">
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow
-              key={headerGroup.id}
-              className="hover:bg-transparent border-b"
-            >
+            <TableRow key={headerGroup.id} className="hover:bg-transparent border-b">
               {headerGroup.headers.map((header) => (
-                <TableHead
-                  key={header.id}
-                  className="h-10 text-xs py-2 font-semibold"
-                >
+                <TableHead key={header.id} className="h-10 text-xs py-2 font-semibold">
                   {header.isPlaceholder
                     ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
+                    : flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
             </TableRow>
@@ -89,4 +87,3 @@ export function ProjectTable<TData>({
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 /**
  * @file components/projects/filters/centers.tsx
@@ -6,5 +6,5 @@
  */
 
 export function CentersFilters() {
-  return null
+  return null;
 }

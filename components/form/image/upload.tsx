@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 /**
  * @file components/form/image/upload.tsx
@@ -6,26 +6,26 @@
  * Supabase storage uploading/deletions, and caching.
  */
 
-import { useState, useEffect, useRef } from "react"
-import { Upload } from "lucide-react"
-import { toast } from "sonner"
-import { Dropzone, DropzoneEmptyState } from "@/components/kibo-ui/dropzone"
-import { ImagePreviewCarousel } from "@/components/form/image/preview-carousel"
-import { supabase } from "@/lib/supabase"
-import { useAuthStore } from "@/lib/store/auth"
+import { useState, useEffect, useRef } from "react";
+import { Upload } from "lucide-react";
+import { toast } from "sonner";
+import { Dropzone, DropzoneEmptyState } from "@/components/kibo-ui/dropzone";
+import { ImagePreviewCarousel } from "@/components/form/image/preview-carousel";
+import { supabase } from "@/lib/supabase";
+import { useAuthStore } from "@/lib/store/auth";
 
-const BUCKET_NAME = "gluvok"
-const CACHE_CONTROL = "3600"
-const UPLOAD_PATH_FOLDER = "weighments"
-const PUBLIC_URL_INDICATOR = "/public/gluvok/"
-const MAX_IMAGE_FILES = 10
-const MAX_IMAGE_SIZE = 1024 * 1024 * 10 // 10MB
+const BUCKET_NAME = "gluvok";
+const CACHE_CONTROL = "3600";
+const UPLOAD_PATH_FOLDER = "weighments";
+const PUBLIC_URL_INDICATOR = "/public/gluvok/";
+const MAX_IMAGE_FILES = 10;
+const MAX_IMAGE_SIZE = 1024 * 1024 * 10; // 10MB
 
 interface ImageUploadProps {
-  id?: string
-  value?: string[]
-  onChange: (value: string[]) => void
-  disabled?: boolean
+  id?: string;
+  value?: string[];
+  onChange: (value: string[]) => void;
+  disabled?: boolean;
 }
 
 /**
@@ -33,7 +33,7 @@ interface ImageUploadProps {
  * In-memory registry mapping generated object URLs (blob URL) to raw browser File objects,
  * storing them until form submission.
  */
-export const pendingImageUploads = new Map<string, File>()
+export const pendingImageUploads = new Map<string, File>();
 
 /**
  * processImageUploadsAndDeletions utility
@@ -42,25 +42,23 @@ export const pendingImageUploads = new Map<string, File>()
  */
 export async function processImageUploadsAndDeletions(
   submittedImages: string[],
-  originalImages: string[] = []
+  originalImages: string[] = [],
 ): Promise<string[]> {
-  const currentUser = useAuthStore.getState().user
-  const factoryId = currentUser?.factory_id
-  const factoryPrefix = String(factoryId ?? "default")
+  const currentUser = useAuthStore.getState().user;
+  const factoryId = currentUser?.factory_id;
+  const factoryPrefix = String(factoryId ?? "default");
 
   // 1. Identify which images to delete (present in original, but not in submitted)
-  const imagesToDelete = originalImages.filter((img) => !submittedImages.includes(img))
+  const imagesToDelete = originalImages.filter((img) => !submittedImages.includes(img));
   if (imagesToDelete.length > 0) {
     const filePathsToDelete = imagesToDelete
       .filter((img) => img.includes(PUBLIC_URL_INDICATOR))
-      .map((img) => img.split(PUBLIC_URL_INDICATOR)[1])
+      .map((img) => img.split(PUBLIC_URL_INDICATOR)[1]);
 
     if (filePathsToDelete.length > 0) {
-      const { error } = await supabase.storage
-        .from(BUCKET_NAME)
-        .remove(filePathsToDelete)
+      const { error } = await supabase.storage.from(BUCKET_NAME).remove(filePathsToDelete);
       if (error) {
-        console.error("Failed to delete removed files from Supabase storage:", error.message)
+        console.error("Failed to delete removed files from Supabase storage:", error.message);
       }
     }
   }
@@ -69,41 +67,37 @@ export async function processImageUploadsAndDeletions(
   const finalImages = await Promise.all(
     submittedImages.map(async (img) => {
       if (img.startsWith("blob:")) {
-        const file = pendingImageUploads.get(img)
+        const file = pendingImageUploads.get(img);
         if (!file) {
-          throw new Error("Local file not found in memory")
+          throw new Error("Local file not found in memory");
         }
 
-        const fileExt = file.name.split(".").pop()
-        const uniqueId = Math.random().toString(36).substring(2, 15) + "-" + Date.now()
-        const filePath = `f_${factoryPrefix}/${UPLOAD_PATH_FOLDER}/${uniqueId}.${fileExt}`
+        const fileExt = file.name.split(".").pop();
+        const uniqueId = Math.random().toString(36).substring(2, 15) + "-" + Date.now();
+        const filePath = `f_${factoryPrefix}/${UPLOAD_PATH_FOLDER}/${uniqueId}.${fileExt}`;
 
-        const { error } = await supabase.storage
-          .from(BUCKET_NAME)
-          .upload(filePath, file, {
-            cacheControl: CACHE_CONTROL,
-            upsert: false,
-          })
+        const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, file, {
+          cacheControl: CACHE_CONTROL,
+          upsert: false,
+        });
 
         if (error) {
-          throw error
+          throw error;
         }
 
-        const { data } = supabase.storage
-          .from(BUCKET_NAME)
-          .getPublicUrl(filePath)
+        const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
 
         // Clear the file from memory
-        pendingImageUploads.delete(img)
-        URL.revokeObjectURL(img)
+        pendingImageUploads.delete(img);
+        URL.revokeObjectURL(img);
 
-        return data.publicUrl
+        return data.publicUrl;
       }
-      return img
-    })
-  )
+      return img;
+    }),
+  );
 
-  return finalImages
+  return finalImages;
 }
 
 /**
@@ -112,52 +106,52 @@ export async function processImageUploadsAndDeletions(
  * and passes the blob URL list up to the parent form.
  */
 export function ImageUpload({ value = [], onChange, disabled }: ImageUploadProps) {
-  const [fileNameMap, setFileNameMap] = useState<Record<string, string>>({})
+  const [fileNameMap, setFileNameMap] = useState<Record<string, string>>({});
 
-  const valueRef = useRef(value)
+  const valueRef = useRef(value);
 
   useEffect(() => {
-    valueRef.current = value
-  }, [value])
+    valueRef.current = value;
+  }, [value]);
 
   useEffect(() => {
     return () => {
       // Clean up object URLs on unmount to prevent memory leaks
       valueRef.current.forEach((img) => {
         if (img.startsWith("blob:")) {
-          pendingImageUploads.delete(img)
-          URL.revokeObjectURL(img)
+          pendingImageUploads.delete(img);
+          URL.revokeObjectURL(img);
         }
-      })
-    }
-  }, [])
+      });
+    };
+  }, []);
 
   const handleDrop = (acceptedFiles: File[]) => {
     try {
       const newBlobUrls = acceptedFiles.map((file) => {
-        const blobUrl = URL.createObjectURL(file)
-        pendingImageUploads.set(blobUrl, file)
-        setFileNameMap((prev) => ({ ...prev, [blobUrl]: file.name }))
-        return blobUrl
-      })
+        const blobUrl = URL.createObjectURL(file);
+        pendingImageUploads.set(blobUrl, file);
+        setFileNameMap((prev) => ({ ...prev, [blobUrl]: file.name }));
+        return blobUrl;
+      });
 
-      onChange([...value, ...newBlobUrls])
-      toast.success(`Selected ${acceptedFiles.length} image(s) for upload`)
+      onChange([...value, ...newBlobUrls]);
+      toast.success(`Selected ${acceptedFiles.length} image(s) for upload`);
     } catch (err: unknown) {
-      console.error("Error reading files:", err)
-      toast.error("Failed to read files")
+      console.error("Error reading files:", err);
+      toast.error("Failed to read files");
     }
-  }
+  };
 
   const handleRemove = (indexToRemove: number) => {
-    const urlToDelete = value[indexToRemove]
-    onChange(value.filter((_, i) => i !== indexToRemove))
+    const urlToDelete = value[indexToRemove];
+    onChange(value.filter((_, i) => i !== indexToRemove));
 
     if (urlToDelete.startsWith("blob:")) {
-      pendingImageUploads.delete(urlToDelete)
-      URL.revokeObjectURL(urlToDelete)
+      pendingImageUploads.delete(urlToDelete);
+      URL.revokeObjectURL(urlToDelete);
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
@@ -177,8 +171,8 @@ export function ImageUpload({ value = [], onChange, disabled }: ImageUploadProps
           maxSize={MAX_IMAGE_SIZE}
           onDrop={handleDrop}
           onError={(err) => {
-            console.error(err)
-            toast.error(err.message || "File upload failed")
+            console.error(err);
+            toast.error(err.message || "File upload failed");
           }}
           className="border-dashed border-2 border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/10 transition-all py-6 rounded-xl"
         >
@@ -194,5 +188,5 @@ export function ImageUpload({ value = [], onChange, disabled }: ImageUploadProps
         </Dropzone>
       )}
     </div>
-  )
+  );
 }

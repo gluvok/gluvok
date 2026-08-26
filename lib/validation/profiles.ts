@@ -3,9 +3,9 @@
  * @description Zod schema and validation rules for Profiles entities.
  */
 
-import * as z from "zod"
-import { EntityKey, Role, ColumnLabel } from "@/lib/constants/enums"
-import { nameSchema } from "./helpers"
+import * as z from "zod";
+import { EntityKey, Role, ColumnLabel } from "@/lib/constants/enums";
+import { nameSchema } from "./helpers";
 
 export const addProfileSchema = z
   .object({
@@ -27,7 +27,7 @@ export const addProfileSchema = z
           .regex(/^\d+$/, `${ColumnLabel.AADHAR_NUMBER} must contain only digits`)
           .optional()
           .nullable()
-          .or(z.literal(""))
+          .or(z.literal("")),
       )
       .transform((v) => (v === "" || v === undefined ? null : v)),
     [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
@@ -39,9 +39,9 @@ export const addProfileSchema = z
   .refine((data) => data[EntityKey.PASSWORD] === data[EntityKey.CONFIRM_PASSWORD], {
     message: "Passwords do not match",
     path: [EntityKey.CONFIRM_PASSWORD],
-  })
+  });
 
-export const createProfileSchema = addProfileSchema
+export const createProfileSchema = addProfileSchema;
 
 export const editProfileSchema = z
   .object({
@@ -57,7 +57,7 @@ export const editProfileSchema = z
           .regex(/^\d+$/, `${ColumnLabel.AADHAR_NUMBER} must contain only digits`)
           .optional()
           .nullable()
-          .or(z.literal(""))
+          .or(z.literal("")),
       )
       .transform((v) => (v === "" || v === undefined ? null : v)),
     [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
@@ -78,17 +78,17 @@ export const editProfileSchema = z
     [EntityKey.IS_ACTIVE]: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
-    const rawPassword = data[EntityKey.PASSWORD]
-    const rawConfirm = data[EntityKey.CONFIRM_PASSWORD]
-    const hasPassword = Boolean(rawPassword && rawPassword.trim().length > 0)
-    const hasConfirm = Boolean(rawConfirm && rawConfirm.trim().length > 0)
+    const rawPassword = data[EntityKey.PASSWORD];
+    const rawConfirm = data[EntityKey.CONFIRM_PASSWORD];
+    const hasPassword = Boolean(rawPassword && rawPassword.trim().length > 0);
+    const hasConfirm = Boolean(rawConfirm && rawConfirm.trim().length > 0);
 
     if (hasPassword && rawPassword!.trim().length < 6) {
       ctx.addIssue({
         code: "custom",
         message: `${ColumnLabel.PASSWORD} must be at least 6 characters`,
         path: [EntityKey.PASSWORD],
-      })
+      });
     }
 
     if (hasPassword && !hasConfirm) {
@@ -96,12 +96,12 @@ export const editProfileSchema = z
         code: "custom",
         message: "Please confirm your password",
         path: [EntityKey.CONFIRM_PASSWORD],
-      })
+      });
     } else if (hasPassword && rawPassword !== rawConfirm) {
       ctx.addIssue({
         code: "custom",
         message: "Passwords do not match",
         path: [EntityKey.CONFIRM_PASSWORD],
-      })
+      });
     }
-  })
+  });

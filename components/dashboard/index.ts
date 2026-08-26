@@ -3,4 +3,4 @@
  * @description Barrel file exporting dashboard-specific UI components.
  */
 
-export * from "./card"
+export * from "./card";

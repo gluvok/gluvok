@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 /**
  * @file components/auth/guard.tsx
@@ -6,22 +6,17 @@
  * Protects client routes and redirects unauthenticated or unauthorized users appropriately.
  */
 
-import { useEffect } from "react"
-import { useRouter, usePathname } from "next/navigation"
-import {
-  useAuthStore,
-  useFactoryStore,
-  useEntitiesStore,
-  hasPageAccess,
-} from "@/lib/store";
-import { AppRoutes } from "@/lib/constants/enums"
-import { AUTH_ROUTES, PUBLIC_ROUTES } from "@/lib/constants"
-import NotFound from "@/app/not-found"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/sidebar"
-import { getNextParam, getNextRedirectUrl } from "@/lib/utils"
+import { useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useAuthStore, useFactoryStore, useEntitiesStore, hasPageAccess } from "@/lib/store";
+import { AppRoutes } from "@/lib/constants/enums";
+import { AUTH_ROUTES, PUBLIC_ROUTES } from "@/lib/constants";
+import NotFound from "@/app/not-found";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/sidebar";
+import { getNextParam, getNextRedirectUrl } from "@/lib/utils";
 
-import { setupAxiosInterceptors } from "@/lib/services"
+import { setupAxiosInterceptors } from "@/lib/services";
 
 /**
  * FullScreenStatus Component
@@ -32,7 +27,7 @@ export function FullScreenStatus({ message }: { message: string }) {
     <div className="min-h-screen bg-background flex items-center justify-center text-xs font-mono text-muted-foreground">
       {message}
     </div>
-  )
+  );
 }
 
 /**
@@ -47,12 +42,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const initialized = useAuthStore((state) => state.initialized);
   const profileLoading = useAuthStore((state) => state.profileLoading);
 
-  const factoryInitialized = useFactoryStore(
-    (state) => state.factoryInitialized,
-  );
-  const filtersInitialized = useEntitiesStore(
-    (state) => state.filtersInitialized,
-  );
+  const factoryInitialized = useFactoryStore((state) => state.factoryInitialized);
+  const filtersInitialized = useEntitiesStore((state) => state.filtersInitialized);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -63,10 +54,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const projectSlug = projectMatch ? projectMatch[1] : null;
 
   const isAuthorized =
-    !user ||
-    isPublicPage ||
-    !projectSlug ||
-    hasPageAccess(user.role, projectSlug);
+    !user || isPublicPage || !projectSlug || hasPageAccess(user.role, projectSlug);
 
   // Mark auth store as hydrated after mount (avoids React 19 state-update-before-mount warning)
   useEffect(() => {

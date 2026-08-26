@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 /**
  * @file components/layout-wrapper.tsx
@@ -6,14 +6,14 @@
  * Manages route guarding, main layouts, and sidebar rendering.
  */
 
-import * as React from "react"
-import { usePathname } from "next/navigation"
-import { AppSidebar } from "@/components/sidebar"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { AuthGuard } from "@/components/auth/guard"
-import { AppRoutes } from "@/lib/constants/enums"
-import { AUTH_ROUTES } from "@/lib/constants"
-import { useAuthStore } from "@/lib/store"
+import * as React from "react";
+import { usePathname } from "next/navigation";
+import { AppSidebar } from "@/components/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AuthGuard } from "@/components/auth/guard";
+import { AppRoutes } from "@/lib/constants/enums";
+import { AUTH_ROUTES } from "@/lib/constants";
+import { useAuthStore } from "@/lib/store";
 
 /**
  * MainLayout Component
@@ -21,22 +21,20 @@ import { useAuthStore } from "@/lib/store"
  * Adds the AppSidebar structure for authorized dashboard routes.
  */
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-  const isAuthPage = AUTH_ROUTES.includes(pathname as AppRoutes)
-  const user = useAuthStore((state) => state.user)
+  const pathname = usePathname();
+  const isAuthPage = AUTH_ROUTES.includes(pathname as AppRoutes);
+  const user = useAuthStore((state) => state.user);
 
   if (isAuthPage) {
-    return <AuthGuard>{children}</AuthGuard>
+    return <AuthGuard>{children}</AuthGuard>;
   }
 
   return (
     <AuthGuard>
       <SidebarProvider defaultOpen={!!user}>
         <AppSidebar />
-        <SidebarInset>
-          {children}
-        </SidebarInset>
+        <SidebarInset>{children}</SidebarInset>
       </SidebarProvider>
     </AuthGuard>
-  )
+  );
 }

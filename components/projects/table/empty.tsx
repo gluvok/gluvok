@@ -3,7 +3,7 @@
  * @description Empty state rendered when no records match filter criteria.
  */
 
-import { SearchX } from "lucide-react"
+import { SearchX } from "lucide-react";
 
 /**
  * ProjectTableEmpty Component
@@ -15,6 +15,5 @@ export function ProjectTableEmpty() {
       <SearchX className="h-8 w-8 text-muted-foreground/30 animate-pulse" />
       <span className="font-medium text-muted-foreground/75">No results found.</span>
     </div>
-  )
+  );
 }
-

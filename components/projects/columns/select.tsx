@@ -3,8 +3,8 @@
  * @description Column definitions and rendering helpers for the Select entity table.
  */
 
-import { ColumnDef } from "@tanstack/react-table"
-import { Checkbox } from "@/components/ui/checkbox"
+import { ColumnDef } from "@tanstack/react-table";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export function getSelectColumn<T>(): ColumnDef<T> {
   return {
@@ -12,8 +12,7 @@ export function getSelectColumn<T>(): ColumnDef<T> {
     header: ({ table }) => (
       <Checkbox
         checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
+          table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
@@ -29,5 +28,5 @@ export function getSelectColumn<T>(): ColumnDef<T> {
     enableSorting: false,
     enableHiding: false,
     enableGlobalFilter: false,
-  }
+  };
 }

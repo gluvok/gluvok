@@ -3,17 +3,17 @@
  * @description Zustand state store for managing authentication and user session via custom JWT API endpoints (axios).
  */
 
-import { create } from "zustand"
-import axios from "axios"
-import { toast } from "sonner"
-import { Role, EntityKey } from "@/lib/constants/enums"
-import { DEFAULT_AVATAR, AuthErrorMessage } from "@/lib/constants"
+import { create } from "zustand";
+import axios from "axios";
+import { toast } from "sonner";
+import { Role, EntityKey } from "@/lib/constants/enums";
+import { DEFAULT_AVATAR, AuthErrorMessage } from "@/lib/constants";
 
 import { useFactoryStore } from "./factory";
-import { useEntitiesStore } from "./entities"
+import { useEntitiesStore } from "./entities";
 
-export const PROFILE_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.USER_ID}, ${EntityKey.NAME}, ${EntityKey.ROLE}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`
-export const CUSTOMER_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.NAME}, ${EntityKey.GOVT_ID}, ${EntityKey.FATHER_NAME}, ${EntityKey.FACTORY_ID}, ${EntityKey.USER_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`
+export const PROFILE_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.USER_ID}, ${EntityKey.NAME}, ${EntityKey.ROLE}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`;
+export const CUSTOMER_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.NAME}, ${EntityKey.GOVT_ID}, ${EntityKey.FATHER_NAME}, ${EntityKey.FACTORY_ID}, ${EntityKey.USER_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`;
 
 export interface AuthUser {
   id: string;
@@ -26,14 +26,14 @@ export interface AuthUser {
 }
 
 interface AuthStore {
-  user: AuthUser | null
-  hydrated: boolean
-  initialized: boolean
-  profileLoading: boolean
-  initAuth: () => () => void
-  login: (username: string, password: string) => Promise<boolean>
-  logout: () => Promise<void>
-  setHydrated: (state: boolean) => void
+  user: AuthUser | null;
+  hydrated: boolean;
+  initialized: boolean;
+  profileLoading: boolean;
+  initAuth: () => () => void;
+  login: (username: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  setHydrated: (state: boolean) => void;
 }
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
@@ -43,10 +43,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   profileLoading: false,
   initAuth: () => {
     if (get().initialized) {
-      return () => { }
+      return () => {};
     }
 
-    set({ profileLoading: true })
+    set({ profileLoading: true });
 
     axios
       .get<{ user: AuthUser | null }>("/api/auth/me", {
@@ -61,38 +61,40 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             },
             initialized: true,
             profileLoading: false,
-          })
+          });
           useFactoryStore.getState().fetchFactory();
-          useEntitiesStore.getState().preloadAllFilters({ silent: true })
+          useEntitiesStore.getState().preloadAllFilters({ silent: true });
         } else {
-          set({ user: null, initialized: true, profileLoading: false })
+          set({ user: null, initialized: true, profileLoading: false });
         }
       })
       .catch((err) => {
-        console.error("Failed to check active auth session:", err)
-        set({ user: null, initialized: true, profileLoading: false })
-      })
+        console.error("Failed to check active auth session:", err);
+        set({ user: null, initialized: true, profileLoading: false });
+      });
 
-    return () => { }
+    return () => {};
   },
   login: async (username, password) => {
     try {
       const res = await axios.post<{ success: boolean; user: AuthUser; error?: string }>(
         "/api/auth/login",
         { username, password },
-        { validateStatus: (status) => status < 600 }
-      )
+        { validateStatus: (status) => status < 600 },
+      );
 
-      const data = res.data
+      const data = res.data;
       if (res.status !== 200 || !data.success || !data.user) {
         const errorMsg =
           data.error ||
           (res.status === 401
             ? AuthErrorMessage.INVALID_CREDENTIALS
-            : res.status === 500 ? AuthErrorMessage.INTERNAL_SERVER_ERROR : AuthErrorMessage.SIGN_IN_ERROR)
-        toast.error(errorMsg)
-        set({ user: null })
-        return false
+            : res.status === 500
+              ? AuthErrorMessage.INTERNAL_SERVER_ERROR
+              : AuthErrorMessage.SIGN_IN_ERROR);
+        toast.error(errorMsg);
+        set({ user: null });
+        return false;
       }
 
       set({
@@ -101,35 +103,35 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           avatar: DEFAULT_AVATAR,
         },
         initialized: true,
-      })
+      });
 
       useFactoryStore.getState().fetchFactory();
-      useEntitiesStore.getState().preloadAllFilters({ silent: true })
+      useEntitiesStore.getState().preloadAllFilters({ silent: true });
 
       toast.success(`Welcome back, ${data.user.username}! 🎉`);
-      return true
+      return true;
     } catch (err: unknown) {
-      console.error("Login request error:", err)
+      console.error("Login request error:", err);
       const errorMsg =
         axios.isAxiosError(err) && err.response?.data?.error
           ? err.response.data.error
-          : AuthErrorMessage.SIGN_IN_ERROR
-      toast.error(errorMsg)
-      set({ user: null })
-      return false
+          : AuthErrorMessage.SIGN_IN_ERROR;
+      toast.error(errorMsg);
+      set({ user: null });
+      return false;
     }
   },
   logout: async () => {
-    const currentUser = get().user
+    const currentUser = get().user;
     const username = currentUser?.username || "there";
     try {
-      await axios.post("/api/auth/logout")
+      await axios.post("/api/auth/logout");
     } catch (err) {
-      console.error("Logout request error:", err)
+      console.error("Logout request error:", err);
     } finally {
-      set({ user: null })
+      set({ user: null });
       toast.success(`See you soon, ${username}! Logged out successfully 👋`);
     }
   },
   setHydrated: (state) => set({ hydrated: state }),
-}))
+}));

@@ -3,12 +3,12 @@
  * @description Hook to fetch list records for a given entity slug and format them into combobox options.
  */
 
-import * as React from "react"
-import axios from "axios"
-import { ENTITY_EXTRACTORS, type Entity } from "@/lib/utils/entity-extractors"
-import { fetchEntityList } from "@/lib/services"
-import { ProjectSlug, SystemSlug, ApiRoutes } from "@/lib/constants/enums"
-import { useEntitiesStore } from "@/lib/store"
+import * as React from "react";
+import axios from "axios";
+import { ENTITY_EXTRACTORS, type Entity } from "@/lib/utils/entity-extractors";
+import { fetchEntityList } from "@/lib/services";
+import { ProjectSlug, SystemSlug, ApiRoutes } from "@/lib/constants/enums";
+import { useEntitiesStore } from "@/lib/store";
 
 /**
  * useEntityOptions Hook
@@ -19,10 +19,10 @@ export function useEntityOptions(
   entitySlug: string,
   contextSlug?: string,
   fieldKey?: string,
-  currentValue?: string
+  currentValue?: string,
 ) {
-  const storeCommodities = useEntitiesStore((state) => state.commodities)
-  const weighmentFiltersData = useEntitiesStore((state) => state.weighmentFiltersData)
+  const storeCommodities = useEntitiesStore((state) => state.commodities);
+  const weighmentFiltersData = useEntitiesStore((state) => state.weighmentFiltersData);
 
   const preloadedOptions = React.useMemo(() => {
     switch (entitySlug) {
@@ -31,106 +31,106 @@ export function useEntityOptions(
           return storeCommodities.map((c) => ({
             value: String(c.id),
             label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
-          }))
+          }));
         }
-        break
+        break;
       case ProjectSlug.CENTERS:
         if (weighmentFiltersData?.centers && weighmentFiltersData.centers.length > 0) {
           return weighmentFiltersData.centers.map((c) => ({
             value: String(c.id),
             label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
-          }))
+          }));
         }
-        break
+        break;
       case ProjectSlug.PROFILES:
         if (weighmentFiltersData?.profiles && weighmentFiltersData.profiles.length > 0) {
           return weighmentFiltersData.profiles.map((p) => ({
             value: String(p.id),
             label: p.name ? `${p.name} (ID: ${p.id})` : String(p.id),
-          }))
+          }));
         }
-        break
+        break;
       case ProjectSlug.CUSTOMERS:
         if (weighmentFiltersData?.customers && weighmentFiltersData.customers.length > 0) {
           return weighmentFiltersData.customers.map((c) => ({
             value: String(c.id),
             label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
-          }))
+          }));
         }
-        break
+        break;
       case ProjectSlug.RATES:
         if (weighmentFiltersData?.rates && weighmentFiltersData.rates.length > 0) {
           return weighmentFiltersData.rates.map((r) => ({
             value: String(r.id),
             label: r.label,
-          }))
+          }));
         }
-        break
+        break;
       default:
-        break
+        break;
     }
-    return null
-  }, [entitySlug, storeCommodities, weighmentFiltersData])
+    return null;
+  }, [entitySlug, storeCommodities, weighmentFiltersData]);
 
-  const [apiOptions, setApiOptions] = React.useState<{ value: string; label: string }[]>([])
-  const [apiLoading, setApiLoading] = React.useState(false)
+  const [apiOptions, setApiOptions] = React.useState<{ value: string; label: string }[]>([]);
+  const [apiLoading, setApiLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (preloadedOptions) return
+    if (preloadedOptions) return;
 
-    let active = true
+    let active = true;
     async function load() {
       try {
-        setApiLoading(true)
-        let rawList: Entity[] = []
+        setApiLoading(true);
+        let rawList: Entity[] = [];
         switch (entitySlug) {
           case SystemSlug.USERS: {
-            const res = await axios.get<{ data: Entity[] }>(ApiRoutes.USERS)
-            rawList = res.data.data || []
-            break
+            const res = await axios.get<{ data: Entity[] }>(ApiRoutes.USERS);
+            rawList = res.data.data || [];
+            break;
           }
           default:
-            rawList = await fetchEntityList(entitySlug)
-            break
+            rawList = await fetchEntityList(entitySlug);
+            break;
         }
 
-        if (!active) return
+        if (!active) return;
 
-        const extractor = ENTITY_EXTRACTORS[entitySlug]
+        const extractor = ENTITY_EXTRACTORS[entitySlug];
         if (!extractor) {
-          setApiOptions([])
-          return
+          setApiOptions([]);
+          return;
         }
 
         const opts = rawList.map((item) => {
-          const { id, name } = extractor(item)
+          const { id, name } = extractor(item);
           if (entitySlug === SystemSlug.USERS) {
             return {
               value: id,
               label: name || id,
-            }
+            };
           }
-          const displayId = id.length > 8 ? `${id.substring(0, 8)}...` : id
+          const displayId = id.length > 8 ? `${id.substring(0, 8)}...` : id;
           return {
             value: id,
             label: name === id ? name : name ? `${name} (ID: ${displayId})` : id,
-          }
-        })
-        setApiOptions(opts)
+          };
+        });
+        setApiOptions(opts);
       } catch (err) {
-        console.error("Failed to load options for", entitySlug, err)
+        console.error("Failed to load options for", entitySlug, err);
       } finally {
-        if (active) setApiLoading(false)
+        if (active) setApiLoading(false);
       }
     }
-    load()
+    load();
     return () => {
-      active = false
-    }
-  }, [entitySlug, contextSlug, fieldKey, currentValue, preloadedOptions])
+      active = false;
+    };
+  }, [entitySlug, contextSlug, fieldKey, currentValue, preloadedOptions]);
 
-  const options = preloadedOptions || apiOptions
-  const loading = !preloadedOptions && apiLoading
+  const options = preloadedOptions || apiOptions;
+  const loading = !preloadedOptions && apiLoading;
 
-  return { options, loading }
+  return { options, loading };
 }

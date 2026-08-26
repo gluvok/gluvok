@@ -30,5 +30,4 @@ export const PDF_STYLES = `
     header { margin-bottom: 24px; }
     footer { position: fixed; bottom: 20mm; left: 20mm; right: 20mm; width: auto; margin-top: 0; }
   }
-`
-
+`;

@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
 /**
  * @file components/data-table/view-options/index.tsx
  * @description Dropdown checklist for toggling column visibility dynamically in a DataTable.
  */
 
-import { type Table } from "@tanstack/react-table"
-import { Settings2, HelpCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { type Table } from "@tanstack/react-table";
+import { Settings2, HelpCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -15,11 +15,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { COLUMN_ICONS, getColumnLabel } from "./helpers"
+} from "@/components/ui/dropdown-menu";
+import { COLUMN_ICONS, getColumnLabel } from "./helpers";
 
 interface DataTableViewOptionsProps<TData> {
-  table: Table<TData>
+  table: Table<TData>;
 }
 
 /**
@@ -30,7 +30,12 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button id="view-options-trigger" variant="outline" size="sm" className="h-9 text-xs font-medium gap-1.5">
+        <Button
+          id="view-options-trigger"
+          variant="outline"
+          size="sm"
+          className="h-9 text-xs font-medium gap-1.5"
+        >
           <Settings2 className="h-4 w-4" /> View
         </Button>
       </DropdownMenuTrigger>
@@ -41,9 +46,11 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
           .getAllColumns()
           .filter((col) => typeof col.accessorFn !== "undefined" && col.getCanHide())
           .map((column) => {
-            const meta = column.columnDef.meta as { icon?: React.ComponentType<{ className?: string }>, label?: string } | undefined
-            const Icon = meta?.icon || COLUMN_ICONS[column.id] || HelpCircle
-            const label = meta?.label || getColumnLabel(column.id)
+            const meta = column.columnDef.meta as
+              | { icon?: React.ComponentType<{ className?: string }>; label?: string }
+              | undefined;
+            const Icon = meta?.icon || COLUMN_ICONS[column.id] || HelpCircle;
+            const label = meta?.label || getColumnLabel(column.id);
             return (
               <DropdownMenuCheckboxItem
                 key={column.id}
@@ -55,9 +62,9 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
                 <Icon className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />
                 <span className="truncate">{label}</span>
               </DropdownMenuCheckboxItem>
-            )
+            );
           })}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

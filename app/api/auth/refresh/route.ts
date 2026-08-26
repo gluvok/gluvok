@@ -4,33 +4,22 @@
  * Validates token_version against the database to enforce session invalidation on password changes.
  */
 
-import { NextRequest, NextResponse } from "next/server"
-import { cookies } from "next/headers"
-import { db } from "@/db"
-import {
-  getTokenExpiresIn,
-  signJWT,
-  signRefreshToken,
-  verifyRefreshToken,
-} from "@/lib/auth/jwt"
-import {
-  AuthErrorMessage,
-  CookieName,
-  EntityKey,
-  Role,
-  TableName,
-} from "@/lib/constants"
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { db } from "@/db";
+import { getTokenExpiresIn, signJWT, signRefreshToken, verifyRefreshToken } from "@/lib/auth/jwt";
+import { AuthErrorMessage, CookieName, EntityKey, Role, TableName } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    let refreshToken = cookieStore.get(CookieName.REFRESH_TOKEN)?.value
+    const cookieStore = await cookies();
+    let refreshToken = cookieStore.get(CookieName.REFRESH_TOKEN)?.value;
 
     if (!refreshToken) {
       try {
-        const body = await request.json()
+        const body = await request.json();
         if (body && typeof body.refresh_token === "string") {
-          refreshToken = body.refresh_token
+          refreshToken = body.refresh_token;
         }
       } catch {
         // No JSON body
@@ -38,9 +27,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (!refreshToken) {
-      const authHeader = request.headers.get("authorization")
+      const authHeader = request.headers.get("authorization");
       if (authHeader?.startsWith("Bearer ")) {
-        refreshToken = authHeader.substring(7)
+        refreshToken = authHeader.substring(7);
       }
     }
 
@@ -50,75 +39,70 @@ export async function POST(request: NextRequest) {
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax" as const,
         expires: new Date(0),
-      }
-      response.cookies.set(CookieName.TOKEN, "", { ...clearOptions, path: "/" })
-      response.cookies.set(CookieName.AUTH_TOKEN, "", { ...clearOptions, path: "/" })
-      response.cookies.set(CookieName.REFRESH_TOKEN, "", { ...clearOptions, path: "/api/auth" })
-      return response
-    }
+      };
+      response.cookies.set(CookieName.TOKEN, "", { ...clearOptions, path: "/" });
+      response.cookies.set(CookieName.AUTH_TOKEN, "", { ...clearOptions, path: "/" });
+      response.cookies.set(CookieName.REFRESH_TOKEN, "", { ...clearOptions, path: "/api/auth" });
+      return response;
+    };
 
     if (!refreshToken) {
       const response = NextResponse.json(
         { error: AuthErrorMessage.INVALID_CREDENTIALS },
-        { status: 401 }
-      )
-      return clearCookies(response)
+        { status: 401 },
+      );
+      return clearCookies(response);
     }
 
-    const payload = await verifyRefreshToken(refreshToken)
+    const payload = await verifyRefreshToken(refreshToken);
     if (!payload) {
       const response = NextResponse.json(
         { error: AuthErrorMessage.INVALID_CREDENTIALS },
-        { status: 401 }
-      )
-      return clearCookies(response)
+        { status: 401 },
+      );
+      return clearCookies(response);
     }
 
-    const userId = parseInt(payload.sub, 10)
+    const userId = parseInt(payload.sub, 10);
     if (isNaN(userId)) {
       const response = NextResponse.json(
         { error: AuthErrorMessage.INVALID_CREDENTIALS },
-        { status: 401 }
-      )
-      return clearCookies(response)
+        { status: 401 },
+      );
+      return clearCookies(response);
     }
 
     const { data: user, error: userError } = await db
       .from(TableName.USERS)
       .select("*")
       .eq(EntityKey.ID, userId)
-      .maybeSingle()
+      .maybeSingle();
 
     const currentTokenVersion =
-      user && typeof user.token_version === "number" ? user.token_version : 1
+      user && typeof user.token_version === "number" ? user.token_version : 1;
 
-    if (
-      userError ||
-      !user ||
-      !user.is_active ||
-      currentTokenVersion !== payload.token_version
-    ) {
+    if (userError || !user || !user.is_active || currentTokenVersion !== payload.token_version) {
       const response = NextResponse.json(
         { error: AuthErrorMessage.INVALID_CREDENTIALS },
-        { status: 401 }
-      )
-      return clearCookies(response)
+        { status: 401 },
+      );
+      return clearCookies(response);
     }
 
-    let profileId: number | undefined
+    let profileId: number | undefined;
     if (user.role === Role.OPERATOR) {
       const { data: profile } = await db
         .from(TableName.PROFILES)
         .select(EntityKey.ID)
         .eq(EntityKey.USER_ID, user.id)
-        .maybeSingle()
+        .maybeSingle();
 
       if (profile) {
-        profileId = profile.id
+        profileId = profile.id;
       }
     }
 
-    const factoryId = user.factory_id ?? null
+    const factoryId = user.factory_id ?? null;
 
     const newAccessToken = await signJWT({
       sub: String(user.id),
@@ -126,21 +110,21 @@ export async function POST(request: NextRequest) {
       role: user.role,
       factory_id: factoryId,
       profile_id: profileId,
-    })
-    const accessExpiresIn = getTokenExpiresIn(newAccessToken)
+    });
+    const accessExpiresIn = getTokenExpiresIn(newAccessToken);
 
     const newRefreshToken = await signRefreshToken({
       sub: String(user.id),
       token_version: currentTokenVersion,
-    })
-    const refreshExpiresIn = getTokenExpiresIn(newRefreshToken)
+    });
+    const refreshExpiresIn = getTokenExpiresIn(newRefreshToken);
 
     const userPayload = {
       id: user.id,
       username: user.username,
       role: user.role,
       factory_id: factoryId,
-    }
+    };
 
     const response = NextResponse.json({
       success: true,
@@ -149,7 +133,7 @@ export async function POST(request: NextRequest) {
       refresh_token: newRefreshToken,
       token_type: "Bearer",
       expires_in: accessExpiresIn,
-    })
+    });
 
     response.cookies.set(CookieName.TOKEN, newAccessToken, {
       httpOnly: true,
@@ -157,7 +141,7 @@ export async function POST(request: NextRequest) {
       sameSite: "lax",
       maxAge: accessExpiresIn,
       path: "/",
-    })
+    });
 
     response.cookies.set(CookieName.REFRESH_TOKEN, newRefreshToken, {
       httpOnly: true,
@@ -165,14 +149,11 @@ export async function POST(request: NextRequest) {
       sameSite: "lax",
       maxAge: refreshExpiresIn,
       path: "/api/auth",
-    })
+    });
 
-    return response
+    return response;
   } catch (error) {
-    console.error("Token refresh error:", error)
-    return NextResponse.json(
-      { error: AuthErrorMessage.INTERNAL_SERVER_ERROR },
-      { status: 500 }
-    )
+    console.error("Token refresh error:", error);
+    return NextResponse.json({ error: AuthErrorMessage.INTERNAL_SERVER_ERROR }, { status: 500 });
   }
 }

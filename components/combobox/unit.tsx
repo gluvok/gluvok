@@ -1,24 +1,24 @@
-"use client"
+"use client";
 
 /**
  * @file components/combobox/unit.tsx
  * @description Unit selector combobox component (kg, quintals, gallons).
  */
 
-import { BaseCombobox } from "./base"
-import { Unit } from "@/lib/constants/enums"
+import { BaseCombobox } from "./base";
+import { Unit } from "@/lib/constants/enums";
 
 interface UnitComboboxProps {
-  value: string
-  onChange: (value: string) => void
-  id?: string
+  value: string;
+  onChange: (value: string) => void;
+  id?: string;
 }
 
 const data = [
   { value: Unit.KG, label: Unit.KG },
   { value: Unit.Q, label: Unit.Q },
   { value: Unit.GAL, label: Unit.GAL },
-]
+];
 
 /**
  * UnitCombobox Component
@@ -34,5 +34,5 @@ export function UnitCombobox({ value, onChange, id }: UnitComboboxProps) {
       placeholder="Select unit..."
       id={id}
     />
-  )
+  );
 }

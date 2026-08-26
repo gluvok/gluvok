@@ -3,34 +3,29 @@
  * @description Dedicated API route for microcontroller/hardware automatic entry ingestion.
  */
 
-import { NextRequest, NextResponse } from "next/server"
-import { db } from "@/db"
-import { apiError, StatusCodes, getAuthUser } from "@/db/helpers"
-import {
-  TableName,
-  EntityKey,
-  EntryStatus,
-  EntryType,
-} from "@/lib/constants/enums"
-import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments"
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/db";
+import { apiError, StatusCodes, getAuthUser } from "@/db/helpers";
+import { TableName, EntityKey, EntryStatus, EntryType } from "@/lib/constants/enums";
+import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
 
 export async function POST(req: NextRequest) {
   try {
-    const deviceSecret = req.headers.get("x-microcontroller-secret")
-    const expectedSecret = process.env.MICROCONTROLLER_SECRET || "default-pi-secret-key"
-    const authUser = await getAuthUser(req)
+    const deviceSecret = req.headers.get("x-microcontroller-secret");
+    const expectedSecret = process.env.MICROCONTROLLER_SECRET || "default-pi-secret-key";
+    const authUser = await getAuthUser(req);
 
-    const isValidSecret = deviceSecret && deviceSecret === expectedSecret
-    const isValidToken = authUser && authUser.factory_id
+    const isValidSecret = deviceSecret && deviceSecret === expectedSecret;
+    const isValidToken = authUser && authUser.factory_id;
 
     if (!isValidSecret && !isValidToken) {
       return apiError(
         "Access denied: Invalid or missing microcontroller device secret or auth token.",
-        StatusCodes.FORBIDDEN
-      )
+        StatusCodes.FORBIDDEN,
+      );
     }
 
-    const body = await req.json()
+    const body = await req.json();
     const {
       detected_vehicle_number,
       vehicle_number,
@@ -41,32 +36,38 @@ export async function POST(req: NextRequest) {
       customer_id,
       status = EntryStatus.PENDING,
       images = [],
-    } = body
+    } = body;
 
-    const operatorUserId = user_id || profile_id || (authUser ? parseInt(authUser.sub, 10) : null)
+    const operatorUserId = user_id || profile_id || (authUser ? parseInt(authUser.sub, 10) : null);
 
-    if (!detected_vehicle_number || !vehicle_number || weight === undefined || !center_id || !operatorUserId) {
-      return apiError("Missing required entry fields.", StatusCodes.BAD_REQUEST)
+    if (
+      !detected_vehicle_number ||
+      !vehicle_number ||
+      weight === undefined ||
+      !center_id ||
+      !operatorUserId
+    ) {
+      return apiError("Missing required entry fields.", StatusCodes.BAD_REQUEST);
     }
 
-    let factoryId = authUser?.factory_id
+    let factoryId = authUser?.factory_id;
     if (!factoryId) {
       const { data: center } = await db
         .from(TableName.CENTERS)
         .select(EntityKey.FACTORY_ID)
         .eq(EntityKey.ID, Number(center_id))
-        .maybeSingle()
+        .maybeSingle();
 
       if (center) {
-        factoryId = center.factory_id
+        factoryId = center.factory_id;
       }
     }
 
     if (!factoryId) {
-      return apiError("Could not resolve factory for device entry.", StatusCodes.BAD_REQUEST)
+      return apiError("Could not resolve factory for device entry.", StatusCodes.BAD_REQUEST);
     }
 
-    const nowStr = new Date().toISOString()
+    const nowStr = new Date().toISOString();
 
     if (status === EntryStatus.APPROVED) {
       await validateSequentialApproval(
@@ -75,8 +76,8 @@ export async function POST(req: NextRequest) {
         vehicle_number,
         nowStr,
         0,
-        EntryType.AUTOMATIC
-      )
+        EntryType.AUTOMATIC,
+      );
     }
 
     const { data: newEntry, error: insertErr } = await db
@@ -96,20 +97,20 @@ export async function POST(req: NextRequest) {
         [EntityKey.UPDATED_AT]: nowStr,
       })
       .select("*")
-      .single()
+      .single();
 
     if (insertErr || !newEntry) {
-      console.error("Failed to insert automatic device entry:", insertErr)
-      return apiError("Failed to create entry.", StatusCodes.INTERNAL_SERVER_ERROR)
+      console.error("Failed to insert automatic device entry:", insertErr);
+      return apiError("Failed to create entry.", StatusCodes.INTERNAL_SERVER_ERROR);
     }
 
     if (status === EntryStatus.APPROVED) {
-      await tryMergeEntries(db, factoryId, newEntry.id)
+      await tryMergeEntries(db, factoryId, newEntry.id);
     }
 
-    return NextResponse.json({ data: newEntry }, { status: StatusCodes.CREATED })
+    return NextResponse.json({ data: newEntry }, { status: StatusCodes.CREATED });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Failed to process device entry creation."
-    return apiError(msg, StatusCodes.BAD_REQUEST)
+    const msg = err instanceof Error ? err.message : "Failed to process device entry creation.";
+    return apiError(msg, StatusCodes.BAD_REQUEST);
   }
 }

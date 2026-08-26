@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
 /**
  * @file app/support/page.tsx
  * @description Support center page (Under Construction).
  */
 
-import { LifeBuoy } from "lucide-react"
-import { UnderConstructionPage } from "@/components/under-construction"
+import { LifeBuoy } from "lucide-react";
+import { UnderConstructionPage } from "@/components/under-construction";
 
 export default function SupportPage() {
   return (
@@ -17,5 +17,5 @@ export default function SupportPage() {
       description="We are currently building our dedicated Support Portal to provide instant ticketing, live chat, and comprehensive technical assistance. Stay tuned!"
       icon={LifeBuoy}
     />
-  )
+  );
 }

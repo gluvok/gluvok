@@ -3,28 +3,29 @@
  * @description JWT signing and verification utilities using jose.
  */
 
-import { decodeJwt, SignJWT, jwtVerify } from "jose"
+import { decodeJwt, SignJWT, jwtVerify } from "jose";
 
 function getJwtSecret(): Uint8Array {
-  const jwtSecret = process.env.JWT_SECRET
+  const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) {
-    throw new Error("JWT_SECRET environment variable is missing")
+    throw new Error("JWT_SECRET environment variable is missing");
   }
-  return new TextEncoder().encode(jwtSecret)
+  return new TextEncoder().encode(jwtSecret);
 }
 
 export interface JWTPayload {
-  sub: string
-  username: string
-  role: string
-  factory_id: number | null
-  name?: string
-  token_version?: number
+  sub: string;
+  username: string;
+  role: string;
+  factory_id: number | null;
+  name?: string;
+  token_version?: number;
+  profile_id?: number;
 }
 
 export interface RefreshTokenPayload {
-  sub: string
-  token_version: number
+  sub: string;
+  token_version: number;
 }
 
 /**
@@ -35,7 +36,7 @@ export async function signJWT(
   expiresIn = process.env.JWT_ACCESS_EXPIRES_IN ||
     process.env.JWT_EXPIRES_IN ||
     process.env.JWT_EXPIRATION_TIME ||
-    "15m"
+    "15m",
 ): Promise<string> {
   return new SignJWT({
     username: payload.username,
@@ -43,12 +44,13 @@ export async function signJWT(
     factory_id: payload.factory_id ?? null,
     ...(payload.name != null ? { name: payload.name } : {}),
     ...(payload.token_version != null ? { token_version: payload.token_version } : {}),
+    ...(payload.profile_id != null ? { profile_id: payload.profile_id } : {}),
   })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
     .setIssuedAt()
     .setExpirationTime(expiresIn)
-    .sign(getJwtSecret())
+    .sign(getJwtSecret());
 }
 
 /**
@@ -56,7 +58,7 @@ export async function signJWT(
  */
 export async function signRefreshToken(
   payload: RefreshTokenPayload,
-  expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || "7d"
+  expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || "7d",
 ): Promise<string> {
   return new SignJWT({
     token_version: payload.token_version,
@@ -65,41 +67,38 @@ export async function signRefreshToken(
     .setSubject(payload.sub)
     .setIssuedAt()
     .setExpirationTime(expiresIn)
-    .sign(getJwtSecret())
+    .sign(getJwtSecret());
 }
 
 export function getTokenExpiresIn(token: string): number {
-  const { exp, iat } = decodeJwt(token)
+  const { exp, iat } = decodeJwt(token);
   if (typeof exp !== "number" || typeof iat !== "number") {
-    throw new Error("Signed JWT is missing an expiration time")
+    throw new Error("Signed JWT is missing an expiration time");
   }
-  return Math.max(0, exp - iat)
+  return Math.max(0, exp - iat);
 }
 
 /**
  * Verifies a JWT access token.
  */
 export async function verifyJWT(token: string): Promise<JWTPayload | null> {
-  const jwtSecret = getJwtSecret()
+  const jwtSecret = getJwtSecret();
   try {
-    const { payload } = await jwtVerify(token, jwtSecret)
+    const { payload } = await jwtVerify(token, jwtSecret);
     if (!payload.sub || typeof payload.username !== "string" || typeof payload.role !== "string") {
-      return null
+      return null;
     }
 
     return {
       sub: payload.sub,
       username: payload.username,
       role: payload.role,
-      factory_id:
-        typeof payload.factory_id === "number" ? payload.factory_id : null,
-      name:
-        typeof payload.name === "string" ? payload.name : undefined,
-      token_version:
-        typeof payload.token_version === "number" ? payload.token_version : undefined,
-    }
+      factory_id: typeof payload.factory_id === "number" ? payload.factory_id : null,
+      name: typeof payload.name === "string" ? payload.name : undefined,
+      token_version: typeof payload.token_version === "number" ? payload.token_version : undefined,
+    };
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -107,18 +106,18 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
  * Verifies a JWT refresh token.
  */
 export async function verifyRefreshToken(token: string): Promise<RefreshTokenPayload | null> {
-  const jwtSecret = getJwtSecret()
+  const jwtSecret = getJwtSecret();
   try {
-    const { payload } = await jwtVerify(token, jwtSecret)
+    const { payload } = await jwtVerify(token, jwtSecret);
     if (!payload.sub || typeof payload.token_version !== "number") {
-      return null
+      return null;
     }
 
     return {
       sub: payload.sub,
       token_version: payload.token_version,
-    }
+    };
   } catch {
-    return null
+    return null;
   }
 }

@@ -1,22 +1,27 @@
-"use client"
+"use client";
 
 /**
  * @file components/sidebar/nav/user.tsx
  * @description Sidebar user panel footer trigger containing avatar layout and binding trigger events to open NavUserDropdown.
  */
 
-import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
-import { ChevronsUpDownIcon } from "lucide-react"
-import { UserAvatarInfo, type UserInfo } from "./user-info"
-import { NavUserDropdown } from "./user-dropdown"
+import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { ChevronsUpDownIcon } from "lucide-react";
+import { UserAvatarInfo, type UserInfo } from "./user-info";
+import { NavUserDropdown } from "./user-dropdown";
 
 /**
  * NavUser Component
  * Combines avatar block and dropdown trigger to enable user configurations in the sidebar footer.
  */
 export function NavUser({ user }: { user: UserInfo }) {
-  const { isMobile } = useSidebar()
+  const { isMobile } = useSidebar();
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -36,5 +41,5 @@ export function NavUser({ user }: { user: UserInfo }) {
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

@@ -37,41 +37,23 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
       )
     }
 
+    if (client === LoginClient.DEVICE && user.role !== Role.OPERATOR) {
+      return NextResponse.json(
+        { error: AuthErrorMessage.INVALID_CREDENTIALS },
+        { status: 401 }
+      )
+    }
+
     const factoryId = user.factory_id ?? null
-    let profileId: number | undefined
-
-    const { data: profile } = await db
-      .from(TableName.PROFILES)
-      .select(EntityKey.ID)
-      .eq(EntityKey.USER_ID, user.id)
-      .maybeSingle()
-
-    if (client === LoginClient.DEVICE) {
-      if (user.role !== Role.OPERATOR) {
-        return NextResponse.json(
-          { error: AuthErrorMessage.INVALID_CREDENTIALS },
-          { status: 401 }
-        )
-      }
-
-      if (!profile) {
-        return NextResponse.json({ error: AuthErrorMessage.OPERATOR_PROFILE_NOT_FOUND }, { status: 404 })
-      }
-    }
-
-    if (profile) {
-      profileId = profile.id
-    }
-
     const tokenVersion = typeof user.token_version === "number" ? user.token_version : 1
 
     const token = await signJWT(
       {
         sub: String(user.id),
         username: user.username,
+        name: user.name,
         role: user.role,
         factory_id: factoryId,
-        profile_id: profileId,
       },
       client === LoginClient.DEVICE ? process.env.JWT_DEVICE_EXPIRES_IN || "1d" : undefined
     )
@@ -89,6 +71,8 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
     const userPayload = {
       id: user.id,
       username: user.username,
+      name: user.name,
+      aadhar_number: user.aadhar_number ?? null,
       role: user.role,
       factory_id: factoryId,
     }
@@ -100,7 +84,7 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
         refresh_token: refreshToken,
         token_type: "Bearer",
         expires_in: expiresIn,
-        profile_id: profileId,
+        user_id: user.id,
         user: userPayload,
       })
     }

@@ -18,7 +18,9 @@ export const CUSTOMER_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.NAME}, ${Ent
 export interface AuthUser {
   id: string;
   username: string;
+  name?: string;
   avatar?: string;
+  aadhar_number?: string | null;
   role: Role;
   factory_id: number | null;
 }

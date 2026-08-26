@@ -57,11 +57,13 @@ CREATE TABLE IF NOT EXISTS factories (
     deleted_at TIMESTAMPTZ
 );
 
--- USERS TABLE (Custom authentication table)
+-- USERS TABLE (Custom authentication & user entity table)
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
+    name TEXT NOT NULL,
+    aadhar_number TEXT,
     role role_enum NOT NULL DEFAULT 'base',
     token_version INT NOT NULL DEFAULT 1,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -71,18 +73,9 @@ CREATE TABLE IF NOT EXISTS users (
     deleted_at TIMESTAMPTZ
 );
 
--- PROFILES TABLE
-CREATE TABLE IF NOT EXISTS profiles (
-    id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    name TEXT NOT NULL,
-    aadhar_number TEXT,
-    role role_enum NOT NULL DEFAULT 'operator',
-    factory_id INT REFERENCES factories(id) ON DELETE RESTRICT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ
-);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_factory_aadhar 
+ON users (factory_id, aadhar_number) 
+WHERE aadhar_number IS NOT NULL;
 
 -- CUSTOMERS TABLE
 CREATE TABLE IF NOT EXISTS customers (
@@ -136,7 +129,7 @@ CREATE TABLE IF NOT EXISTS entries (
     weight NUMERIC(10, 2) NOT NULL,
     type entry_type NOT NULL DEFAULT 'automatic',
     center_id INT NOT NULL REFERENCES centers(id) ON DELETE RESTRICT,
-    profile_id INT NOT NULL REFERENCES profiles(id) ON DELETE RESTRICT,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     customer_id INT REFERENCES customers(id) ON DELETE RESTRICT,
     factory_id INT REFERENCES factories(id) ON DELETE RESTRICT,
     status entry_status NOT NULL DEFAULT 'pending',
@@ -214,7 +207,6 @@ $$;
 -- 3. ENABLE ROW LEVEL SECURITY (RLS)
 ALTER TABLE IF EXISTS factories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS centers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS commodities ENABLE ROW LEVEL SECURITY;
@@ -249,7 +241,6 @@ DROP POLICY IF EXISTS "Allow access entries" ON entries;
 
 CREATE POLICY "Allow access factories" ON factories FOR ALL USING (true);
 CREATE POLICY "Allow access users" ON users FOR ALL USING (true);
-CREATE POLICY "Allow access profiles" ON profiles FOR ALL USING (true);
 CREATE POLICY "Allow access customers" ON customers FOR ALL USING (true);
 CREATE POLICY "Allow access centers" ON centers FOR ALL USING (true);
 CREATE POLICY "Allow access commodities" ON commodities FOR ALL USING (true);
@@ -284,7 +275,7 @@ SECURITY DEFINER
 AS $$
 DECLARE
     t text;
-    tbls text[] := ARRAY['weighments', 'rates', 'customers', 'profiles', 'commodities', 'centers', 'users', 'factories'];
+    tbls text[] := ARRAY['weighments', 'rates', 'customers', 'commodities', 'centers', 'users', 'factories'];
     seq_name text;
 BEGIN
     FOREACH t IN ARRAY tbls LOOP
@@ -320,8 +311,8 @@ DECLARE
     v_result JSON;
 BEGIN
     IF p_username IS NOT NULL AND p_password_hash IS NOT NULL THEN
-        INSERT INTO users (username, password_hash, role, factory_id)
-        VALUES (p_username, p_password_hash, 'base', p_factory_id)
+        INSERT INTO users (username, password_hash, name, role, factory_id)
+        VALUES (p_username, p_password_hash, p_name, 'base', p_factory_id)
         RETURNING id INTO v_user_id;
     END IF;
 
@@ -383,6 +374,7 @@ BEGIN
     IF v_user_id IS NOT NULL THEN
         UPDATE users
         SET 
+            name = COALESCE(p_name, name),
             username = COALESCE(p_username, username),
             password_hash = COALESCE(p_password_hash, password_hash),
             token_version = CASE WHEN p_password_hash IS NOT NULL THEN token_version + 1 ELSE token_version END,
@@ -390,8 +382,8 @@ BEGIN
             updated_at = NOW()
         WHERE id = v_user_id;
     ELSIF p_username IS NOT NULL AND p_password_hash IS NOT NULL THEN
-        INSERT INTO users (username, password_hash, role, factory_id)
-        VALUES (p_username, p_password_hash, 'base', p_factory_id)
+        INSERT INTO users (username, password_hash, name, role, factory_id)
+        VALUES (p_username, p_password_hash, COALESCE(p_name, (SELECT name FROM customers WHERE id = p_customer_id)), 'base', p_factory_id)
         RETURNING id INTO v_user_id;
 
         UPDATE customers
@@ -445,138 +437,10 @@ BEGIN
 END;
 $$;
 
--- 7. ATOMIC TRANSACTION RPC FUNCTIONS FOR PROFILES & USERS
-
+-- Clean up old profile RPC functions if they exist
 DROP FUNCTION IF EXISTS public.create_profile_with_user(INT, TEXT, TEXT, TEXT, role_enum, TEXT);
-
-CREATE OR REPLACE FUNCTION create_profile_with_user(
-    p_factory_id INT,
-    p_name TEXT,
-    p_username TEXT,
-    p_password_hash TEXT,
-    p_role role_enum DEFAULT 'operator',
-    p_aadhar_number TEXT DEFAULT NULL
-) RETURNS JSON
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_user_id INT;
-    v_profile_id INT;
-    v_result JSON;
-BEGIN
-    INSERT INTO users (username, password_hash, role, factory_id)
-    VALUES (p_username, p_password_hash, p_role, p_factory_id)
-    RETURNING id INTO v_user_id;
-
-    INSERT INTO profiles (user_id, name, aadhar_number, role, factory_id)
-    VALUES (v_user_id, p_name, p_aadhar_number, p_role, p_factory_id)
-    RETURNING id INTO v_profile_id;
-
-    SELECT row_to_json(p) INTO v_result
-    FROM (
-        SELECT 
-            prof.*,
-            u.username,
-            u.is_active
-        FROM profiles prof
-        JOIN users u ON prof.user_id = u.id
-        WHERE prof.id = v_profile_id
-    ) p;
-
-    RETURN v_result;
-END;
-$$;
-
 DROP FUNCTION IF EXISTS public.update_profile_with_user(INT, INT, TEXT, role_enum, TEXT, TEXT, BOOLEAN);
-
-CREATE OR REPLACE FUNCTION update_profile_with_user(
-    p_profile_id INT,
-    p_factory_id INT,
-    p_name TEXT DEFAULT NULL,
-    p_role role_enum DEFAULT NULL,
-    p_aadhar_number TEXT DEFAULT NULL,
-    p_password_hash TEXT DEFAULT NULL,
-    p_is_active BOOLEAN DEFAULT NULL
-) RETURNS JSON
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_user_id INT;
-    v_result JSON;
-BEGIN
-    SELECT user_id INTO v_user_id
-    FROM profiles
-    WHERE id = p_profile_id AND factory_id = p_factory_id;
-
-    IF NOT FOUND THEN
-        RETURN NULL;
-    END IF;
-
-    UPDATE profiles
-    SET 
-        name = COALESCE(p_name, name),
-        role = COALESCE(p_role, role),
-        aadhar_number = CASE WHEN p_aadhar_number IS NOT NULL THEN p_aadhar_number ELSE aadhar_number END,
-        updated_at = NOW()
-    WHERE id = p_profile_id AND factory_id = p_factory_id;
-
-    UPDATE users
-    SET 
-        role = COALESCE(p_role, role),
-        password_hash = COALESCE(p_password_hash, password_hash),
-        token_version = CASE WHEN p_password_hash IS NOT NULL THEN token_version + 1 ELSE token_version END,
-        is_active = COALESCE(p_is_active, is_active),
-        updated_at = NOW()
-    WHERE id = v_user_id;
-
-    SELECT row_to_json(p) INTO v_result
-    FROM (
-        SELECT 
-            prof.*,
-            u.username,
-            u.is_active
-        FROM profiles prof
-        JOIN users u ON prof.user_id = u.id
-        WHERE prof.id = p_profile_id
-    ) p;
-
-    RETURN v_result;
-END;
-$$;
-
 DROP FUNCTION IF EXISTS public.delete_profiles_with_user(INT[], INT);
 
-CREATE OR REPLACE FUNCTION delete_profiles_with_user(
-    p_profile_ids INT[],
-    p_factory_id INT
-) RETURNS INT
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_user_ids INT[];
-    v_deleted_count INT;
-BEGIN
-    SELECT ARRAY_AGG(user_id) INTO v_user_ids
-    FROM profiles
-    WHERE id = ANY(p_profile_ids) AND factory_id = p_factory_id;
-
-    DELETE FROM profiles
-    WHERE id = ANY(p_profile_ids) AND factory_id = p_factory_id;
-
-    GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
-
-    IF v_user_ids IS NOT NULL AND array_length(v_user_ids, 1) > 0 THEN
-        DELETE FROM users WHERE id = ANY(v_user_ids);
-    END IF;
-
-    RETURN v_deleted_count;
-END;
-$$;
-
--- 8. NOTIFY SUPABASE POSTGREST TO RELOAD SCHEMA CACHE IMMEDIATELY
+-- 7. NOTIFY SUPABASE POSTGREST TO RELOAD SCHEMA CACHE IMMEDIATELY
 NOTIFY pgrst, 'reload schema';
-
-

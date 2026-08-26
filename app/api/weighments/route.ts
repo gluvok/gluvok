@@ -24,11 +24,11 @@ export const GET = withAuth(async (req, user, client) => {
   const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE)
   const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE)
 
-  // Query weighments joined with in_entry and out_entry and their related centers, profiles, customers
+  // Query weighments joined with in_entry and out_entry and their related centers, users, customers
   let query = client
     .from(TableName.WEIGHMENTS)
     .select(
-      `*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.PROFILES}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME})), ${RelationAlias.OUT_ENTRY}:${TableName.ENTRIES}!out_entry_id(*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.PROFILES}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME}))`,
+      `*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.USERS}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME})), ${RelationAlias.OUT_ENTRY}:${TableName.ENTRIES}!out_entry_id(*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.USERS}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME}))`,
       { count: "exact" }
     )
     .eq(`${RelationAlias.IN_ENTRY}.${EntityKey.FACTORY_ID}`, user.factory_id!)
@@ -102,8 +102,8 @@ export const GET = withAuth(async (req, user, client) => {
 
     const inCenters = inEntry.centers as Record<string, unknown> | undefined
     const outCenters = outEntry.centers as Record<string, unknown> | undefined
-    const inProfiles = inEntry.profiles as Record<string, unknown> | undefined
-    const outProfiles = outEntry.profiles as Record<string, unknown> | undefined
+    const inUsers = inEntry.users as Record<string, unknown> | undefined
+    const outUsers = outEntry.users as Record<string, unknown> | undefined
     const inCustomers = inEntry.customers as Record<string, unknown> | undefined
     const outCustomers = outEntry.customers as Record<string, unknown> | undefined
 
@@ -123,10 +123,10 @@ export const GET = withAuth(async (req, user, client) => {
       [EntityKey.IN_CENTER_NAME]: inCenters?.name || "",
       [EntityKey.OUT_CENTER_ID]: outEntry.center_id,
       [EntityKey.OUT_CENTER_NAME]: outCenters?.name || "",
-      [EntityKey.IN_PROFILE_ID]: inEntry.profile_id,
-      [EntityKey.IN_PROFILE_NAME]: inProfiles?.name || "",
-      [EntityKey.OUT_PROFILE_ID]: outEntry.profile_id,
-      [EntityKey.OUT_PROFILE_NAME]: outProfiles?.name || "",
+      [EntityKey.IN_PROFILE_ID]: inEntry.user_id,
+      [EntityKey.IN_PROFILE_NAME]: inUsers?.name || "",
+      [EntityKey.OUT_PROFILE_ID]: outEntry.user_id,
+      [EntityKey.OUT_PROFILE_NAME]: outUsers?.name || "",
       [EntityKey.IN_CUSTOMER_ID]: inEntry.customer_id,
       [EntityKey.IN_CUSTOMER_NAME]: inCustomers?.name || "",
       [EntityKey.OUT_CUSTOMER_ID]: outEntry.customer_id,

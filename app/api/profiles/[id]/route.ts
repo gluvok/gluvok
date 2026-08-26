@@ -24,17 +24,15 @@ import { ApiErrorMessage } from "@/lib/constants/messages"
 export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client
-      .from(TableName.PROFILES)
-      .select(`${EntityKey.ID}, ${EntityKey.USER_ID}, ${EntityKey.NAME}, ${TableName.USERS}!inner(${EntityKey.USERNAME}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID})`)
+      .from(TableName.USERS)
+      .select(`${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID}, ${EntityKey.TOKEN_VERSION}`)
       .eq(EntityKey.ID, entityId)
-      .eq(`${TableName.USERS}.${EntityKey.FACTORY_ID}`, factoryId!)
+      .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: existing } = await existingQuery.maybeSingle()
     if (!existing) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
 
-    const isOwn =
-      (existing.user_id != null && String(existing.user_id) === String(user.sub)) ||
-      (user.profile_id != null && user.profile_id === entityId)
+    const isOwn = String(existing.id) === String(user.sub)
 
     if (!isOwn && !hasPermission(user, ProjectSlug.PROFILES, PermissionKey.WRITE)) {
       return forbiddenError()
@@ -55,20 +53,48 @@ export const PATCH = withAuth(
         ? (role as Role)
         : undefined
 
-    let passwordHash: string | null = null
-    if (password && typeof password === "string" && password.trim().length > 0) {
-      passwordHash = await hashPassword(password.trim())
+    if (aadhar_number && aadhar_number !== existing.aadhar_number) {
+      const { data: duplicateAadhar } = await client
+        .from(TableName.USERS)
+        .select(EntityKey.ID)
+        .eq(EntityKey.AADHAR_NUMBER, aadhar_number)
+        .eq(EntityKey.FACTORY_ID, factoryId!)
+        .neq(EntityKey.ID, entityId)
+        .maybeSingle()
+
+      if (duplicateAadhar) {
+        return apiError(ApiErrorMessage.AADHAR_NUMBER_EXISTS, StatusCodes.BAD_REQUEST)
+      }
     }
 
-    const { data: updated, error } = await client.rpc("update_profile_with_user", {
-      p_profile_id: entityId,
-      p_factory_id: factoryId!,
-      p_name: name && typeof name === "string" && name.trim().length > 0 ? name.trim() : null,
-      p_role: validRole || null,
-      p_aadhar_number: aadhar_number != null ? String(aadhar_number) : null,
-      p_password_hash: passwordHash,
-      p_is_active: is_active !== undefined ? Boolean(is_active) : null,
-    })
+    const updates: Record<string, unknown> = {
+      [EntityKey.UPDATED_AT]: new Date().toISOString(),
+    }
+
+    if (name && typeof name === "string" && name.trim().length > 0) {
+      updates[EntityKey.NAME] = name.trim()
+    }
+    if (validRole) {
+      updates[EntityKey.ROLE] = validRole
+    }
+    if (aadhar_number !== undefined) {
+      updates[EntityKey.AADHAR_NUMBER] = aadhar_number ? String(aadhar_number) : null
+    }
+    if (is_active !== undefined) {
+      updates[EntityKey.IS_ACTIVE] = Boolean(is_active)
+    }
+    if (password && typeof password === "string" && password.trim().length > 0) {
+      updates.password_hash = await hashPassword(password.trim())
+      updates[EntityKey.TOKEN_VERSION] = (existing.token_version || 1) + 1
+    }
+
+    const { data: updated, error } = await client
+      .from(TableName.USERS)
+      .update(updates)
+      .eq(EntityKey.ID, entityId)
+      .eq(EntityKey.FACTORY_ID, factoryId!)
+      .select(`${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`)
+      .single()
 
     if (error || !updated) {
       return apiError(error?.message || ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
@@ -81,27 +107,25 @@ export const PATCH = withAuth(
 export const DELETE = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client
-      .from(TableName.PROFILES)
-      .select(`${EntityKey.ID}, ${EntityKey.USER_ID}`)
+      .from(TableName.USERS)
+      .select(`${EntityKey.ID}`)
       .eq(EntityKey.ID, entityId)
       .eq(EntityKey.FACTORY_ID, factoryId!)
 
     const { data: existing } = await existingQuery.maybeSingle()
     if (!existing) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
 
-    const isOwn =
-      (existing.user_id != null && String(existing.user_id) === String(user.sub)) ||
-      (user.profile_id != null && user.profile_id === entityId)
+    const isOwn = String(existing.id) === String(user.sub)
 
     if (!isOwn && !hasPermission(user, ProjectSlug.PROFILES, PermissionKey.DELETE)) {
       return forbiddenError()
     }
 
-    // Check if any entries are linked to this profile
+    // Check if any entries are linked to this user
     const { data: linkedEntry } = await client
       .from(TableName.ENTRIES)
       .select(EntityKey.ID)
-      .eq(EntityKey.PROFILE_ID, entityId)
+      .eq(EntityKey.USER_ID, entityId)
       .limit(1)
       .maybeSingle()
 
@@ -109,17 +133,26 @@ export const DELETE = withAuth(
       return apiError(ApiErrorMessage.CANNOT_DELETE_PROFILE, StatusCodes.BAD_REQUEST)
     }
 
+    // Check if any customers are linked to this user
+    const { data: linkedCustomer } = await client
+      .from(TableName.CUSTOMERS)
+      .select(EntityKey.ID)
+      .eq(EntityKey.USER_ID, entityId)
+      .limit(1)
+      .maybeSingle()
+
+    if (linkedCustomer) {
+      return apiError(ApiErrorMessage.CANNOT_DELETE_PROFILE, StatusCodes.BAD_REQUEST)
+    }
+
     try {
-      const { data: deletedCount, error } = await client.rpc("delete_profiles_with_user", {
-        p_profile_ids: [entityId],
-        p_factory_id: factoryId!,
-      })
+      const { error } = await client
+        .from(TableName.USERS)
+        .delete()
+        .eq(EntityKey.ID, entityId)
+        .eq(EntityKey.FACTORY_ID, factoryId!)
 
       if (error) throw error
-
-      if (!deletedCount || deletedCount === 0) {
-        return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND)
-      }
 
       return NextResponse.json({ success: true, id: entityId })
     } catch (error) {

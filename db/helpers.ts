@@ -88,7 +88,6 @@ export async function getAuthUser(req: NextRequest | Request): Promise<JWTPayloa
   const username = req.headers.get(RequestHeader.USERNAME)
   const role = req.headers.get(RequestHeader.ROLE)
   const factoryIdStr = req.headers.get(RequestHeader.FACTORY_ID)
-  const profileIdStr = req.headers.get(RequestHeader.PROFILE_ID)
 
   if (userId && username && role) {
     return {
@@ -96,7 +95,6 @@ export async function getAuthUser(req: NextRequest | Request): Promise<JWTPayloa
       username,
       role: role as Role,
       factory_id: factoryIdStr ? parseInt(factoryIdStr, 10) : null,
-      profile_id: profileIdStr ? parseInt(profileIdStr, 10) : undefined,
     }
   }
 

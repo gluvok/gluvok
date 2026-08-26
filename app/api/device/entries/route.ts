@@ -36,13 +36,16 @@ export async function POST(req: NextRequest) {
       vehicle_number,
       weight,
       center_id,
+      user_id,
       profile_id,
       customer_id,
       status = EntryStatus.PENDING,
       images = [],
     } = body
 
-    if (!detected_vehicle_number || !vehicle_number || weight === undefined || !center_id || !profile_id) {
+    const operatorUserId = user_id || profile_id || (authUser ? parseInt(authUser.sub, 10) : null)
+
+    if (!detected_vehicle_number || !vehicle_number || weight === undefined || !center_id || !operatorUserId) {
       return apiError("Missing required entry fields.", StatusCodes.BAD_REQUEST)
     }
 
@@ -84,7 +87,7 @@ export async function POST(req: NextRequest) {
         [EntityKey.WEIGHT]: Number(weight),
         [EntityKey.TYPE]: EntryType.AUTOMATIC,
         [EntityKey.CENTER_ID]: Number(center_id),
-        [EntityKey.PROFILE_ID]: Number(profile_id),
+        [EntityKey.USER_ID]: Number(operatorUserId),
         [EntityKey.CUSTOMER_ID]: customer_id ? Number(customer_id) : null,
         [EntityKey.FACTORY_ID]: factoryId,
         [EntityKey.STATUS]: status,

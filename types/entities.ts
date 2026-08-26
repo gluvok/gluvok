@@ -90,13 +90,15 @@ export interface Weighment {
   images: string[]
   rate_id: number
   center_id: number
-  profile_id: number
+  user_id?: number
+  profile_id?: number
   customer_id: number
   is_active: boolean
   created_at: string
   updated_at: string
   // Flattened join fields
   center_name?: string
+  user_name?: string
   profile_name?: string
   profile_aadhar?: string
   customer_name?: string
@@ -106,21 +108,22 @@ export interface Weighment {
   unit_price?: string
 }
 
-export interface Profile {
+export interface User {
   id: number
-  user_id: string
-  aadhar_number?: string | null
+  username: string
   name: string
+  aadhar_number?: string | null
   role: Role
-  is_active?: boolean
-  preferences?: Record<string, string[]>
+  is_active: boolean
+  factory_id: number
   created_at: string
   updated_at: string
-  factory_id?: number | null
-  factory?: { name: string } | null
   // Flattened join/view fields
-  username?: string
   factory_name?: string
+}
+
+export interface Profile extends User {
+  user_id?: string
 }
 
 /** Union of all entity types used across the app */
@@ -131,6 +134,6 @@ export type EntityRecord =
   | Customer
   | Weighment
   | Factory
+  | User
   | Profile
   | Settings;
-

@@ -22,7 +22,7 @@ export const GET = withAuth(async (req, user, client) => {
   const statusParam = req.nextUrl.searchParams.get(EntityKey.STATUS)
   const typeParam = req.nextUrl.searchParams.get(EntityKey.TYPE)
   const centerIdParam = req.nextUrl.searchParams.get(EntityKey.CENTER_ID)
-  const profileIdParam = req.nextUrl.searchParams.get(EntityKey.PROFILE_ID)
+  const userIdParam = req.nextUrl.searchParams.get(EntityKey.USER_ID) || req.nextUrl.searchParams.get(EntityKey.PROFILE_ID)
   const customerIdParam = req.nextUrl.searchParams.get(EntityKey.CUSTOMER_ID)
   const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE)
   const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE)
@@ -32,7 +32,7 @@ export const GET = withAuth(async (req, user, client) => {
   let query = client
     .from(TableName.ENTRIES)
     .select(
-      `*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.PROFILES}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME})`,
+      `*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.USERS}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME})`,
       { count: "exact" }
     )
     .eq(EntityKey.FACTORY_ID, user.factory_id!)
@@ -50,8 +50,8 @@ export const GET = withAuth(async (req, user, client) => {
     query = query.eq(EntityKey.CENTER_ID, Number(centerIdParam))
   }
 
-  if (profileIdParam && profileIdParam !== FilterValue.ALL) {
-    query = query.eq(EntityKey.PROFILE_ID, Number(profileIdParam))
+  if (userIdParam && userIdParam !== FilterValue.ALL) {
+    query = query.eq(EntityKey.USER_ID, Number(userIdParam))
   }
 
   if (customerIdParam && customerIdParam !== FilterValue.ALL) {
@@ -114,9 +114,9 @@ export const POST = withAuth(async (req, user, client) => {
       return apiError("Invalid center ID or center does not belong to user factory.", StatusCodes.FORBIDDEN)
     }
 
-    const profileId = user.profile_id
-    if (!profileId) {
-      return apiError("Profile ID not found in user session.", StatusCodes.UNAUTHORIZED)
+    const userId = user.sub ? parseInt(user.sub, 10) : null
+    if (!userId || isNaN(userId)) {
+      return apiError("User ID not found in user session.", StatusCodes.UNAUTHORIZED)
     }
 
     const nowStr = new Date().toISOString()
@@ -140,7 +140,7 @@ export const POST = withAuth(async (req, user, client) => {
         [EntityKey.WEIGHT]: Number(weight),
         [EntityKey.TYPE]: EntryType.MANUAL,
         [EntityKey.CENTER_ID]: Number(center_id),
-        [EntityKey.PROFILE_ID]: profileId,
+        [EntityKey.USER_ID]: userId,
         [EntityKey.CUSTOMER_ID]: customer_id ? Number(customer_id) : null,
         [EntityKey.FACTORY_ID]: user.factory_id!,
         [EntityKey.STATUS]: status,

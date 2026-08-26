@@ -18,7 +18,7 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
   const { data, error } = await client
     .from(TableName.ENTRIES)
     .select(
-      `*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.PROFILES}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME})`
+      `*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.USERS}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME})`
     )
     .eq(EntityKey.ID, entryId)
     .eq(EntityKey.FACTORY_ID, user.factory_id!)

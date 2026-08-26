@@ -18,7 +18,7 @@ export interface JWTPayload {
   username: string
   role: string
   factory_id: number | null
-  profile_id?: number
+  name?: string
   token_version?: number
 }
 
@@ -41,7 +41,7 @@ export async function signJWT(
     username: payload.username,
     role: payload.role,
     factory_id: payload.factory_id ?? null,
-    ...(payload.profile_id != null ? { profile_id: payload.profile_id } : {}),
+    ...(payload.name != null ? { name: payload.name } : {}),
     ...(payload.token_version != null ? { token_version: payload.token_version } : {}),
   })
     .setProtectedHeader({ alg: "HS256" })
@@ -93,8 +93,8 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
       role: payload.role,
       factory_id:
         typeof payload.factory_id === "number" ? payload.factory_id : null,
-      profile_id:
-        typeof payload.profile_id === "number" ? payload.profile_id : undefined,
+      name:
+        typeof payload.name === "string" ? payload.name : undefined,
       token_version:
         typeof payload.token_version === "number" ? payload.token_version : undefined,
     }

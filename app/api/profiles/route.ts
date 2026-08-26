@@ -39,10 +39,13 @@ export const GET = withAuth(async (req, user, client) => {
     factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED;
 
   let query = client
-    .from(TableName.PROFILES)
-    .select(`*, ${TableName.USERS}!inner(${EntityKey.USERNAME}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID})`, { count: "exact" })
+    .from(TableName.USERS)
+    .select(
+      `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
+      { count: "exact" }
+    )
     .order(sortColumn, { ascending: !sortDesc })
-    .eq(`${TableName.USERS}.${EntityKey.FACTORY_ID}`, factoryId)
+    .eq(EntityKey.FACTORY_ID, factoryId)
 
   if (roleParam && roleParam !== FilterValue.ALL) {
     query = query.eq(EntityKey.ROLE, roleParam)
@@ -52,15 +55,15 @@ export const GET = withAuth(async (req, user, client) => {
     const searchNum = parseInt(search, 10)
     if (!isNaN(searchNum)) {
       if (!isAadharNotRequired) {
-        query = query.or(`${EntityKey.NAME}.ilike.%${search}%,${EntityKey.AADHAR_NUMBER}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`)
+        query = query.or(`${EntityKey.NAME}.ilike.%${search}%,${EntityKey.AADHAR_NUMBER}.ilike.%${search}%,${EntityKey.USERNAME}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`)
       } else {
-        query = query.or(`${EntityKey.NAME}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`)
+        query = query.or(`${EntityKey.NAME}.ilike.%${search}%,${EntityKey.USERNAME}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`)
       }
     } else {
       if (!isAadharNotRequired) {
-        query = query.or(`${EntityKey.NAME}.ilike.%${search}%,${EntityKey.AADHAR_NUMBER}.ilike.%${search}%`)
+        query = query.or(`${EntityKey.NAME}.ilike.%${search}%,${EntityKey.AADHAR_NUMBER}.ilike.%${search}%,${EntityKey.USERNAME}.ilike.%${search}%`)
       } else {
-        query = query.ilike(EntityKey.NAME, `%${search}%`)
+        query = query.or(`${EntityKey.NAME}.ilike.%${search}%,${EntityKey.USERNAME}.ilike.%${search}%`)
       }
     }
   }
@@ -100,13 +103,13 @@ export const POST = withAuth(async (req, user, client) => {
 
   if (aadhar_number) {
     const aadharQuery = client
-      .from(TableName.PROFILES)
-      .select(`${EntityKey.ID}, ${TableName.USERS}!inner(${EntityKey.FACTORY_ID})`)
+      .from(TableName.USERS)
+      .select(EntityKey.ID)
       .eq(EntityKey.AADHAR_NUMBER, aadhar_number)
-      .eq(`${TableName.USERS}.${EntityKey.FACTORY_ID}`, factoryId)
+      .eq(EntityKey.FACTORY_ID, factoryId)
 
-    const { data: existingProfile } = await aadharQuery.maybeSingle()
-    if (existingProfile)
+    const { data: existingAadhar } = await aadharQuery.maybeSingle()
+    if (existingAadhar)
       return apiError(
         ApiErrorMessage.AADHAR_NUMBER_EXISTS,
         StatusCodes.BAD_REQUEST
@@ -115,21 +118,26 @@ export const POST = withAuth(async (req, user, client) => {
 
   const passwordHash = await hashPassword(password)
 
-  const { data: newProfile, error } = await client.rpc("create_profile_with_user", {
-    p_factory_id: factoryId,
-    p_name: name,
-    p_username: username,
-    p_password_hash: passwordHash,
-    p_role: role || Role.OPERATOR,
-    p_aadhar_number: aadhar_number || null,
-  })
+  const { data: newUser, error } = await client
+    .from(TableName.USERS)
+    .insert({
+      [EntityKey.USERNAME]: username,
+      password_hash: passwordHash,
+      [EntityKey.NAME]: name,
+      [EntityKey.AADHAR_NUMBER]: aadhar_number || null,
+      [EntityKey.ROLE]: role || Role.OPERATOR,
+      [EntityKey.FACTORY_ID]: factoryId,
+      [EntityKey.IS_ACTIVE]: true,
+    })
+    .select(`${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`)
+    .single()
 
-  if (error || !newProfile) {
-    console.error("POST profile RPC error:", error)
+  if (error || !newUser) {
+    console.error("POST user error:", error)
     return apiError(error?.message || ApiErrorMessage.CREATE_PROFILE_RECORD_FAILED, StatusCodes.BAD_REQUEST)
   }
 
-  return formatEntityResponse(newProfile, StatusCodes.CREATED)
+  return formatEntityResponse(newUser, StatusCodes.CREATED)
 })
 
 export const DELETE = withAuth(async (req, user, client) => {
@@ -142,25 +150,39 @@ export const DELETE = withAuth(async (req, user, client) => {
       StatusCodes.BAD_REQUEST
     )
 
-  // Check if any entries are linked to any of the selected profiles
+  // Check if any entries are linked to any of the selected users
   const { data: linkedEntries } = await client
     .from(TableName.ENTRIES)
     .select(EntityKey.ID)
-    .in(EntityKey.PROFILE_ID, ids)
+    .in(EntityKey.USER_ID, ids)
     .limit(1)
 
   if (linkedEntries && linkedEntries.length > 0) {
     return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_PROFILES, StatusCodes.BAD_REQUEST)
   }
 
+  // Check if any customers are linked to any of the selected users
+  const { data: linkedCustomers } = await client
+    .from(TableName.CUSTOMERS)
+    .select(EntityKey.ID)
+    .in(EntityKey.USER_ID, ids)
+    .limit(1)
+
+  if (linkedCustomers && linkedCustomers.length > 0) {
+    return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_PROFILES, StatusCodes.BAD_REQUEST)
+  }
+
   try {
-    const { data: deletedCount, error } = await client.rpc("delete_profiles_with_user", {
-      p_profile_ids: ids,
-      p_factory_id: user.factory_id!,
-    })
+    const { data: deletedUsers, error } = await client
+      .from(TableName.USERS)
+      .delete()
+      .in(EntityKey.ID, ids)
+      .eq(EntityKey.FACTORY_ID, user.factory_id!)
+      .select(EntityKey.ID)
 
     if (error) throw error
 
+    const deletedCount = deletedUsers?.length || 0
     if (deletedCount !== ids.length) {
       return apiError(ApiErrorMessage.ONE_OR_MORE_PROFILES_NOT_FOUND, StatusCodes.NOT_FOUND)
     }

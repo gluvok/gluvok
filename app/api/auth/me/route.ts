@@ -1,6 +1,6 @@
 /**
  * @file app/api/auth/me/route.ts
- * @description API route to verify active JWT session and return user profile using Supabase JS client.
+ * @description API route to verify active JWT session and return user info using Supabase JS client.
  */
 
 import { NextResponse } from "next/server"
@@ -43,6 +43,8 @@ export async function GET() {
     const userPayload = {
       id: user.id,
       username: user.username,
+      name: user.name,
+      aadhar_number: user.aadhar_number ?? null,
       role: user.role,
       factory_id: user.factory_id ?? null,
     }

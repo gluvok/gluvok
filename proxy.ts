@@ -61,9 +61,6 @@ export async function proxy(request: NextRequest) {
   if (payload.factory_id != null) {
     requestHeaders.set(RequestHeader.FACTORY_ID, String(payload.factory_id))
   }
-  if (payload.profile_id != null) {
-    requestHeaders.set(RequestHeader.PROFILE_ID, String(payload.profile_id))
-  }
 
   return NextResponse.next({ request: { headers: requestHeaders } })
 }

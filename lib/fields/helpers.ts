@@ -44,7 +44,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getPrimaryIdKey(_slug?: string | ProjectSlug): EntityKey {
   return EntityKey.ID;
 }

@@ -151,7 +151,7 @@ export const DELETE = withAuth(
       .maybeSingle();
 
     if (linkedEntry) {
-      return apiError(ApiErrorMessage.CANNOT_DELETE_USER, StatusCodes.BAD_REQUEST);
+      return apiError(ApiErrorMessage.CANNOT_DELETE_USER(entityId), StatusCodes.BAD_REQUEST);
     }
 
     // Check if any active customers are linked to this user
@@ -164,7 +164,7 @@ export const DELETE = withAuth(
       .maybeSingle();
 
     if (linkedCustomer) {
-      return apiError(ApiErrorMessage.CANNOT_DELETE_USER, StatusCodes.BAD_REQUEST);
+      return apiError(ApiErrorMessage.CANNOT_DELETE_USER(entityId), StatusCodes.BAD_REQUEST);
     }
 
     const { error } = await client
@@ -178,7 +178,10 @@ export const DELETE = withAuth(
       .eq(EntityKey.FACTORY_ID, factoryId!);
 
     if (error) {
-      return apiError(error.message || ApiErrorMessage.CANNOT_DELETE_USER, StatusCodes.BAD_REQUEST);
+      return apiError(
+        error.message || ApiErrorMessage.CANNOT_DELETE_USER(entityId),
+        StatusCodes.BAD_REQUEST,
+      );
     }
 
     const response = NextResponse.json({ success: true, id: entityId, is_self_deleted: isOwn });

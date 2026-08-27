@@ -23,18 +23,34 @@ export const ApiErrorMessage = {
   ENTRY_NOT_FOUND: "Entry not found",
 
   // Single Entity FK Violations
-  CANNOT_DELETE_CENTER:
-    "Cannot delete this center because it is referenced by existing entries or weighments.",
-  CANNOT_DELETE_CUSTOMER:
-    "Cannot delete this customer because they are referenced by existing entries or weighments.",
-  CANNOT_DELETE_USER:
-    "Cannot delete this user because they are referenced by existing entries or weighments.",
-  CANNOT_DELETE_RATE: "Cannot delete this rate because it is referenced by existing weighments.",
-  CANNOT_DELETE_WEIGHMENT:
-    "Cannot delete this weighment because it is referenced by other records.",
-  CANNOT_DELETE_COMMODITY:
-    "Cannot delete this commodity because it is referenced by existing rates or weighments.",
-  CANNOT_DELETE_ENTRY: "Cannot delete this entry because it is part of a merged weighment record.",
+  CANNOT_DELETE_CENTER: (id?: string | number) =>
+    id
+      ? `Cannot delete this center (${id}) because it is referenced by existing entries or weighments.`
+      : "Cannot delete this center because it is referenced by existing entries or weighments.",
+  CANNOT_DELETE_CUSTOMER: (id?: string | number) =>
+    id
+      ? `Cannot delete this customer (${id}) because they are referenced by existing entries or weighments.`
+      : "Cannot delete this customer because they are referenced by existing entries or weighments.",
+  CANNOT_DELETE_USER: (id?: string | number) =>
+    id
+      ? `Cannot delete this user (${id}) because they are referenced by existing entries or weighments.`
+      : "Cannot delete this user because they are referenced by existing entries or weighments.",
+  CANNOT_DELETE_RATE: (id?: string | number) =>
+    id
+      ? `Cannot delete this rate (${id}) because it is referenced by existing weighments.`
+      : "Cannot delete this rate because it is referenced by existing weighments.",
+  CANNOT_DELETE_WEIGHMENT: (id?: string | number) =>
+    id
+      ? `Cannot delete this weighment (${id}) because it is referenced by other records.`
+      : "Cannot delete this weighment because it is referenced by other records.",
+  CANNOT_DELETE_COMMODITY: (id?: string | number) =>
+    id
+      ? `Cannot delete this commodity (${id}) because it is referenced by existing rates or weighments.`
+      : "Cannot delete this commodity because it is referenced by existing rates or weighments.",
+  CANNOT_DELETE_ENTRY: (id?: string | number) =>
+    id
+      ? `Cannot delete this entry (${id}) because it is part of a merged weighment record.`
+      : "Cannot delete this entry because it is part of a merged weighment record.",
 
   // Bulk Delete FK Violations
   CANNOT_DELETE_SELECTED_CENTERS:

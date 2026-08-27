@@ -104,7 +104,7 @@ describe("Entries [id] route handlers", () => {
 
     expect(response.status).toBe(400);
     const json = await response.json();
-    expect(json.error).toBe(ApiErrorMessage.CANNOT_DELETE_ENTRY);
+    expect(json.error).toBe(ApiErrorMessage.CANNOT_DELETE_ENTRY(10));
   });
 
   it("allows DELETE when entry is not linked to any active weighment", async () => {

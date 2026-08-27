@@ -96,7 +96,7 @@ export const DELETE = withAuth(
       .maybeSingle();
 
     if (linkedEntry) {
-      return apiError(ApiErrorMessage.CANNOT_DELETE_CUSTOMER, StatusCodes.BAD_REQUEST);
+      return apiError(ApiErrorMessage.CANNOT_DELETE_CUSTOMER(entityId), StatusCodes.BAD_REQUEST);
     }
 
     const { data: deletedCount, error } = await client.rpc("delete_customers_with_user", {
@@ -106,7 +106,7 @@ export const DELETE = withAuth(
 
     if (error) {
       return apiError(
-        error.message || ApiErrorMessage.CANNOT_DELETE_CUSTOMER,
+        error.message || ApiErrorMessage.CANNOT_DELETE_CUSTOMER(entityId),
         StatusCodes.BAD_REQUEST,
       );
     }

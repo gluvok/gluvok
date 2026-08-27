@@ -171,7 +171,7 @@ export const DELETE = withAuth(
       .maybeSingle();
 
     if (linkedWeighment) {
-      return apiError(ApiErrorMessage.CANNOT_DELETE_ENTRY, StatusCodes.BAD_REQUEST);
+      return apiError(ApiErrorMessage.CANNOT_DELETE_ENTRY(entityId), StatusCodes.BAD_REQUEST);
     }
 
     const query = client
@@ -187,7 +187,7 @@ export const DELETE = withAuth(
     const { data, error } = await query.select(EntityKey.ID);
     if (error) {
       return apiError(
-        error.message || ApiErrorMessage.CANNOT_DELETE_ENTRY,
+        error.message || ApiErrorMessage.CANNOT_DELETE_ENTRY(entityId),
         StatusCodes.BAD_REQUEST,
       );
     }

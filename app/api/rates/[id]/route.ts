@@ -89,7 +89,7 @@ export const DELETE = withAuth(
       .maybeSingle();
 
     if (linkedWeighment) {
-      return apiError(ApiErrorMessage.CANNOT_DELETE_RATE, StatusCodes.BAD_REQUEST);
+      return apiError(ApiErrorMessage.CANNOT_DELETE_RATE(entityId), StatusCodes.BAD_REQUEST);
     }
 
     const query = client
@@ -104,7 +104,10 @@ export const DELETE = withAuth(
 
     const { data, error } = await query.select(EntityKey.ID);
     if (error) {
-      return apiError(error.message || ApiErrorMessage.CANNOT_DELETE_RATE, StatusCodes.BAD_REQUEST);
+      return apiError(
+        error.message || ApiErrorMessage.CANNOT_DELETE_RATE(entityId),
+        StatusCodes.BAD_REQUEST,
+      );
     }
 
     if (!data || data.length === 0) {

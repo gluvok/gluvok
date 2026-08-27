@@ -21,6 +21,7 @@ import {
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
 export const GET = withAuth(async (req, user, client) => {
+  if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
   const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT;

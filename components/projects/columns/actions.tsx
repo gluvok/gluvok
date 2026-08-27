@@ -5,6 +5,7 @@
 
 "use client";
 
+import * as React from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 
@@ -17,7 +18,15 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Copy, Pencil, Trash2, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { MoreHorizontal, Copy, Pencil, Trash2, CheckCircle2, XCircle, X } from "lucide-react";
 import { toast } from "sonner";
 import { getField, useEntitiesStore } from "@/lib/store";
 import { type EntityRecord } from "@/types";
@@ -78,6 +87,10 @@ function ActionCell<T extends EntityRecord>({
 }: ActionCellProps<T>) {
   const itemId = String(getField(item, primaryIdKey));
   const currentUser = useAuthStore((state) => state.user);
+  const [approving, setApproving] = React.useState(false);
+  const [rejecting, setRejecting] = React.useState(false);
+  const [statusLoading, setStatusLoading] = React.useState(false);
+  const vehicleNumber = String(getField(item, EntityKey.VEHICLE_NUMBER) || "");
 
   const canModifyRow = hasRowModifyPermission(item, projectSlug, currentUser);
   let hasRowWrite = canWrite && canModifyRow;
@@ -114,27 +127,35 @@ function ActionCell<T extends EntityRecord>({
 
   const hasRowDelete = canDelete && canModifyRow;
 
-  const handleApprove = async () => {
+  const confirmApprove = async () => {
     try {
+      setStatusLoading(true);
       await useEntitiesStore.getState().updateEntity(ProjectSlug.ENTRIES, itemId, {
         [EntityKey.STATUS]: EntryStatus.APPROVED,
       });
-      toast.success("Entry approved successfully");
+      toast.success(`Entry "${itemId}" approved successfully`);
+      setApproving(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to approve entry";
       toast.error(msg);
+    } finally {
+      setStatusLoading(false);
     }
   };
 
-  const handleReject = async () => {
+  const confirmReject = async () => {
     try {
+      setStatusLoading(true);
       await useEntitiesStore.getState().updateEntity(ProjectSlug.ENTRIES, itemId, {
         [EntityKey.STATUS]: EntryStatus.REJECTED,
       });
-      toast.success("Entry marked as rejected");
+      toast.success(`Entry "${itemId}" marked as rejected`);
+      setRejecting(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to reject entry";
       toast.error(msg);
+    } finally {
+      setStatusLoading(false);
     }
   };
 
@@ -170,7 +191,7 @@ function ActionCell<T extends EntityRecord>({
               <DropdownMenuItem
                 id={`actions-approve-${projectSlug}-${itemId}`}
                 className="text-xs cursor-pointer gap-2 py-2 text-emerald-600 focus:text-emerald-700 dark:text-emerald-400 dark:focus:text-emerald-300"
-                onClick={handleApprove}
+                onClick={() => setApproving(true)}
               >
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />{" "}
                 Approve
@@ -181,7 +202,7 @@ function ActionCell<T extends EntityRecord>({
             <DropdownMenuItem
               id={`actions-reject-${projectSlug}-${itemId}`}
               className="text-xs cursor-pointer gap-2 py-2 text-rose-600 focus:text-rose-700 dark:text-rose-400 dark:focus:text-rose-300"
-              onClick={handleReject}
+              onClick={() => setRejecting(true)}
             >
               <XCircle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" /> Reject
             </DropdownMenuItem>
@@ -212,6 +233,103 @@ function ActionCell<T extends EntityRecord>({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {canApproveEntry && (
+        <Dialog open={approving} onOpenChange={setApproving}>
+          <DialogContent showCloseButton={false} className="w-[92vw] sm:w-full max-w-100">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                <div className="p-1.5 rounded-lg bg-emerald-500/10">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                Approve Entry
+              </DialogTitle>
+              <DialogDescription className="pt-2 text-xs leading-relaxed text-muted-foreground text-left">
+                Are you sure you want to approve entry{" "}
+                <span className="font-semibold text-foreground">ID: {itemId}</span>
+                {vehicleNumber ? (
+                  <>
+                    {" "}
+                    (Vehicle: <span className="font-semibold text-foreground">{vehicleNumber}</span>
+                    )
+                  </>
+                ) : null}
+                ?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="bg-transparent border-t-0 p-0 pt-4 mx-0 mb-0 flex flex-row items-center justify-end gap-3">
+              <Button
+                id={`approve-cancel-${itemId}`}
+                variant="ghost"
+                size="sm"
+                onClick={() => setApproving(false)}
+                disabled={statusLoading}
+                className="gap-1.5 h-8 px-3 text-xs"
+              >
+                <X className="h-3.5 w-3.5" /> Cancel
+              </Button>
+              <Button
+                id={`approve-confirm-${itemId}`}
+                size="sm"
+                onClick={confirmApprove}
+                disabled={statusLoading}
+                className="gap-1.5 h-8 px-3 text-xs shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" /> Approve
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {canRejectEntry && (
+        <Dialog open={rejecting} onOpenChange={setRejecting}>
+          <DialogContent showCloseButton={false} className="w-[92vw] sm:w-full max-w-100">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                <div className="p-1.5 rounded-lg bg-rose-500/10">
+                  <XCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                </div>
+                Reject Entry
+              </DialogTitle>
+              <DialogDescription className="pt-2 text-xs leading-relaxed text-muted-foreground text-left">
+                Are you sure you want to reject entry{" "}
+                <span className="font-semibold text-foreground">ID: {itemId}</span>
+                {vehicleNumber ? (
+                  <>
+                    {" "}
+                    (Vehicle: <span className="font-semibold text-foreground">{vehicleNumber}</span>
+                    )
+                  </>
+                ) : null}
+                ? This entry will be locked and cannot be merged into weighments.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="bg-transparent border-t-0 p-0 pt-4 mx-0 mb-0 flex flex-row items-center justify-end gap-3">
+              <Button
+                id={`reject-cancel-${itemId}`}
+                variant="ghost"
+                size="sm"
+                onClick={() => setRejecting(false)}
+                disabled={statusLoading}
+                className="gap-1.5 h-8 px-3 text-xs"
+              >
+                <X className="h-3.5 w-3.5" /> Cancel
+              </Button>
+              <Button
+                id={`reject-confirm-${itemId}`}
+                variant="destructive"
+                size="sm"
+                onClick={confirmReject}
+                disabled={statusLoading}
+                className="gap-1.5 h-8 px-3 text-xs shadow-sm bg-rose-600 hover:bg-rose-700 text-white dark:bg-rose-600 dark:hover:bg-rose-700"
+              >
+                <XCircle className="h-3.5 w-3.5" /> Reject
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

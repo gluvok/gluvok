@@ -12,8 +12,10 @@ import {
   Role,
   WeighmentType,
   EntryType,
+  EntryStatus,
   FilterValue,
   FieldRequirementMode,
+  FieldType,
 } from "@/lib/constants/enums";
 import {
   Sprout,
@@ -32,6 +34,8 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   CheckCircle2,
+  XCircle,
+  Clock,
   HelpCircle,
   Ban,
   SlidersHorizontal,
@@ -204,6 +208,24 @@ export function getFieldRequirementModeLabel(modeVal?: string): string {
   }
 }
 
+export function getStatusIcon(statusVal?: string): LucideIcon {
+  if (!statusVal || statusVal === FilterValue.ALL) return SlidersHorizontal;
+  const normalized = statusVal.toLowerCase().trim();
+  switch (normalized) {
+    case EntryStatus.PENDING:
+    case "pending":
+      return Clock;
+    case EntryStatus.APPROVED:
+    case "approved":
+      return CheckCircle2;
+    case EntryStatus.REJECTED:
+    case "rejected":
+      return XCircle;
+    default:
+      return SlidersHorizontal;
+  }
+}
+
 export function getItemIcon(type: string | ProjectSlug, label: string): LucideIcon | null {
   switch (type) {
     case ProjectSlug.COMMODITIES:
@@ -218,6 +240,11 @@ export function getItemIcon(type: string | ProjectSlug, label: string): LucideIc
     case "modes":
     case "field_requirement_mode":
       return getModeIcon(label);
+    case "status":
+    case "statuses":
+    case "entry_status":
+    case FieldType.ENTRY_STATUS:
+      return getStatusIcon(label);
     default:
       return null;
   }

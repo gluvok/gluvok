@@ -24,6 +24,7 @@ import { hashPassword } from "@/lib/auth/password";
 import { getDynamicCustomerSchema } from "@/lib/validation";
 
 export const GET = withAuth(async (req, user, client) => {
+  if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
   const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT;

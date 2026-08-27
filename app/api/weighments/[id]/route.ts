@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
-import { withAuth, apiError, StatusCodes } from "@/db/helpers";
-import { TableName, EntityKey, RelationAlias, WeighmentType, Unit } from "@/lib/constants/enums";
+import { withAuth, apiError, StatusCodes, forbiddenError, hasPermission } from "@/db/helpers";
+import {
+  TableName,
+  EntityKey,
+  RelationAlias,
+  WeighmentType,
+  Unit,
+  ProjectSlug,
+  PermissionKey,
+} from "@/lib/constants/enums";
 
 export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
+  if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.READ)) return forbiddenError();
   const { id } = await ctx.params;
   const weighmentId = Number(id);
 
@@ -74,6 +83,7 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
 });
 
 export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => {
+  if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.WRITE)) return forbiddenError();
   const { id } = await ctx.params;
   const weighmentId = Number(id);
   const body = await req.json();

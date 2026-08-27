@@ -28,6 +28,7 @@ import {
   KeyRound,
   ShieldCheck,
   ArrowLeftRight,
+  Image,
 } from "lucide-react";
 
 export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
@@ -174,6 +175,15 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       type: FieldType.TEXT,
       icon: Users,
       span: FieldSpan.HALF,
+    },
+    {
+      key: EntityKey.IMAGES,
+      label: ColumnLabel.IMAGES,
+      placeholder: "Upload entry images...",
+      type: FieldType.IMAGES,
+      required: false,
+      icon: Image,
+      span: FieldSpan.FULL,
     },
   ],
   [ProjectSlug.WEIGHMENTS]: [

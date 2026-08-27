@@ -17,9 +17,9 @@ import {
   ProjectSlug,
 } from "@/lib/constants/enums";
 import { useEntitiesStore } from "@/lib/store";
-import { Building, ShieldCheck, User as UserIcon, Users } from "lucide-react";
+import { Building, User as UserIcon, Users } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
-import { getTypeIcon } from "@/lib/fields/helpers";
+import { getTypeIcon, getStatusIcon } from "@/lib/fields/helpers";
 import { DateRangeFilter } from "./date-range-filter";
 
 interface EntriesFiltersProps<TData extends RowData> {
@@ -118,7 +118,7 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
         data={statusOptions}
         placeholder="All Statuses"
         searchPlaceholder="Search status..."
-        icon={ShieldCheck}
+        icon={getStatusIcon(currentStatus as string)}
         className="w-auto"
         id="filter-status-combobox"
       />

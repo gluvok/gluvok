@@ -18,6 +18,7 @@ import {
   PenTool,
 } from "lucide-react";
 import { EntityKey, ColumnLabel, EntryStatus, EntryType } from "@/lib/constants/enums";
+import { getStatusIcon } from "@/lib/fields";
 import { cn } from "@/lib/utils";
 import {
   createTextColumn,
@@ -58,6 +59,7 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
     createCustomColumn(EntityKey.STATUS, ColumnLabel.STATUS, ShieldCheck, (val) => {
       const status = String(val).toLowerCase();
       let statusClass = "bg-muted text-muted-foreground border border-border";
+      const Icon = getStatusIcon(status);
       if (status === EntryStatus.APPROVED) {
         statusClass =
           "bg-emerald-50 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/30";
@@ -68,7 +70,14 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         statusClass =
           "bg-rose-50 text-rose-700 border border-rose-200/50 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/30";
       }
-      return <span className={cn(badgeBaseClass, "capitalize", statusClass)}>{status}</span>;
+      return (
+        <span
+          className={cn(badgeBaseClass, "capitalize inline-flex items-center gap-1.5", statusClass)}
+        >
+          <Icon className="h-3 w-3 shrink-0" />
+          {status}
+        </span>
+      );
     }),
     createIdColumn(EntityKey.CENTER_ID, ColumnLabel.CENTER_ID, Building),
     createCustomColumn(EntityKey.CENTER_NAME, ColumnLabel.CENTER_NAME, Building, (_val, row) => {

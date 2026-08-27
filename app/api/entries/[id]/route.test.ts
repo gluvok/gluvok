@@ -41,6 +41,7 @@ const context = { params: Promise.resolve({ id: "10" }) };
 describe("Entries [id] route handlers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockHasPermission.mockReturnValue(true);
   });
 
   it("rejects PATCH when entry status is REJECTED", async () => {

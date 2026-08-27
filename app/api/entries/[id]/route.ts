@@ -18,6 +18,7 @@ import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
 
 export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
+  if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.READ)) return forbiddenError();
   const { id } = await ctx.params;
   const entryId = Number(id);
 
@@ -50,6 +51,7 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
 });
 
 export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => {
+  if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.WRITE)) return forbiddenError();
   const { id } = await ctx.params;
   const entryId = Number(id);
   const body = await req.json();
@@ -85,6 +87,15 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     // ONLY customer_id can be updated
     if (body.vehicle_number !== undefined && body.vehicle_number !== existing.vehicle_number) {
       return apiError("Cannot modify vehicle_number on approved entries.", StatusCodes.BAD_REQUEST);
+    }
+    if (body.weight !== undefined && Number(body.weight) !== Number(existing.weight)) {
+      return apiError("Cannot modify weight on approved entries.", StatusCodes.BAD_REQUEST);
+    }
+    if (body.center_id !== undefined && Number(body.center_id) !== Number(existing.center_id)) {
+      return apiError("Cannot modify center on approved entries.", StatusCodes.BAD_REQUEST);
+    }
+    if (body.images !== undefined) {
+      return apiError("Cannot modify images on approved entries.", StatusCodes.BAD_REQUEST);
     }
     if (body.status !== undefined && body.status !== existing.status) {
       return apiError("Cannot modify status on approved entries.", StatusCodes.BAD_REQUEST);

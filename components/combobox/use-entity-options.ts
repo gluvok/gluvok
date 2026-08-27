@@ -21,57 +21,71 @@ export function useEntityOptions(
   currentValue?: string,
 ) {
   const storeCommodities = useEntitiesStore((state) => state.commodities);
+  const storeCenters = useEntitiesStore((state) => state.centers);
+  const storeUsers = useEntitiesStore((state) => state.users);
+  const storeCustomers = useEntitiesStore((state) => state.customers);
+  const storeRates = useEntitiesStore((state) => state.rates);
+  const filtersInitialized = useEntitiesStore((state) => state.filtersInitialized);
   const weighmentFiltersData = useEntitiesStore((state) => state.weighmentFiltersData);
 
   const preloadedOptions = React.useMemo(() => {
+    const isReady =
+      filtersInitialized ||
+      Boolean(weighmentFiltersData) ||
+      (storeCustomers && storeCustomers.length > 0) ||
+      (storeCenters && storeCenters.length > 0);
+
+    if (!isReady) return null;
+
     switch (entitySlug) {
       case ProjectSlug.COMMODITIES:
-        if (storeCommodities && storeCommodities.length > 0) {
-          return storeCommodities.map((c) => ({
-            value: String(c.id),
-            label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
-          }));
-        }
-        break;
-      case ProjectSlug.CENTERS:
-        if (weighmentFiltersData?.centers && weighmentFiltersData.centers.length > 0) {
-          return weighmentFiltersData.centers.map((c) => ({
-            value: String(c.id),
-            label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
-          }));
-        }
-        break;
-      case ProjectSlug.USERS: {
-        const usersList = weighmentFiltersData?.users;
-        if (usersList && usersList.length > 0) {
-          return usersList.map((p) => ({
-            value: String(p.id),
-            label: p.name ? `${p.name} (ID: ${p.id})` : String(p.id),
-          }));
-        }
-        break;
+        return (storeCommodities || []).map((c) => ({
+          value: String(c.id),
+          label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
+        }));
+      case ProjectSlug.CENTERS: {
+        const list = storeCenters?.length ? storeCenters : weighmentFiltersData?.centers || [];
+        return list.map((c) => ({
+          value: String(c.id),
+          label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
+        }));
       }
-      case ProjectSlug.CUSTOMERS:
-        if (weighmentFiltersData?.customers && weighmentFiltersData.customers.length > 0) {
-          return weighmentFiltersData.customers.map((c) => ({
-            value: String(c.id),
-            label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
-          }));
-        }
-        break;
-      case ProjectSlug.RATES:
-        if (weighmentFiltersData?.rates && weighmentFiltersData.rates.length > 0) {
-          return weighmentFiltersData.rates.map((r) => ({
-            value: String(r.id),
-            label: r.label,
-          }));
-        }
-        break;
+      case ProjectSlug.USERS: {
+        const list = storeUsers?.length ? storeUsers : weighmentFiltersData?.users || [];
+        return list.map((p) => ({
+          value: String(p.id),
+          label: p.name ? `${p.name} (ID: ${p.id})` : String(p.id),
+        }));
+      }
+      case ProjectSlug.CUSTOMERS: {
+        const list = storeCustomers?.length
+          ? storeCustomers
+          : weighmentFiltersData?.customers || [];
+        return list.map((c) => ({
+          value: String(c.id),
+          label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
+        }));
+      }
+      case ProjectSlug.RATES: {
+        const list = storeRates?.length ? storeRates : weighmentFiltersData?.rates || [];
+        return list.map((r) => ({
+          value: String(r.id),
+          label: r.label,
+        }));
+      }
       default:
-        break;
+        return null;
     }
-    return null;
-  }, [entitySlug, storeCommodities, weighmentFiltersData]);
+  }, [
+    entitySlug,
+    filtersInitialized,
+    storeCommodities,
+    storeCenters,
+    storeUsers,
+    storeCustomers,
+    storeRates,
+    weighmentFiltersData,
+  ]);
 
   const [apiOptions, setApiOptions] = React.useState<{ value: string; label: string }[]>([]);
   const [apiLoading, setApiLoading] = React.useState(false);

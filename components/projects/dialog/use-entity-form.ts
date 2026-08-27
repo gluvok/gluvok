@@ -16,6 +16,8 @@ import {
   FieldType,
   EntityKey,
   PermissionKey,
+  EntryStatus,
+  FieldSpan,
 } from "@/lib/constants/enums";
 import { PROJECT_FIELDS, getSingularName } from "@/lib/fields";
 import {
@@ -56,7 +58,18 @@ export function useEntityForm({
   const currentUser = useAuthStore((state) => state.user);
   const factory = useFactoryStore((state) => state.factory);
 
-  const fields = React.useMemo(() => PROJECT_FIELDS[projectSlug] || [], [projectSlug]);
+  const fields = React.useMemo(() => {
+    const baseFields = PROJECT_FIELDS[projectSlug] || [];
+    if (isEdit && projectSlug === ProjectSlug.ENTRIES && item) {
+      const status = getField(item, EntityKey.STATUS);
+      if (status === EntryStatus.APPROVED) {
+        return baseFields
+          .filter((f) => f.key === EntityKey.CUSTOMER_ID)
+          .map((f) => ({ ...f, span: FieldSpan.FULL }));
+      }
+    }
+    return baseFields;
+  }, [projectSlug, isEdit, item]);
 
   const formSchema = React.useMemo(() => {
     if (projectSlug === ProjectSlug.CUSTOMERS) {
@@ -117,30 +130,46 @@ export function useEntityForm({
     try {
       if (isEdit) {
         if (!item) return;
-        const updateValues = { ...values };
-        fields.forEach((field) => {
-          if (
-            field.requiresEditPermission &&
-            !hasPermission(currentUser?.role, projectSlug, PermissionKey.EDIT_FIELD, field.key)
-          ) {
-            delete updateValues[field.key];
-          }
-        });
-        const uniquenessError = checkEditUniqueness(projectSlug as ProjectSlug, item, updateValues);
-        if (uniquenessError) {
-          form.setError(uniquenessError.field as Path<FieldValues>, {
-            message: uniquenessError.message,
+        let updateValues: Record<string, unknown> = {};
+
+        if (
+          projectSlug === ProjectSlug.ENTRIES &&
+          getField(item, EntityKey.STATUS) === EntryStatus.APPROVED
+        ) {
+          updateValues = {
+            [EntityKey.CUSTOMER_ID]: values[EntityKey.CUSTOMER_ID],
+          };
+        } else {
+          updateValues = { ...values };
+          fields.forEach((field) => {
+            if (
+              field.requiresEditPermission &&
+              !hasPermission(currentUser?.role, projectSlug, PermissionKey.EDIT_FIELD, field.key)
+            ) {
+              delete updateValues[field.key];
+            }
           });
-          return;
+          const uniquenessError = checkEditUniqueness(
+            projectSlug as ProjectSlug,
+            item,
+            updateValues,
+          );
+          if (uniquenessError) {
+            form.setError(uniquenessError.field as Path<FieldValues>, {
+              message: uniquenessError.message,
+            });
+            return;
+          }
+
+          if (Array.isArray(updateValues[EntityKey.IMAGES])) {
+            const originalImages = (getField(item, EntityKey.IMAGES) || []) as string[];
+            updateValues[EntityKey.IMAGES] = await processImageUploadsAndDeletions(
+              updateValues[EntityKey.IMAGES],
+              originalImages,
+            );
+          }
         }
 
-        if (Array.isArray(updateValues[EntityKey.IMAGES])) {
-          const originalImages = (getField(item, EntityKey.IMAGES) || []) as string[];
-          updateValues[EntityKey.IMAGES] = await processImageUploadsAndDeletions(
-            updateValues[EntityKey.IMAGES],
-            originalImages,
-          );
-        }
         await updateEntity(
           projectSlug as ProjectSlug,
           String(getField(item, primaryIdKey)),

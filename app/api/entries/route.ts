@@ -21,6 +21,7 @@ import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
 
 export const GET = withAuth(async (req, user, client) => {
+  if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
   const statusParam = req.nextUrl.searchParams.get(EntityKey.STATUS);
@@ -112,6 +113,7 @@ export const GET = withAuth(async (req, user, client) => {
 });
 
 export const POST = withAuth(async (req, user, client) => {
+  if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.CREATE)) return forbiddenError();
   try {
     const body = await req.json();
     const {

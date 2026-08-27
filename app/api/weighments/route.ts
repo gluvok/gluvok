@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
-import { withAuth, getPaginationParams, apiError, StatusCodes } from "@/db/helpers";
+import {
+  withAuth,
+  getPaginationParams,
+  apiError,
+  StatusCodes,
+  forbiddenError,
+  hasPermission,
+} from "@/db/helpers";
 import {
   QueryParam,
   EntityKey,
@@ -8,9 +15,12 @@ import {
   FilterValue,
   WeighmentType,
   Unit,
+  ProjectSlug,
+  PermissionKey,
 } from "@/lib/constants/enums";
 
 export const GET = withAuth(async (req, user, client) => {
+  if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
   const typeParam = req.nextUrl.searchParams.get(EntityKey.TYPE);

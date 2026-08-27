@@ -1,7 +1,20 @@
-import { withAuth, getPaginationParams, fetchPaginatedResult } from "@/db/helpers";
-import { QueryParam, TableName, EntityKey } from "@/lib/constants/enums";
+import {
+  withAuth,
+  getPaginationParams,
+  fetchPaginatedResult,
+  forbiddenError,
+  hasPermission,
+} from "@/db/helpers";
+import {
+  QueryParam,
+  TableName,
+  EntityKey,
+  ProjectSlug,
+  PermissionKey,
+} from "@/lib/constants/enums";
 
 export const GET = withAuth(async (req, user, client) => {
+  if (!hasPermission(user, ProjectSlug.COMMODITIES, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
   const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT;

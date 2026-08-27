@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS factories (
 -- USERS TABLE (Custom authentication & user entity table)
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    username TEXT NOT NULL,
+    username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     name TEXT NOT NULL,
     aadhar_number TEXT,

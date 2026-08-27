@@ -29,8 +29,20 @@ export async function apiRequest<T>(requestFn: () => Promise<T>): Promise<T> {
   try {
     return await requestFn();
   } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response?.data?.error) {
-      throw new Error(error.response.data.error);
+    if (axios.isAxiosError(error)) {
+      const serverError = error.response?.data?.error || error.response?.data?.message;
+      if (serverError && typeof serverError === "string") {
+        throw new Error(serverError);
+      }
+      if (error.response?.status === 405) {
+        throw new Error("This action is not supported or not allowed for this record.");
+      }
+      if (error.response?.status === 403) {
+        throw new Error("You do not have permission to perform this action.");
+      }
+      if (error.response?.status === 404) {
+        throw new Error("The requested record was not found.");
+      }
     }
     throw error;
   }

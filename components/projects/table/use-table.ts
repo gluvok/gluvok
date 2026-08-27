@@ -16,7 +16,7 @@ import {
 import { useTable } from "@/lib/utils";
 import { projectTableFeatures, type ProjectTableFeatures } from "@/components/data-table/features";
 import { getProjectColumns } from "@/components/projects/columns";
-import { ProjectSlug } from "@/lib/constants/enums";
+import { ProjectSlug, EntityKey } from "@/lib/constants/enums";
 import {
   useProjectDialogStates,
   parseColumnFilters,
@@ -75,7 +75,9 @@ export function useProjectTable({ projectSlug, primaryIdKey, projectName }: UseP
   const setFilterPreferences = usePreferencesStore((state) => state.setFilterPreferences);
 
   // Local table controls state
-  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [sorting, setSorting] = React.useState<SortingState>(() =>
+    projectSlug === ProjectSlug.ENTRIES ? [{ id: EntityKey.UPDATED_AT, desc: true }] : [],
+  );
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(() =>
     Object.entries(savedFilters).map(([id, value]) => ({ id, value })),
   );
@@ -168,11 +170,21 @@ export function useProjectTable({ projectSlug, primaryIdKey, projectName }: UseP
         setLocalError(null);
         const filtersObj = parseColumnFilters(columnFilters);
 
+        const effectiveSortColumn =
+          sorting[0]?.id ||
+          (projectSlug === ProjectSlug.ENTRIES ? EntityKey.UPDATED_AT : undefined);
+        const effectiveSortDesc =
+          sorting[0] !== undefined
+            ? sorting[0].desc
+            : projectSlug === ProjectSlug.ENTRIES
+              ? true
+              : undefined;
+
         const result = await fetchEntityListPaginated(projectSlug as ProjectSlug, {
           page: pagination.pageIndex,
           pageSize: pagination.pageSize,
-          sortColumn: sorting[0]?.id,
-          sortDesc: sorting[0]?.desc,
+          sortColumn: effectiveSortColumn,
+          sortDesc: effectiveSortDesc,
           search: debouncedFilter,
           filters: filtersObj,
         });

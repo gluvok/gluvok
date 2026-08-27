@@ -67,8 +67,8 @@ describe("downloadPDF, downloadCSV and getExportFileName", () => {
     expect(generatedHtml).toContain("Apex Industries");
     expect(generatedHtml).toContain("Entries Export");
 
-    // Image count inside table cell
-    expect(generatedHtml).toContain("2 images");
+    // Single record grammar
+    expect(generatedHtml).toContain("1 Record");
 
     // IST date formatting
     expect(generatedHtml).toContain("28 Aug 2026, 02:24 AM");

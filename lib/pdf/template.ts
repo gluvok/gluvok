@@ -1,9 +1,8 @@
 /**
  * @file lib/pdf/template.ts
- * @description Modular PDF generation templates and Tailwind-based section partials.
+ * @description Self-contained PDF generation templates and Tailwind-based section partials.
  */
 
-import { PDF_STYLES } from "./styles";
 import { formatDateTime } from "../utils";
 
 export interface HeaderSectionOptions {
@@ -24,6 +23,7 @@ export function renderHeaderSection({
   date,
   selectedCount,
 }: HeaderSectionOptions): string {
+  const recordText = `${selectedCount} Record${selectedCount === 1 ? "" : "s"}`;
   return `
     <header class="flex justify-between items-start border-b-2 border-slate-900/90 pb-5 mb-6">
       <div class="brand flex flex-col gap-1.5">
@@ -37,7 +37,7 @@ export function renderHeaderSection({
           <span class="inline-flex items-center px-2.5 py-0.5 text-2xs font-mono text-slate-600 bg-slate-100 border border-slate-200">${date}</span>
           <span class="inline-flex items-center gap-1 px-2.5 py-0.5 text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
             <span class="w-1.5 h-1.5 bg-emerald-500"></span>
-            ${selectedCount} Records
+            ${recordText}
           </span>
         </div>
       </div>
@@ -153,7 +153,25 @@ export function generatePdfHtml(
             },
           };
         </script>
-        <style>${PDF_STYLES}</style>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+          @page { size: auto; margin: 0mm; }
+          html, body { margin: 0; padding: 0; min-height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+          .text-2xs { font-size: 0.625rem; line-height: calc(1 / 0.625); }
+          tr, .pdf-scan-card { page-break-inside: avoid; break-inside: avoid; }
+          .pdf-scans-header { page-break-after: avoid; break-after: avoid; page-break-inside: avoid; break-inside: avoid; }
+          .pdf-scan-wrapper { padding-top: 24px; page-break-inside: avoid; break-inside: avoid; }
+          .pdf-scan-wrapper:first-child { padding-top: 0; }
+          footer { position: fixed; bottom: 12mm; left: 20mm; right: 20mm; page-break-inside: avoid; break-inside: avoid; }
+          @media print {
+            @page { size: auto; margin: 0mm; }
+            body { padding: 15mm 20mm 20mm 20mm; margin: 0; position: relative; }
+            .pdf-content-wrapper { padding-bottom: 25mm; }
+            .pdf-scan-wrapper { padding-top: 24px; }
+            .pdf-scan-wrapper:first-child { padding-top: 0; }
+            footer { position: fixed; bottom: 12mm; left: 20mm; right: 20mm; }
+          }
+        </style>
       </head>
       <body class="p-8 sm:p-10 font-sans text-slate-900 bg-white min-h-screen relative flex flex-col">
         <div class="pdf-content-wrapper flex-1 pb-10">

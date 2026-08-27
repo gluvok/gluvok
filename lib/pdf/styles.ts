@@ -24,15 +24,19 @@ export const PDF_STYLES = `
     break-inside: avoid;
   }
 
-  .pdf-scan-card {
+  .pdf-scan-wrapper {
+    padding-top: 24px;
     page-break-inside: avoid;
     break-inside: avoid;
   }
 
-  .pdf-scan-card:first-child {
-    page-break-before: avoid;
-    break-before: avoid;
-    margin-top: 0;
+  .pdf-scan-wrapper:first-child {
+    padding-top: 4px;
+  }
+
+  .pdf-scan-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   .pdf-scans-header {
@@ -63,6 +67,14 @@ export const PDF_STYLES = `
     }
     .pdf-content-wrapper {
       padding-bottom: 25mm;
+    }
+    .pdf-scan-wrapper {
+      padding-top: 24px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .pdf-scan-wrapper:first-child {
+      padding-top: 4px;
     }
     footer {
       position: fixed;

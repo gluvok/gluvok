@@ -123,22 +123,24 @@ export function downloadPDF<TData extends RowData>(
     imagesHtml = imagesList
       .map(
         (item) => `
-      <div class="pdf-scan-card rounded-xl border border-slate-200 bg-slate-50/80 p-4 my-3">
-        <div class="pdf-scan-card-header font-semibold text-xs text-slate-700 pb-2 mb-3 border-b border-slate-200 flex items-center justify-between">
-          <span>Record #${item.id}</span>
-          ${item.vehicleNumber ? `<span class="bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-[11px] text-slate-800">Vehicle: ${item.vehicleNumber}</span>` : ""}
-        </div>
-        <div class="pdf-scan-card-images flex flex-wrap gap-4 my-1">
-          ${item.images
-            .map(
-              (img, idx) => `
-            <div class="pdf-scan-img-container flex flex-col items-center gap-1.5">
-              <img src="${img}" alt="Scan ${idx + 1}" class="pdf-scan-full-img max-w-[220px] max-h-[160px] object-cover rounded-lg border border-slate-300 bg-white shadow-sm" />
-              <div class="pdf-scan-caption text-[10px] font-mono text-slate-500">Image ${idx + 1}</div>
-            </div>
-          `,
-            )
-            .join("")}
+      <div class="pdf-scan-wrapper pt-6 first:pt-1">
+        <div class="pdf-scan-card rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+          <div class="pdf-scan-card-header font-semibold text-xs text-slate-700 pb-2 mb-3 border-b border-slate-200 flex items-center justify-between">
+            <span>Record #${item.id}</span>
+            ${item.vehicleNumber ? `<span class="bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-[11px] text-slate-800">Vehicle: ${item.vehicleNumber}</span>` : ""}
+          </div>
+          <div class="pdf-scan-card-images flex flex-wrap gap-4 my-1">
+            ${item.images
+              .map(
+                (img, idx) => `
+              <div class="pdf-scan-img-container flex flex-col items-center gap-1.5">
+                <img src="${img}" alt="Scan ${idx + 1}" class="pdf-scan-full-img max-w-[220px] max-h-[160px] object-cover rounded-lg border border-slate-300 bg-white shadow-sm" />
+                <div class="pdf-scan-caption text-[10px] font-mono text-slate-500">Image ${idx + 1}</div>
+              </div>
+            `,
+              )
+              .join("")}
+          </div>
         </div>
       </div>
     `,

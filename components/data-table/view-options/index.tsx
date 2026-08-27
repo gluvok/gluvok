@@ -5,7 +5,8 @@
  * @description Dropdown checklist for toggling column visibility dynamically in a DataTable.
  */
 
-import { type Table } from "@tanstack/react-table";
+import { type RowData, type ReactTable } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "../features";
 import { Settings2, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,15 +19,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { COLUMN_ICONS, getColumnLabel } from "./helpers";
 
-interface DataTableViewOptionsProps<TData> {
-  table: Table<TData>;
+interface DataTableViewOptionsProps<TData extends RowData> {
+  table: ReactTable<ProjectTableFeatures, TData>;
 }
 
 /**
  * DataTableViewOptions Component
  * Column visibility toggle menu. Loops through hideable columns and displays checkboxes with matching icons and labels.
  */
-export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps<TData>) {
+export function DataTableViewOptions<TData extends RowData>({
+  table,
+}: DataTableViewOptionsProps<TData>) {
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>

@@ -3,14 +3,18 @@
  * @description CSV export utilities for table records (exporter).
  */
 
-import { type Table } from "@tanstack/react-table";
+import { type RowData, type Table } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { printPdf } from "../pdf/exporter";
 import { generatePdfHtml } from "../pdf/template";
 
 /**
  * Downloads the selected rows in a table as a PDF.
  */
-export function downloadPDF<TData>(table: Table<TData>, projectName: string) {
+export function downloadPDF<TData extends RowData>(
+  table: Table<ProjectTableFeatures, TData>,
+  projectName: string,
+) {
   const selectedRows = table.getFilteredSelectedRowModel().rows;
   const cols = table.getVisibleLeafColumns().filter((c) => c.id !== "select" && c.id !== "actions");
   const headersHtml = cols
@@ -33,7 +37,10 @@ export function downloadPDF<TData>(table: Table<TData>, projectName: string) {
 /**
  * Downloads the selected rows in a table as a CSV.
  */
-export function downloadCSV<TData>(table: Table<TData>, projectName: string) {
+export function downloadCSV<TData extends RowData>(
+  table: Table<ProjectTableFeatures, TData>,
+  projectName: string,
+) {
   const selectedRows = table.getFilteredSelectedRowModel().rows;
   const cols = table.getVisibleLeafColumns().filter((c) => c.id !== "select" && c.id !== "actions");
   const headers = cols

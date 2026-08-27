@@ -3,7 +3,8 @@
  * @description Column definitions and rendering helpers for the Index entity table.
  */
 
-import { ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { type EntityRecord } from "@/types";
 import { ProjectSlug } from "@/lib/constants/enums";
 import { useAuthStore, isColumnVisible, type Permission } from "@/lib/store";
@@ -26,7 +27,9 @@ export interface ColumnActionsCallbacks<T = EntityRecord> {
   onDelete: (item: T) => void;
 }
 
-function getSpecificColumns<T>(projectSlug: string): ColumnDef<T>[] {
+function getSpecificColumns<T extends RowData>(
+  projectSlug: string,
+): ColumnDef<ProjectTableFeatures, T>[] {
   switch (projectSlug) {
     case ProjectSlug.CENTERS:
       return getCentersColumns<T>();
@@ -56,11 +59,11 @@ export function getProjectColumns<T extends EntityRecord = EntityRecord>(
   projectName: string,
   callbacks: ColumnActionsCallbacks<T>,
   permissions?: Permission,
-): ColumnDef<T>[] {
+): ColumnDef<ProjectTableFeatures, T>[] {
   const userRole = useAuthStore.getState().user?.role;
   const systemCols = getSystemColumns<T>(primaryIdKey);
 
-  const columns: ColumnDef<T>[] = [
+  const columns: ColumnDef<ProjectTableFeatures, T>[] = [
     getSelectColumn<T>(),
     systemCols[0], // ID column
     ...getSpecificColumns<T>(projectSlug),

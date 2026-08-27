@@ -3,12 +3,13 @@
  * @description Column definitions and rendering helpers for the Customers entity table.
  */
 
-import { ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { User, ShieldCheck, Tag, AtSign } from "lucide-react";
 import { EntityKey, ColumnLabel } from "@/lib/constants/enums";
 import { createTextColumn, createCustomColumn } from "./helpers";
 
-export function getCustomersColumns<T>(): ColumnDef<T>[] {
+export function getCustomersColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
     createTextColumn(
       EntityKey.GOVT_ID,

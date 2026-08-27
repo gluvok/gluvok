@@ -92,5 +92,4 @@ export function appendNextParam(baseUrl: string): string {
 }
 
 export { getSingularName } from "@/lib/fields";
-
-export { useReactTable } from "@tanstack/react-table";
+export { useTable } from "@tanstack/react-table";

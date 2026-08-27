@@ -3,7 +3,8 @@
  * @description Column definitions and rendering helpers for the Weighments entity table.
  */
 
-import { ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import {
   Tag,
   Weight,
@@ -19,7 +20,7 @@ import { EntityKey, ColumnLabel, WeighmentType } from "@/lib/constants/enums";
 import { createTextColumn, createBaseColumn, createIdColumn, badgeBaseClass } from "./helpers";
 import { WeighmentImagesCell } from "./weighments-cell";
 
-export function getWeighmentsColumns<T>(): ColumnDef<T>[] {
+export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
     createIdColumn(EntityKey.ID, ColumnLabel.ID, Tag),
     createTextColumn(EntityKey.UNIT, ColumnLabel.UNIT, Ruler),

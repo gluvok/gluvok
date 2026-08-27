@@ -3,7 +3,8 @@
  * @description Column definitions and rendering helpers for the Entries entity table.
  */
 
-import { ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import {
   Tag,
   Car,
@@ -27,7 +28,7 @@ import {
 } from "./helpers";
 import { WeighmentImagesCell } from "./weighments-cell";
 
-export function getEntriesColumns<T>(): ColumnDef<T>[] {
+export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
     createIdColumn(EntityKey.ID, ColumnLabel.ID, Tag),
     createCustomColumn(EntityKey.TYPE, ColumnLabel.TYPE, Sliders, (val) => {

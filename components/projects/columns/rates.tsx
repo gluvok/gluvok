@@ -3,13 +3,14 @@
  * @description Column definitions and rendering helpers for the Rates entity table.
  */
 
-import { ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { IndianRupee, Ruler, Tag } from "lucide-react";
 import { EntityKey, ColumnLabel } from "@/lib/constants/enums";
 import { createCustomColumn, createTextColumn } from "./helpers";
 import { getCommodityIcon } from "@/lib/fields";
 
-export function getRatesColumns<T>(): ColumnDef<T>[] {
+export function getRatesColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
     createCustomColumn<T>(EntityKey.COMMODITY_NAME, ColumnLabel.COMMODITY_NAME, Tag, (val) => {
       const Icon = getCommodityIcon(val);

@@ -3,14 +3,15 @@
  * @description Column definitions and rendering helpers for the Profiles entity table.
  */
 
-import { ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Fingerprint, Tag, Shield, AtSign } from "lucide-react";
 import { EntityKey, ColumnLabel } from "@/lib/constants/enums";
 import { getRoleIcon } from "@/lib/fields/helpers";
 import { RenderRoleIcon } from "@/components/sidebar/nav/user-info";
 import { createTextColumn, createCustomColumn } from "./helpers";
 
-export function getProfilesColumns<T>(): ColumnDef<T>[] {
+export function getProfilesColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
     createTextColumn(
       EntityKey.AADHAR_NUMBER,

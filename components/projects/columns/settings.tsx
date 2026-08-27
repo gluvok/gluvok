@@ -4,7 +4,8 @@
  */
 
 import * as React from "react";
-import { ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Building, Fingerprint, ShieldCheck } from "lucide-react";
 import { EntityKey, FieldRequirementMode, ColumnLabel } from "@/lib/constants/enums";
 import { getModeIcon, getModeColorClass, getFieldRequirementModeLabel } from "@/lib/fields";
@@ -26,7 +27,7 @@ function ModeBadgeCell({ mode }: { mode: string }) {
   );
 }
 
-export function getSettingsColumns<T>(): ColumnDef<T>[] {
+export function getSettingsColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
     createCustomColumn<T>(EntityKey.NAME, ColumnLabel.FACTORY_NAME, Building, (val) => (
       <span className="font-medium text-foreground">{String(val || "-")}</span>

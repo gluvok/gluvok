@@ -6,13 +6,14 @@
  */
 
 import * as React from "react";
-import { Table } from "@tanstack/react-table";
+import { type ReactTable, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Role, EntityKey, FilterValue, FieldType } from "@/lib/constants/enums";
 import { Shield } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
 
-interface ProfilesFiltersProps<TData> {
-  table: Table<TData>;
+interface ProfilesFiltersProps<TData extends RowData> {
+  table: ReactTable<ProjectTableFeatures, TData>;
 }
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
@@ -22,8 +23,8 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: Role.BASE, label: Role.BASE },
 ];
 
-export function ProfilesFilters<TData>({ table }: ProfilesFiltersProps<TData>) {
-  const columnFilters = table.getState().columnFilters;
+export function ProfilesFilters<TData extends RowData>({ table }: ProfilesFiltersProps<TData>) {
+  const columnFilters = table.state.columnFilters;
   const currentRole = columnFilters.find((f) => f.id === EntityKey.ROLE)?.value as
     | string
     | undefined;

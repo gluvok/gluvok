@@ -5,7 +5,9 @@
 
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
+
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -159,7 +161,7 @@ export function getActionsColumn<T extends EntityRecord>(
   _projectName: string,
   callbacks: ColumnActionsCallbacks<T>,
   permissions?: Permission,
-): ColumnDef<T> {
+): ColumnDef<ProjectTableFeatures, T> {
   const canWrite = permissions?.write ?? true;
   const canDelete = permissions?.delete ?? true;
 

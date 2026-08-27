@@ -7,14 +7,14 @@
 import React from "react";
 import { type EntityRecord } from "@/types";
 import {
-  ColumnDef,
-  ColumnFiltersState,
-  OnChangeFn,
-  SortingState,
-  VisibilityState,
-  getCoreRowModel,
+  type ColumnDef,
+  type ColumnFiltersState,
+  type ColumnVisibilityState,
+  type OnChangeFn,
+  type SortingState,
 } from "@tanstack/react-table";
-import { useReactTable } from "@/lib/utils";
+import { useTable } from "@/lib/utils";
+import { projectTableFeatures, type ProjectTableFeatures } from "@/components/data-table/features";
 import { getProjectColumns } from "@/components/projects/columns";
 import { ProjectSlug } from "@/lib/constants/enums";
 import {
@@ -32,11 +32,11 @@ const EMPTY_FILTERS: Record<string, unknown> = {};
 
 /** Computes initial or updated column visibility map based on saved preferences */
 function computeColumnVisibility(
-  columns: ColumnDef<EntityRecord>[],
+  columns: ColumnDef<ProjectTableFeatures, EntityRecord>[],
   savedVisibleColumns?: string[],
-): VisibilityState {
+): ColumnVisibilityState {
   if (!savedVisibleColumns) return {};
-  const visibility: VisibilityState = {};
+  const visibility: ColumnVisibilityState = {};
   columns.forEach((col) => {
     const colId = col.id || ("accessorKey" in col ? String(col.accessorKey) : undefined);
     if (colId) {
@@ -108,7 +108,7 @@ export function useProjectTable({ projectSlug, primaryIdKey, projectName }: UseP
     [user?.role, projectSlug],
   );
 
-  const columns = React.useMemo<ColumnDef<EntityRecord>[]>(() => {
+  const columns = React.useMemo<ColumnDef<ProjectTableFeatures, EntityRecord>[]>(() => {
     return getProjectColumns(
       projectSlug,
       primaryIdKey,
@@ -127,9 +127,11 @@ export function useProjectTable({ projectSlug, primaryIdKey, projectName }: UseP
     [savedVisibleColumns, columns],
   );
 
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState | null>(null);
+  const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState | null>(
+    null,
+  );
   const effectiveColumnVisibility = columnVisibility ?? initialColumnVisibility;
-  const handleColumnVisibilityChange = React.useCallback<OnChangeFn<VisibilityState>>(
+  const handleColumnVisibilityChange = React.useCallback<OnChangeFn<ColumnVisibilityState>>(
     (updater) => {
       setColumnVisibility(
         typeof updater === "function"
@@ -203,17 +205,14 @@ export function useProjectTable({ projectSlug, primaryIdKey, projectName }: UseP
   ]);
 
   // TanStack Table Instance
-  const table = useReactTable({
+  const table = useTable({
+    features: projectTableFeatures,
     data: localData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: "includesString",
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: undefined,
-    getSortedRowModel: undefined,
-    getFilteredRowModel: undefined,
     onColumnVisibilityChange: handleColumnVisibilityChange,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,

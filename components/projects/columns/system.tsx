@@ -3,7 +3,8 @@
  * @description Column definitions and rendering helpers for the System entity table.
  */
 
-import { ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import {
   ShieldCheck,
   Hash,
@@ -60,7 +61,9 @@ const PRIMARY_KEY_CONFIGS: Record<string, PrimaryKeyConfig> = {
   },
 };
 
-export function getSystemColumns<T>(primaryIdKey: string): ColumnDef<T>[] {
+export function getSystemColumns<T extends RowData>(
+  primaryIdKey: string,
+): ColumnDef<ProjectTableFeatures, T>[] {
   const config = PRIMARY_KEY_CONFIGS[primaryIdKey] || PRIMARY_KEY_CONFIGS[EntityKey.ID];
 
   return [

@@ -3,7 +3,8 @@
  * @description Toolbar section displayed above the table grid, housing filters, search input, reload button, view controls, and action buttons.
  */
 
-import { Table } from "@tanstack/react-table";
+import { type ReactTable, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Plus, RotateCw, X } from "lucide-react";
@@ -13,8 +14,8 @@ import { ProjectFilters } from "@/components/projects/filters";
 import { ProjectSlug } from "@/lib/constants/enums";
 import { useAuthStore, getPermissions } from "@/lib/store";
 
-interface ProjectToolbarProps<TData> {
-  table: Table<TData>;
+interface ProjectToolbarProps<TData extends RowData> {
+  table: ReactTable<ProjectTableFeatures, TData>;
   projectSlug: string;
   projectName: string;
   primaryIdKey: string;
@@ -26,7 +27,7 @@ interface ProjectToolbarProps<TData> {
  * ProjectToolbar Component
  * Renders search bar, reload, bulk actions (if rows selected), view options, and creation triggers based on user permissions.
  */
-export function ProjectToolbar<TData>({
+export function ProjectToolbar<TData extends RowData>({
   table,
   projectSlug,
   projectName,
@@ -41,7 +42,7 @@ export function ProjectToolbar<TData>({
   const hideAddForConfig = isSettingsTable && table.getPreFilteredRowModel().rows.length > 0;
   const canCreate = permissions.create && !hideAddForConfig;
 
-  const isFiltered = table.getState().columnFilters.length > 0 || !!table.getState().globalFilter;
+  const isFiltered = table.state.columnFilters.length > 0 || !!table.state.globalFilter;
 
   return (
     <div className="flex flex-col gap-3">
@@ -62,7 +63,7 @@ export function ProjectToolbar<TData>({
                 <Input
                   id={`search-input-${projectSlug}`}
                   placeholder="Search..."
-                  value={(table.getState().globalFilter as string) ?? ""}
+                  value={(table.state.globalFilter as string) ?? ""}
                   onChange={(event) => table.setGlobalFilter(event.target.value)}
                   className="pl-9 pr-4 h-9 text-xs bg-background border border-input focus-visible:ring-1 focus-visible:ring-primary/50 transition-shadow"
                 />

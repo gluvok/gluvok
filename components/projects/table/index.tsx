@@ -3,7 +3,8 @@
  * @description Renders the core table grid with loading and empty fallbacks using TanStack React Table context.
  */
 
-import { Table, flexRender } from "@tanstack/react-table";
+import { type ReactTable, flexRender, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import {
   Table as TableGrid,
   TableBody,
@@ -16,8 +17,8 @@ import { Button } from "@/components/ui/button";
 import { ProjectTableLoading } from "./loading";
 import { ProjectTableEmpty } from "./empty";
 
-interface ProjectTableProps<TData> {
-  table: Table<TData>;
+interface ProjectTableProps<TData extends RowData> {
+  table: ReactTable<ProjectTableFeatures, TData>;
   isLoading: boolean;
   error?: string | null;
   onRetry?: () => void;
@@ -27,7 +28,7 @@ interface ProjectTableProps<TData> {
  * ProjectTable Component
  * Generates the header rows and cell renders for each entity page. Handles loading states.
  */
-export function ProjectTable<TData>({
+export function ProjectTable<TData extends RowData>({
   table,
   isLoading,
   error,

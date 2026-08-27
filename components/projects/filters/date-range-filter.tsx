@@ -8,15 +8,16 @@
 import * as React from "react";
 import { format, subDays, startOfMonth, startOfDay, endOfDay } from "date-fns";
 import { type DateRange } from "react-day-picker";
-import { Table } from "@tanstack/react-table";
+import { type ReactTable, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarIcon, X, Zap, CalendarCheck } from "lucide-react";
 import { DatePreset, QueryParam } from "@/lib/constants/enums";
 
-interface DateRangeFilterProps<TData> {
-  table: Table<TData>;
+interface DateRangeFilterProps<TData extends RowData> {
+  table: ReactTable<ProjectTableFeatures, TData>;
   startKey?: string;
   endKey?: string;
   className?: string;
@@ -32,13 +33,13 @@ const PRESET_OPTIONS: { id: DatePreset; label: string }[] = [
   { id: DatePreset.THIS_MONTH, label: "This Month" },
 ];
 
-export function DateRangeFilter<TData>({
+export function DateRangeFilter<TData extends RowData>({
   table,
   startKey = QueryParam.START_DATE,
   endKey = QueryParam.END_DATE,
   className = "w-auto",
 }: DateRangeFilterProps<TData>) {
-  const columnFilters = table.getState().columnFilters;
+  const columnFilters = table.state.columnFilters;
   const currentStartDateVal = columnFilters.find((f) => f.id === startKey)?.value as
     | string
     | undefined;

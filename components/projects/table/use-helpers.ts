@@ -7,7 +7,8 @@
 
 import * as React from "react";
 import { type EntityRecord } from "@/types";
-import { type ColumnFiltersState, type Table } from "@tanstack/react-table";
+import { type ColumnFiltersState, type RowData, type Table } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 
 /**
  * useProjectDialogStates hook
@@ -71,7 +72,9 @@ export function areFiltersEqual(a: Record<string, unknown>, b: Record<string, un
  * getVisibleColumnsList helper
  * Resolves list of active visible leaf column IDs.
  */
-export function getVisibleColumnsList<TData>(table: Table<TData>): string[] {
+export function getVisibleColumnsList<TData extends RowData>(
+  table: Table<ProjectTableFeatures, TData>,
+): string[] {
   return table
     .getAllLeafColumns()
     .filter((col) => col.getIsVisible())

@@ -6,7 +6,8 @@
  */
 
 import * as React from "react";
-import { type Table } from "@tanstack/react-table";
+import { type RowData, type ReactTable } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Button } from "@/components/ui/button";
 import { FileDown, FileSpreadsheet, Trash2, X, ChevronDown, FileText } from "lucide-react";
 import { DeleteEntityDialog } from "@/components/projects/dialog/delete";
@@ -20,8 +21,8 @@ import {
 
 import { useAuthStore, getPermissions } from "@/lib/store";
 
-interface BulkActionsProps<TData> {
-  table: Table<TData>;
+interface BulkActionsProps<TData extends RowData> {
+  table: ReactTable<ProjectTableFeatures, TData>;
   projectSlug: string;
   projectName: string;
   primaryIdKey: string;
@@ -31,7 +32,7 @@ interface BulkActionsProps<TData> {
  * BulkActions Component
  * Renders actions like download PDF/CSV and bulk delete when rows are selected in the table.
  */
-export function BulkActions<TData>({
+export function BulkActions<TData extends RowData>({
   table,
   projectSlug,
   projectName,

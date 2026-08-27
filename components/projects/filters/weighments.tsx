@@ -6,7 +6,8 @@
  */
 
 import * as React from "react";
-import { Table } from "@tanstack/react-table";
+import { type ReactTable, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import {
   EntityKey,
   Unit,
@@ -21,8 +22,8 @@ import { BaseCombobox } from "@/components/combobox/base";
 import { getTypeIcon } from "@/lib/fields/helpers";
 import { DateRangeFilter } from "./date-range-filter";
 
-interface WeighmentsFiltersProps<TData> {
-  table: Table<TData>;
+interface WeighmentsFiltersProps<TData extends RowData> {
+  table: ReactTable<ProjectTableFeatures, TData>;
 }
 
 function useWeighmentsFilterData() {
@@ -36,10 +37,10 @@ function useWeighmentsFilterData() {
   };
 }
 
-export function WeighmentsFilters<TData>({ table }: WeighmentsFiltersProps<TData>) {
+export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFiltersProps<TData>) {
   const { rates } = useWeighmentsFilterData();
 
-  const columnFilters = table.getState().columnFilters;
+  const columnFilters = table.state.columnFilters;
   const currentType = columnFilters.find((f) => f.id === EntityKey.TYPE)?.value;
   const currentUnit = columnFilters.find((f) => f.id === EntityKey.UNIT)?.value;
   const currentRateId = columnFilters.find((f) => f.id === EntityKey.RATE_ID)?.value;

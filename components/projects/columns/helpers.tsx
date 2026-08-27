@@ -5,18 +5,19 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react";
-import { ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { DataTableColumnHeader } from "@/components/data-table";
 import { EntityKey } from "@/lib/constants/enums";
 import { ColumnLabel } from "@/lib/constants/enums";
 
-export function createBaseColumn<T>(
+export function createBaseColumn<T extends RowData>(
   key: EntityKey | string,
   label: ColumnLabel | string,
   Icon: React.ComponentType<{ className?: string }>,
-  cell: ColumnDef<T>["cell"],
+  cell: ColumnDef<ProjectTableFeatures, T, any>["cell"],
   id?: string,
-): ColumnDef<T> {
+): ColumnDef<ProjectTableFeatures, T, any> {
   const colId = id || (key as string);
   return {
     id: colId,
@@ -37,13 +38,13 @@ export function createBaseColumn<T>(
   };
 }
 
-export function createCustomColumn<T>(
+export function createCustomColumn<T extends RowData>(
   key: EntityKey | string,
   label: ColumnLabel | string,
   Icon: React.ComponentType<{ className?: string }>,
   renderCell: (value: string, row: T) => React.ReactNode,
   id?: string,
-): ColumnDef<T> {
+): ColumnDef<ProjectTableFeatures, T, any> {
   const colId = id || (key as string);
   return createBaseColumn(
     key,
@@ -51,19 +52,19 @@ export function createCustomColumn<T>(
     Icon,
     ({ row }) => {
       const val = (row.original as Record<string, unknown>)[key as string];
-      return renderCell(String(val ?? ""), row.original);
+      return renderCell(String(val ?? ""), row.original as T);
     },
     colId,
   );
 }
 
-export function createTextColumn<T>(
+export function createTextColumn<T extends RowData>(
   key: EntityKey | string,
   label: ColumnLabel | string,
   Icon: React.ComponentType<{ className?: string }>,
   className = "font-semibold text-foreground text-xs",
   id?: string,
-): ColumnDef<T> {
+): ColumnDef<ProjectTableFeatures, T, any> {
   const colId = id || (key as string);
   return createBaseColumn(
     key,
@@ -77,12 +78,12 @@ export function createTextColumn<T>(
   );
 }
 
-export function createIdColumn<T>(
+export function createIdColumn<T extends RowData>(
   key: EntityKey | string,
   label: ColumnLabel | string,
   Icon: React.ComponentType<{ className?: string }>,
   id?: string,
-): ColumnDef<T> {
+): ColumnDef<ProjectTableFeatures, T, any> {
   const colId = id || (key as string);
   return {
     id: colId,

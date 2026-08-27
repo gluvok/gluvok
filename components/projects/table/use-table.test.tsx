@@ -125,6 +125,7 @@ describe("useProjectTable Hook", () => {
     mockPreferencesState.filters = {};
     mockFactoryState.factory = null;
     vi.mocked(getProjectColumns).mockReturnValue([]);
+    vi.mocked(fetchEntityListPaginated).mockResolvedValue({ data: [], count: 0 });
     vi.useFakeTimers();
   });
 
@@ -252,12 +253,14 @@ describe("useProjectTable Hook", () => {
       }),
     );
 
-    expect(result.current.table.getState().columnVisibility).toEqual({});
+    expect(result.current.table.state.columnVisibility).toEqual({});
 
-    mockPreferencesState.columns = { centers: ["id"] };
-    rerender();
+    act(() => {
+      mockPreferencesState.columns = { centers: ["id"] };
+      rerender();
+    });
 
-    expect(result.current.table.getState().columnVisibility).toEqual({
+    expect(result.current.table.state.columnVisibility).toEqual({
       id: true,
       name: false,
       actions: true,

@@ -6,21 +6,22 @@
  */
 
 import * as React from "react";
-import { Table } from "@tanstack/react-table";
+import { type ReactTable, type RowData } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Unit, EntityKey, FilterValue, FieldType, ProjectSlug } from "@/lib/constants/enums";
 import { useEntitiesStore } from "@/lib/store";
 import { Package, Ruler } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
 import { DateRangeFilter } from "./date-range-filter";
 
-interface RatesFiltersProps<TData> {
-  table: Table<TData>;
+interface RatesFiltersProps<TData extends RowData> {
+  table: ReactTable<ProjectTableFeatures, TData>;
 }
 
-export function RatesFilters<TData>({ table }: RatesFiltersProps<TData>) {
+export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps<TData>) {
   const commodities = useEntitiesStore((state) => state.commodities);
 
-  const columnFilters = table.getState().columnFilters;
+  const columnFilters = table.state.columnFilters;
   const currentCommodityId = columnFilters.find((f) => f.id === EntityKey.COMMODITY_ID)?.value;
   const currentUnit = columnFilters.find((f) => f.id === EntityKey.UNIT)?.value;
 

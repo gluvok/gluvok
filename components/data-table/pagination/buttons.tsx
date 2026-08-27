@@ -3,7 +3,8 @@
  * @description First, previous, next, and last pagination buttons for DataTable navigation.
  */
 
-import { type Table } from "@tanstack/react-table";
+import { type RowData, type ReactTable } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "../features";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -11,7 +12,11 @@ import { Button } from "@/components/ui/button";
  * DataTablePaginationButtons Component
  * Renders page navigation actions and current page status indicator (e.g. Page 1 of 5).
  */
-export function DataTablePaginationButtons<TData>({ table }: { table: Table<TData> }) {
+export function DataTablePaginationButtons<TData extends RowData>({
+  table,
+}: {
+  table: ReactTable<ProjectTableFeatures, TData>;
+}) {
   const buttons = [
     {
       label: "first",
@@ -42,7 +47,7 @@ export function DataTablePaginationButtons<TData>({ table }: { table: Table<TDat
   return (
     <div className="flex items-center gap-4">
       <div className="flex items-center justify-center text-xs font-medium min-w-[70px]">
-        Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
+        Page {table.state.pagination.pageIndex + 1} of {table.getPageCount() || 1}
       </div>
       <div className="flex items-center space-x-1">
         {buttons.map((btn, idx) => {

@@ -3,20 +3,23 @@
  * @description Master pagination control bar for DataTable, assembling rows counts, page size dropdowns, and navigation buttons.
  */
 
-import { type Table } from "@tanstack/react-table";
+import { type RowData, type ReactTable } from "@tanstack/react-table";
+import { type ProjectTableFeatures } from "../features";
 import { DataTablePaginationRowsCount } from "./rows-count";
 import { DataTablePaginationPageSize } from "./page-size";
 import { DataTablePaginationButtons } from "./buttons";
 
-interface DataTablePaginationProps<TData> {
-  table: Table<TData>;
+interface DataTablePaginationProps<TData extends RowData> {
+  table: ReactTable<ProjectTableFeatures, TData>;
 }
 
 /**
  * DataTablePagination Component
  * Renders the full pagination toolbar beneath a table, supporting multi-layout responsive sizing.
  */
-export function DataTablePagination<TData>({ table }: DataTablePaginationProps<TData>) {
+export function DataTablePagination<TData extends RowData>({
+  table,
+}: DataTablePaginationProps<TData>) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-2 py-1">
       <DataTablePaginationRowsCount table={table} />

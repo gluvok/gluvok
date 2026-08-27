@@ -8,7 +8,6 @@ DROP TABLE IF EXISTS weighments CASCADE;
 DROP TABLE IF EXISTS entries CASCADE;
 DROP TABLE IF EXISTS rates CASCADE;
 DROP TABLE IF EXISTS customers CASCADE;
-DROP TABLE IF EXISTS profiles CASCADE;
 DROP TABLE IF EXISTS centers CASCADE;
 DROP TABLE IF EXISTS commodities CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
@@ -218,7 +217,6 @@ ALTER TABLE IF EXISTS entries ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow Read Users" ON users;
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Users Write" ON users;
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Factories" ON factories;
-DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Profiles" ON profiles;
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Customers" ON customers;
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Centers" ON centers;
 DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Commodities" ON commodities;
@@ -231,7 +229,6 @@ DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Entries" ON entries;
 
 DROP POLICY IF EXISTS "Allow access factories" ON factories;
 DROP POLICY IF EXISTS "Allow access users" ON users;
-DROP POLICY IF EXISTS "Allow access profiles" ON profiles;
 DROP POLICY IF EXISTS "Allow access customers" ON customers;
 DROP POLICY IF EXISTS "Allow access centers" ON centers;
 DROP POLICY IF EXISTS "Allow access commodities" ON commodities;
@@ -437,10 +434,6 @@ BEGIN
 END;
 $$;
 
--- Clean up old profile RPC functions if they exist
-DROP FUNCTION IF EXISTS public.create_profile_with_user(INT, TEXT, TEXT, TEXT, role_enum, TEXT);
-DROP FUNCTION IF EXISTS public.update_profile_with_user(INT, INT, TEXT, role_enum, TEXT, TEXT, BOOLEAN);
-DROP FUNCTION IF EXISTS public.delete_profiles_with_user(INT[], INT);
-
 -- 7. NOTIFY SUPABASE POSTGREST TO RELOAD SCHEMA CACHE IMMEDIATELY
 NOTIFY pgrst, 'reload schema';
+

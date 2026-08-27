@@ -36,7 +36,8 @@ export const GET = withAuth(async (req, user, client) => {
     .from(TableName.RATES)
     .select(`*, ${TableName.COMMODITIES}!left(${EntityKey.NAME})`, { count: "exact" })
     .order(sortColumn, { ascending: !sortDesc })
-    .eq(EntityKey.FACTORY_ID, user.factory_id!);
+    .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .is(EntityKey.DELETED_AT, null);
 
   if (commodityIdParam && commodityIdParam !== FilterValue.ALL) {
     query = query.eq(EntityKey.COMMODITY_ID, Number(commodityIdParam));
@@ -96,11 +97,27 @@ export const DELETE = withAuth(async (req, user, client) => {
   const ids = parseBulkIds(await req.json());
   if (!ids) return apiError(ApiErrorMessage.PROVIDE_VALID_IDS, StatusCodes.BAD_REQUEST);
 
+  // Check if any active weighments are linked to any of the selected rates
+  const { data: linkedWeighments } = await client
+    .from(TableName.WEIGHMENTS)
+    .select(EntityKey.ID)
+    .in(EntityKey.RATE_ID, ids)
+    .is(EntityKey.DELETED_AT, null)
+    .limit(1);
+
+  if (linkedWeighments && linkedWeighments.length > 0) {
+    return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_RATES, StatusCodes.BAD_REQUEST);
+  }
+
   try {
     const query = client
       .from(TableName.RATES)
-      .delete()
+      .update({
+        [EntityKey.DELETED_AT]: new Date().toISOString(),
+        [EntityKey.UPDATED_AT]: new Date().toISOString(),
+      })
       .in(EntityKey.ID, ids)
+      .is(EntityKey.DELETED_AT, null)
       .eq(EntityKey.FACTORY_ID, user.factory_id!);
 
     const { data, error } = await query.select(EntityKey.ID);

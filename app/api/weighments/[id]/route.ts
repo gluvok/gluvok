@@ -13,6 +13,7 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
     )
     .eq(EntityKey.ID, weighmentId)
     .eq(`${RelationAlias.IN_ENTRY}.${EntityKey.FACTORY_ID}`, user.factory_id!)
+    .is(EntityKey.DELETED_AT, null)
     .maybeSingle();
 
   if (error || !row) {
@@ -82,6 +83,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     .from(TableName.WEIGHMENTS)
     .select(`${EntityKey.ID}, ${EntityKey.RATE_ID}, ${EntityKey.TYPE}`)
     .eq(EntityKey.ID, weighmentId)
+    .is(EntityKey.DELETED_AT, null)
     .maybeSingle();
 
   if (fetchErr || !existing) {
@@ -135,6 +137,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     .from(TableName.WEIGHMENTS)
     .update(updates)
     .eq(EntityKey.ID, weighmentId)
+    .is(EntityKey.DELETED_AT, null)
     .select("*")
     .single();
 

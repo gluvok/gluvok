@@ -9,19 +9,21 @@ export const GET = withAuth(async (_req, user, client) => {
     .from(TableName.CENTERS)
     .select(`${EntityKey.ID}, ${EntityKey.NAME}`)
     .eq(EntityKey.FACTORY_ID, factoryId)
+    .is(EntityKey.DELETED_AT, null)
     .order(EntityKey.NAME, { ascending: true });
 
   const usersQuery = client
     .from(TableName.USERS)
     .select(`${EntityKey.ID}, ${EntityKey.NAME}`)
     .eq(EntityKey.FACTORY_ID, factoryId)
-    .eq(EntityKey.IS_ACTIVE, true)
+    .is(EntityKey.DELETED_AT, null)
     .order(EntityKey.NAME, { ascending: true });
 
   const customersQuery = client
     .from(TableName.CUSTOMERS)
     .select(`${EntityKey.ID}, ${EntityKey.NAME}`)
     .eq(EntityKey.FACTORY_ID, factoryId)
+    .is(EntityKey.DELETED_AT, null)
     .order(EntityKey.NAME, { ascending: true });
 
   const ratesQuery = client
@@ -30,11 +32,13 @@ export const GET = withAuth(async (_req, user, client) => {
       `${EntityKey.ID}, ${EntityKey.UNIT_PRICE}, ${EntityKey.UNIT}, ${TableName.COMMODITIES}!left(${EntityKey.NAME})`,
     )
     .eq(EntityKey.FACTORY_ID, factoryId)
+    .is(EntityKey.DELETED_AT, null)
     .order(EntityKey.ID, { ascending: true });
 
   const commoditiesQuery = client
     .from(TableName.COMMODITIES)
     .select(`${EntityKey.ID}, ${EntityKey.NAME}`)
+    .is(EntityKey.DELETED_AT, null)
     .order(EntityKey.NAME, { ascending: true });
 
   const [

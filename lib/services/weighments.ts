@@ -21,7 +21,8 @@ export async function validateSequentialApproval(
     .eq(EntityKey.VEHICLE_NUMBER, vehicleNumber)
     .eq(EntityKey.STATUS, EntryStatus.PENDING)
     .lt(EntityKey.CREATED_AT, targetCreatedAt)
-    .neq(EntityKey.ID, targetEntryId);
+    .neq(EntityKey.ID, targetEntryId)
+    .is(EntityKey.DELETED_AT, null);
 
   if (entryType) {
     query = query.eq(EntityKey.TYPE, entryType);
@@ -58,17 +59,19 @@ export async function tryMergeEntries(
     .select("*")
     .eq(EntityKey.ID, entryId)
     .eq(EntityKey.FACTORY_ID, factoryId)
+    .is(EntityKey.DELETED_AT, null)
     .maybeSingle();
 
   if (fetchErr || !e2 || e2.status !== EntryStatus.APPROVED) {
     return null;
   }
 
-  // 2. Check if E2 is already linked in weighments
+  // 2. Check if E2 is already linked in active weighments
   const { data: existingW2 } = await client
     .from(TableName.WEIGHMENTS)
     .select(EntityKey.ID)
     .or(`${EntityKey.IN_ENTRY_ID}.eq.${entryId},${EntityKey.OUT_ENTRY_ID}.eq.${entryId}`)
+    .is(EntityKey.DELETED_AT, null)
     .maybeSingle();
 
   if (existingW2) {
@@ -83,7 +86,8 @@ export async function tryMergeEntries(
     .eq(EntityKey.VEHICLE_NUMBER, e2.vehicle_number)
     .eq(EntityKey.STATUS, EntryStatus.APPROVED)
     .lt(EntityKey.CREATED_AT, e2.created_at)
-    .neq(EntityKey.ID, entryId);
+    .neq(EntityKey.ID, entryId)
+    .is(EntityKey.DELETED_AT, null);
 
   if (e2.type) {
     e1Query = e1Query.eq(EntityKey.TYPE, e2.type);
@@ -99,11 +103,12 @@ export async function tryMergeEntries(
 
   const e1 = e1Candidates[0];
 
-  // 4. Check if E1 is already linked in weighments
+  // 4. Check if E1 is already linked in active weighments
   const { data: existingW1 } = await client
     .from(TableName.WEIGHMENTS)
     .select(EntityKey.ID)
     .or(`${EntityKey.IN_ENTRY_ID}.eq.${e1.id},${EntityKey.OUT_ENTRY_ID}.eq.${e1.id}`)
+    .is(EntityKey.DELETED_AT, null)
     .maybeSingle();
 
   if (existingW1) {

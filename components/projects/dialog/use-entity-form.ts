@@ -15,7 +15,6 @@ import {
   ProjectSlug,
   FieldType,
   EntityKey,
-  ActiveStatus,
   PermissionKey,
 } from "@/lib/constants/enums";
 import { PROJECT_FIELDS, getSingularName } from "@/lib/fields";
@@ -90,7 +89,7 @@ export function useEntityForm({
           rawVal = field.transformOnChange(rawVal);
         }
         if (field.type === FieldType.CHECKBOX) {
-          defaults[field.key] = String(rawVal) === "true" || String(rawVal) === ActiveStatus.ACTIVE;
+          defaults[field.key] = String(rawVal) === "true";
         } else if (field.key === EntityKey.PASSWORD || field.key === EntityKey.CONFIRM_PASSWORD) {
           defaults[field.key] = "";
         } else {
@@ -103,7 +102,7 @@ export function useEntityForm({
       });
       form.reset(defaults);
     } else {
-      const defaultVals: Record<string, unknown> = { is_active: true };
+      const defaultVals: Record<string, unknown> = {};
 
       if (userFactoryId && fields.some((f) => f.key === EntityKey.FACTORY_ID)) {
         defaultVals[EntityKey.FACTORY_ID] = userFactoryId;

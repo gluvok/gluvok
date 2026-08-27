@@ -10,7 +10,8 @@ export const GET = withAuth(async (req, user, client) => {
   let query = client
     .from(TableName.COMMODITIES)
     .select("*", { count: "exact" })
-    .order(sortColumn, { ascending: !sortDesc });
+    .order(sortColumn, { ascending: !sortDesc })
+    .is(EntityKey.DELETED_AT, null);
 
   if (search) {
     const searchNum = parseInt(search, 10);

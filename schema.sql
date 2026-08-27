@@ -59,22 +59,25 @@ CREATE TABLE IF NOT EXISTS factories (
 -- USERS TABLE (Custom authentication & user entity table)
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    username TEXT NOT NULL UNIQUE,
+    username TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     name TEXT NOT NULL,
     aadhar_number TEXT,
     role role_enum NOT NULL DEFAULT 'base',
     token_version INT NOT NULL DEFAULT 1,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_active 
+ON users (username) 
+WHERE deleted_at IS NULL;
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_factory_aadhar 
 ON users (factory_id, aadhar_number) 
-WHERE aadhar_number IS NOT NULL;
+WHERE aadhar_number IS NOT NULL AND deleted_at IS NULL;
 
 -- CUSTOMERS TABLE
 CREATE TABLE IF NOT EXISTS customers (
@@ -322,10 +325,10 @@ BEGIN
         SELECT 
             cust.*,
             CASE WHEN u.id IS NOT NULL THEN
-                json_build_object('username', u.username, 'is_active', u.is_active)
+                json_build_object('username', u.username)
             ELSE NULL END AS users
         FROM customers cust
-        LEFT JOIN users u ON cust.user_id = u.id
+        LEFT JOIN users u ON cust.user_id = u.id AND u.deleted_at IS NULL
         WHERE cust.id = v_customer_id
     ) c;
 
@@ -334,6 +337,7 @@ END;
 $$;
 
 DROP FUNCTION IF EXISTS public.update_customer_with_user(INT, INT, TEXT, TEXT, INT, TEXT, TEXT, BOOLEAN);
+DROP FUNCTION IF EXISTS public.update_customer_with_user(INT, INT, TEXT, TEXT, INT, TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION update_customer_with_user(
     p_customer_id INT,
@@ -342,8 +346,7 @@ CREATE OR REPLACE FUNCTION update_customer_with_user(
     p_father_name TEXT DEFAULT NULL,
     p_govt_id INT DEFAULT NULL,
     p_username TEXT DEFAULT NULL,
-    p_password_hash TEXT DEFAULT NULL,
-    p_is_active BOOLEAN DEFAULT NULL
+    p_password_hash TEXT DEFAULT NULL
 ) RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -354,7 +357,7 @@ DECLARE
 BEGIN
     SELECT user_id INTO v_user_id
     FROM customers
-    WHERE id = p_customer_id AND factory_id = p_factory_id;
+    WHERE id = p_customer_id AND factory_id = p_factory_id AND deleted_at IS NULL;
 
     IF NOT FOUND THEN
         RETURN NULL;
@@ -366,7 +369,7 @@ BEGIN
         father_name = COALESCE(p_father_name, father_name),
         govt_id = CASE WHEN p_govt_id IS NOT NULL THEN p_govt_id ELSE govt_id END,
         updated_at = NOW()
-    WHERE id = p_customer_id AND factory_id = p_factory_id;
+    WHERE id = p_customer_id AND factory_id = p_factory_id AND deleted_at IS NULL;
 
     IF v_user_id IS NOT NULL THEN
         UPDATE users
@@ -375,9 +378,8 @@ BEGIN
             username = COALESCE(p_username, username),
             password_hash = COALESCE(p_password_hash, password_hash),
             token_version = CASE WHEN p_password_hash IS NOT NULL THEN token_version + 1 ELSE token_version END,
-            is_active = COALESCE(p_is_active, is_active),
             updated_at = NOW()
-        WHERE id = v_user_id;
+        WHERE id = v_user_id AND deleted_at IS NULL;
     ELSIF p_username IS NOT NULL AND p_password_hash IS NOT NULL THEN
         INSERT INTO users (username, password_hash, name, role, factory_id)
         VALUES (p_username, p_password_hash, COALESCE(p_name, (SELECT name FROM customers WHERE id = p_customer_id)), 'base', p_factory_id)
@@ -385,7 +387,7 @@ BEGIN
 
         UPDATE customers
         SET user_id = v_user_id
-        WHERE id = p_customer_id;
+        WHERE id = p_customer_id AND deleted_at IS NULL;
     END IF;
 
     SELECT row_to_json(c) INTO v_result
@@ -393,11 +395,11 @@ BEGIN
         SELECT 
             cust.*,
             CASE WHEN u.id IS NOT NULL THEN
-                json_build_object('username', u.username, 'is_active', u.is_active)
+                json_build_object('username', u.username)
             ELSE NULL END AS users
         FROM customers cust
-        LEFT JOIN users u ON cust.user_id = u.id
-        WHERE cust.id = p_customer_id
+        LEFT JOIN users u ON cust.user_id = u.id AND u.deleted_at IS NULL
+        WHERE cust.id = p_customer_id AND cust.deleted_at IS NULL
     ) c;
 
     RETURN v_result;
@@ -419,15 +421,18 @@ DECLARE
 BEGIN
     SELECT ARRAY_AGG(user_id) INTO v_user_ids
     FROM customers
-    WHERE id = ANY(p_customer_ids) AND factory_id = p_factory_id AND user_id IS NOT NULL;
+    WHERE id = ANY(p_customer_ids) AND factory_id = p_factory_id AND user_id IS NOT NULL AND deleted_at IS NULL;
 
-    DELETE FROM customers
-    WHERE id = ANY(p_customer_ids) AND factory_id = p_factory_id;
+    UPDATE customers
+    SET deleted_at = NOW(), updated_at = NOW()
+    WHERE id = ANY(p_customer_ids) AND factory_id = p_factory_id AND deleted_at IS NULL;
 
     GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
 
     IF v_user_ids IS NOT NULL AND array_length(v_user_ids, 1) > 0 THEN
-        DELETE FROM users WHERE id = ANY(v_user_ids);
+        UPDATE users
+        SET deleted_at = NOW(), updated_at = NOW()
+        WHERE id = ANY(v_user_ids) AND deleted_at IS NULL;
     END IF;
 
     RETURN v_deleted_count;

@@ -93,7 +93,6 @@ async function main() {
         name: "Admin User",
         aadhar_number: null,
         role: Role.ADMIN,
-        is_active: true,
         [EntityKey.FACTORY_ID]: factoryId,
       })
       .select("id")

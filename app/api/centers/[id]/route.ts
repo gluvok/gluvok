@@ -25,6 +25,7 @@ export const PATCH = withAuth(
         [EntityKey.UPDATED_AT]: new Date().toISOString(),
       })
       .eq(EntityKey.ID, entityId)
+      .is(EntityKey.DELETED_AT, null)
       .eq(EntityKey.FACTORY_ID, factoryId!);
 
     const { data: updated, error } = await query.select().maybeSingle();
@@ -38,11 +39,12 @@ export const DELETE = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.DELETE)) return forbiddenError();
 
-    // Check if any entries are linked to this center
+    // Check if any active entries are linked to this center
     const { data: linkedEntry } = await client
       .from(TableName.ENTRIES)
       .select(EntityKey.ID)
       .eq(EntityKey.CENTER_ID, entityId)
+      .is(EntityKey.DELETED_AT, null)
       .limit(1)
       .maybeSingle();
 
@@ -53,8 +55,12 @@ export const DELETE = withAuth(
     try {
       const query = client
         .from(TableName.CENTERS)
-        .delete()
+        .update({
+          [EntityKey.DELETED_AT]: new Date().toISOString(),
+          [EntityKey.UPDATED_AT]: new Date().toISOString(),
+        })
         .eq(EntityKey.ID, entityId)
+        .is(EntityKey.DELETED_AT, null)
         .eq(EntityKey.FACTORY_ID, factoryId!);
 
       const { data, error } = await query.select(EntityKey.ID);

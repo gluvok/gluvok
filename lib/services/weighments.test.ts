@@ -19,6 +19,7 @@ describe("Weighments Service", () => {
         eq: vi.fn().mockReturnThis(),
         lt: vi.fn().mockReturnThis(),
         neq: vi.fn().mockReturnThis(),
+        is: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
         maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
@@ -42,6 +43,7 @@ describe("Weighments Service", () => {
         eq: vi.fn().mockReturnThis(),
         lt: vi.fn().mockReturnThis(),
         neq: vi.fn().mockReturnThis(),
+        is: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
         maybeSingle: vi.fn().mockResolvedValue({
@@ -68,6 +70,7 @@ describe("Weighments Service", () => {
       mockClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
+        is: vi.fn().mockReturnThis(),
         maybeSingle: vi.fn().mockResolvedValue({
           data: { id: 2, status: EntryStatus.PENDING, type: EntryType.AUTOMATIC },
           error: null,
@@ -103,6 +106,7 @@ describe("Weighments Service", () => {
             return {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
+              is: vi.fn().mockReturnThis(),
               maybeSingle: vi.fn().mockResolvedValue({ data: e2Data, error: null }),
             };
           } else {
@@ -111,6 +115,7 @@ describe("Weighments Service", () => {
               eq: vi.fn().mockReturnThis(),
               lt: vi.fn().mockReturnThis(),
               neq: vi.fn().mockReturnThis(),
+              is: vi.fn().mockReturnThis(),
               order: vi.fn().mockReturnThis(),
               limit: vi.fn().mockResolvedValue({ data: [e1Data], error: null }),
             };
@@ -120,6 +125,7 @@ describe("Weighments Service", () => {
           return {
             select: vi.fn().mockReturnThis(),
             or: vi.fn().mockReturnThis(),
+            is: vi.fn().mockReturnThis(),
             maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
@@ -154,6 +160,7 @@ describe("Weighments Service", () => {
             return {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
+              is: vi.fn().mockReturnThis(),
               maybeSingle: vi.fn().mockResolvedValue({ data: e2Data, error: null }),
             };
           } else {
@@ -162,6 +169,7 @@ describe("Weighments Service", () => {
               eq: vi.fn().mockReturnThis(),
               lt: vi.fn().mockReturnThis(),
               neq: vi.fn().mockReturnThis(),
+              is: vi.fn().mockReturnThis(),
               order: vi.fn().mockReturnThis(),
               limit: vi.fn().mockResolvedValue({ data: [], error: null }),
             };
@@ -171,6 +179,7 @@ describe("Weighments Service", () => {
           return {
             select: vi.fn().mockReturnThis(),
             or: vi.fn().mockReturnThis(),
+            is: vi.fn().mockReturnThis(),
             maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
           };
         }

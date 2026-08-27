@@ -21,7 +21,8 @@ export const PATCH = withAuth(
       .from(TableName.CUSTOMERS)
       .select(`${EntityKey.ID}, ${EntityKey.USER_ID}, ${EntityKey.NAME}`)
       .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId!);
+      .eq(EntityKey.FACTORY_ID, factoryId!)
+      .is(EntityKey.DELETED_AT, null);
 
     const { data: existing } = await existingQuery.maybeSingle();
     if (!existing) return apiError(ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND);
@@ -41,14 +42,15 @@ export const PATCH = withAuth(
       return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
     }
 
-    const { name, father_name, govt_id, username, password, is_active } = body;
+    const { name, father_name, govt_id, username, password } = body;
 
     if (username && typeof username === "string" && username.trim().length > 0) {
       const cleanUsername = username.trim();
       let userQuery = client
         .from(TableName.USERS)
         .select(EntityKey.ID)
-        .eq(EntityKey.USERNAME, cleanUsername);
+        .eq(EntityKey.USERNAME, cleanUsername)
+        .is(EntityKey.DELETED_AT, null);
       if (existing?.user_id != null) {
         userQuery = userQuery.neq(EntityKey.ID, existing.user_id);
       }
@@ -71,7 +73,6 @@ export const PATCH = withAuth(
       p_govt_id: govt_id != null ? Number(govt_id) : null,
       p_username: username && typeof username === "string" ? username.trim() : null,
       p_password_hash: passwordHash,
-      p_is_active: is_active !== undefined ? Boolean(is_active) : null,
     });
 
     if (error || !updated) {
@@ -86,11 +87,12 @@ export const DELETE = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.DELETE)) return forbiddenError();
 
-    // Check if any entries are linked to this customer
+    // Check if any active entries are linked to this customer
     const { data: linkedEntry } = await client
       .from(TableName.ENTRIES)
       .select(EntityKey.ID)
       .eq(EntityKey.CUSTOMER_ID, entityId)
+      .is(EntityKey.DELETED_AT, null)
       .limit(1)
       .maybeSingle();
 

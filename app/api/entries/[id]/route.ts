@@ -14,6 +14,7 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
     )
     .eq(EntityKey.ID, entryId)
     .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .is(EntityKey.DELETED_AT, null)
     .maybeSingle();
 
   if (error || !data) {
@@ -34,6 +35,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     .select("*")
     .eq(EntityKey.ID, entryId)
     .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .is(EntityKey.DELETED_AT, null)
     .maybeSingle();
 
   if (fetchErr || !existing) {
@@ -109,6 +111,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     .update(updates)
     .eq(EntityKey.ID, entryId)
     .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .is(EntityKey.DELETED_AT, null)
     .select("*")
     .single();
 

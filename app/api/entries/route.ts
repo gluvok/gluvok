@@ -36,6 +36,7 @@ export const GET = withAuth(async (req, user, client) => {
       { count: "exact" },
     )
     .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .is(EntityKey.DELETED_AT, null)
     .order(sortColumn, { ascending: !sortDesc });
 
   if (statusParam && statusParam !== FilterValue.ALL) {

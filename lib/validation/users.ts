@@ -75,7 +75,6 @@ export const editUserSchema = z
       .or(z.literal(""))
       .transform((v) => (v === "" ? undefined : v)),
     [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
-    [EntityKey.IS_ACTIVE]: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     const rawPassword = data[EntityKey.PASSWORD];

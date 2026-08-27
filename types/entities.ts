@@ -52,7 +52,6 @@ export interface Customer {
   father_name: string;
   user_id?: string;
   factory_id: number;
-  is_active?: boolean;
   created_at: string;
   updated_at: string;
   // Flattened join fields
@@ -92,7 +91,6 @@ export interface Weighment {
   center_id: number;
   user_id?: number;
   customer_id: number;
-  is_active: boolean;
   created_at: string;
   updated_at: string;
   // Flattened join fields
@@ -111,7 +109,6 @@ export interface User {
   name: string;
   aadhar_number?: string | null;
   role: Role;
-  is_active: boolean;
   factory_id: number;
   created_at: string;
   updated_at: string;

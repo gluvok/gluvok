@@ -43,9 +43,11 @@ const mockDb = {
     select: vi.fn(() => ({
       eq: vi.fn(() => ({
         eq: vi.fn(() => ({
-          maybeSingle: vi.fn().mockResolvedValue({
-            data: { id: 999, name: "Other User" },
-          }),
+          is: vi.fn(() => ({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { id: 999, name: "Other User" },
+            }),
+          })),
         })),
       })),
     })),

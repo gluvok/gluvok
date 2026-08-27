@@ -33,7 +33,6 @@ const baseCustomerSchema = z
       .optional()
       .or(z.literal(""))
       .transform((v) => (v === "" ? undefined : v)),
-    [EntityKey.IS_ACTIVE]: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     const rawUsername = data[EntityKey.USERNAME];

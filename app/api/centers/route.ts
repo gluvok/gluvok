@@ -31,7 +31,8 @@ export const GET = withAuth(async (req, user, client) => {
     .from(TableName.CENTERS)
     .select("*", { count: "exact" })
     .order(sortColumn, { ascending: !sortDesc })
-    .eq(EntityKey.FACTORY_ID, user.factory_id!);
+    .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .is(EntityKey.DELETED_AT, null);
 
   if (search) {
     const searchNum = parseInt(search, 10);
@@ -76,11 +77,12 @@ export const DELETE = withAuth(async (req, user, client) => {
   const ids = parseBulkIds(await req.json());
   if (!ids) return apiError(ApiErrorMessage.PROVIDE_VALID_IDS, StatusCodes.BAD_REQUEST);
 
-  // Check if any entries are linked to any of the selected centers
+  // Check if any active entries are linked to any of the selected centers
   const { data: linkedEntries } = await client
     .from(TableName.ENTRIES)
     .select(EntityKey.ID)
     .in(EntityKey.CENTER_ID, ids)
+    .is(EntityKey.DELETED_AT, null)
     .limit(1);
 
   if (linkedEntries && linkedEntries.length > 0) {
@@ -90,8 +92,12 @@ export const DELETE = withAuth(async (req, user, client) => {
   try {
     const query = client
       .from(TableName.CENTERS)
-      .delete()
+      .update({
+        [EntityKey.DELETED_AT]: new Date().toISOString(),
+        [EntityKey.UPDATED_AT]: new Date().toISOString(),
+      })
       .in(EntityKey.ID, ids)
+      .is(EntityKey.DELETED_AT, null)
       .eq(EntityKey.FACTORY_ID, user.factory_id!);
 
     const { data, error } = await query.select(EntityKey.ID);

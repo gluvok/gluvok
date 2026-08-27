@@ -89,7 +89,6 @@ export const ColumnLabel = {
   DELETED_AT: "Deleted At",
   IMAGES: "Images",
   USER_ID: "User ID",
-  IS_ACTIVE: "Status",
   FACTORY_NAME: "Factory Name",
   USER_NAME: "User Name",
   CUSTOMER_NAME: "Customer Name",
@@ -124,11 +123,6 @@ export type ColumnLabel = (typeof ColumnLabel)[keyof typeof ColumnLabel];
 export enum DialogMode {
   CREATE = "create",
   EDIT = "edit",
-}
-
-export enum ActiveStatus {
-  ACTIVE = "Active",
-  INACTIVE = "Inactive",
 }
 
 export enum AppRoutes {
@@ -208,7 +202,6 @@ export enum EntityKey {
   GOVT_ID = "govt_id",
   IMAGES = "images",
   USER_ID = "user_id",
-  IS_ACTIVE = "is_active",
   FACTORY_NAME = "factory_name",
   USER_NAME = "user_name",
   CUSTOMER_NAME = "customer_name",

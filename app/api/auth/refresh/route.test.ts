@@ -69,16 +69,17 @@ describe("POST /api/auth/refresh", () => {
     mockDb.from.mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockResolvedValue({
-            data: {
-              id: 10,
-              username: "operator_01",
-              role: Role.OPERATOR,
-              is_active: true,
-              factory_id: 1,
-              token_version: 2, // Version incremented to 2 on password change!
-            },
-            error: null,
+          is: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: {
+                id: 10,
+                username: "operator_01",
+                role: Role.OPERATOR,
+                factory_id: 1,
+                token_version: 2, // Version incremented to 2 on password change!
+              },
+              error: null,
+            }),
           }),
         }),
       }),
@@ -92,7 +93,7 @@ describe("POST /api/auth/refresh", () => {
     expect(res.status).toBe(401);
   });
 
-  it("returns 401 when user is inactive", async () => {
+  it("returns 401 when user is deleted or not found", async () => {
     const refreshToken = await signRefreshToken({
       sub: "10",
       token_version: 1,
@@ -108,16 +109,11 @@ describe("POST /api/auth/refresh", () => {
     mockDb.from.mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockResolvedValue({
-            data: {
-              id: 10,
-              username: "operator_01",
-              role: Role.OPERATOR,
-              is_active: false,
-              factory_id: 1,
-              token_version: 1,
-            },
-            error: null,
+          is: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: null,
+              error: null,
+            }),
           }),
         }),
       }),
@@ -147,16 +143,17 @@ describe("POST /api/auth/refresh", () => {
     mockDb.from.mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockResolvedValue({
-            data: {
-              id: 10,
-              username: "operator_01",
-              role: Role.OPERATOR,
-              is_active: true,
-              factory_id: 1,
-              token_version: 1,
-            },
-            error: null,
+          is: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: {
+                id: 10,
+                username: "operator_01",
+                role: Role.OPERATOR,
+                factory_id: 1,
+                token_version: 1,
+              },
+              error: null,
+            }),
           }),
         }),
       }),

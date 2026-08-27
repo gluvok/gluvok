@@ -20,10 +20,11 @@ export const GET = withAuth(
     const existingQuery = client
       .from(TableName.USERS)
       .select(
-        `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
+        `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
       )
       .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId!);
+      .eq(EntityKey.FACTORY_ID, factoryId!)
+      .is(EntityKey.DELETED_AT, null);
 
     const { data: existing, error } = await existingQuery.maybeSingle();
     if (error || !existing) return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
@@ -42,10 +43,11 @@ export const PATCH = withAuth(
     const existingQuery = client
       .from(TableName.USERS)
       .select(
-        `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID}, ${EntityKey.TOKEN_VERSION}`,
+        `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.FACTORY_ID}, ${EntityKey.TOKEN_VERSION}`,
       )
       .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId!);
+      .eq(EntityKey.FACTORY_ID, factoryId!)
+      .is(EntityKey.DELETED_AT, null);
 
     const { data: existing } = await existingQuery.maybeSingle();
     if (!existing) return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
@@ -65,7 +67,7 @@ export const PATCH = withAuth(
       return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
     }
 
-    const { name, aadhar_number, password, role, is_active } = body;
+    const { name, aadhar_number, password, role } = body;
     const validRole =
       role && Object.values(Role).includes(role as Role) ? (role as Role) : undefined;
 
@@ -76,6 +78,7 @@ export const PATCH = withAuth(
         .eq(EntityKey.AADHAR_NUMBER, aadhar_number)
         .eq(EntityKey.FACTORY_ID, factoryId!)
         .neq(EntityKey.ID, entityId)
+        .is(EntityKey.DELETED_AT, null)
         .maybeSingle();
 
       if (duplicateAadhar) {
@@ -96,9 +99,6 @@ export const PATCH = withAuth(
     if (aadhar_number !== undefined) {
       updates[EntityKey.AADHAR_NUMBER] = aadhar_number ? String(aadhar_number) : null;
     }
-    if (is_active !== undefined) {
-      updates[EntityKey.IS_ACTIVE] = Boolean(is_active);
-    }
     if (password && typeof password === "string" && password.trim().length > 0) {
       updates.password_hash = await hashPassword(password.trim());
       updates[EntityKey.TOKEN_VERSION] = (existing.token_version || 1) + 1;
@@ -109,8 +109,9 @@ export const PATCH = withAuth(
       .update(updates)
       .eq(EntityKey.ID, entityId)
       .eq(EntityKey.FACTORY_ID, factoryId!)
+      .is(EntityKey.DELETED_AT, null)
       .select(
-        `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
+        `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
       )
       .single();
 
@@ -128,7 +129,8 @@ export const DELETE = withAuth(
       .from(TableName.USERS)
       .select(`${EntityKey.ID}`)
       .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId!);
+      .eq(EntityKey.FACTORY_ID, factoryId!)
+      .is(EntityKey.DELETED_AT, null);
 
     const { data: existing } = await existingQuery.maybeSingle();
     if (!existing) return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
@@ -139,11 +141,12 @@ export const DELETE = withAuth(
       return forbiddenError();
     }
 
-    // Check if any entries are linked to this user
+    // Check if any active entries are linked to this user
     const { data: linkedEntry } = await client
       .from(TableName.ENTRIES)
       .select(EntityKey.ID)
       .eq(EntityKey.USER_ID, entityId)
+      .is(EntityKey.DELETED_AT, null)
       .limit(1)
       .maybeSingle();
 
@@ -151,11 +154,12 @@ export const DELETE = withAuth(
       return apiError(ApiErrorMessage.CANNOT_DELETE_USER, StatusCodes.BAD_REQUEST);
     }
 
-    // Check if any customers are linked to this user
+    // Check if any active customers are linked to this user
     const { data: linkedCustomer } = await client
       .from(TableName.CUSTOMERS)
       .select(EntityKey.ID)
       .eq(EntityKey.USER_ID, entityId)
+      .is(EntityKey.DELETED_AT, null)
       .limit(1)
       .maybeSingle();
 
@@ -166,8 +170,12 @@ export const DELETE = withAuth(
     try {
       const { error } = await client
         .from(TableName.USERS)
-        .delete()
+        .update({
+          [EntityKey.DELETED_AT]: new Date().toISOString(),
+          [EntityKey.UPDATED_AT]: new Date().toISOString(),
+        })
         .eq(EntityKey.ID, entityId)
+        .is(EntityKey.DELETED_AT, null)
         .eq(EntityKey.FACTORY_ID, factoryId!);
 
       if (error) throw error;

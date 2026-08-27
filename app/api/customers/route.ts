@@ -35,11 +35,12 @@ export const GET = withAuth(async (req, user, client) => {
 
   let query = client
     .from(TableName.CUSTOMERS)
-    .select(`*, ${TableName.USERS}!left(${EntityKey.USERNAME}, ${EntityKey.IS_ACTIVE})`, {
+    .select(`*, ${TableName.USERS}!left(${EntityKey.USERNAME})`, {
       count: "exact",
     })
     .order(sortColumn, { ascending: !sortDesc })
-    .eq(EntityKey.FACTORY_ID, user.factory_id!);
+    .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .is(EntityKey.DELETED_AT, null);
 
   if (search) {
     const searchNum = parseInt(search, 10);
@@ -89,7 +90,8 @@ export const POST = withAuth(async (req, user, client) => {
       .from(TableName.CUSTOMERS)
       .select(EntityKey.ID)
       .eq(EntityKey.GOVT_ID, Number(govt_id))
-      .eq(EntityKey.FACTORY_ID, factoryId);
+      .eq(EntityKey.FACTORY_ID, factoryId)
+      .is(EntityKey.DELETED_AT, null);
 
     const { data: existingCustomer } = await existingQuery.maybeSingle();
     if (existingCustomer) {
@@ -103,6 +105,7 @@ export const POST = withAuth(async (req, user, client) => {
       .from(TableName.USERS)
       .select(EntityKey.ID)
       .eq(EntityKey.USERNAME, username)
+      .is(EntityKey.DELETED_AT, null)
       .maybeSingle();
 
     if (existingUser) {
@@ -137,11 +140,12 @@ export const DELETE = withAuth(async (req, user, client) => {
   const ids = parseBulkIds(await req.json());
   if (!ids) return apiError(ApiErrorMessage.PROVIDE_VALID_IDS, StatusCodes.BAD_REQUEST);
 
-  // Check if any entries are linked to any of the selected customers
+  // Check if any active entries are linked to any of the selected customers
   const { data: linkedEntries } = await client
     .from(TableName.ENTRIES)
     .select(EntityKey.ID)
     .in(EntityKey.CUSTOMER_ID, ids)
+    .is(EntityKey.DELETED_AT, null)
     .limit(1);
 
   if (linkedEntries && linkedEntries.length > 0) {

@@ -33,9 +33,10 @@ export async function GET() {
       .from(TableName.USERS)
       .select("*")
       .eq("id", userId)
+      .is("deleted_at", null)
       .maybeSingle();
 
-    if (error || !user || !user.is_active) {
+    if (error || !user) {
       return NextResponse.json({ user: null });
     }
 

@@ -85,7 +85,6 @@ describe("formatEntityResponse", () => {
       user_id: "user-1",
       username: "operator",
       factory_id: 7,
-      is_active: false,
       password_hash: "secret",
     });
 
@@ -95,7 +94,6 @@ describe("formatEntityResponse", () => {
         user_id: "user-1",
         username: "operator",
         factory_id: 7,
-        is_active: false,
       },
     });
   });

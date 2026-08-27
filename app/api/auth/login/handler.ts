@@ -24,9 +24,10 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
       .from(TableName.USERS)
       .select("*")
       .eq(EntityKey.USERNAME, username)
+      .is(EntityKey.DELETED_AT, null)
       .maybeSingle();
 
-    if (userError || !user || !user.is_active) {
+    if (userError || !user) {
       return NextResponse.json({ error: AuthErrorMessage.INVALID_CREDENTIALS }, { status: 401 });
     }
 

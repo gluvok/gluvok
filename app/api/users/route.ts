@@ -40,11 +40,12 @@ export const GET = withAuth(async (req, user, client) => {
   let query = client
     .from(TableName.USERS)
     .select(
-      `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
+      `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
       { count: "exact" },
     )
     .order(sortColumn, { ascending: !sortDesc })
-    .eq(EntityKey.FACTORY_ID, factoryId);
+    .eq(EntityKey.FACTORY_ID, factoryId)
+    .is(EntityKey.DELETED_AT, null);
 
   if (roleParam && roleParam !== FilterValue.ALL) {
     query = query.eq(EntityKey.ROLE, roleParam);
@@ -103,6 +104,7 @@ export const POST = withAuth(async (req, user, client) => {
     .from(TableName.USERS)
     .select(EntityKey.ID)
     .eq(EntityKey.USERNAME, username)
+    .is(EntityKey.DELETED_AT, null)
     .maybeSingle();
 
   if (existingUser) return apiError(ApiErrorMessage.USERNAME_TAKEN, StatusCodes.BAD_REQUEST);
@@ -112,7 +114,8 @@ export const POST = withAuth(async (req, user, client) => {
       .from(TableName.USERS)
       .select(EntityKey.ID)
       .eq(EntityKey.AADHAR_NUMBER, aadhar_number)
-      .eq(EntityKey.FACTORY_ID, factoryId);
+      .eq(EntityKey.FACTORY_ID, factoryId)
+      .is(EntityKey.DELETED_AT, null);
 
     const { data: existingAadhar } = await aadharQuery.maybeSingle();
     if (existingAadhar)
@@ -130,10 +133,9 @@ export const POST = withAuth(async (req, user, client) => {
       [EntityKey.AADHAR_NUMBER]: aadhar_number || null,
       [EntityKey.ROLE]: role || Role.OPERATOR,
       [EntityKey.FACTORY_ID]: factoryId,
-      [EntityKey.IS_ACTIVE]: true,
     })
     .select(
-      `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
+      `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
     )
     .single();
 
@@ -153,22 +155,24 @@ export const DELETE = withAuth(async (req, user, client) => {
   const ids = parseBulkIds(await req.json());
   if (!ids) return apiError(ApiErrorMessage.PROVIDE_VALID_IDS, StatusCodes.BAD_REQUEST);
 
-  // Check if any entries are linked to any of the selected users
+  // Check if any active entries are linked to any of the selected users
   const { data: linkedEntries } = await client
     .from(TableName.ENTRIES)
     .select(EntityKey.ID)
     .in(EntityKey.USER_ID, ids)
+    .is(EntityKey.DELETED_AT, null)
     .limit(1);
 
   if (linkedEntries && linkedEntries.length > 0) {
     return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_USERS, StatusCodes.BAD_REQUEST);
   }
 
-  // Check if any customers are linked to any of the selected users
+  // Check if any active customers are linked to any of the selected users
   const { data: linkedCustomers } = await client
     .from(TableName.CUSTOMERS)
     .select(EntityKey.ID)
     .in(EntityKey.USER_ID, ids)
+    .is(EntityKey.DELETED_AT, null)
     .limit(1);
 
   if (linkedCustomers && linkedCustomers.length > 0) {
@@ -178,8 +182,12 @@ export const DELETE = withAuth(async (req, user, client) => {
   try {
     const { data: deletedUsers, error } = await client
       .from(TableName.USERS)
-      .delete()
+      .update({
+        [EntityKey.DELETED_AT]: new Date().toISOString(),
+        [EntityKey.UPDATED_AT]: new Date().toISOString(),
+      })
       .in(EntityKey.ID, ids)
+      .is(EntityKey.DELETED_AT, null)
       .eq(EntityKey.FACTORY_ID, user.factory_id!)
       .select(EntityKey.ID);
 

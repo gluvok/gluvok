@@ -163,7 +163,6 @@ export function getDynamicCustomerSchema(factory: Factory | null, isEdit = false
       [EntityKey.USERNAME]: z.string().optional().or(z.literal("")),
       [EntityKey.PASSWORD]: z.string().optional().or(z.literal("")),
       [EntityKey.CONFIRM_PASSWORD]: z.string().optional().or(z.literal("")),
-      [EntityKey.IS_ACTIVE]: z.boolean().optional(),
     })
     .superRefine((data, ctx) => {
       validatePasswordRefinement(data, ctx, isEdit, false);
@@ -184,7 +183,6 @@ export function getDynamicUserSchema(factory: Factory | null, isEdit = false) {
       [EntityKey.PASSWORD]: z.string().optional().or(z.literal("")),
       [EntityKey.CONFIRM_PASSWORD]: z.string().optional().or(z.literal("")),
       [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
-      ...(isEdit ? { [EntityKey.IS_ACTIVE]: z.boolean().optional() } : {}),
     })
     .superRefine((data, ctx) => validatePasswordRefinement(data, ctx, isEdit, true));
 }

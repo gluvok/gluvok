@@ -89,8 +89,6 @@ export function getColumnLabel(id: string): string {
       return ColumnLabel.IMAGES;
     case EntityKey.USER_ID:
       return ColumnLabel.USER_ID;
-    case EntityKey.IS_ACTIVE:
-      return ColumnLabel.IS_ACTIVE;
     case EntityKey.FACTORY_NAME:
       return ColumnLabel.FACTORY_NAME;
     case EntityKey.USER_NAME:

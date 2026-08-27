@@ -76,12 +76,13 @@ export async function POST(request: NextRequest) {
       .from(TableName.USERS)
       .select("*")
       .eq(EntityKey.ID, userId)
+      .is(EntityKey.DELETED_AT, null)
       .maybeSingle();
 
     const currentTokenVersion =
       user && typeof user.token_version === "number" ? user.token_version : 1;
 
-    if (userError || !user || !user.is_active || currentTokenVersion !== payload.token_version) {
+    if (userError || !user || currentTokenVersion !== payload.token_version) {
       const response = NextResponse.json(
         { error: AuthErrorMessage.INVALID_CREDENTIALS },
         { status: 401 },

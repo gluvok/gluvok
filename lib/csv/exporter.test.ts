@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { downloadPDF, downloadCSV } from "./exporter";
+import { downloadPDF, downloadCSV, getExportFileName } from "./exporter";
 import { printPdf } from "../pdf/exporter";
 import { type Table } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
@@ -8,7 +8,7 @@ vi.mock("../pdf/exporter", () => ({
   printPdf: vi.fn(),
 }));
 
-describe("downloadPDF and downloadCSV", () => {
+describe("downloadPDF, downloadCSV and getExportFileName", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -33,7 +33,15 @@ describe("downloadPDF and downloadCSV", () => {
     } as unknown as Table<ProjectTableFeatures, Record<string, unknown>>;
   };
 
-  it("renders image count in table cell, IST formatted dates, and full scans in generated PDF HTML", () => {
+  it("generates standardized export file names", () => {
+    const fileName = getExportFileName("Weighments", "pdf", "Punjab Sugar Mill");
+    expect(fileName).toMatch(/^punjab_sugar_mill_weighments_export_\d{8}_\d{6}\.pdf$/);
+
+    const csvName = getExportFileName("Entries", "csv", "Lathey Weigh Trix");
+    expect(csvName).toMatch(/^lathey_weigh_trix_entries_export_\d{8}_\d{6}\.csv$/);
+  });
+
+  it("renders company name, image count in table cell, IST dates, and scans in generated PDF HTML", () => {
     const table = createMockTable([
       {
         id: 1,
@@ -43,10 +51,14 @@ describe("downloadPDF and downloadCSV", () => {
       },
     ]);
 
-    downloadPDF(table, "Entries");
+    downloadPDF(table, "Entries", "Apex Industries");
 
     expect(printPdf).toHaveBeenCalledTimes(1);
     const generatedHtml = vi.mocked(printPdf).mock.calls[0][0];
+
+    // Company name in meta and title
+    expect(generatedHtml).toContain('Company: <span class="meta-value">Apex Industries</span>');
+    expect(generatedHtml).toContain('Document: <span class="meta-value">Entries Export</span>');
 
     // Image count inside table cell
     expect(generatedHtml).toContain("<td>2 images</td>");
@@ -65,7 +77,7 @@ describe("downloadPDF and downloadCSV", () => {
     );
   });
 
-  it("exports semicolon-separated image URLs and IST formatted dates in CSV", () => {
+  it("exports semicolon-separated image URLs and IST formatted dates with standardized filename in CSV", () => {
     const table = createMockTable([
       {
         id: 1,
@@ -80,12 +92,21 @@ describe("downloadPDF and downloadCSV", () => {
     const appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => null!);
     const removeChildSpy = vi.spyOn(document.body, "removeChild").mockImplementation(() => null!);
 
-    downloadCSV(table, "Entries");
+    let downloadAttr = "";
+    const setAttributeSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "setAttribute")
+      .mockImplementation(function (this: HTMLAnchorElement, name: string, value: string) {
+        if (name === "download") {
+          downloadAttr = value;
+        }
+      });
+
+    downloadCSV(table, "Entries", "Apex Industries");
 
     expect(createObjectURLMock).toHaveBeenCalledTimes(1);
-    const blobArg = createObjectURLMock.mock.calls[0][0] as Blob;
-    expect(blobArg).toBeDefined();
+    expect(downloadAttr).toMatch(/^apex_industries_entries_export_\d{8}_\d{6}\.csv$/);
 
+    setAttributeSpy.mockRestore();
     appendChildSpy.mockRestore();
     removeChildSpy.mockRestore();
   });

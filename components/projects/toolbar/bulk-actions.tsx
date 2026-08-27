@@ -19,7 +19,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-import { useAuthStore, getPermissions } from "@/lib/store";
+import { useAuthStore, useFactoryStore, getPermissions } from "@/lib/store";
 
 interface BulkActionsProps<TData extends RowData> {
   table: ReactTable<ProjectTableFeatures, TData>;
@@ -41,15 +41,17 @@ export function BulkActions<TData extends RowData>({
   const [open, setOpen] = React.useState(false);
   const selectedRows = table.getFilteredSelectedRowModel().rows;
   const user = useAuthStore((state) => state.user);
+  const factory = useFactoryStore((state) => state.factory);
+  const companyName = factory?.name;
   const permissions = getPermissions(user?.role, projectSlug);
   const canDelete = permissions.delete;
 
   const handleDownloadPDF = () => {
-    downloadPDF(table, projectName);
+    downloadPDF(table, projectName, companyName);
   };
 
   const handleDownloadCSV = () => {
-    downloadCSV(table, projectName);
+    downloadCSV(table, projectName, companyName);
   };
 
   return (

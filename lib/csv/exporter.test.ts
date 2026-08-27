@@ -56,12 +56,15 @@ describe("downloadPDF, downloadCSV and getExportFileName", () => {
     expect(printPdf).toHaveBeenCalledTimes(1);
     const generatedHtml = vi.mocked(printPdf).mock.calls[0][0];
 
+    // Tailwind CDN and Title
+    expect(generatedHtml).toContain('<script src="https://cdn.tailwindcss.com"></script>');
+
     // Company name in meta and title
-    expect(generatedHtml).toContain('Company: <span class="meta-value">Apex Industries</span>');
-    expect(generatedHtml).toContain('Document: <span class="meta-value">Entries Export</span>');
+    expect(generatedHtml).toContain("Apex Industries");
+    expect(generatedHtml).toContain("Entries Export");
 
     // Image count inside table cell
-    expect(generatedHtml).toContain("<td>2 images</td>");
+    expect(generatedHtml).toContain("2 images");
 
     // IST date formatting
     expect(generatedHtml).toContain("28 Aug 2026, 02:24 AM");
@@ -70,10 +73,10 @@ describe("downloadPDF, downloadCSV and getExportFileName", () => {
     expect(generatedHtml).toContain("Attached Scans & Images");
     expect(generatedHtml).toContain("Vehicle: PB10XY1234");
     expect(generatedHtml).toContain(
-      'src="https://example.com/scan1.jpg" alt="Scan 1" class="pdf-scan-full-img"',
+      'src="https://example.com/scan1.jpg" alt="Scan 1" class="pdf-scan-full-img',
     );
     expect(generatedHtml).toContain(
-      'src="https://example.com/scan2.jpg" alt="Scan 2" class="pdf-scan-full-img"',
+      'src="https://example.com/scan2.jpg" alt="Scan 2" class="pdf-scan-full-img',
     );
   });
 

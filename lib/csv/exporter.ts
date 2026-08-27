@@ -78,7 +78,10 @@ export function downloadPDF<TData extends RowData>(
   const selectedRows = table.getFilteredSelectedRowModel().rows;
   const cols = table.getVisibleLeafColumns().filter((c) => c.id !== "select" && c.id !== "actions");
   const headersHtml = cols
-    .map((c) => `<th>${(c.columnDef.meta as Record<string, unknown>)?.label || c.id}</th>`)
+    .map(
+      (c) =>
+        `<th class="px-3.5 py-2.5 bg-slate-50 border-b-2 border-slate-200 text-slate-600 font-semibold text-left text-[11px] uppercase tracking-wider">${(c.columnDef.meta as Record<string, unknown>)?.label || c.id}</th>`,
+    )
     .join("");
 
   const rowsHtml = selectedRows
@@ -87,16 +90,17 @@ export function downloadPDF<TData extends RowData>(
         .map((c) => {
           const val = row.getValue(c.id);
           if (Array.isArray(val)) {
-            if (val.length === 0) return "<td>—</td>";
-            return `<td>${val.length} image${val.length === 1 ? "" : "s"}</td>`;
+            if (val.length === 0)
+              return '<td class="px-3.5 py-2.5 border-b border-slate-100 text-xs text-slate-700 align-middle">—</td>';
+            return `<td class="px-3.5 py-2.5 border-b border-slate-100 text-xs text-slate-700 align-middle"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">${val.length} image${val.length === 1 ? "" : "s"}</span></td>`;
           }
           if (DATE_COLUMN_IDS.has(c.id)) {
-            return `<td>${formatDateTime(val as string)}</td>`;
+            return `<td class="px-3.5 py-2.5 border-b border-slate-100 text-xs text-slate-700 align-middle">${formatDateTime(val as string)}</td>`;
           }
-          return `<td>${val !== null && val !== undefined && val !== "" ? String(val) : "—"}</td>`;
+          return `<td class="px-3.5 py-2.5 border-b border-slate-100 text-xs text-slate-700 align-middle">${val !== null && val !== undefined && val !== "" ? String(val) : "—"}</td>`;
         })
         .join("");
-      return `<tr>${cells}</tr>`;
+      return `<tr class="even:bg-slate-50/50">${cells}</tr>`;
     })
     .join("");
 
@@ -116,36 +120,30 @@ export function downloadPDF<TData extends RowData>(
 
   let imagesHtml: string | undefined;
   if (imagesList.length > 0) {
-    imagesHtml = `
-      <div class="pdf-scans-header">
-        <h2>Attached Scans & Images</h2>
-      </div>
-      <div class="pdf-scans-grid">
-        ${imagesList
-          .map(
-            (item) => `
-          <div class="pdf-scan-card">
-            <div class="pdf-scan-card-header">
-              Record #${item.id}${item.vehicleNumber ? ` &bull; Vehicle: ${item.vehicleNumber}` : ""}
+    imagesHtml = imagesList
+      .map(
+        (item) => `
+      <div class="pdf-scan-card rounded-xl border border-slate-200 bg-slate-50/80 p-4 my-3">
+        <div class="pdf-scan-card-header font-semibold text-xs text-slate-700 pb-2 mb-3 border-b border-slate-200 flex items-center justify-between">
+          <span>Record #${item.id}</span>
+          ${item.vehicleNumber ? `<span class="bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-[11px] text-slate-800">Vehicle: ${item.vehicleNumber}</span>` : ""}
+        </div>
+        <div class="pdf-scan-card-images flex flex-wrap gap-4 my-1">
+          ${item.images
+            .map(
+              (img, idx) => `
+            <div class="pdf-scan-img-container flex flex-col items-center gap-1.5">
+              <img src="${img}" alt="Scan ${idx + 1}" class="pdf-scan-full-img max-w-[220px] max-h-[160px] object-cover rounded-lg border border-slate-300 bg-white shadow-sm" />
+              <div class="pdf-scan-caption text-[10px] font-mono text-slate-500">Image ${idx + 1}</div>
             </div>
-            <div class="pdf-scan-card-images">
-              ${item.images
-                .map(
-                  (img, idx) => `
-                <div class="pdf-scan-img-container">
-                  <img src="${img}" alt="Scan ${idx + 1}" class="pdf-scan-full-img" />
-                  <div class="pdf-scan-caption">Image ${idx + 1}</div>
-                </div>
-              `,
-                )
-                .join("")}
-            </div>
-          </div>
-        `,
-          )
-          .join("")}
+          `,
+            )
+            .join("")}
+        </div>
       </div>
-    `;
+    `,
+      )
+      .join("");
   }
 
   printPdf(

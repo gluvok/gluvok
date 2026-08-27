@@ -8,6 +8,7 @@ import {
   getTokenExpiresIn,
   JWTPayload,
 } from "@/lib/auth/jwt";
+import { setAuthCookies } from "@/lib/auth/cookies";
 import {
   Role,
   RequestHeader,
@@ -260,21 +261,8 @@ export function withAuth<P extends Record<string, string> = Record<string, strin
     const { user, refreshedTokens, errorResponse } = await requireAuth(req, requiredRole);
     if (errorResponse) return errorResponse;
     const response = await handler(req, user, db, ctx);
-    if (refreshedTokens && "cookies" in response && typeof response.cookies?.set === "function") {
-      response.cookies.set(CookieName.TOKEN, refreshedTokens.accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: refreshedTokens.accessExpiresIn,
-        path: "/",
-      });
-      response.cookies.set(CookieName.REFRESH_TOKEN, refreshedTokens.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: refreshedTokens.refreshExpiresIn,
-        path: "/",
-      });
+    if (refreshedTokens) {
+      setAuthCookies(response, refreshedTokens);
     }
     return response;
   };

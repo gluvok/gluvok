@@ -73,4 +73,49 @@ describe("User mutation guards", () => {
       expect(mockHasPermission).toHaveBeenCalledWith(sampleUser, ProjectSlug.USERS, permission);
     },
   );
+
+  it("allows self deletion and marks is_self_deleted while clearing cookies", async () => {
+    const ownUser = {
+      sub: "1",
+      username: "operator",
+      role: Role.OPERATOR,
+      factory_id: 1,
+    };
+
+    const selfMockDb = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              is: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: 1, name: "Self User" },
+                }),
+              })),
+            })),
+            is: vi.fn(() => ({
+              limit: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+              })),
+            })),
+          })),
+        })),
+        update: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            is: vi.fn(() => ({
+              eq: vi.fn().mockResolvedValue({ error: null }),
+            })),
+          })),
+        })),
+      })),
+    };
+
+    const deleteHandler = DELETE as unknown as RawUserHandler;
+    const response = await deleteHandler(request, ownUser, selfMockDb, context);
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json).toEqual({ success: true, id: 1, is_self_deleted: true });
+    expect(response.headers.get("set-cookie")).toBeDefined();
+  });
 });

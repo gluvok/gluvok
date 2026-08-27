@@ -24,6 +24,7 @@ import {
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { getDynamicUserSchema } from "@/lib/validation";
 import { hashPassword } from "@/lib/auth/password";
+import { clearAuthCookies } from "@/lib/auth/cookies";
 
 export const GET = withAuth(async (req, user, client) => {
   const pagination = getPaginationParams(req.nextUrl);
@@ -201,5 +202,16 @@ export const DELETE = withAuth(async (req, user, client) => {
     return apiError(ApiErrorMessage.ONE_OR_MORE_USERS_NOT_FOUND, StatusCodes.NOT_FOUND);
   }
 
-  return NextResponse.json({ success: true, deleted_count: deletedCount });
+  const isSelfDeleted = ids.includes(Number(user.sub));
+  const response = NextResponse.json({
+    success: true,
+    deleted_count: deletedCount,
+    is_self_deleted: isSelfDeleted,
+  });
+
+  if (isSelfDeleted) {
+    clearAuthCookies(response);
+  }
+
+  return response;
 });

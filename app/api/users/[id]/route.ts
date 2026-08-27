@@ -11,6 +11,7 @@ import {
 } from "@/db/helpers";
 import { getDynamicUserSchema } from "@/lib/validation";
 import { hashPassword } from "@/lib/auth/password";
+import { clearAuthCookies } from "@/lib/auth/cookies";
 import { PermissionKey, ProjectSlug, Role, TableName, EntityKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
@@ -180,6 +181,11 @@ export const DELETE = withAuth(
       return apiError(error.message || ApiErrorMessage.CANNOT_DELETE_USER, StatusCodes.BAD_REQUEST);
     }
 
-    return NextResponse.json({ success: true, id: entityId });
+    const response = NextResponse.json({ success: true, id: entityId, is_self_deleted: isOwn });
+    if (isOwn) {
+      clearAuthCookies(response);
+    }
+
+    return response;
   }),
 );

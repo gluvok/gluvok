@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { AlertTriangle, Trash2, X } from "lucide-react";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useEntitiesStore, getField } from "@/lib/store";
+import { useEntitiesStore, useAuthStore, getField } from "@/lib/store";
 import { type DeleteContentProps } from "./types";
 import { getSingularName } from "@/lib/utils";
 import { ProjectSlug } from "@/lib/constants/enums";
@@ -33,6 +33,14 @@ export function DeleteEntityDialogContent({
 
   const onDeleteConfirm = async () => {
     try {
+      const currentUser = useAuthStore.getState().user;
+      const isSelfDeleted =
+        projectSlug === ProjectSlug.USERS &&
+        currentUser &&
+        (isBulk
+          ? items.some((it) => String(getField(it, primaryIdKey!)) === String(currentUser.id))
+          : String(getField(item!, primaryIdKey!)) === String(currentUser.id));
+
       if (onConfirm) {
         await onConfirm();
       } else if (isBulk) {
@@ -40,17 +48,26 @@ export function DeleteEntityDialogContent({
           projectSlug as ProjectSlug,
           items.map((item) => getField(item, primaryIdKey!) as string | number),
         );
-        toast.success(`${projectName} records deleted successfully`);
+        if (!isSelfDeleted) {
+          toast.success(`${projectName} records deleted successfully`);
+        }
       } else {
         const idVal = getField(item!, primaryIdKey!);
         const primaryKeyValue = String(idVal || "");
         await deleteEntity(projectSlug as ProjectSlug, idVal as string | number);
         const singularName = getSingularName(projectName || "Item");
-        toast.success(`${singularName} "${primaryKeyValue}" deleted successfully`);
+        if (!isSelfDeleted) {
+          toast.success(`${singularName} "${primaryKeyValue}" deleted successfully`);
+        }
       }
 
       onSuccess?.();
       onOpenChange(false);
+
+      if (isSelfDeleted) {
+        toast.success("Your account has been deleted. Logging out...");
+        await useAuthStore.getState().logout();
+      }
     } catch (err: unknown) {
       const pName = projectName || "Item";
       const singularName = getSingularName(pName);

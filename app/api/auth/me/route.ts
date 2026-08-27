@@ -8,6 +8,7 @@ import {
   verifyJWT,
   verifyRefreshToken,
 } from "@/lib/auth/jwt";
+import { setAuthCookies } from "@/lib/auth/cookies";
 import { CookieName, EntityKey, TableName } from "@/lib/constants";
 
 export async function GET() {
@@ -88,24 +89,12 @@ export async function GET() {
             };
 
             const response = NextResponse.json({ user: userPayload });
-
-            response.cookies.set(CookieName.TOKEN, newAccessToken, {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === "production",
-              sameSite: "lax",
-              maxAge: accessExpiresIn,
-              path: "/",
+            return setAuthCookies(response, {
+              accessToken: newAccessToken,
+              refreshToken: newRefreshToken,
+              accessExpiresIn,
+              refreshExpiresIn,
             });
-
-            response.cookies.set(CookieName.REFRESH_TOKEN, newRefreshToken, {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === "production",
-              sameSite: "lax",
-              maxAge: refreshExpiresIn,
-              path: "/",
-            });
-
-            return response;
           }
         }
       }

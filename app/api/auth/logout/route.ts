@@ -4,21 +4,8 @@
  */
 
 import { NextResponse } from "next/server";
-import { CookieName } from "@/lib/constants/enums";
+import { clearAuthCookies } from "@/lib/auth/cookies";
 
 export async function POST() {
-  const response = NextResponse.json({ success: true });
-
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    path: "/",
-    expires: new Date(0),
-  };
-
-  response.cookies.set(CookieName.TOKEN, "", cookieOptions);
-  response.cookies.set(CookieName.AUTH_TOKEN, "", cookieOptions);
-  response.cookies.set(CookieName.REFRESH_TOKEN, "", cookieOptions);
-  return response;
+  return clearAuthCookies(NextResponse.json({ success: true }));
 }

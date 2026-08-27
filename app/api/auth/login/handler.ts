@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { getTokenExpiresIn, signJWT, signRefreshToken } from "@/lib/auth/jwt";
+import { setAuthCookies } from "@/lib/auth/cookies";
 import { verifyPassword } from "@/lib/auth/password";
-import {
-  AuthErrorMessage,
-  CookieName,
-  EntityKey,
-  LoginClient,
-  Role,
-  TableName,
-} from "@/lib/constants";
+import { AuthErrorMessage, EntityKey, LoginClient, Role, TableName } from "@/lib/constants";
 
 export async function handleLogin(request: NextRequest, client: LoginClient) {
   try {
@@ -80,21 +74,12 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
     }
 
     const response = NextResponse.json({ success: true, user: userPayload });
-    response.cookies.set(CookieName.TOKEN, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: expiresIn,
-      path: "/",
+    return setAuthCookies(response, {
+      accessToken: token,
+      refreshToken,
+      accessExpiresIn: expiresIn,
+      refreshExpiresIn,
     });
-    response.cookies.set(CookieName.REFRESH_TOKEN, refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: refreshExpiresIn,
-      path: "/",
-    });
-    return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json({ error: AuthErrorMessage.INTERNAL_SERVER_ERROR }, { status: 500 });

@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/db";
 import { getTokenExpiresIn, signJWT, signRefreshToken, verifyRefreshToken } from "@/lib/auth/jwt";
+import { clearAuthCookies, setAuthCookies } from "@/lib/auth/cookies";
 import { AuthErrorMessage, CookieName, EntityKey, TableName } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
@@ -33,26 +34,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const clearCookies = (response: NextResponse) => {
-      const clearOptions = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax" as const,
-        expires: new Date(0),
-        path: "/",
-      };
-      response.cookies.set(CookieName.TOKEN, "", clearOptions);
-      response.cookies.set(CookieName.AUTH_TOKEN, "", clearOptions);
-      response.cookies.set(CookieName.REFRESH_TOKEN, "", clearOptions);
-      return response;
-    };
-
     if (!refreshToken) {
       const response = NextResponse.json(
         { error: AuthErrorMessage.INVALID_CREDENTIALS },
         { status: 401 },
       );
-      return clearCookies(response);
+      return clearAuthCookies(response);
     }
 
     const payload = await verifyRefreshToken(refreshToken);
@@ -61,22 +48,22 @@ export async function POST(request: NextRequest) {
         { error: AuthErrorMessage.INVALID_CREDENTIALS },
         { status: 401 },
       );
-      return clearCookies(response);
+      return clearAuthCookies(response);
     }
 
-    const userId = parseInt(payload.sub, 10);
-    if (isNaN(userId)) {
+    const idNumber = parseInt(payload.sub, 10);
+    if (isNaN(idNumber)) {
       const response = NextResponse.json(
         { error: AuthErrorMessage.INVALID_CREDENTIALS },
         { status: 401 },
       );
-      return clearCookies(response);
+      return clearAuthCookies(response);
     }
 
     const { data: user, error: userError } = await db
       .from(TableName.USERS)
       .select("*")
-      .eq(EntityKey.ID, userId)
+      .eq(EntityKey.ID, idNumber)
       .is(EntityKey.DELETED_AT, null)
       .maybeSingle();
 
@@ -88,7 +75,7 @@ export async function POST(request: NextRequest) {
         { error: AuthErrorMessage.INVALID_CREDENTIALS },
         { status: 401 },
       );
-      return clearCookies(response);
+      return clearAuthCookies(response);
     }
 
     const factoryId = user.factory_id;
@@ -124,23 +111,12 @@ export async function POST(request: NextRequest) {
       expires_in: accessExpiresIn,
     });
 
-    response.cookies.set(CookieName.TOKEN, newAccessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: accessExpiresIn,
-      path: "/",
+    return setAuthCookies(response, {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      accessExpiresIn,
+      refreshExpiresIn,
     });
-
-    response.cookies.set(CookieName.REFRESH_TOKEN, newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: refreshExpiresIn,
-      path: "/",
-    });
-
-    return response;
   } catch (error) {
     console.error("Token refresh error:", error);
     return NextResponse.json({ error: AuthErrorMessage.INTERNAL_SERVER_ERROR }, { status: 500 });

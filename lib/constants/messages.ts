@@ -105,4 +105,10 @@ export const ApiErrorMessage = {
   FAILED_TO_UPDATE_ENTRY: "Failed to update entry",
   SEQUENTIAL_APPROVAL_FAILED: "Sequential approval validation failed.",
   INVALID_DEVICE_SECRET: "Access denied: Invalid or missing microcontroller device secret.",
+  UNAUTHORIZED: "Unauthorized",
+  MISSING_REQUIRED_ENTRY_FIELDS: "Missing required entry fields.",
+  CREATE_ENTRY_FAILED: "Failed to create entry.",
+  PROCESS_DEVICE_ENTRY_FAILED: "Failed to process device entry creation.",
+  PROCESS_ENTRY_FAILED: "Failed to process entry creation.",
+  DATABASE_QUERY_FAILED: "Database query failed",
 } as const;

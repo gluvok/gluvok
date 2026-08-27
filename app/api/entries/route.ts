@@ -6,6 +6,7 @@ import {
   StatusCodes,
   forbiddenError,
   hasPermission,
+  parseBulkIds,
 } from "@/db/helpers";
 import {
   TableName,
@@ -25,13 +26,8 @@ export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
-  const statusParam = req.nextUrl.searchParams.get(EntityKey.STATUS);
-  const typeParam = req.nextUrl.searchParams.get(EntityKey.TYPE);
-  const centerIdParam = req.nextUrl.searchParams.get(EntityKey.CENTER_ID);
-  const userIdParam = req.nextUrl.searchParams.get(EntityKey.USER_ID);
-  const customerIdParam = req.nextUrl.searchParams.get(EntityKey.CUSTOMER_ID);
-  const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE);
-  const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE);
+  const startDate = req.nextUrl.searchParams.get(QueryParam.START_DATE);
+  const endDate = req.nextUrl.searchParams.get(QueryParam.END_DATE);
   const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.UPDATED_AT;
   const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
     ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
@@ -43,56 +39,47 @@ export const GET = withAuth(async (req, user, client) => {
       `*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.USERS}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME})`,
       { count: "exact" },
     )
-    .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .eq(EntityKey.FACTORY_ID, user.factory_id)
     .is(EntityKey.DELETED_AT, null)
     .order(sortColumn, { ascending: !sortDesc });
 
-  if (statusParam && statusParam !== FilterValue.ALL) {
-    query = query.eq(EntityKey.STATUS, statusParam);
+  const filterParams: Record<string, string | null> = {
+    [EntityKey.STATUS]: req.nextUrl.searchParams.get(EntityKey.STATUS),
+    [EntityKey.TYPE]: req.nextUrl.searchParams.get(EntityKey.TYPE),
+    [EntityKey.CENTER_ID]: req.nextUrl.searchParams.get(EntityKey.CENTER_ID),
+    [EntityKey.USER_ID]: req.nextUrl.searchParams.get(EntityKey.USER_ID),
+    [EntityKey.CUSTOMER_ID]: req.nextUrl.searchParams.get(EntityKey.CUSTOMER_ID),
+  };
+
+  for (const [key, val] of Object.entries(filterParams)) {
+    if (val && val !== FilterValue.ALL) {
+      const num = Number(val);
+      query = query.eq(key, isNaN(num) ? val : num);
+    }
   }
 
-  if (typeParam && typeParam !== FilterValue.ALL) {
-    query = query.eq(EntityKey.TYPE, typeParam);
-  }
-
-  if (centerIdParam && centerIdParam !== FilterValue.ALL) {
-    query = query.eq(EntityKey.CENTER_ID, Number(centerIdParam));
-  }
-
-  if (userIdParam && userIdParam !== FilterValue.ALL) {
-    query = query.eq(EntityKey.USER_ID, Number(userIdParam));
-  }
-
-  if (customerIdParam && customerIdParam !== FilterValue.ALL) {
-    query = query.eq(EntityKey.CUSTOMER_ID, Number(customerIdParam));
-  }
-
-  if (startDateParam) {
-    query = query.gte(EntityKey.CREATED_AT, startDateParam);
-  }
-
-  if (endDateParam) {
-    query = query.lte(EntityKey.CREATED_AT, endDateParam);
-  }
+  if (startDate) query = query.gte(EntityKey.CREATED_AT, startDate);
+  if (endDate) query = query.lte(EntityKey.CREATED_AT, endDate);
 
   if (search) {
     const searchNum = parseInt(search, 10);
-    if (!isNaN(searchNum)) {
-      query = query.or(
-        `${EntityKey.VEHICLE_NUMBER}.ilike.%${search}%,${EntityKey.DETECTED_VEHICLE_NUMBER}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`,
-      );
-    } else {
-      query = query.or(
-        `${EntityKey.VEHICLE_NUMBER}.ilike.%${search}%,${EntityKey.DETECTED_VEHICLE_NUMBER}.ilike.%${search}%`,
-      );
-    }
+    query = isNaN(searchNum)
+      ? query.or(
+          `${EntityKey.VEHICLE_NUMBER}.ilike.%${search}%,${EntityKey.DETECTED_VEHICLE_NUMBER}.ilike.%${search}%`,
+        )
+      : query.or(
+          `${EntityKey.VEHICLE_NUMBER}.ilike.%${search}%,${EntityKey.DETECTED_VEHICLE_NUMBER}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`,
+        );
   }
 
   const { page, limit, offset } = pagination;
   const { data, count, error } = await query.range(offset, offset + limit - 1);
   if (error) {
     console.error("Supabase query error:", error);
-    return apiError(error.message || "Database query failed", StatusCodes.INTERNAL_SERVER_ERROR);
+    return apiError(
+      error.message || ApiErrorMessage.DATABASE_QUERY_FAILED,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+    );
   }
 
   const formattedData = (data || []).map((row: Record<string, unknown>) => {
@@ -161,11 +148,7 @@ export const POST = withAuth(async (req, user, client) => {
       }
     }
 
-    const userId = user.sub ? parseInt(user.sub, 10) : null;
-    if (!userId || isNaN(userId)) {
-      return apiError("User ID not found in user session.", StatusCodes.UNAUTHORIZED);
-    }
-
+    const userId = parseInt(user.sub, 10);
     const nowStr = new Date().toISOString();
 
     if (status === EntryStatus.APPROVED) {
@@ -200,16 +183,16 @@ export const POST = withAuth(async (req, user, client) => {
 
     if (insertErr || !newEntry) {
       console.error("Failed to insert manual entry:", insertErr);
-      return apiError("Failed to create entry.", StatusCodes.INTERNAL_SERVER_ERROR);
+      return apiError(ApiErrorMessage.CREATE_ENTRY_FAILED, StatusCodes.INTERNAL_SERVER_ERROR);
     }
 
     if (status === EntryStatus.APPROVED) {
-      await tryMergeEntries(client, user.factory_id!, newEntry.id);
+      await tryMergeEntries(client, user.factory_id, newEntry.id);
     }
 
     return NextResponse.json({ data: newEntry }, { status: StatusCodes.CREATED });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Failed to process entry creation.";
+    const msg = err instanceof Error ? err.message : ApiErrorMessage.PROCESS_ENTRY_FAILED;
     return apiError(msg, StatusCodes.BAD_REQUEST);
   }
 });
@@ -217,17 +200,8 @@ export const POST = withAuth(async (req, user, client) => {
 export const DELETE = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.DELETE)) return forbiddenError();
 
-  let body;
-  try {
-    body = await req.json();
-  } catch {
-    return apiError(ApiErrorMessage.PROVIDE_VALID_IDS, StatusCodes.BAD_REQUEST);
-  }
-
-  const { ids } = body;
-  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 100) {
-    return apiError(ApiErrorMessage.PROVIDE_VALID_IDS, StatusCodes.BAD_REQUEST);
-  }
+  const ids = parseBulkIds(await req.json());
+  if (!ids) return apiError(ApiErrorMessage.PROVIDE_VALID_IDS, StatusCodes.BAD_REQUEST);
 
   // Check if any active weighments are linked to these entries
   const { data: linkedWeighments } = await client
@@ -249,7 +223,7 @@ export const DELETE = withAuth(async (req, user, client) => {
     })
     .in(EntityKey.ID, ids)
     .is(EntityKey.DELETED_AT, null)
-    .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .eq(EntityKey.FACTORY_ID, user.factory_id)
     .select(EntityKey.ID);
 
   if (error) {

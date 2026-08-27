@@ -1,13 +1,14 @@
-/**
- * @file app/api/auth/me/route.ts
- * @description API route to verify active JWT session and return user info using Supabase JS client.
- */
-
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/db";
-import { verifyJWT } from "@/lib/auth/jwt";
-import { CookieName, TableName } from "@/lib/constants/enums";
+import {
+  getTokenExpiresIn,
+  signJWT,
+  signRefreshToken,
+  verifyJWT,
+  verifyRefreshToken,
+} from "@/lib/auth/jwt";
+import { CookieName, EntityKey, TableName } from "@/lib/constants";
 
 export async function GET() {
   try {
@@ -15,41 +16,102 @@ export async function GET() {
     const token =
       cookieStore.get(CookieName.TOKEN)?.value || cookieStore.get(CookieName.AUTH_TOKEN)?.value;
 
-    if (!token) {
-      return NextResponse.json({ user: null });
+    const payload = token ? await verifyJWT(token) : null;
+
+    if (payload) {
+      const userId = parseInt(payload.sub, 10);
+      if (!isNaN(userId)) {
+        const { data: user, error } = await db
+          .from(TableName.USERS)
+          .select("*")
+          .eq(EntityKey.ID, userId)
+          .is(EntityKey.DELETED_AT, null)
+          .maybeSingle();
+
+        if (!error && user) {
+          const userPayload = {
+            id: user.id,
+            username: user.username,
+            name: user.name,
+            aadhar_number: user.aadhar_number ?? null,
+            role: user.role,
+            factory_id: user.factory_id ?? null,
+          };
+
+          return NextResponse.json({ user: userPayload });
+        }
+      }
     }
 
-    const payload = await verifyJWT(token);
-    if (!payload) {
-      return NextResponse.json({ user: null });
+    // Access token is missing or expired — fallback to refresh_token self-healing
+    const refreshToken = cookieStore.get(CookieName.REFRESH_TOKEN)?.value;
+    if (refreshToken) {
+      const refreshPayload = await verifyRefreshToken(refreshToken);
+      if (refreshPayload) {
+        const userId = parseInt(refreshPayload.sub, 10);
+        if (!isNaN(userId)) {
+          const { data: user, error: userError } = await db
+            .from(TableName.USERS)
+            .select("*")
+            .eq(EntityKey.ID, userId)
+            .is(EntityKey.DELETED_AT, null)
+            .maybeSingle();
+
+          const currentTokenVersion =
+            user && typeof user.token_version === "number" ? user.token_version : 1;
+
+          if (!userError && user && currentTokenVersion === refreshPayload.token_version) {
+            const factoryId = user.factory_id ?? null;
+
+            const newAccessToken = await signJWT({
+              sub: String(user.id),
+              username: user.username,
+              name: user.name,
+              role: user.role,
+              factory_id: factoryId,
+            });
+            const accessExpiresIn = getTokenExpiresIn(newAccessToken);
+
+            const newRefreshToken = await signRefreshToken({
+              sub: String(user.id),
+              token_version: currentTokenVersion,
+            });
+            const refreshExpiresIn = getTokenExpiresIn(newRefreshToken);
+
+            const userPayload = {
+              id: user.id,
+              username: user.username,
+              name: user.name,
+              aadhar_number: user.aadhar_number ?? null,
+              role: user.role,
+              factory_id: factoryId,
+            };
+
+            const response = NextResponse.json({ user: userPayload });
+
+            response.cookies.set(CookieName.TOKEN, newAccessToken, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              sameSite: "lax",
+              maxAge: accessExpiresIn,
+              path: "/",
+            });
+
+            response.cookies.set(CookieName.REFRESH_TOKEN, newRefreshToken, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              sameSite: "lax",
+              maxAge: refreshExpiresIn,
+              path: "/",
+            });
+
+            return response;
+          }
+        }
+      }
     }
 
-    const userId = parseInt(payload.sub, 10);
-    if (isNaN(userId)) {
-      return NextResponse.json({ user: null });
-    }
-
-    const { data: user, error } = await db
-      .from(TableName.USERS)
-      .select("*")
-      .eq("id", userId)
-      .is("deleted_at", null)
-      .maybeSingle();
-
-    if (error || !user) {
-      return NextResponse.json({ user: null });
-    }
-
-    const userPayload = {
-      id: user.id,
-      username: user.username,
-      name: user.name,
-      aadhar_number: user.aadhar_number ?? null,
-      role: user.role,
-      factory_id: user.factory_id ?? null,
-    };
-
-    return NextResponse.json({ user: userPayload });
+    return NextResponse.json({ user: null });
   } catch (error) {
     console.error("Auth /me error:", error);
     return NextResponse.json({ user: null });

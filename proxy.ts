@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { StatusCodes, ReasonPhrases } from "http-status-codes";
-import { verifyJWT } from "@/lib/auth/jwt";
+import { verifyJWT, verifyRefreshToken } from "@/lib/auth/jwt";
 import { AppRoutes, ApiPrefix, CookieName, RequestHeader } from "@/lib/constants/enums";
 import { PUBLIC_ROUTES, AUTH_ROUTES, PUBLIC_API_ROUTES } from "@/lib/constants/routes";
 
@@ -31,17 +31,22 @@ export async function proxy(request: NextRequest) {
 
   const isApiRoute = pathname.startsWith(ApiPrefix.API);
 
-  if (!token) {
-    return isApiRoute
-      ? NextResponse.json(
+  const payload = token ? await verifyJWT(token) : null;
+
+  if (!payload) {
+    const refreshToken = request.cookies.get(CookieName.REFRESH_TOKEN)?.value;
+    const refreshPayload = refreshToken ? await verifyRefreshToken(refreshToken) : null;
+
+    if (refreshPayload) {
+      if (isApiRoute) {
+        return NextResponse.json(
           { error: ReasonPhrases.UNAUTHORIZED },
           { status: StatusCodes.UNAUTHORIZED },
-        )
-      : NextResponse.redirect(new URL(AppRoutes.LOGIN, request.url));
-  }
+        );
+      }
+      return NextResponse.next();
+    }
 
-  const payload = await verifyJWT(token);
-  if (!payload) {
     return isApiRoute
       ? NextResponse.json(
           { error: ReasonPhrases.UNAUTHORIZED },

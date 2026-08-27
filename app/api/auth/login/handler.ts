@@ -100,7 +100,7 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: refreshExpiresIn,
-      path: "/api/auth",
+      path: "/",
     });
     return response;
   } catch (error) {

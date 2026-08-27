@@ -39,10 +39,11 @@ export async function POST(request: NextRequest) {
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax" as const,
         expires: new Date(0),
+        path: "/",
       };
-      response.cookies.set(CookieName.TOKEN, "", { ...clearOptions, path: "/" });
-      response.cookies.set(CookieName.AUTH_TOKEN, "", { ...clearOptions, path: "/" });
-      response.cookies.set(CookieName.REFRESH_TOKEN, "", { ...clearOptions, path: "/api/auth" });
+      response.cookies.set(CookieName.TOKEN, "", clearOptions);
+      response.cookies.set(CookieName.AUTH_TOKEN, "", clearOptions);
+      response.cookies.set(CookieName.REFRESH_TOKEN, "", clearOptions);
       return response;
     };
 
@@ -136,7 +137,7 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: refreshExpiresIn,
-      path: "/api/auth",
+      path: "/",
     });
 
     return response;

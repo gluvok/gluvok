@@ -316,6 +316,7 @@ export enum RequestHeader {
   USERNAME = "x-user-username",
   ROLE = "x-user-role",
   FACTORY_ID = "x-user-factory-id",
+  MICROCONTROLLER_SECRET = "x-microcontroller-secret",
 }
 
 export enum PermissionKey {

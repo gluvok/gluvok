@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
+import { validateDeviceSecret } from "@/db/helpers";
 import { getTokenExpiresIn, signJWT, signRefreshToken } from "@/lib/auth/jwt";
 import { setAuthCookies } from "@/lib/auth/cookies";
 import { verifyPassword } from "@/lib/auth/password";
@@ -30,8 +31,16 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
       return NextResponse.json({ error: AuthErrorMessage.INVALID_CREDENTIALS }, { status: 401 });
     }
 
-    if (client === LoginClient.DEVICE && user.role !== Role.OPERATOR) {
-      return NextResponse.json({ error: AuthErrorMessage.INVALID_CREDENTIALS }, { status: 401 });
+    if (client === LoginClient.DEVICE) {
+      if (!validateDeviceSecret(request)) {
+        return NextResponse.json(
+          { error: AuthErrorMessage.INVALID_DEVICE_SECRET },
+          { status: 401 },
+        );
+      }
+      if (user.role === Role.BASE) {
+        return NextResponse.json({ error: AuthErrorMessage.INVALID_CREDENTIALS }, { status: 401 });
+      }
     }
 
     const factoryId = user.factory_id;

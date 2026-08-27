@@ -5,26 +5,19 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { apiError, StatusCodes, getAuthUser } from "@/db/helpers";
+import { apiError, StatusCodes, getAuthUser, validateDeviceSecret } from "@/db/helpers";
 import { TableName, EntityKey, EntryStatus, EntryType } from "@/lib/constants/enums";
+import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
 
 export async function POST(req: NextRequest) {
   try {
-    const deviceSecret = req.headers.get("x-microcontroller-secret");
-    const expectedSecret = process.env.MICROCONTROLLER_SECRET || "default-pi-secret-key";
+    if (!validateDeviceSecret(req)) {
+      return apiError(ApiErrorMessage.INVALID_DEVICE_SECRET, StatusCodes.FORBIDDEN);
+    }
+
     const authResult = await getAuthUser(req);
     const authUser = authResult?.user;
-
-    const isValidSecret = deviceSecret && deviceSecret === expectedSecret;
-    const isValidToken = authUser && authUser.factory_id;
-
-    if (!isValidSecret && !isValidToken) {
-      return apiError(
-        "Access denied: Invalid or missing microcontroller device secret or auth token.",
-        StatusCodes.FORBIDDEN,
-      );
-    }
 
     const body = await req.json();
     const {

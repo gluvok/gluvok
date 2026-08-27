@@ -9,6 +9,7 @@ export const AuthErrorMessage = {
   REQUIRED_FIELDS: "Username and password are required",
   INTERNAL_SERVER_ERROR: "Internal server error",
   TOKEN_REFRESH_FAILED: "Token refresh failed",
+  INVALID_DEVICE_SECRET: "Access denied: Invalid or missing microcontroller device secret.",
 } as const;
 
 export const ApiErrorMessage = {
@@ -103,4 +104,5 @@ export const ApiErrorMessage = {
   CANNOT_MODIFY_APPROVED_ENTRY: (field: string) => `Cannot modify ${field} on approved entries.`,
   FAILED_TO_UPDATE_ENTRY: "Failed to update entry",
   SEQUENTIAL_APPROVAL_FAILED: "Sequential approval validation failed.",
+  INVALID_DEVICE_SECRET: "Access denied: Invalid or missing microcontroller device secret.",
 } as const;

@@ -61,6 +61,12 @@ export function forbiddenError(message = ReasonPhrases.FORBIDDEN): NextResponse 
   return apiError(message, StatusCodes.FORBIDDEN);
 }
 
+export function validateDeviceSecret(req: NextRequest | Request): boolean {
+  const secret = req.headers.get(RequestHeader.MICROCONTROLLER_SECRET);
+  const expectedSecret = process.env.MICROCONTROLLER_SECRET || "default-pi-secret-key";
+  return Boolean(secret && secret === expectedSecret);
+}
+
 export function getPaginationParams(url: URL): PaginationParams {
   const pageParam = url.searchParams.get(QueryParam.PAGE);
   const limitParam = url.searchParams.get(QueryParam.LIMIT);

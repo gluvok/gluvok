@@ -133,19 +133,32 @@ export const POST = withAuth(async (req, user, client) => {
       images = [],
     } = parsed.data;
 
-    // Verify center_id belongs to the user's factory
+    // Verify center_id belongs to the user's factory and is active
     const { data: centerRecord } = await client
       .from(TableName.CENTERS)
       .select(EntityKey.ID)
       .eq(EntityKey.ID, Number(center_id))
-      .eq(EntityKey.FACTORY_ID, user.factory_id!)
+      .eq(EntityKey.FACTORY_ID, user.factory_id)
+      .is(EntityKey.DELETED_AT, null)
       .maybeSingle();
 
     if (!centerRecord) {
-      return apiError(
-        "Invalid center ID or center does not belong to user factory.",
-        StatusCodes.FORBIDDEN,
-      );
+      return apiError(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND, StatusCodes.BAD_REQUEST);
+    }
+
+    // Verify customer_id belongs to the user's factory and is active (if provided)
+    if (customer_id) {
+      const { data: customerRecord } = await client
+        .from(TableName.CUSTOMERS)
+        .select(EntityKey.ID)
+        .eq(EntityKey.ID, Number(customer_id))
+        .eq(EntityKey.FACTORY_ID, user.factory_id)
+        .is(EntityKey.DELETED_AT, null)
+        .maybeSingle();
+
+      if (!customerRecord) {
+        return apiError(ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.BAD_REQUEST);
+      }
     }
 
     const userId = user.sub ? parseInt(user.sub, 10) : null;
@@ -158,7 +171,7 @@ export const POST = withAuth(async (req, user, client) => {
     if (status === EntryStatus.APPROVED) {
       await validateSequentialApproval(
         client,
-        user.factory_id!,
+        user.factory_id,
         vehicle_number,
         nowStr,
         0,
@@ -176,7 +189,7 @@ export const POST = withAuth(async (req, user, client) => {
         [EntityKey.CENTER_ID]: Number(center_id),
         [EntityKey.USER_ID]: userId,
         [EntityKey.CUSTOMER_ID]: customer_id ? Number(customer_id) : null,
-        [EntityKey.FACTORY_ID]: user.factory_id!,
+        [EntityKey.FACTORY_ID]: user.factory_id,
         [EntityKey.STATUS]: status,
         [EntityKey.IMAGES]: images,
         [EntityKey.CREATED_AT]: nowStr,

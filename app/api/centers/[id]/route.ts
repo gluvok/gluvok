@@ -66,7 +66,7 @@ export const DELETE = withAuth(
       })
       .eq(EntityKey.ID, entityId)
       .is(EntityKey.DELETED_AT, null)
-      .eq(EntityKey.FACTORY_ID, factoryId!);
+      .eq(EntityKey.FACTORY_ID, factoryId);
 
     const { data, error } = await query.select(EntityKey.ID);
     if (error) {

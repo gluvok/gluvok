@@ -67,7 +67,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     .from(TableName.ENTRIES)
     .select("*")
     .eq(EntityKey.ID, entryId)
-    .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .eq(EntityKey.FACTORY_ID, user.factory_id)
     .is(EntityKey.DELETED_AT, null)
     .maybeSingle();
 
@@ -131,7 +131,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     try {
       await validateSequentialApproval(
         client,
-        user.factory_id!,
+        user.factory_id,
         targetVehicle,
         existing.created_at,
         entryId,
@@ -150,7 +150,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     .from(TableName.ENTRIES)
     .update(updates)
     .eq(EntityKey.ID, entryId)
-    .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .eq(EntityKey.FACTORY_ID, user.factory_id)
     .is(EntityKey.DELETED_AT, null)
     .select("*")
     .single();
@@ -162,7 +162,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   // 5. Trigger entry merging if status is approved
   if (updatedEntry.status === EntryStatus.APPROVED) {
-    await tryMergeEntries(client, user.factory_id!, entryId);
+    await tryMergeEntries(client, user.factory_id, entryId);
   }
 
   return NextResponse.json({ data: updatedEntry });
@@ -193,7 +193,7 @@ export const DELETE = withAuth(
       })
       .eq(EntityKey.ID, entityId)
       .is(EntityKey.DELETED_AT, null)
-      .eq(EntityKey.FACTORY_ID, factoryId!);
+      .eq(EntityKey.FACTORY_ID, factoryId);
 
     const { data, error } = await query.select(EntityKey.ID);
     if (error) {

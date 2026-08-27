@@ -95,7 +95,7 @@ export const POST = withAuth(async (req, user, client) => {
     [EntityKey.COMMODITY_ID]: Number(commodity_id),
     [EntityKey.UNIT_PRICE]: String(unit_price),
     [EntityKey.UNIT]: unit,
-    [EntityKey.FACTORY_ID]: user.factory_id!,
+    [EntityKey.FACTORY_ID]: user.factory_id,
   };
 
   const { data: newRate, error } = await client
@@ -137,7 +137,7 @@ export const DELETE = withAuth(async (req, user, client) => {
     })
     .in(EntityKey.ID, ids)
     .is(EntityKey.DELETED_AT, null)
-    .eq(EntityKey.FACTORY_ID, user.factory_id!);
+    .eq(EntityKey.FACTORY_ID, user.factory_id);
 
   const { data, error } = await query.select(EntityKey.ID);
   if (error) {

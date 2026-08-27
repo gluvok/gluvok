@@ -3,7 +3,7 @@ import { withAuth, StatusCodes } from "@/db/helpers";
 import { TableName, EntityKey } from "@/lib/constants/enums";
 
 export const GET = withAuth(async (_req, user, client) => {
-  const factoryId = user.factory_id!;
+  const factoryId = user.factory_id;
 
   const centersQuery = client
     .from(TableName.CENTERS)

@@ -172,7 +172,7 @@ export const DELETE = withAuth(
         `*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(${EntityKey.FACTORY_ID})`,
       )
       .eq(EntityKey.ID, entityId)
-      .eq(`${RelationAlias.IN_ENTRY}.${EntityKey.FACTORY_ID}`, factoryId!)
+      .eq(`${RelationAlias.IN_ENTRY}.${EntityKey.FACTORY_ID}`, factoryId)
       .is(EntityKey.DELETED_AT, null)
       .maybeSingle();
 
@@ -210,7 +210,7 @@ export const DELETE = withAuth(
           [EntityKey.UPDATED_AT]: now,
         })
         .in(EntityKey.ID, entryIds)
-        .eq(EntityKey.FACTORY_ID, factoryId!)
+        .eq(EntityKey.FACTORY_ID, factoryId)
         .is(EntityKey.DELETED_AT, null);
 
       if (cascadeErr) {

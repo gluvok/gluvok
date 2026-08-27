@@ -298,7 +298,7 @@ export const DELETE = withAuth(async (req, user, client) => {
         [EntityKey.UPDATED_AT]: now,
       })
       .in(EntityKey.ID, uniqueEntryIds)
-      .eq(EntityKey.FACTORY_ID, user.factory_id!)
+      .eq(EntityKey.FACTORY_ID, user.factory_id)
       .is(EntityKey.DELETED_AT, null);
 
     if (cascadeErr) {

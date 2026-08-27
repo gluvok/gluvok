@@ -18,6 +18,9 @@ export async function POST(req: NextRequest) {
 
     const authResult = await getAuthUser(req);
     const authUser = authResult?.user;
+    if (!authUser) {
+      return apiError("Unauthorized", StatusCodes.UNAUTHORIZED);
+    }
 
     const body = await req.json();
     const {
@@ -31,7 +34,7 @@ export async function POST(req: NextRequest) {
       images = [],
     } = body;
 
-    const operatorUserId = user_id || (authUser ? parseInt(authUser.sub, 10) : null);
+    const operatorUserId = user_id ? Number(user_id) : parseInt(authUser.sub, 10);
 
     if (
       !detected_vehicle_number ||
@@ -43,21 +46,47 @@ export async function POST(req: NextRequest) {
       return apiError("Missing required entry fields.", StatusCodes.BAD_REQUEST);
     }
 
-    let factoryId = authUser?.factory_id;
-    if (!factoryId) {
-      const { data: center } = await db
-        .from(TableName.CENTERS)
-        .select(EntityKey.FACTORY_ID)
-        .eq(EntityKey.ID, Number(center_id))
-        .maybeSingle();
+    const factoryId = authUser.factory_id;
 
-      if (center) {
-        factoryId = center.factory_id;
-      }
+    // Verify center exists and belongs to factory
+    const { data: centerRecord } = await db
+      .from(TableName.CENTERS)
+      .select(EntityKey.ID)
+      .eq(EntityKey.ID, Number(center_id))
+      .eq(EntityKey.FACTORY_ID, factoryId)
+      .is(EntityKey.DELETED_AT, null)
+      .maybeSingle();
+
+    if (!centerRecord) {
+      return apiError(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND, StatusCodes.BAD_REQUEST);
     }
 
-    if (!factoryId) {
-      return apiError("Could not resolve factory for device entry.", StatusCodes.BAD_REQUEST);
+    // Verify operator user exists and belongs to factory
+    const { data: userRecord } = await db
+      .from(TableName.USERS)
+      .select(EntityKey.ID)
+      .eq(EntityKey.ID, operatorUserId)
+      .eq(EntityKey.FACTORY_ID, factoryId)
+      .is(EntityKey.DELETED_AT, null)
+      .maybeSingle();
+
+    if (!userRecord) {
+      return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.BAD_REQUEST);
+    }
+
+    // Verify customer exists and belongs to factory (if provided)
+    if (customer_id) {
+      const { data: customerRecord } = await db
+        .from(TableName.CUSTOMERS)
+        .select(EntityKey.ID)
+        .eq(EntityKey.ID, Number(customer_id))
+        .eq(EntityKey.FACTORY_ID, factoryId)
+        .is(EntityKey.DELETED_AT, null)
+        .maybeSingle();
+
+      if (!customerRecord) {
+        return apiError(ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.BAD_REQUEST);
+      }
     }
 
     const nowStr = new Date().toISOString();
@@ -81,7 +110,7 @@ export async function POST(req: NextRequest) {
         [EntityKey.WEIGHT]: Number(weight),
         [EntityKey.TYPE]: EntryType.AUTOMATIC,
         [EntityKey.CENTER_ID]: Number(center_id),
-        [EntityKey.USER_ID]: Number(operatorUserId),
+        [EntityKey.USER_ID]: operatorUserId,
         [EntityKey.CUSTOMER_ID]: customer_id ? Number(customer_id) : null,
         [EntityKey.FACTORY_ID]: factoryId,
         [EntityKey.STATUS]: status,

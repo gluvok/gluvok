@@ -31,7 +31,7 @@ export const GET = withAuth(async (req, user, client) => {
     .from(TableName.CENTERS)
     .select("*", { count: "exact" })
     .order(sortColumn, { ascending: !sortDesc })
-    .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .eq(EntityKey.FACTORY_ID, user.factory_id)
     .is(EntityKey.DELETED_AT, null);
 
   if (search) {
@@ -99,7 +99,7 @@ export const DELETE = withAuth(async (req, user, client) => {
     })
     .in(EntityKey.ID, ids)
     .is(EntityKey.DELETED_AT, null)
-    .eq(EntityKey.FACTORY_ID, user.factory_id!);
+    .eq(EntityKey.FACTORY_ID, user.factory_id);
 
   const { data, error } = await query.select(EntityKey.ID);
   if (error) {

@@ -20,7 +20,7 @@ export const PATCH = withAuth(
       .from(TableName.CUSTOMERS)
       .select(`${EntityKey.ID}, ${EntityKey.USER_ID}, ${EntityKey.NAME}`)
       .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId!)
+      .eq(EntityKey.FACTORY_ID, factoryId)
       .is(EntityKey.DELETED_AT, null);
 
     const { data: existing } = await existingQuery.maybeSingle();
@@ -66,7 +66,7 @@ export const PATCH = withAuth(
 
     const { data: updated, error } = await client.rpc("update_customer_with_user", {
       p_customer_id: entityId,
-      p_factory_id: factoryId!,
+      p_factory_id: factoryId,
       p_name: name ? String(name).trim() : null,
       p_father_name: father_name ? String(father_name).trim() : null,
       p_govt_id: govt_id != null ? Number(govt_id) : null,
@@ -101,7 +101,7 @@ export const DELETE = withAuth(
 
     const { data: deletedCount, error } = await client.rpc("delete_customers_with_user", {
       p_customer_ids: [entityId],
-      p_factory_id: factoryId!,
+      p_factory_id: factoryId,
     });
 
     if (error) {

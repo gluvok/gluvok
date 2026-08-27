@@ -46,7 +46,7 @@ export const PATCH = withAuth(async (req, user, client) => {
         ...(govt_id_mode ? { [EntityKey.GOVT_ID_MODE]: govt_id_mode } : {}),
         [EntityKey.UPDATED_AT]: new Date().toISOString(),
       })
-      .eq(EntityKey.ID, user.factory_id!)
+      .eq(EntityKey.ID, user.factory_id)
       .select()
       .single();
 

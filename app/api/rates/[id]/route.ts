@@ -20,7 +20,7 @@ export const GET = withAuth(
       .from(TableName.RATES)
       .select(`*, ${TableName.COMMODITIES}!left(${EntityKey.NAME})`)
       .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId!)
+      .eq(EntityKey.FACTORY_ID, factoryId)
       .is(EntityKey.DELETED_AT, null);
 
     const { data: rate, error } = await query.maybeSingle();
@@ -72,7 +72,7 @@ export const PATCH = withAuth(
         [EntityKey.UPDATED_AT]: new Date().toISOString(),
       })
       .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId!)
+      .eq(EntityKey.FACTORY_ID, factoryId)
       .is(EntityKey.DELETED_AT, null);
 
     const { data: updated, error } = await query.select().maybeSingle();
@@ -107,7 +107,7 @@ export const DELETE = withAuth(
       })
       .eq(EntityKey.ID, entityId)
       .is(EntityKey.DELETED_AT, null)
-      .eq(EntityKey.FACTORY_ID, factoryId!);
+      .eq(EntityKey.FACTORY_ID, factoryId);
 
     const { data, error } = await query.select(EntityKey.ID);
     if (error) {

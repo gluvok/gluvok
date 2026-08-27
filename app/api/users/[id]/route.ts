@@ -23,7 +23,7 @@ export const GET = withAuth(
         `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
       )
       .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId!)
+      .eq(EntityKey.FACTORY_ID, factoryId)
       .is(EntityKey.DELETED_AT, null);
 
     const { data: existing, error } = await existingQuery.maybeSingle();
@@ -46,7 +46,7 @@ export const PATCH = withAuth(
         `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.FACTORY_ID}, ${EntityKey.TOKEN_VERSION}`,
       )
       .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId!)
+      .eq(EntityKey.FACTORY_ID, factoryId)
       .is(EntityKey.DELETED_AT, null);
 
     const { data: existing } = await existingQuery.maybeSingle();
@@ -76,7 +76,7 @@ export const PATCH = withAuth(
         .from(TableName.USERS)
         .select(EntityKey.ID)
         .eq(EntityKey.AADHAR_NUMBER, aadhar_number)
-        .eq(EntityKey.FACTORY_ID, factoryId!)
+        .eq(EntityKey.FACTORY_ID, factoryId)
         .neq(EntityKey.ID, entityId)
         .is(EntityKey.DELETED_AT, null)
         .maybeSingle();
@@ -108,7 +108,7 @@ export const PATCH = withAuth(
       .from(TableName.USERS)
       .update(updates)
       .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId!)
+      .eq(EntityKey.FACTORY_ID, factoryId)
       .is(EntityKey.DELETED_AT, null)
       .select(
         `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
@@ -129,7 +129,7 @@ export const DELETE = withAuth(
       .from(TableName.USERS)
       .select(`${EntityKey.ID}`)
       .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId!)
+      .eq(EntityKey.FACTORY_ID, factoryId)
       .is(EntityKey.DELETED_AT, null);
 
     const { data: existing } = await existingQuery.maybeSingle();
@@ -175,7 +175,7 @@ export const DELETE = withAuth(
       })
       .eq(EntityKey.ID, entityId)
       .is(EntityKey.DELETED_AT, null)
-      .eq(EntityKey.FACTORY_ID, factoryId!);
+      .eq(EntityKey.FACTORY_ID, factoryId);
 
     if (error) {
       return apiError(

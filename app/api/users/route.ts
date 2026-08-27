@@ -34,7 +34,7 @@ export const GET = withAuth(async (req, user, client) => {
   const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true";
   const roleParam = req.nextUrl.searchParams.get(EntityKey.ROLE);
 
-  const factoryId = user.factory_id!;
+  const factoryId = user.factory_id;
   const factory = await getFactory(client, factoryId);
   const isAadharNotRequired = factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED;
 
@@ -83,7 +83,7 @@ export const GET = withAuth(async (req, user, client) => {
 export const POST = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.USERS, PermissionKey.CREATE)) return forbiddenError();
   const body = await req.json();
-  const factoryId = user.factory_id!;
+  const factoryId = user.factory_id;
   const factory = await getFactory(client, factoryId);
 
   const dynamicSchema = getDynamicUserSchema(factory);
@@ -189,7 +189,7 @@ export const DELETE = withAuth(async (req, user, client) => {
     })
     .in(EntityKey.ID, ids)
     .is(EntityKey.DELETED_AT, null)
-    .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .eq(EntityKey.FACTORY_ID, user.factory_id)
     .select(EntityKey.ID);
 
   if (error) {

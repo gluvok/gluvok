@@ -68,7 +68,7 @@ export const POST = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.CREATE)) return forbiddenError();
   const body = await req.json();
 
-  const factoryId = user.factory_id!;
+  const factoryId = user.factory_id;
   const factory = await getFactory(client, factoryId);
 
   const dynamicSchema = getDynamicCustomerSchema(factory);
@@ -154,7 +154,7 @@ export const DELETE = withAuth(async (req, user, client) => {
 
   const { data: deletedCount, error } = await client.rpc("delete_customers_with_user", {
     p_customer_ids: ids,
-    p_factory_id: user.factory_id!,
+    p_factory_id: user.factory_id,
   });
 
   if (error) {

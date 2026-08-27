@@ -175,14 +175,6 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       icon: Users,
       span: FieldSpan.HALF,
     },
-    {
-      key: EntityKey.STATUS,
-      label: ColumnLabel.STATUS,
-      placeholder: "Select status...",
-      type: FieldType.ENTRY_STATUS,
-      icon: ShieldCheck,
-      span: FieldSpan.HALF,
-    },
   ],
   [ProjectSlug.WEIGHMENTS]: [
     {

@@ -5,18 +5,7 @@
 
 import { type ColumnDef, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import {
-  Tag,
-  Car,
-  Weight,
-  Building,
-  User,
-  Users,
-  Image,
-  ShieldCheck,
-  Clock,
-  Sliders,
-} from "lucide-react";
+import { Car, Weight, Building, User, Users, Image, ShieldCheck, Sliders } from "lucide-react";
 import { EntityKey, ColumnLabel, EntryStatus, EntryType } from "@/lib/constants/enums";
 import { cn } from "@/lib/utils";
 import {
@@ -30,7 +19,6 @@ import { WeighmentImagesCell } from "./weighments-cell";
 
 export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
-    createIdColumn(EntityKey.ID, ColumnLabel.ID, Tag),
     createCustomColumn(EntityKey.TYPE, ColumnLabel.TYPE, Sliders, (val) => {
       const type = String(val || EntryType.AUTOMATIC).toLowerCase();
       let typeClass = "bg-muted text-muted-foreground border border-border";
@@ -79,17 +67,5 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       enableGlobalFilter: false,
       enableSorting: false,
     },
-    createTextColumn(
-      EntityKey.CREATED_AT,
-      ColumnLabel.CREATED_AT,
-      Clock,
-      "font-mono text-muted-foreground text-xs",
-    ),
-    createTextColumn(
-      EntityKey.UPDATED_AT,
-      ColumnLabel.UPDATED_AT,
-      Clock,
-      "font-mono text-muted-foreground text-xs",
-    ),
   ];
 }

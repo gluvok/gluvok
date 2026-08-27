@@ -25,19 +25,20 @@ export function renderHeaderSection({
   selectedCount,
 }: HeaderSectionOptions): string {
   return `
-    <header class="flex justify-between items-end border-b-2 border-slate-900 pb-4 mb-6">
-      <div class="brand flex flex-col gap-1">
+    <header class="flex justify-between items-start border-b-2 border-slate-900/90 pb-5 mb-6">
+      <div class="brand flex flex-col gap-1.5">
         <img src="${logoUrl}" class="h-9 w-auto object-contain self-start" alt="Gluvok Logo" />
-        <span class="text-[10px] font-semibold tracking-widest uppercase text-slate-400">Official System Export</span>
+        <span class="text-[10px] font-bold tracking-widest uppercase text-slate-400">Official System Export</span>
       </div>
-      <div class="meta text-right font-sans text-xs">
-        <div class="text-base font-bold text-slate-900 tracking-tight leading-none mb-1.5">${projectName} Export</div>
-        <div class="text-xs text-slate-500 flex items-center justify-end gap-2 font-mono">
-          <span class="font-sans font-semibold text-slate-800">${finalCompanyName}</span>
-          <span class="text-slate-300">&bull;</span>
-          <span>${date}</span>
-          <span class="text-slate-300">&bull;</span>
-          <span class="font-sans font-semibold text-slate-900">${selectedCount} Records</span>
+      <div class="meta text-right font-sans flex flex-col items-end gap-1.5">
+        <div class="text-lg font-extrabold text-slate-900 tracking-tight leading-none">${projectName} Export</div>
+        <div class="flex items-center justify-end gap-1.5 flex-wrap">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-900 text-white shadow-2xs">${finalCompanyName}</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-mono text-slate-600 bg-slate-100 border border-slate-200">${date}</span>
+          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            ${selectedCount} Records
+          </span>
         </div>
       </div>
     </header>
@@ -49,14 +50,14 @@ export function renderHeaderSection({
  */
 export function renderTableSection(headersHtml: string, rowsHtml: string): string {
   return `
-    <div class="border border-slate-300 overflow-hidden mb-6">
+    <div class="rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden mb-6 bg-white">
       <table class="w-full border-collapse text-left text-xs text-slate-700">
         <thead>
-          <tr class="bg-slate-100/90 text-slate-700 uppercase text-[10px] font-bold tracking-wider border-b border-slate-300">
+          <tr class="bg-slate-50/90 text-slate-700 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
             ${headersHtml}
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-200 bg-white">
+        <tbody class="divide-y divide-slate-100 bg-white">
           ${rowsHtml}
         </tbody>
       </table>
@@ -70,10 +71,13 @@ export function renderTableSection(headersHtml: string, rowsHtml: string): strin
 export function renderScansSection(imagesHtml?: string): string {
   if (!imagesHtml) return "";
   return `
-    <div class="pdf-images-section mt-8 border-t-2 border-slate-900 pt-4">
-      <div class="pdf-scans-header mb-3 flex items-center justify-between">
-        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900">Attached Scans & Images</h2>
-        <span class="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Appendix</span>
+    <div class="pdf-images-section mt-8 border-t-2 border-slate-900/90 pt-5">
+      <div class="pdf-scans-header mb-4 flex items-center justify-between border-b border-slate-200 pb-2.5">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900">Attached Scans & Images</h2>
+        </div>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">Appendix Gallery</span>
       </div>
       <div class="pdf-scans-grid flex flex-col gap-5">
         ${imagesHtml}
@@ -87,7 +91,7 @@ export function renderScansSection(imagesHtml?: string): string {
  */
 export function renderFooterSection(finalCompanyName: string): string {
   return `
-    <footer class="fixed bottom-3 left-6 right-6 border-t border-slate-300 pt-2 flex items-center justify-between text-[10px] text-slate-400 font-sans tracking-wide">
+    <footer class="fixed bottom-3 left-6 right-6 border-t border-slate-200/80 pt-2.5 flex items-center justify-between text-[10px] text-slate-400 font-sans tracking-wide">
       <div>
         Generated for <strong class="text-slate-700 font-semibold">${finalCompanyName}</strong>
       </div>

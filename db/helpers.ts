@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { StatusCodes, ReasonPhrases } from "http-status-codes";
-import { verifyJWT, JWTPayload } from "@/lib/auth/jwt";
+import {
+  verifyJWT,
+  verifyRefreshToken,
+  signJWT,
+  signRefreshToken,
+  getTokenExpiresIn,
+  JWTPayload,
+} from "@/lib/auth/jwt";
 import {
   Role,
   RequestHeader,
@@ -38,25 +45,27 @@ export function validateRequiredFields(
   const missing = requiredKeys.filter(
     (key) => body[key] === undefined || body[key] === null || body[key] === "",
   );
+
   if (missing.length > 0) {
     return apiError(
-      `${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} required`,
-      StatusCodes.BAD_REQUEST,
+      `Missing required fields: ${missing.join(", ")}`,
+      StatusCodes.UNPROCESSABLE_ENTITY,
     );
   }
+
   return null;
 }
 
-export function forbiddenError(): NextResponse {
-  return apiError(ReasonPhrases.FORBIDDEN, StatusCodes.FORBIDDEN);
+export function forbiddenError(message = ReasonPhrases.FORBIDDEN): NextResponse {
+  return apiError(message, StatusCodes.FORBIDDEN);
 }
 
 export function getPaginationParams(url: URL): PaginationParams {
   const pageParam = url.searchParams.get(QueryParam.PAGE);
   const limitParam = url.searchParams.get(QueryParam.LIMIT);
 
-  const page = Math.max(1, parseInt(pageParam || "1", 10) || 1);
-  const limit = Math.max(1, Math.min(100, parseInt(limitParam || "10", 10) || 10));
+  const page = pageParam ? Math.max(1, parseInt(pageParam, 10)) : 1;
+  const limit = limitParam ? Math.min(100, Math.max(1, parseInt(limitParam, 10))) : 10;
   const offset = (page - 1) * limit;
 
   return { page, limit, offset };
@@ -76,7 +85,16 @@ export function parseBulkIds(body: unknown): number[] | null {
   return [...new Set(numericIds)];
 }
 
-export async function getAuthUser(req: NextRequest | Request): Promise<JWTPayload | null> {
+export interface RefreshedTokens {
+  accessToken: string;
+  refreshToken: string;
+  accessExpiresIn: number;
+  refreshExpiresIn: number;
+}
+
+export async function getAuthUser(
+  req: NextRequest | Request,
+): Promise<{ user: JWTPayload; refreshedTokens?: RefreshedTokens } | null> {
   const userId = req.headers.get(RequestHeader.USER_ID);
   const username = req.headers.get(RequestHeader.USERNAME);
   const role = req.headers.get(RequestHeader.ROLE);
@@ -84,10 +102,12 @@ export async function getAuthUser(req: NextRequest | Request): Promise<JWTPayloa
 
   if (userId && username && role) {
     return {
-      sub: userId,
-      username,
-      role: role as Role,
-      factory_id: factoryIdStr ? parseInt(factoryIdStr, 10) : null,
+      user: {
+        sub: userId,
+        username,
+        role: role as Role,
+        factory_id: factoryIdStr ? parseInt(factoryIdStr, 10) : 0,
+      },
     };
   }
 
@@ -106,28 +126,107 @@ export async function getAuthUser(req: NextRequest | Request): Promise<JWTPayloa
     }
   }
 
-  if (!token) return null;
-  return await verifyJWT(token);
+  if (token) {
+    const payload = await verifyJWT(token);
+    if (payload) {
+      return { user: payload };
+    }
+  }
+
+  // Fallback: Check refresh token to automatically re-authenticate and mint fresh tokens
+  let refreshToken: string | undefined;
+  if ("cookies" in req && typeof (req as NextRequest).cookies?.get === "function") {
+    refreshToken = (req as NextRequest).cookies.get(CookieName.REFRESH_TOKEN)?.value;
+  }
+
+  if (!refreshToken) {
+    const authHeader = req.headers.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      refreshToken = authHeader.substring(7);
+    }
+  }
+
+  if (!refreshToken) return null;
+
+  const refreshPayload = await verifyRefreshToken(refreshToken);
+  if (!refreshPayload) return null;
+
+  const idNumber = parseInt(refreshPayload.sub, 10);
+  if (isNaN(idNumber)) return null;
+
+  const { data: dbUser, error: userError } = await db
+    .from(TableName.USERS)
+    .select("*")
+    .eq(EntityKey.ID, idNumber)
+    .is(EntityKey.DELETED_AT, null)
+    .maybeSingle();
+
+  const currentTokenVersion =
+    dbUser && typeof dbUser.token_version === "number" ? dbUser.token_version : 1;
+
+  if (userError || !dbUser || currentTokenVersion !== refreshPayload.token_version) {
+    return null;
+  }
+
+  const factoryId = dbUser.factory_id;
+
+  const newAccessToken = await signJWT({
+    sub: String(dbUser.id),
+    username: dbUser.username,
+    name: dbUser.name,
+    role: dbUser.role,
+    factory_id: factoryId,
+  });
+  const accessExpiresIn = getTokenExpiresIn(newAccessToken);
+
+  const newRefreshToken = await signRefreshToken({
+    sub: String(dbUser.id),
+    token_version: currentTokenVersion,
+  });
+  const refreshExpiresIn = getTokenExpiresIn(newRefreshToken);
+
+  const userPayload: JWTPayload = {
+    sub: String(dbUser.id),
+    username: dbUser.username,
+    name: dbUser.name,
+    role: dbUser.role,
+    factory_id: factoryId,
+  };
+
+  return {
+    user: userPayload,
+    refreshedTokens: {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      accessExpiresIn,
+      refreshExpiresIn,
+    },
+  };
 }
 
 export async function requireAuth(
   req: NextRequest | Request,
   requiredRole?: Role,
-): Promise<{ user: JWTPayload; errorResponse?: NextResponse }> {
-  const user = await getAuthUser(req);
-  if (!user) {
+): Promise<{
+  user: JWTPayload;
+  refreshedTokens?: RefreshedTokens;
+  errorResponse?: NextResponse;
+}> {
+  const auth = await getAuthUser(req);
+  if (!auth) {
     return {
       user: null as never,
       errorResponse: apiError(ReasonPhrases.UNAUTHORIZED, StatusCodes.UNAUTHORIZED),
     };
   }
-  if (requiredRole && user.role !== requiredRole) {
+  if (requiredRole && auth.user.role !== requiredRole) {
     return {
-      user,
+      user: auth.user,
+      refreshedTokens: auth.refreshedTokens,
       errorResponse: apiError(ReasonPhrases.FORBIDDEN, StatusCodes.FORBIDDEN),
     };
   }
-  return { user };
+  return { user: auth.user, refreshedTokens: auth.refreshedTokens };
 }
 
 type AuthedHandler<P extends Record<string, string> = Record<string, string>> = (
@@ -150,7 +249,7 @@ type ScopedEntityHandler<P extends Record<string, string>> = (
   user: JWTPayload,
   client: typeof supabase,
   ctx: RouteContext<P>,
-  scope: { entityId: number; factoryId: number | null },
+  scope: { entityId: number; factoryId: number },
 ) => Promise<NextResponse>;
 
 export function withAuth<P extends Record<string, string> = Record<string, string>>(
@@ -158,9 +257,26 @@ export function withAuth<P extends Record<string, string> = Record<string, strin
   requiredRole?: Role,
 ) {
   return async (req: NextRequest, ctx: RouteContext<P>): Promise<NextResponse> => {
-    const { user, errorResponse } = await requireAuth(req, requiredRole);
+    const { user, refreshedTokens, errorResponse } = await requireAuth(req, requiredRole);
     if (errorResponse) return errorResponse;
-    return handler(req, user, db, ctx);
+    const response = await handler(req, user, db, ctx);
+    if (refreshedTokens && "cookies" in response && typeof response.cookies?.set === "function") {
+      response.cookies.set(CookieName.TOKEN, refreshedTokens.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: refreshedTokens.accessExpiresIn,
+        path: "/",
+      });
+      response.cookies.set(CookieName.REFRESH_TOKEN, refreshedTokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: refreshedTokens.refreshExpiresIn,
+        path: "/",
+      });
+    }
+    return response;
   };
 }
 

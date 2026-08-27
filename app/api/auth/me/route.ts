@@ -35,7 +35,7 @@ export async function GET() {
             name: user.name,
             aadhar_number: user.aadhar_number ?? null,
             role: user.role,
-            factory_id: user.factory_id ?? null,
+            factory_id: user.factory_id,
           };
 
           return NextResponse.json({ user: userPayload });
@@ -61,7 +61,7 @@ export async function GET() {
             user && typeof user.token_version === "number" ? user.token_version : 1;
 
           if (!userError && user && currentTokenVersion === refreshPayload.token_version) {
-            const factoryId = user.factory_id ?? null;
+            const factoryId = user.factory_id;
 
             const newAccessToken = await signJWT({
               sub: String(user.id),

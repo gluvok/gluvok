@@ -5,4 +5,3 @@
 
 export * from "./common";
 export * from "./scoping";
-export * from "./interceptor";

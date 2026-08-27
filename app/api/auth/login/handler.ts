@@ -40,30 +40,22 @@ export async function handleLogin(request: NextRequest, client: LoginClient) {
       return NextResponse.json({ error: AuthErrorMessage.INVALID_CREDENTIALS }, { status: 401 });
     }
 
-    const factoryId = user.factory_id ?? null;
+    const factoryId = user.factory_id;
     const tokenVersion = typeof user.token_version === "number" ? user.token_version : 1;
 
-    const token = await signJWT(
-      {
-        sub: String(user.id),
-        username: user.username,
-        name: user.name,
-        role: user.role,
-        factory_id: factoryId,
-      },
-      client === LoginClient.DEVICE ? process.env.JWT_DEVICE_EXPIRES_IN || "1d" : undefined,
-    );
+    const token = await signJWT({
+      sub: String(user.id),
+      username: user.username,
+      name: user.name,
+      role: user.role,
+      factory_id: factoryId,
+    });
     const expiresIn = getTokenExpiresIn(token);
 
-    const refreshToken = await signRefreshToken(
-      {
-        sub: String(user.id),
-        token_version: tokenVersion,
-      },
-      client === LoginClient.DEVICE
-        ? process.env.JWT_DEVICE_REFRESH_EXPIRES_IN || "30d"
-        : undefined,
-    );
+    const refreshToken = await signRefreshToken({
+      sub: String(user.id),
+      token_version: tokenVersion,
+    });
     const refreshExpiresIn = getTokenExpiresIn(refreshToken);
 
     const userPayload = {

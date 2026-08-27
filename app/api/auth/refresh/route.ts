@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       return clearCookies(response);
     }
 
-    const factoryId = user.factory_id ?? null;
+    const factoryId = user.factory_id;
 
     const newAccessToken = await signJWT({
       sub: String(user.id),

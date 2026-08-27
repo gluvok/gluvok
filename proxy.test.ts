@@ -54,7 +54,7 @@ describe("Next.js Middleware Proxy", () => {
     expect(res.headers.get("location")).toBeNull();
   });
 
-  it("returns 401 for API routes when access token is expired even if refresh token is present (triggering client axios interceptor)", async () => {
+  it("allows API routes to pass through when access token is expired but refresh token is valid (allowing withAuth to auto-refresh)", async () => {
     const refreshToken = await signRefreshToken({
       sub: "123",
       token_version: 1,
@@ -65,7 +65,8 @@ describe("Next.js Middleware Proxy", () => {
     req.cookies.set(CookieName.REFRESH_TOKEN, refreshToken);
 
     const res = await proxy(req);
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
   });
 
   it("redirects to /login on page requests when neither token nor refresh token is valid", async () => {

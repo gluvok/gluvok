@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
   try {
     const deviceSecret = req.headers.get("x-microcontroller-secret");
     const expectedSecret = process.env.MICROCONTROLLER_SECRET || "default-pi-secret-key";
-    const authUser = await getAuthUser(req);
+    const authResult = await getAuthUser(req);
+    const authUser = authResult?.user;
 
     const isValidSecret = deviceSecret && deviceSecret === expectedSecret;
     const isValidToken = authUser && authUser.factory_id;

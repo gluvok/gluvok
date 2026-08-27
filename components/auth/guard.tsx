@@ -16,8 +16,6 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/sidebar";
 import { getNextParam, getNextRedirectUrl } from "@/lib/utils";
 
-import { setupAxiosInterceptors } from "@/lib/services";
-
 /**
  * FullScreenStatus Component
  * Displays a minimal, centered loading or redirecting message covering the viewport.
@@ -58,7 +56,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // Mark auth store as hydrated after mount (avoids React 19 state-update-before-mount warning)
   useEffect(() => {
-    setupAxiosInterceptors();
     useAuthStore.getState().setHydrated(true);
     const unsubscribe = useAuthStore.getState().initAuth();
     return () => {

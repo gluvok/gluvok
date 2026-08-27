@@ -4,6 +4,7 @@
  */
 
 import { decodeJwt, SignJWT, jwtVerify } from "jose";
+import { AuthTokenExpiry } from "@/lib/constants";
 
 function getJwtSecret(): Uint8Array {
   const jwtSecret = process.env.JWT_SECRET;
@@ -17,7 +18,7 @@ export interface JWTPayload {
   sub: string;
   username: string;
   role: string;
-  factory_id: number | null;
+  factory_id: number;
   name?: string;
   token_version?: number;
 }
@@ -28,19 +29,16 @@ export interface RefreshTokenPayload {
 }
 
 /**
- * Signs a short-lived JWT access token (defaults to 15 minutes).
+ * Signs a short-lived JWT access token (defaults to 5 minutes).
  */
 export async function signJWT(
   payload: JWTPayload,
-  expiresIn = process.env.JWT_ACCESS_EXPIRES_IN ||
-    process.env.JWT_EXPIRES_IN ||
-    process.env.JWT_EXPIRATION_TIME ||
-    "15m",
+  expiresIn: string = AuthTokenExpiry.ACCESS_TOKEN,
 ): Promise<string> {
   return new SignJWT({
     username: payload.username,
     role: payload.role,
-    factory_id: payload.factory_id ?? null,
+    factory_id: payload.factory_id,
     ...(payload.name != null ? { name: payload.name } : {}),
     ...(payload.token_version != null ? { token_version: payload.token_version } : {}),
   })
@@ -56,7 +54,7 @@ export async function signJWT(
  */
 export async function signRefreshToken(
   payload: RefreshTokenPayload,
-  expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || "7d",
+  expiresIn: string = AuthTokenExpiry.REFRESH_TOKEN,
 ): Promise<string> {
   return new SignJWT({
     token_version: payload.token_version,
@@ -91,7 +89,7 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
       sub: payload.sub,
       username: payload.username,
       role: payload.role,
-      factory_id: typeof payload.factory_id === "number" ? payload.factory_id : null,
+      factory_id: typeof payload.factory_id === "number" ? payload.factory_id : 0,
       name: typeof payload.name === "string" ? payload.name : undefined,
       token_version: typeof payload.token_version === "number" ? payload.token_version : undefined,
     };

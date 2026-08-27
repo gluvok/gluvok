@@ -1,11 +1,25 @@
-import { describe, expect, it, vi } from "vitest";
-import { Role } from "@/lib/constants/enums";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { NextRequest, NextResponse } from "next/server";
+import { Role, CookieName } from "@/lib/constants/enums";
+import { signJWT, signRefreshToken } from "@/lib/auth/jwt";
 import {
   fetchPaginatedResult,
   formatEntityResponse,
   parseBulkIds,
+  withAuth,
   withEntityScope,
 } from "./helpers";
+
+const { mockDb } = vi.hoisted(() => ({
+  mockDb: {
+    from: vi.fn(),
+  },
+}));
+
+vi.mock("@/db", () => ({
+  db: mockDb,
+  supabase: mockDb,
+}));
 
 describe("fetchPaginatedResult", () => {
   it("applies range pagination and returns standard payload", async () => {
@@ -57,7 +71,7 @@ describe("withEntityScope", () => {
   });
 
   it("passes entityId and factoryId to handler for valid IDs", async () => {
-    const handler = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true })));
+    const handler = vi.fn().mockResolvedValue(NextResponse.json({ ok: true }));
     const scopedHandler = withEntityScope(handler);
 
     const validResponse = await scopedHandler(
@@ -113,5 +127,82 @@ describe("parseBulkIds", () => {
     { ids: Array.from({ length: 101 }, (_, index) => index + 1) },
   ])("rejects invalid batches", (body) => {
     expect(parseBulkIds(body)).toBeNull();
+  });
+});
+
+describe("withAuth and server-side auto-refresh", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.JWT_SECRET = "test-secret-key-12345";
+  });
+
+  it("authenticates and passes through when access token is valid", async () => {
+    const handler = vi.fn().mockResolvedValue(NextResponse.json({ success: true }));
+    const authedHandler = withAuth(handler);
+
+    const token = await signJWT({
+      sub: "1",
+      username: "admin",
+      role: Role.ADMIN,
+      factory_id: 1,
+    });
+
+    const req = new NextRequest("http://localhost/api/test");
+    req.cookies.set(CookieName.TOKEN, token);
+
+    const response = await authedHandler(req, { params: Promise.resolve({}) });
+    expect(response.status).toBe(200);
+    expect(handler).toHaveBeenCalled();
+  });
+
+  it("silently auto-refreshes when access token is expired but refresh token is valid", async () => {
+    const handler = vi.fn().mockResolvedValue(NextResponse.json({ success: true }));
+    const authedHandler = withAuth(handler);
+
+    const refreshToken = await signRefreshToken({
+      sub: "10",
+      token_version: 1,
+    });
+
+    mockDb.from.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          is: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: {
+                id: 10,
+                username: "operator_01",
+                name: "Operator One",
+                role: Role.OPERATOR,
+                factory_id: 2,
+                token_version: 1,
+              },
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    });
+
+    const req = new NextRequest("http://localhost/api/test");
+    req.cookies.set(CookieName.TOKEN, "expired.or.invalid.token");
+    req.cookies.set(CookieName.REFRESH_TOKEN, refreshToken);
+
+    const response = await authedHandler(req, { params: Promise.resolve({}) });
+    expect(response.status).toBe(200);
+    expect(handler).toHaveBeenCalled();
+    expect(response.cookies.get(CookieName.TOKEN)?.value).toBeDefined();
+    expect(response.cookies.get(CookieName.REFRESH_TOKEN)?.value).toBeDefined();
+  });
+
+  it("returns 401 when neither token nor refresh token is valid", async () => {
+    const handler = vi.fn();
+    const authedHandler = withAuth(handler);
+
+    const req = new NextRequest("http://localhost/api/test");
+    const response = await authedHandler(req, { params: Promise.resolve({}) });
+
+    expect(response.status).toBe(401);
+    expect(handler).not.toHaveBeenCalled();
   });
 });

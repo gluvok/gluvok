@@ -19,7 +19,7 @@ export interface AuthUser {
   avatar?: string;
   aadhar_number?: string | null;
   role: Role;
-  factory_id: number | null;
+  factory_id: number;
 }
 
 interface AuthStore {
@@ -40,6 +40,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   userLoading: false,
   initAuth: () => {
     if (get().initialized) {
+      if (get().userLoading) {
+        set({ userLoading: false });
+      }
       return () => {};
     }
 
@@ -48,6 +51,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     axios
       .get<{ user: AuthUser | null }>("/api/auth/me", {
         validateStatus: (status) => status < 500,
+        timeout: 10000,
       })
       .then((res) => {
         if (res.data?.user) {

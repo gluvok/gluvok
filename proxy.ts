@@ -38,12 +38,6 @@ export async function proxy(request: NextRequest) {
     const refreshPayload = refreshToken ? await verifyRefreshToken(refreshToken) : null;
 
     if (refreshPayload) {
-      if (isApiRoute) {
-        return NextResponse.json(
-          { error: ReasonPhrases.UNAUTHORIZED },
-          { status: StatusCodes.UNAUTHORIZED },
-        );
-      }
       return NextResponse.next();
     }
 

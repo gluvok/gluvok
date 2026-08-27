@@ -3,7 +3,6 @@ import {
   withAuth,
   apiError,
   getPaginationParams,
-  validateRequiredFields,
   forbiddenError,
   hasPermission,
   StatusCodes,
@@ -19,6 +18,7 @@ import {
   EntityKey,
 } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
+import { addCenterSchema } from "@/lib/validation";
 
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.READ)) return forbiddenError();
@@ -49,10 +49,12 @@ export const GET = withAuth(async (req, user, client) => {
 export const POST = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.CREATE)) return forbiddenError();
   const body = await req.json();
-  const err = validateRequiredFields(body, ProjectSlug.CENTERS);
-  if (err) return err;
+  const parsed = addCenterSchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
+  }
 
-  const { name } = body;
+  const { name } = parsed.data;
   const insertValues: Record<string, unknown> = {
     [EntityKey.NAME]: name,
     [EntityKey.FACTORY_ID]: user.factory_id,

@@ -19,6 +19,7 @@ import {
 } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
+import { addEntrySchema } from "@/lib/validation";
 
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.READ)) return forbiddenError();
@@ -118,6 +119,11 @@ export const POST = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.CREATE)) return forbiddenError();
   try {
     const body = await req.json();
+    const parsed = addEntrySchema.safeParse(body);
+    if (!parsed.success) {
+      return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
+    }
+
     const {
       vehicle_number,
       weight,
@@ -125,15 +131,7 @@ export const POST = withAuth(async (req, user, client) => {
       customer_id,
       status = EntryStatus.PENDING,
       images = [],
-    } = body;
-
-    if (!vehicle_number || weight === undefined || weight === null || weight === "") {
-      return apiError("Vehicle number and weight are required.", StatusCodes.BAD_REQUEST);
-    }
-
-    if (!center_id) {
-      return apiError("Center ID is required.", StatusCodes.BAD_REQUEST);
-    }
+    } = parsed.data;
 
     // Verify center_id belongs to the user's factory
     const { data: centerRecord } = await client

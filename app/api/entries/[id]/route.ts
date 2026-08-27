@@ -16,6 +16,7 @@ import {
 } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
+import { editEntrySchema } from "@/lib/validation";
 
 export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
   if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.READ)) return forbiddenError();
@@ -55,6 +56,11 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   const { id } = await ctx.params;
   const entryId = Number(id);
   const body = await req.json();
+
+  const parsed = editEntrySchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
+  }
 
   // 1. Fetch current entry
   const { data: existing, error: fetchErr } = await client

@@ -10,12 +10,19 @@ import {
 } from "@/db/helpers";
 import { ProjectSlug, PermissionKey, TableName, EntityKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
+import { editCenterSchema } from "@/lib/validation";
 
 export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
     if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.WRITE)) return forbiddenError();
 
-    const { name } = await req.json();
+    const body = await req.json();
+    const parsed = editCenterSchema.safeParse(body);
+    if (!parsed.success) {
+      return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
+    }
+
+    const { name } = parsed.data;
 
     const query = client
       .from(TableName.CENTERS)

@@ -16,6 +16,7 @@ import {
   ProjectSlug,
   PermissionKey,
 } from "@/lib/constants/enums";
+import { editWeighmentSchema } from "@/lib/validation";
 
 export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
   if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.READ)) return forbiddenError();
@@ -94,6 +95,11 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   const { id } = await ctx.params;
   const weighmentId = Number(id);
   const body = await req.json();
+
+  const parsed = editWeighmentSchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
+  }
 
   // 1. Fetch existing weighment
   const { data: existing, error: fetchErr } = await client

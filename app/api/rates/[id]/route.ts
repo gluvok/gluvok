@@ -10,6 +10,7 @@ import {
 } from "@/db/helpers";
 import { ProjectSlug, PermissionKey, TableName, EntityKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
+import { editRateSchema } from "@/lib/validation";
 
 export const GET = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
@@ -54,7 +55,13 @@ export const PATCH = withAuth(
       );
     }
 
-    const { unit_price, unit, commodity_id } = await req.json();
+    const body = await req.json();
+    const parsed = editRateSchema.safeParse(body);
+    if (!parsed.success) {
+      return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
+    }
+
+    const { unit_price, unit, commodity_id } = parsed.data;
 
     const query = client
       .from(TableName.RATES)

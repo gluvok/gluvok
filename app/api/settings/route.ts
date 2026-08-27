@@ -7,14 +7,9 @@ import {
   formatEntityResponse,
   getFactory,
 } from "@/db/helpers";
-import {
-  ProjectSlug,
-  PermissionKey,
-  FieldRequirementMode,
-  TableName,
-  EntityKey,
-} from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey, TableName, EntityKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
+import { editSettingsSchema } from "@/lib/validation";
 
 export const GET = withAuth(async (_req, user, client) => {
   if (!hasPermission(user, ProjectSlug.SETTINGS, PermissionKey.READ)) {
@@ -36,20 +31,19 @@ export const PATCH = withAuth(async (req, user, client) => {
 
   try {
     const body = await req.json();
-    const { name, aadhar_number_mode, govt_id_mode } = body;
+    const parsed = editSettingsSchema.safeParse(body);
+    if (!parsed.success) {
+      return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
+    }
 
-    const validModes = Object.values(FieldRequirementMode);
-    const aMode = validModes.includes(aadhar_number_mode)
-      ? aadhar_number_mode
-      : FieldRequirementMode.MANDATORY;
-    const gMode = validModes.includes(govt_id_mode) ? govt_id_mode : FieldRequirementMode.MANDATORY;
+    const { name, aadhar_number_mode, govt_id_mode } = parsed.data;
 
     const { data: updated, error } = await client
       .from(TableName.FACTORIES)
       .update({
         ...(name ? { [EntityKey.NAME]: name } : {}),
-        [EntityKey.AADHAR_NUMBER_MODE]: aMode,
-        [EntityKey.GOVT_ID_MODE]: gMode,
+        ...(aadhar_number_mode ? { [EntityKey.AADHAR_NUMBER_MODE]: aadhar_number_mode } : {}),
+        ...(govt_id_mode ? { [EntityKey.GOVT_ID_MODE]: govt_id_mode } : {}),
         [EntityKey.UPDATED_AT]: new Date().toISOString(),
       })
       .eq(EntityKey.ID, user.factory_id!)

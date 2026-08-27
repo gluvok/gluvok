@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import {
   withAuth,
   getPaginationParams,
-  validateRequiredFields,
   apiError,
   forbiddenError,
   hasPermission,
@@ -19,6 +18,7 @@ import {
   TableName,
 } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
+import { addRateSchema } from "@/lib/validation";
 
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.READ)) return forbiddenError();
@@ -85,10 +85,12 @@ export const GET = withAuth(async (req, user, client) => {
 export const POST = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.CREATE)) return forbiddenError();
   const body = await req.json();
-  const err = validateRequiredFields(body, ProjectSlug.RATES);
-  if (err) return err;
+  const parsed = addRateSchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
+  }
 
-  const { commodity_id, unit_price, unit } = body;
+  const { commodity_id, unit_price, unit } = parsed.data;
   const insertValues: Record<string, unknown> = {
     [EntityKey.COMMODITY_ID]: Number(commodity_id),
     [EntityKey.UNIT_PRICE]: String(unit_price),

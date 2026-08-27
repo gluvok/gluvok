@@ -95,4 +95,12 @@ export const ApiErrorMessage = {
   SELECTED_CENTER_NOT_FOUND: "Selected center not found",
   SAVE_CONFIGURATION_FAILED: "Failed to save configuration in database.",
   DELETE_SETTINGS_FAILED: "Failed to delete selected setting(s)",
+
+  // Entry Specific
+  ENTRY_REJECTED_LOCKED: "Rejected entries cannot be modified or approved.",
+  ENTRY_APPROVED_CUSTOMER_LOCKED:
+    "Approved entries with an assigned customer are fully locked and cannot be edited.",
+  CANNOT_MODIFY_APPROVED_ENTRY: (field: string) => `Cannot modify ${field} on approved entries.`,
+  FAILED_TO_UPDATE_ENTRY: "Failed to update entry",
+  SEQUENTIAL_APPROVAL_FAILED: "Sequential approval validation failed.",
 } as const;

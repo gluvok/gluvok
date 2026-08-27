@@ -77,51 +77,45 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   // 2. Strict Edit Lock Matrix Verification
   if (existing.status === EntryStatus.REJECTED) {
-    return apiError("Rejected entries cannot be modified or approved.", StatusCodes.FORBIDDEN);
+    return apiError(ApiErrorMessage.ENTRY_REJECTED_LOCKED, StatusCodes.FORBIDDEN);
   }
 
   if (existing.status === EntryStatus.APPROVED && existing.customer_id !== null) {
-    return apiError(
-      "Approved entries with an assigned customer are fully locked and cannot be edited.",
-      StatusCodes.FORBIDDEN,
-    );
+    return apiError(ApiErrorMessage.ENTRY_APPROVED_CUSTOMER_LOCKED, StatusCodes.FORBIDDEN);
   }
 
   const updates: Record<string, unknown> = {};
 
   if (existing.status === EntryStatus.APPROVED && existing.customer_id === null) {
-    // ONLY customer_id can be updated
-    if (body.vehicle_number !== undefined && body.vehicle_number !== existing.vehicle_number) {
-      return apiError("Cannot modify vehicle_number on approved entries.", StatusCodes.BAD_REQUEST);
-    }
-    if (body.weight !== undefined && Number(body.weight) !== Number(existing.weight)) {
-      return apiError("Cannot modify weight on approved entries.", StatusCodes.BAD_REQUEST);
-    }
-    if (body.center_id !== undefined && Number(body.center_id) !== Number(existing.center_id)) {
-      return apiError("Cannot modify center on approved entries.", StatusCodes.BAD_REQUEST);
-    }
-    if (body.images !== undefined) {
-      return apiError("Cannot modify images on approved entries.", StatusCodes.BAD_REQUEST);
-    }
-    if (body.status !== undefined && body.status !== existing.status) {
-      return apiError("Cannot modify status on approved entries.", StatusCodes.BAD_REQUEST);
+    // ONLY customer_id can be updated on approved entries without customer
+    const lockedFields = [
+      EntityKey.VEHICLE_NUMBER,
+      EntityKey.WEIGHT,
+      EntityKey.CENTER_ID,
+      EntityKey.IMAGES,
+      EntityKey.STATUS,
+    ] as const;
+
+    for (const field of lockedFields) {
+      if (body[field] !== undefined && body[field] !== existing[field]) {
+        return apiError(
+          ApiErrorMessage.CANNOT_MODIFY_APPROVED_ENTRY(
+            field === EntityKey.CENTER_ID ? "center" : field,
+          ),
+          StatusCodes.BAD_REQUEST,
+        );
+      }
     }
     if (body.customer_id !== undefined) {
       updates[EntityKey.CUSTOMER_ID] = body.customer_id ? Number(body.customer_id) : null;
     }
   } else {
     // Status is pending: vehicle_number, customer_id, images, status can be edited
-    if (body.vehicle_number !== undefined) {
-      updates[EntityKey.VEHICLE_NUMBER] = body.vehicle_number;
+    for (const key of [EntityKey.VEHICLE_NUMBER, EntityKey.IMAGES, EntityKey.STATUS] as const) {
+      if (body[key] !== undefined) updates[key] = body[key];
     }
     if (body.customer_id !== undefined) {
       updates[EntityKey.CUSTOMER_ID] = body.customer_id ? Number(body.customer_id) : null;
-    }
-    if (body.images !== undefined) {
-      updates[EntityKey.IMAGES] = body.images;
-    }
-    if (body.status !== undefined) {
-      updates[EntityKey.STATUS] = body.status;
     }
   }
 
@@ -144,7 +138,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
       );
     } catch (seqErr: unknown) {
       const msg =
-        seqErr instanceof Error ? seqErr.message : "Sequential approval validation failed.";
+        seqErr instanceof Error ? seqErr.message : ApiErrorMessage.SEQUENTIAL_APPROVAL_FAILED;
       return apiError(msg, StatusCodes.BAD_REQUEST);
     }
   }
@@ -163,7 +157,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   if (updateErr || !updatedEntry) {
     console.error("Failed to update entry:", updateErr);
-    return apiError("Failed to update entry", StatusCodes.INTERNAL_SERVER_ERROR);
+    return apiError(ApiErrorMessage.FAILED_TO_UPDATE_ENTRY, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
   // 5. Trigger entry merging if status is approved

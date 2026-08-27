@@ -77,7 +77,7 @@ describe("Entries [id] route handlers", () => {
 
     expect(response.status).toBe(403);
     const json = await response.json();
-    expect(json.error).toBe("Rejected entries cannot be modified or approved.");
+    expect(json.error).toBe(ApiErrorMessage.ENTRY_REJECTED_LOCKED);
   });
 
   it("blocks DELETE when entry is linked to an active weighment", async () => {

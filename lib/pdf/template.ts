@@ -15,7 +15,7 @@ export interface HeaderSectionOptions {
 }
 
 /**
- * Renders the top header brand logo and document metadata section.
+ * Renders the executive brand header with clean company metadata cards.
  */
 export function renderHeaderSection({
   logoUrl,
@@ -25,35 +25,42 @@ export function renderHeaderSection({
   selectedCount,
 }: HeaderSectionOptions): string {
   return `
-    <header class="flex justify-between items-center border-b-2 border-slate-100 pb-5 mb-6">
-      <div class="brand flex items-center gap-3">
-        <img src="${logoUrl}" class="h-9 object-contain" alt="gluvok logo" />
+    <header class="flex justify-between items-end border-b-2 border-slate-900 pb-4 mb-6">
+      <div class="brand flex flex-col gap-1">
+        <img src="${logoUrl}" class="h-9 w-auto object-contain self-start" alt="Gluvok Logo" />
+        <span class="text-[10px] font-semibold tracking-widest uppercase text-slate-400">Official System Export</span>
       </div>
-      <div class="meta text-right text-xs text-slate-500 leading-relaxed font-sans">
-        <div>Company: <span class="meta-value font-semibold text-slate-900">${finalCompanyName}</span></div>
-        <div>Document: <span class="meta-value font-semibold text-slate-900">${projectName} Export</span></div>
-        <div>Date: <span class="meta-value font-semibold text-slate-900">${date}</span></div>
-        <div>Total Records: <span class="meta-value font-semibold text-slate-900">${selectedCount}</span></div>
+      <div class="meta text-right font-sans text-xs">
+        <div class="text-base font-bold text-slate-900 tracking-tight leading-none mb-1.5">${projectName} Export</div>
+        <div class="text-xs text-slate-500 flex items-center justify-end gap-2 font-mono">
+          <span class="font-sans font-semibold text-slate-800">${finalCompanyName}</span>
+          <span class="text-slate-300">&bull;</span>
+          <span>${date}</span>
+          <span class="text-slate-300">&bull;</span>
+          <span class="font-sans font-semibold text-slate-900">${selectedCount} Records</span>
+        </div>
       </div>
     </header>
   `;
 }
 
 /**
- * Renders the main tabular data section.
+ * Renders the styled tabular data section.
  */
 export function renderTableSection(headersHtml: string, rowsHtml: string): string {
   return `
-    <table class="w-full border-collapse mb-5 text-left text-sm text-slate-700">
-      <thead>
-        <tr class="bg-slate-50 text-slate-600 uppercase text-[11px] font-semibold tracking-wider border-b-2 border-slate-200">
-          ${headersHtml}
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        ${rowsHtml}
-      </tbody>
-    </table>
+    <div class="border border-slate-300 overflow-hidden mb-6">
+      <table class="w-full border-collapse text-left text-xs text-slate-700">
+        <thead>
+          <tr class="bg-slate-100/90 text-slate-700 uppercase text-[10px] font-bold tracking-wider border-b border-slate-300">
+            ${headersHtml}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 bg-white">
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
   `;
 }
 
@@ -63,11 +70,12 @@ export function renderTableSection(headersHtml: string, rowsHtml: string): strin
 export function renderScansSection(imagesHtml?: string): string {
   if (!imagesHtml) return "";
   return `
-    <div class="pdf-images-section mt-4 border-t border-slate-200 pt-4">
-      <div class="pdf-scans-header mb-3 border-b-2 border-slate-200 pb-1.5">
-        <h2 class="text-sm font-bold text-slate-900">Attached Scans & Images</h2>
+    <div class="pdf-images-section mt-8 border-t-2 border-slate-900 pt-4">
+      <div class="pdf-scans-header mb-3 flex items-center justify-between">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900">Attached Scans & Images</h2>
+        <span class="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Appendix</span>
       </div>
-      <div class="pdf-scans-grid flex flex-col gap-4 my-3">
+      <div class="pdf-scans-grid flex flex-col gap-5">
         ${imagesHtml}
       </div>
     </div>
@@ -79,8 +87,13 @@ export function renderScansSection(imagesHtml?: string): string {
  */
 export function renderFooterSection(finalCompanyName: string): string {
   return `
-    <footer class="fixed bottom-3 left-5 right-5 border-t border-slate-100 pt-2.5 text-center text-[11px] font-medium text-slate-400">
-      Generated for ${finalCompanyName} by Gluvok - Lathey Weigh Trix.
+    <footer class="fixed bottom-3 left-6 right-6 border-t border-slate-300 pt-2 flex items-center justify-between text-[10px] text-slate-400 font-sans tracking-wide">
+      <div>
+        Generated for <strong class="text-slate-700 font-semibold">${finalCompanyName}</strong>
+      </div>
+      <div>
+        Powered by <strong class="text-slate-700 font-semibold">Gluvok</strong> &bull; Lathey Weigh Trix
+      </div>
     </footer>
   `;
 }

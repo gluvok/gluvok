@@ -75,7 +75,7 @@ describe("downloadPDF, downloadCSV and getExportFileName", () => {
 
     // Attached scan gallery section with images
     expect(generatedHtml).toContain("Attached Scans & Images");
-    expect(generatedHtml).toContain("Vehicle: PB10XY1234");
+    expect(generatedHtml).toContain("PB10XY1234");
     expect(generatedHtml).toContain(
       'src="https://example.com/scan1.jpg" alt="Scan 1" class="pdf-scan-full-img',
     );

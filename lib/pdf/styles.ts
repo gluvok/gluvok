@@ -21,7 +21,6 @@ export const PDF_STYLES = `
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: #0f172a;
-    padding: 15mm 20mm 20mm 20mm;
     line-height: 1.5;
     background-color: #ffffff;
     position: relative;
@@ -34,16 +33,12 @@ export const PDF_STYLES = `
   .pdf-content-wrapper {
     flex: 1 0 auto;
     width: 100%;
-    padding-bottom: 25mm;
   }
 
   header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 2px solid #f1f5f9;
-    padding-bottom: 20px;
-    margin-bottom: 24px;
   }
 
   .brand { display: flex; align-items: center; gap: 12px; }
@@ -61,11 +56,6 @@ export const PDF_STYLES = `
 
   .pdf-cell-thumbs { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
   .pdf-cell-thumb { width: 36px; height: 36px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1; }
-
-  .pdf-images-section {
-    margin-top: 12px;
-    margin-bottom: 20px;
-  }
 
   .pdf-scans-header {
     margin-top: 0;

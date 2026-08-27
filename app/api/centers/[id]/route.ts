@@ -25,7 +25,7 @@ export const PATCH = withAuth(
       })
       .eq(EntityKey.ID, entityId)
       .is(EntityKey.DELETED_AT, null)
-      .eq(EntityKey.FACTORY_ID, factoryId!);
+      .eq(EntityKey.FACTORY_ID, factoryId);
 
     const { data: updated, error } = await query.select().maybeSingle();
     if (error || !updated) return apiError(ApiErrorMessage.CENTER_NOT_FOUND, StatusCodes.NOT_FOUND);

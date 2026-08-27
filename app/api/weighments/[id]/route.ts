@@ -90,27 +90,16 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     return apiError("Weighment not found", StatusCodes.NOT_FOUND);
   }
 
-  const allowedKeys = [EntityKey.UNIT, EntityKey.TYPE];
+  const allowedKeys = [EntityKey.TYPE];
   const forbiddenKeys = Object.keys(body).filter((key) => !allowedKeys.includes(key as EntityKey));
   if (forbiddenKeys.length > 0) {
     return apiError(
-      "Only 'unit' and 'type' fields can be edited on a weighment record.",
+      "Only the 'type' field can be edited on a weighment record.",
       StatusCodes.BAD_REQUEST,
     );
   }
 
   const updates: Record<string, unknown> = {};
-
-  // 2. Validate 'unit' update lock if rate_id is NOT NULL
-  if (body.unit !== undefined) {
-    if (existing.rate_id !== null && existing.rate_id !== undefined) {
-      return apiError(
-        "Cannot edit unit of a weighment linked to a rate. The unit is fixed by the assigned rate.",
-        StatusCodes.BAD_REQUEST,
-      );
-    }
-    updates[EntityKey.UNIT] = body.unit;
-  }
 
   // 3. Validate 'type' update lock if type is NOT 'unassigned'
   if (body.type !== undefined) {

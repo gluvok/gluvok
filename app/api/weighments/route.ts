@@ -14,6 +14,17 @@ export const GET = withAuth(async (req, user, client) => {
   const pagination = getPaginationParams(req.nextUrl);
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
   const typeParam = req.nextUrl.searchParams.get(EntityKey.TYPE);
+  const unitParam = req.nextUrl.searchParams.get(EntityKey.UNIT);
+  const rateIdParam = req.nextUrl.searchParams.get(EntityKey.RATE_ID);
+  const centerIdParam = req.nextUrl.searchParams.get(EntityKey.CENTER_ID);
+  const userIdParam = req.nextUrl.searchParams.get(EntityKey.USER_ID);
+  const customerIdParam = req.nextUrl.searchParams.get(EntityKey.CUSTOMER_ID);
+  const inCenterIdParam = req.nextUrl.searchParams.get(EntityKey.IN_CENTER_ID);
+  const outCenterIdParam = req.nextUrl.searchParams.get(EntityKey.OUT_CENTER_ID);
+  const inUserIdParam = req.nextUrl.searchParams.get(EntityKey.IN_USER_ID);
+  const outUserIdParam = req.nextUrl.searchParams.get(EntityKey.OUT_USER_ID);
+  const inCustomerIdParam = req.nextUrl.searchParams.get(EntityKey.IN_CUSTOMER_ID);
+  const outCustomerIdParam = req.nextUrl.searchParams.get(EntityKey.OUT_CUSTOMER_ID);
   const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT;
   const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true";
   const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE);
@@ -31,6 +42,65 @@ export const GET = withAuth(async (req, user, client) => {
 
   if (typeParam && typeParam !== FilterValue.ALL) {
     query = query.eq(EntityKey.TYPE, typeParam);
+  }
+
+  if (unitParam && unitParam !== FilterValue.ALL) {
+    query = query.eq(EntityKey.UNIT, unitParam);
+  }
+
+  if (rateIdParam && rateIdParam !== FilterValue.ALL) {
+    query = query.eq(EntityKey.RATE_ID, Number(rateIdParam));
+  }
+
+  if (centerIdParam && centerIdParam !== FilterValue.ALL) {
+    const cId = Number(centerIdParam);
+    query = query.or(
+      `${RelationAlias.IN_ENTRY}.${EntityKey.CENTER_ID}.eq.${cId},${RelationAlias.OUT_ENTRY}.${EntityKey.CENTER_ID}.eq.${cId}`,
+    );
+  }
+
+  if (userIdParam && userIdParam !== FilterValue.ALL) {
+    const uId = Number(userIdParam);
+    query = query.or(
+      `${RelationAlias.IN_ENTRY}.${EntityKey.USER_ID}.eq.${uId},${RelationAlias.OUT_ENTRY}.${EntityKey.USER_ID}.eq.${uId}`,
+    );
+  }
+
+  if (customerIdParam && customerIdParam !== FilterValue.ALL) {
+    const custId = Number(customerIdParam);
+    query = query.or(
+      `${RelationAlias.IN_ENTRY}.${EntityKey.CUSTOMER_ID}.eq.${custId},${RelationAlias.OUT_ENTRY}.${EntityKey.CUSTOMER_ID}.eq.${custId}`,
+    );
+  }
+
+  if (inCenterIdParam && inCenterIdParam !== FilterValue.ALL) {
+    query = query.eq(`${RelationAlias.IN_ENTRY}.${EntityKey.CENTER_ID}`, Number(inCenterIdParam));
+  }
+
+  if (outCenterIdParam && outCenterIdParam !== FilterValue.ALL) {
+    query = query.eq(`${RelationAlias.OUT_ENTRY}.${EntityKey.CENTER_ID}`, Number(outCenterIdParam));
+  }
+
+  if (inUserIdParam && inUserIdParam !== FilterValue.ALL) {
+    query = query.eq(`${RelationAlias.IN_ENTRY}.${EntityKey.USER_ID}`, Number(inUserIdParam));
+  }
+
+  if (outUserIdParam && outUserIdParam !== FilterValue.ALL) {
+    query = query.eq(`${RelationAlias.OUT_ENTRY}.${EntityKey.USER_ID}`, Number(outUserIdParam));
+  }
+
+  if (inCustomerIdParam && inCustomerIdParam !== FilterValue.ALL) {
+    query = query.eq(
+      `${RelationAlias.IN_ENTRY}.${EntityKey.CUSTOMER_ID}`,
+      Number(inCustomerIdParam),
+    );
+  }
+
+  if (outCustomerIdParam && outCustomerIdParam !== FilterValue.ALL) {
+    query = query.eq(
+      `${RelationAlias.OUT_ENTRY}.${EntityKey.CUSTOMER_ID}`,
+      Number(outCustomerIdParam),
+    );
   }
 
   if (startDateParam) {

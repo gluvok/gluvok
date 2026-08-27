@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EntityKey, Unit, EntryStatus, EntryType } from "@/lib/constants/enums";
+import { EntityKey, EntryStatus, EntryType, WeighmentType } from "@/lib/constants/enums";
 import { addEntrySchema, editEntrySchema, editWeighmentSchema } from "./weighments";
 
 const validEntry = {
@@ -39,9 +39,9 @@ describe("entries & weighments validation", () => {
     });
   });
 
-  it("allows updating unit on weighment edit schema", () => {
-    expect(editWeighmentSchema.parse({ [EntityKey.UNIT]: Unit.Q })).toEqual({
-      [EntityKey.UNIT]: Unit.Q,
+  it("allows updating type on weighment edit schema", () => {
+    expect(editWeighmentSchema.parse({ [EntityKey.TYPE]: WeighmentType.IN })).toEqual({
+      [EntityKey.TYPE]: WeighmentType.IN,
     });
   });
 });

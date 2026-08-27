@@ -85,15 +85,13 @@ function ActionCell<T extends EntityRecord>({
   let canRejectEntry = false;
 
   if (projectSlug === ProjectSlug.WEIGHMENTS) {
-    const rateId = getField(item, EntityKey.RATE_ID);
     const typeVal = getField(item, EntityKey.TYPE);
-    const isRateFixed = rateId !== null && rateId !== undefined && rateId !== "";
     const isTypeFixed =
       typeVal !== null &&
       typeVal !== undefined &&
       typeVal !== "" &&
       typeVal !== WeighmentType.UNASSIGNED;
-    if (isRateFixed && isTypeFixed) {
+    if (isTypeFixed) {
       hasRowWrite = false;
     }
   }

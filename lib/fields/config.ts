@@ -178,15 +178,6 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   ],
   [ProjectSlug.WEIGHMENTS]: [
     {
-      key: EntityKey.UNIT,
-      label: ColumnLabel.UNIT,
-      placeholder: "Select unit...",
-      type: FieldType.UNIT,
-      required: true,
-      icon: Ruler,
-      span: FieldSpan.FULL,
-    },
-    {
       key: EntityKey.TYPE,
       label: ColumnLabel.TYPE,
       placeholder: "Select type...",

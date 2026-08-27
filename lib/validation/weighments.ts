@@ -110,7 +110,6 @@ export const addWeighmentSchema = z.object({
 });
 
 export const editWeighmentSchema = z.object({
-  [EntityKey.UNIT]: z.enum([Unit.KG, Unit.Q, Unit.GAL]).optional(),
   [EntityKey.TYPE]: z
     .enum([WeighmentType.UNASSIGNED, WeighmentType.IN, WeighmentType.OUT])
     .optional(),

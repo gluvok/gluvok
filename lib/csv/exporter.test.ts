@@ -54,6 +54,10 @@ describe("downloadPDF, downloadCSV and getExportFileName", () => {
     downloadPDF(table, "Entries", "Apex Industries");
 
     expect(printPdf).toHaveBeenCalledTimes(1);
+    expect(printPdf).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.stringMatching(/^apex_industries_entries_export_\d{8}_\d{6}\.pdf$/),
+    );
     const generatedHtml = vi.mocked(printPdf).mock.calls[0][0];
 
     // Tailwind CDN and Title

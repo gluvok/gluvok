@@ -156,6 +156,7 @@ export function downloadPDF<TData extends RowData>(
       finalCompanyName,
       fileName,
     ),
+    fileName,
   );
 }
 

@@ -9,7 +9,6 @@ import {
   StatusCodes,
   fetchPaginatedResult,
   formatEntityResponse,
-  isFKViolation,
   parseBulkIds,
 } from "@/db/helpers";
 import {
@@ -89,29 +88,27 @@ export const DELETE = withAuth(async (req, user, client) => {
     return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_CENTERS, StatusCodes.BAD_REQUEST);
   }
 
-  try {
-    const query = client
-      .from(TableName.CENTERS)
-      .update({
-        [EntityKey.DELETED_AT]: new Date().toISOString(),
-        [EntityKey.UPDATED_AT]: new Date().toISOString(),
-      })
-      .in(EntityKey.ID, ids)
-      .is(EntityKey.DELETED_AT, null)
-      .eq(EntityKey.FACTORY_ID, user.factory_id!);
+  const query = client
+    .from(TableName.CENTERS)
+    .update({
+      [EntityKey.DELETED_AT]: new Date().toISOString(),
+      [EntityKey.UPDATED_AT]: new Date().toISOString(),
+    })
+    .in(EntityKey.ID, ids)
+    .is(EntityKey.DELETED_AT, null)
+    .eq(EntityKey.FACTORY_ID, user.factory_id!);
 
-    const { data, error } = await query.select(EntityKey.ID);
-    if (error) throw error;
-
-    if (!data || data.length !== ids.length) {
-      return apiError(ApiErrorMessage.ONE_OR_MORE_CENTERS_NOT_FOUND, StatusCodes.NOT_FOUND);
-    }
-
-    return NextResponse.json({ success: true, deleted_count: data.length });
-  } catch (error) {
-    if (isFKViolation(error)) {
-      return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_CENTERS, StatusCodes.BAD_REQUEST);
-    }
-    throw error;
+  const { data, error } = await query.select(EntityKey.ID);
+  if (error) {
+    return apiError(
+      error.message || ApiErrorMessage.CANNOT_DELETE_SELECTED_CENTERS,
+      StatusCodes.BAD_REQUEST,
+    );
   }
+
+  if (!data || data.length !== ids.length) {
+    return apiError(ApiErrorMessage.ONE_OR_MORE_CENTERS_NOT_FOUND, StatusCodes.NOT_FOUND);
+  }
+
+  return NextResponse.json({ success: true, deleted_count: data.length });
 });

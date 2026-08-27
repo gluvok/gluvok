@@ -62,13 +62,6 @@ export function getPaginationParams(url: URL): PaginationParams {
   return { page, limit, offset };
 }
 
-const PG_FK_VIOLATION = "23503";
-
-export function isFKViolation(error: unknown): boolean {
-  const e = error as { code?: string; message?: string };
-  return e?.code === PG_FK_VIOLATION || Boolean(e?.message?.includes("foreign key"));
-}
-
 export function parseBulkIds(body: unknown): number[] | null {
   if (!body || typeof body !== "object" || !Array.isArray((body as { ids?: unknown }).ids)) {
     return null;

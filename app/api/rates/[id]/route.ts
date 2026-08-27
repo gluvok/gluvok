@@ -3,7 +3,6 @@ import {
   withAuth,
   withEntityScope,
   apiError,
-  isFKViolation,
   forbiddenError,
   hasPermission,
   StatusCodes,
@@ -87,30 +86,25 @@ export const DELETE = withAuth(
       return apiError(ApiErrorMessage.CANNOT_DELETE_RATE, StatusCodes.BAD_REQUEST);
     }
 
-    try {
-      const query = client
-        .from(TableName.RATES)
-        .update({
-          [EntityKey.DELETED_AT]: new Date().toISOString(),
-          [EntityKey.UPDATED_AT]: new Date().toISOString(),
-        })
-        .eq(EntityKey.ID, entityId)
-        .is(EntityKey.DELETED_AT, null)
-        .eq(EntityKey.FACTORY_ID, factoryId!);
+    const query = client
+      .from(TableName.RATES)
+      .update({
+        [EntityKey.DELETED_AT]: new Date().toISOString(),
+        [EntityKey.UPDATED_AT]: new Date().toISOString(),
+      })
+      .eq(EntityKey.ID, entityId)
+      .is(EntityKey.DELETED_AT, null)
+      .eq(EntityKey.FACTORY_ID, factoryId!);
 
-      const { data, error } = await query.select(EntityKey.ID);
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        return apiError(ApiErrorMessage.RATE_NOT_FOUND, StatusCodes.NOT_FOUND);
-      }
-
-      return NextResponse.json({ success: true, id: entityId });
-    } catch (error) {
-      if (isFKViolation(error)) {
-        return apiError(ApiErrorMessage.CANNOT_DELETE_RATE, StatusCodes.BAD_REQUEST);
-      }
-      throw error;
+    const { data, error } = await query.select(EntityKey.ID);
+    if (error) {
+      return apiError(error.message || ApiErrorMessage.CANNOT_DELETE_RATE, StatusCodes.BAD_REQUEST);
     }
+
+    if (!data || data.length === 0) {
+      return apiError(ApiErrorMessage.RATE_NOT_FOUND, StatusCodes.NOT_FOUND);
+    }
+
+    return NextResponse.json({ success: true, id: entityId });
   }),
 );

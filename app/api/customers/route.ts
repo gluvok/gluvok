@@ -9,7 +9,6 @@ import {
   getFactory,
   fetchPaginatedResult,
   formatEntityResponse,
-  isFKViolation,
   parseBulkIds,
 } from "@/db/helpers";
 import {
@@ -152,23 +151,21 @@ export const DELETE = withAuth(async (req, user, client) => {
     return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_CUSTOMERS, StatusCodes.BAD_REQUEST);
   }
 
-  try {
-    const { data: deletedCount, error } = await client.rpc("delete_customers_with_user", {
-      p_customer_ids: ids,
-      p_factory_id: user.factory_id!,
-    });
+  const { data: deletedCount, error } = await client.rpc("delete_customers_with_user", {
+    p_customer_ids: ids,
+    p_factory_id: user.factory_id!,
+  });
 
-    if (error) throw error;
-
-    if (deletedCount !== ids.length) {
-      return apiError(ApiErrorMessage.ONE_OR_MORE_CUSTOMERS_NOT_FOUND, StatusCodes.NOT_FOUND);
-    }
-
-    return NextResponse.json({ success: true, deleted_count: deletedCount });
-  } catch (error) {
-    if (isFKViolation(error)) {
-      return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_CUSTOMERS, StatusCodes.BAD_REQUEST);
-    }
-    throw error;
+  if (error) {
+    return apiError(
+      error.message || ApiErrorMessage.CANNOT_DELETE_SELECTED_CUSTOMERS,
+      StatusCodes.BAD_REQUEST,
+    );
   }
+
+  if (deletedCount !== ids.length) {
+    return apiError(ApiErrorMessage.ONE_OR_MORE_CUSTOMERS_NOT_FOUND, StatusCodes.NOT_FOUND);
+  }
+
+  return NextResponse.json({ success: true, deleted_count: deletedCount });
 });

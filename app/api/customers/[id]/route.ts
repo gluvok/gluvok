@@ -3,7 +3,6 @@ import {
   withAuth,
   withEntityScope,
   apiError,
-  isFKViolation,
   forbiddenError,
   hasPermission,
   StatusCodes,
@@ -100,24 +99,22 @@ export const DELETE = withAuth(
       return apiError(ApiErrorMessage.CANNOT_DELETE_CUSTOMER, StatusCodes.BAD_REQUEST);
     }
 
-    try {
-      const { data: deletedCount, error } = await client.rpc("delete_customers_with_user", {
-        p_customer_ids: [entityId],
-        p_factory_id: factoryId!,
-      });
+    const { data: deletedCount, error } = await client.rpc("delete_customers_with_user", {
+      p_customer_ids: [entityId],
+      p_factory_id: factoryId!,
+    });
 
-      if (error) throw error;
-
-      if (!deletedCount || deletedCount === 0) {
-        return apiError(ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND);
-      }
-
-      return NextResponse.json({ success: true, id: entityId });
-    } catch (error) {
-      if (isFKViolation(error)) {
-        return apiError(ApiErrorMessage.CANNOT_DELETE_CUSTOMER, StatusCodes.BAD_REQUEST);
-      }
-      throw error;
+    if (error) {
+      return apiError(
+        error.message || ApiErrorMessage.CANNOT_DELETE_CUSTOMER,
+        StatusCodes.BAD_REQUEST,
+      );
     }
+
+    if (!deletedCount || deletedCount === 0) {
+      return apiError(ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND);
+    }
+
+    return NextResponse.json({ success: true, id: entityId });
   }),
 );

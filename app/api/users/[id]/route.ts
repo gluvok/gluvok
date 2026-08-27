@@ -6,7 +6,6 @@ import {
   formatEntityResponse,
   forbiddenError,
   hasPermission,
-  isFKViolation,
   StatusCodes,
   getFactory,
 } from "@/db/helpers";
@@ -167,25 +166,20 @@ export const DELETE = withAuth(
       return apiError(ApiErrorMessage.CANNOT_DELETE_USER, StatusCodes.BAD_REQUEST);
     }
 
-    try {
-      const { error } = await client
-        .from(TableName.USERS)
-        .update({
-          [EntityKey.DELETED_AT]: new Date().toISOString(),
-          [EntityKey.UPDATED_AT]: new Date().toISOString(),
-        })
-        .eq(EntityKey.ID, entityId)
-        .is(EntityKey.DELETED_AT, null)
-        .eq(EntityKey.FACTORY_ID, factoryId!);
+    const { error } = await client
+      .from(TableName.USERS)
+      .update({
+        [EntityKey.DELETED_AT]: new Date().toISOString(),
+        [EntityKey.UPDATED_AT]: new Date().toISOString(),
+      })
+      .eq(EntityKey.ID, entityId)
+      .is(EntityKey.DELETED_AT, null)
+      .eq(EntityKey.FACTORY_ID, factoryId!);
 
-      if (error) throw error;
-
-      return NextResponse.json({ success: true, id: entityId });
-    } catch (error) {
-      if (isFKViolation(error)) {
-        return apiError(ApiErrorMessage.CANNOT_DELETE_USER, StatusCodes.BAD_REQUEST);
-      }
-      throw error;
+    if (error) {
+      return apiError(error.message || ApiErrorMessage.CANNOT_DELETE_USER, StatusCodes.BAD_REQUEST);
     }
+
+    return NextResponse.json({ success: true, id: entityId });
   }),
 );

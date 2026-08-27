@@ -9,7 +9,6 @@ import {
   getFactory,
   fetchPaginatedResult,
   formatEntityResponse,
-  isFKViolation,
   parseBulkIds,
 } from "@/db/helpers";
 import {
@@ -179,30 +178,28 @@ export const DELETE = withAuth(async (req, user, client) => {
     return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_USERS, StatusCodes.BAD_REQUEST);
   }
 
-  try {
-    const { data: deletedUsers, error } = await client
-      .from(TableName.USERS)
-      .update({
-        [EntityKey.DELETED_AT]: new Date().toISOString(),
-        [EntityKey.UPDATED_AT]: new Date().toISOString(),
-      })
-      .in(EntityKey.ID, ids)
-      .is(EntityKey.DELETED_AT, null)
-      .eq(EntityKey.FACTORY_ID, user.factory_id!)
-      .select(EntityKey.ID);
+  const { data: deletedUsers, error } = await client
+    .from(TableName.USERS)
+    .update({
+      [EntityKey.DELETED_AT]: new Date().toISOString(),
+      [EntityKey.UPDATED_AT]: new Date().toISOString(),
+    })
+    .in(EntityKey.ID, ids)
+    .is(EntityKey.DELETED_AT, null)
+    .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .select(EntityKey.ID);
 
-    if (error) throw error;
-
-    const deletedCount = deletedUsers?.length || 0;
-    if (deletedCount !== ids.length) {
-      return apiError(ApiErrorMessage.ONE_OR_MORE_USERS_NOT_FOUND, StatusCodes.NOT_FOUND);
-    }
-
-    return NextResponse.json({ success: true, deleted_count: deletedCount });
-  } catch (error) {
-    if (isFKViolation(error)) {
-      return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_USERS, StatusCodes.BAD_REQUEST);
-    }
-    throw error;
+  if (error) {
+    return apiError(
+      error.message || ApiErrorMessage.CANNOT_DELETE_SELECTED_USERS,
+      StatusCodes.BAD_REQUEST,
+    );
   }
+
+  const deletedCount = deletedUsers?.length || 0;
+  if (deletedCount !== ids.length) {
+    return apiError(ApiErrorMessage.ONE_OR_MORE_USERS_NOT_FOUND, StatusCodes.NOT_FOUND);
+  }
+
+  return NextResponse.json({ success: true, deleted_count: deletedCount });
 });

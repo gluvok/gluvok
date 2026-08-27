@@ -11,6 +11,8 @@ import {
   SingularEntityName,
   Role,
   WeighmentType,
+  EntryType,
+  FilterValue,
   FieldRequirementMode,
 } from "@/lib/constants/enums";
 import {
@@ -29,11 +31,12 @@ import {
   Shield,
   ArrowDownLeft,
   ArrowUpRight,
-  ArrowUpDown,
   CheckCircle2,
   HelpCircle,
   Ban,
   SlidersHorizontal,
+  PenTool,
+  Cpu,
   type LucideIcon,
 } from "lucide-react";
 
@@ -125,15 +128,23 @@ export function getRoleIcon(role?: string): LucideIcon {
 }
 
 export function getTypeIcon(typeVal?: string): LucideIcon {
-  if (!typeVal) return ArrowUpDown;
+  if (!typeVal || typeVal === FilterValue.ALL) return SlidersHorizontal;
   const normalized = typeVal.toLowerCase().trim();
   switch (normalized) {
     case WeighmentType.IN:
       return ArrowDownLeft;
     case WeighmentType.OUT:
       return ArrowUpRight;
+    case WeighmentType.UNASSIGNED:
+      return HelpCircle;
+    case EntryType.MANUAL:
+    case "manual":
+      return PenTool;
+    case EntryType.AUTOMATIC:
+    case "automatic":
+      return Cpu;
     default:
-      return ArrowUpDown;
+      return SlidersHorizontal;
   }
 }
 

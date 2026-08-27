@@ -17,8 +17,9 @@ import {
   ProjectSlug,
 } from "@/lib/constants/enums";
 import { useEntitiesStore } from "@/lib/store";
-import { Building, ShieldCheck, Sliders, User as UserIcon, Users } from "lucide-react";
+import { Building, ShieldCheck, User as UserIcon, Users } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
+import { getTypeIcon } from "@/lib/fields/helpers";
 import { DateRangeFilter } from "./date-range-filter";
 
 interface EntriesFiltersProps<TData extends RowData> {
@@ -132,7 +133,7 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
         data={typeOptions}
         placeholder="All Types"
         searchPlaceholder="Search type..."
-        icon={Sliders}
+        icon={getTypeIcon(currentType as string)}
         className="w-auto"
         id="filter-type-combobox"
       />

@@ -5,7 +5,18 @@
 
 import { type ColumnDef, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import { Car, Weight, Building, User, Users, Image, ShieldCheck, Sliders } from "lucide-react";
+import {
+  Car,
+  Weight,
+  Building,
+  User,
+  Users,
+  Image,
+  ShieldCheck,
+  Sliders,
+  Cpu,
+  PenTool,
+} from "lucide-react";
 import { EntityKey, ColumnLabel, EntryStatus, EntryType } from "@/lib/constants/enums";
 import { cn } from "@/lib/utils";
 import {
@@ -22,6 +33,7 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
     createCustomColumn(EntityKey.TYPE, ColumnLabel.TYPE, Sliders, (val) => {
       const type = String(val || EntryType.AUTOMATIC).toLowerCase();
       let typeClass = "bg-muted text-muted-foreground border border-border";
+      const Icon = type === EntryType.AUTOMATIC ? Cpu : PenTool;
       if (type === EntryType.AUTOMATIC) {
         typeClass =
           "bg-purple-50 text-purple-700 border border-purple-200/50 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800/30";
@@ -29,7 +41,14 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         typeClass =
           "bg-blue-50 text-blue-700 border border-blue-200/50 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/30";
       }
-      return <span className={cn(badgeBaseClass, "capitalize", typeClass)}>{type}</span>;
+      return (
+        <span
+          className={cn(badgeBaseClass, "capitalize inline-flex items-center gap-1.5", typeClass)}
+        >
+          <Icon className="h-3 w-3 shrink-0" />
+          {type}
+        </span>
+      );
     }),
     createTextColumn(EntityKey.VEHICLE_NUMBER, ColumnLabel.VEHICLE_NUMBER, Car),
     createBaseColumn(EntityKey.WEIGHT, ColumnLabel.WEIGHT, Weight, ({ row }) => {

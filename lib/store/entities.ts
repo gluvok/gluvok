@@ -42,6 +42,10 @@ interface EntitiesState {
   entitiesUpdatedTrigger: number;
   triggerEntitiesUpdate: () => void;
   commodities: { id: number; name: string }[];
+  centers: IdNamePair[];
+  users: IdNamePair[];
+  customers: IdNamePair[];
+  rates: RateOption[];
   weighmentFiltersData: {
     centers: IdNamePair[];
     users: IdNamePair[];
@@ -61,6 +65,10 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
   filtersInitialized: false,
 
   commodities: [],
+  centers: [],
+  users: [],
+  customers: [],
+  rates: [],
   weighmentFiltersData: null,
 
   preloadAllFilters: async (options) => {
@@ -82,12 +90,21 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
         };
       });
 
+      const commodities = payload?.commodities || [];
+      const centers = payload?.centers || [];
+      const users = payload?.users || [];
+      const customers = payload?.customers || [];
+
       set({
-        commodities: payload?.commodities || [],
+        commodities,
+        centers,
+        users,
+        customers,
+        rates: rateOpts,
         weighmentFiltersData: {
-          centers: payload?.centers || [],
-          users: payload?.users || [],
-          customers: payload?.customers || [],
+          centers,
+          users,
+          customers,
           rates: rateOpts,
         },
       });
@@ -133,62 +150,66 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
           }
           break;
         case ProjectSlug.CENTERS:
-          if (createdId && state.weighmentFiltersData) {
+          if (createdId) {
+            const newCenters = [
+              ...state.centers.filter((c) => c.id !== createdId),
+              { id: createdId, name },
+            ];
             set({
-              weighmentFiltersData: {
-                ...state.weighmentFiltersData,
-                centers: [
-                  ...state.weighmentFiltersData.centers.filter((c) => c.id !== createdId),
-                  { id: createdId, name },
-                ],
-              },
+              centers: newCenters,
+              weighmentFiltersData: state.weighmentFiltersData
+                ? { ...state.weighmentFiltersData, centers: newCenters }
+                : null,
             });
           }
           break;
         case ProjectSlug.USERS: {
-          if (createdId && state.weighmentFiltersData) {
+          if (createdId) {
+            const newUsers = [
+              ...state.users.filter((u) => u.id !== createdId),
+              { id: createdId, name },
+            ];
             set({
-              weighmentFiltersData: {
-                ...state.weighmentFiltersData,
-                users: [
-                  ...state.weighmentFiltersData.users.filter((u) => u.id !== createdId),
-                  { id: createdId, name },
-                ],
-              },
+              users: newUsers,
+              weighmentFiltersData: state.weighmentFiltersData
+                ? { ...state.weighmentFiltersData, users: newUsers }
+                : null,
             });
           }
           break;
         }
         case ProjectSlug.CUSTOMERS:
-          if (createdId && state.weighmentFiltersData) {
+          if (createdId) {
+            const newCustomers = [
+              ...state.customers.filter((c) => c.id !== createdId),
+              { id: createdId, name },
+            ];
             set({
-              weighmentFiltersData: {
-                ...state.weighmentFiltersData,
-                customers: [
-                  ...state.weighmentFiltersData.customers.filter((c) => c.id !== createdId),
-                  { id: createdId, name },
-                ],
-              },
+              customers: newCustomers,
+              weighmentFiltersData: state.weighmentFiltersData
+                ? { ...state.weighmentFiltersData, customers: newCustomers }
+                : null,
             });
           }
           break;
         case ProjectSlug.RATES: {
-          if (createdId && state.weighmentFiltersData) {
+          if (createdId) {
             const commodityId = Number(created.commodity_id || newE.commodity_id);
             const foundCommodity = state.commodities.find((c) => c.id === commodityId);
             const commodityName = String(created.commodity_name || foundCommodity?.name || "Rate");
             const unitPrice = String(created.unit_price || newE.unit_price || "");
             const unit = String(created.unit || newE.unit || "");
             const label = `${commodityName} · ₹${unitPrice}/${unit} (ID: ${createdId})`;
+            const newRates = [
+              ...state.rates.filter((r) => r.id !== createdId),
+              { id: createdId, label },
+            ];
 
             set({
-              weighmentFiltersData: {
-                ...state.weighmentFiltersData,
-                rates: [
-                  ...state.weighmentFiltersData.rates.filter((r) => r.id !== createdId),
-                  { id: createdId, label },
-                ],
-              },
+              rates: newRates,
+              weighmentFiltersData: state.weighmentFiltersData
+                ? { ...state.weighmentFiltersData, rates: newRates }
+                : null,
             });
           }
           break;
@@ -219,61 +240,57 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
             ),
           });
           break;
-        case ProjectSlug.CENTERS:
-          if (state.weighmentFiltersData) {
-            set({
-              weighmentFiltersData: {
-                ...state.weighmentFiltersData,
-                centers: state.weighmentFiltersData.centers.map((c) =>
-                  c.id === targetId ? { id: targetId, name } : c,
-                ),
-              },
-            });
-          }
-          break;
-        case ProjectSlug.USERS: {
-          if (state.weighmentFiltersData) {
-            set({
-              weighmentFiltersData: {
-                ...state.weighmentFiltersData,
-                users: state.weighmentFiltersData.users.map((u) =>
-                  u.id === targetId ? { id: targetId, name } : u,
-                ),
-              },
-            });
-          }
+        case ProjectSlug.CENTERS: {
+          const newCenters = state.centers.map((c) =>
+            c.id === targetId ? { id: targetId, name } : c,
+          );
+          set({
+            centers: newCenters,
+            weighmentFiltersData: state.weighmentFiltersData
+              ? { ...state.weighmentFiltersData, centers: newCenters }
+              : null,
+          });
           break;
         }
-        case ProjectSlug.CUSTOMERS:
-          if (state.weighmentFiltersData) {
-            set({
-              weighmentFiltersData: {
-                ...state.weighmentFiltersData,
-                customers: state.weighmentFiltersData.customers.map((c) =>
-                  c.id === targetId ? { id: targetId, name } : c,
-                ),
-              },
-            });
-          }
+        case ProjectSlug.USERS: {
+          const newUsers = state.users.map((u) => (u.id === targetId ? { id: targetId, name } : u));
+          set({
+            users: newUsers,
+            weighmentFiltersData: state.weighmentFiltersData
+              ? { ...state.weighmentFiltersData, users: newUsers }
+              : null,
+          });
           break;
+        }
+        case ProjectSlug.CUSTOMERS: {
+          const newCustomers = state.customers.map((c) =>
+            c.id === targetId ? { id: targetId, name } : c,
+          );
+          set({
+            customers: newCustomers,
+            weighmentFiltersData: state.weighmentFiltersData
+              ? { ...state.weighmentFiltersData, customers: newCustomers }
+              : null,
+          });
+          break;
+        }
         case ProjectSlug.RATES: {
-          if (state.weighmentFiltersData) {
-            const commodityId = Number(updated.commodity_id || fields.commodity_id);
-            const foundCommodity = state.commodities.find((c) => c.id === commodityId);
-            const commodityName = String(updated.commodity_name || foundCommodity?.name || "Rate");
-            const unitPrice = String(updated.unit_price || fields.unit_price || "");
-            const unit = String(updated.unit || fields.unit || "");
-            const label = `${commodityName} · ₹${unitPrice}/${unit} (ID: ${targetId})`;
+          const commodityId = Number(updated.commodity_id || fields.commodity_id);
+          const foundCommodity = state.commodities.find((c) => c.id === commodityId);
+          const commodityName = String(updated.commodity_name || foundCommodity?.name || "Rate");
+          const unitPrice = String(updated.unit_price || fields.unit_price || "");
+          const unit = String(updated.unit || fields.unit || "");
+          const label = `${commodityName} · ₹${unitPrice}/${unit} (ID: ${targetId})`;
+          const newRates = state.rates.map((r) =>
+            r.id === targetId ? { id: targetId, label } : r,
+          );
 
-            set({
-              weighmentFiltersData: {
-                ...state.weighmentFiltersData,
-                rates: state.weighmentFiltersData.rates.map((r) =>
-                  r.id === targetId ? { id: targetId, label } : r,
-                ),
-              },
-            });
-          }
+          set({
+            rates: newRates,
+            weighmentFiltersData: state.weighmentFiltersData
+              ? { ...state.weighmentFiltersData, rates: newRates }
+              : null,
+          });
           break;
         }
         case ProjectSlug.SETTINGS:
@@ -296,47 +313,46 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
       case ProjectSlug.COMMODITIES:
         set({ commodities: state.commodities.filter((c) => c.id !== targetId) });
         break;
-      case ProjectSlug.CENTERS:
-        if (state.weighmentFiltersData) {
-          set({
-            weighmentFiltersData: {
-              ...state.weighmentFiltersData,
-              centers: state.weighmentFiltersData.centers.filter((c) => c.id !== targetId),
-            },
-          });
-        }
-        break;
-      case ProjectSlug.USERS: {
-        if (state.weighmentFiltersData) {
-          set({
-            weighmentFiltersData: {
-              ...state.weighmentFiltersData,
-              users: state.weighmentFiltersData.users.filter((u) => u.id !== targetId),
-            },
-          });
-        }
+      case ProjectSlug.CENTERS: {
+        const newCenters = state.centers.filter((c) => c.id !== targetId);
+        set({
+          centers: newCenters,
+          weighmentFiltersData: state.weighmentFiltersData
+            ? { ...state.weighmentFiltersData, centers: newCenters }
+            : null,
+        });
         break;
       }
-      case ProjectSlug.CUSTOMERS:
-        if (state.weighmentFiltersData) {
-          set({
-            weighmentFiltersData: {
-              ...state.weighmentFiltersData,
-              customers: state.weighmentFiltersData.customers.filter((c) => c.id !== targetId),
-            },
-          });
-        }
+      case ProjectSlug.USERS: {
+        const newUsers = state.users.filter((u) => u.id !== targetId);
+        set({
+          users: newUsers,
+          weighmentFiltersData: state.weighmentFiltersData
+            ? { ...state.weighmentFiltersData, users: newUsers }
+            : null,
+        });
         break;
-      case ProjectSlug.RATES:
-        if (state.weighmentFiltersData) {
-          set({
-            weighmentFiltersData: {
-              ...state.weighmentFiltersData,
-              rates: state.weighmentFiltersData.rates.filter((r) => r.id !== targetId),
-            },
-          });
-        }
+      }
+      case ProjectSlug.CUSTOMERS: {
+        const newCustomers = state.customers.filter((c) => c.id !== targetId);
+        set({
+          customers: newCustomers,
+          weighmentFiltersData: state.weighmentFiltersData
+            ? { ...state.weighmentFiltersData, customers: newCustomers }
+            : null,
+        });
         break;
+      }
+      case ProjectSlug.RATES: {
+        const newRates = state.rates.filter((r) => r.id !== targetId);
+        set({
+          rates: newRates,
+          weighmentFiltersData: state.weighmentFiltersData
+            ? { ...state.weighmentFiltersData, rates: newRates }
+            : null,
+        });
+        break;
+      }
       default:
         break;
     }

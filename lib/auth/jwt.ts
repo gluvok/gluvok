@@ -20,7 +20,6 @@ export interface JWTPayload {
   factory_id: number | null;
   name?: string;
   token_version?: number;
-  profile_id?: number;
 }
 
 export interface RefreshTokenPayload {
@@ -44,7 +43,6 @@ export async function signJWT(
     factory_id: payload.factory_id ?? null,
     ...(payload.name != null ? { name: payload.name } : {}),
     ...(payload.token_version != null ? { token_version: payload.token_version } : {}),
-    ...(payload.profile_id != null ? { profile_id: payload.profile_id } : {}),
   })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)

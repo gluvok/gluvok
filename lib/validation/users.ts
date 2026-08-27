@@ -1,13 +1,13 @@
 /**
- * @file lib/validation/profiles.ts
- * @description Zod schema and validation rules for Profiles entities.
+ * @file lib/validation/users.ts
+ * @description Zod schema and validation rules for Users entities.
  */
 
 import * as z from "zod";
 import { EntityKey, Role, ColumnLabel } from "@/lib/constants/enums";
 import { nameSchema } from "./helpers";
 
-export const addProfileSchema = z
+export const addUserSchema = z
   .object({
     [EntityKey.USERNAME]: z
       .string()
@@ -31,7 +31,7 @@ export const addProfileSchema = z
       )
       .transform((v) => (v === "" || v === undefined ? null : v)),
     [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
-    [EntityKey.ROLE]: z.nativeEnum(Role, {
+    [EntityKey.ROLE]: z.enum(Role, {
       message: "Please select a valid role",
     }),
     [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
@@ -41,9 +41,9 @@ export const addProfileSchema = z
     path: [EntityKey.CONFIRM_PASSWORD],
   });
 
-export const createProfileSchema = addProfileSchema;
+export const createUserSchema = addUserSchema;
 
-export const editProfileSchema = z
+export const editUserSchema = z
   .object({
     [EntityKey.USERNAME]: z
       .string()
@@ -61,7 +61,7 @@ export const editProfileSchema = z
       )
       .transform((v) => (v === "" || v === undefined ? null : v)),
     [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
-    [EntityKey.ROLE]: z.nativeEnum(Role, {
+    [EntityKey.ROLE]: z.enum(Role, {
       message: "Please select a valid role",
     }),
     [EntityKey.PASSWORD]: z

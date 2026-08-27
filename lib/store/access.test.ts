@@ -37,9 +37,9 @@ describe("RBAC Access Controls", () => {
       });
     });
 
-    it("should grant Manager correct permissions (can write/create/delete profiles and centers)", () => {
-      const profilePerms = getPermissions(Role.MANAGER, ProjectSlug.PROFILES);
-      expect(profilePerms).toMatchObject({
+    it("should grant Manager correct permissions (can write/create/delete users and centers)", () => {
+      const userPerms = getPermissions(Role.MANAGER, ProjectSlug.USERS);
+      expect(userPerms).toMatchObject({
         read: true,
         write: true,
         delete: true,
@@ -132,12 +132,12 @@ describe("RBAC Access Controls", () => {
   });
 
   describe("hasCreateAccess", () => {
-    it("should return false for WEIGHMENTS, COMMODITIES and true for CENTERS, PROFILES, CUSTOMERS, ENTRIES", () => {
+    it("should return false for WEIGHMENTS, COMMODITIES and true for CENTERS, USERS, CUSTOMERS, ENTRIES", () => {
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.WEIGHMENTS)).toBe(false);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.CENTERS)).toBe(true);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.ENTRIES)).toBe(true);
       expect(hasCreateAccess(Role.ADMIN, ProjectSlug.ENTRIES)).toBe(true);
-      expect(hasCreateAccess(Role.MANAGER, ProjectSlug.PROFILES)).toBe(true);
+      expect(hasCreateAccess(Role.MANAGER, ProjectSlug.USERS)).toBe(true);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.COMMODITIES)).toBe(false);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.CUSTOMERS)).toBe(true);
     });

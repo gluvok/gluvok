@@ -2,7 +2,7 @@
 
 /**
  * @file components/sidebar/nav/user-info.tsx
- * @description Small avatar block displaying user name, username, role badge, and profile avatar image.
+ * @description Small avatar block displaying user name, username, role badge, and user avatar image.
  */
 
 import { type LucideIcon } from "lucide-react";

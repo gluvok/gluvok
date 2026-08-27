@@ -77,8 +77,6 @@ export function getColumnLabel(id: string): string {
       return ColumnLabel.RATE_ID;
     case EntityKey.CENTER_ID:
       return ColumnLabel.CENTER_ID;
-    case EntityKey.PROFILE_ID:
-      return ColumnLabel.PROFILE_ID;
     case EntityKey.CUSTOMER_ID:
       return ColumnLabel.CUSTOMER_ID;
     case EntityKey.ROLE:
@@ -95,14 +93,12 @@ export function getColumnLabel(id: string): string {
       return ColumnLabel.IS_ACTIVE;
     case EntityKey.FACTORY_NAME:
       return ColumnLabel.FACTORY_NAME;
-    case EntityKey.PROFILE_NAME:
-      return ColumnLabel.PROFILE;
-    case EntityKey.PROFILE_AADHAR:
-      return ColumnLabel.AADHAR_NUMBER;
+    case EntityKey.USER_NAME:
+      return ColumnLabel.USER_NAME;
     case EntityKey.CUSTOMER_NAME:
-      return ColumnLabel.CUSTOMER;
+      return ColumnLabel.CUSTOMER_NAME;
     case EntityKey.CENTER_NAME:
-      return ColumnLabel.CENTER;
+      return ColumnLabel.CENTER_NAME;
     case EntityKey.CUSTOMER_GOVT_ID:
       return ColumnLabel.GOVT_ID;
     case EntityKey.COMMODITY:
@@ -115,14 +111,50 @@ export function getColumnLabel(id: string): string {
       return ColumnLabel.RATE;
     case EntityKey.CENTER:
       return ColumnLabel.CENTER;
-    case EntityKey.PROFILE:
-      return ColumnLabel.PROFILE;
     case EntityKey.CUSTOMER:
       return ColumnLabel.CUSTOMER;
     case EntityKey.AADHAR_NUMBER_MODE:
       return ColumnLabel.AADHAR_NUMBER_MODE;
     case EntityKey.GOVT_ID_MODE:
       return ColumnLabel.GOVT_ID_MODE;
+    case EntityKey.IN_ENTRY_ID:
+      return ColumnLabel.IN_ENTRY_ID;
+    case EntityKey.OUT_ENTRY_ID:
+      return ColumnLabel.OUT_ENTRY_ID;
+    case EntityKey.IN_ENTRY_CREATED_AT:
+      return ColumnLabel.IN_ENTRY_CREATED_AT;
+    case EntityKey.OUT_ENTRY_CREATED_AT:
+      return ColumnLabel.OUT_ENTRY_CREATED_AT;
+    case EntityKey.GROSS_WEIGHT:
+      return ColumnLabel.GROSS_WEIGHT;
+    case EntityKey.TARE_WEIGHT:
+      return ColumnLabel.TARE_WEIGHT;
+    case EntityKey.NET_WEIGHT:
+      return ColumnLabel.NET_WEIGHT;
+    case EntityKey.IN_CENTER_ID:
+      return ColumnLabel.IN_CENTER_ID;
+    case EntityKey.IN_CENTER_NAME:
+      return ColumnLabel.IN_CENTER_NAME;
+    case EntityKey.OUT_CENTER_ID:
+      return ColumnLabel.OUT_CENTER_ID;
+    case EntityKey.OUT_CENTER_NAME:
+      return ColumnLabel.OUT_CENTER_NAME;
+    case EntityKey.IN_USER_ID:
+      return ColumnLabel.IN_USER_ID;
+    case EntityKey.IN_USER_NAME:
+      return ColumnLabel.IN_USER_NAME;
+    case EntityKey.OUT_USER_ID:
+      return ColumnLabel.OUT_USER_ID;
+    case EntityKey.OUT_USER_NAME:
+      return ColumnLabel.OUT_USER_NAME;
+    case EntityKey.IN_CUSTOMER_ID:
+      return ColumnLabel.IN_CUSTOMER_ID;
+    case EntityKey.IN_CUSTOMER_NAME:
+      return ColumnLabel.IN_CUSTOMER_NAME;
+    case EntityKey.OUT_CUSTOMER_ID:
+      return ColumnLabel.OUT_CUSTOMER_ID;
+    case EntityKey.OUT_CUSTOMER_NAME:
+      return ColumnLabel.OUT_CUSTOMER_NAME;
     default:
       return id;
   }

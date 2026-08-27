@@ -63,7 +63,7 @@ export const GET = withAuth(async (_req, user, client) => {
       [TableName.COMMODITIES]: commodityRows || [],
       [TableName.FACTORIES]: [],
       [TableName.CENTERS]: centerRows || [],
-      [TableName.PROFILES]: userRows || [],
+      [TableName.USERS]: userRows || [],
       [TableName.CUSTOMERS]: customerRows || [],
       [TableName.RATES]: formattedRates,
     },

@@ -66,8 +66,8 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
     }),
     createIdColumn(EntityKey.CENTER_ID, ColumnLabel.CENTER_ID, Building),
     createTextColumn(EntityKey.CENTER_NAME, ColumnLabel.CENTER_NAME, Building),
-    createIdColumn(EntityKey.PROFILE_ID, ColumnLabel.PROFILE_ID, User),
-    createTextColumn(EntityKey.PROFILE_NAME, ColumnLabel.PROFILE_NAME, User),
+    createIdColumn(EntityKey.USER_ID, ColumnLabel.USER_ID, User),
+    createTextColumn(EntityKey.USER_NAME, ColumnLabel.USER_NAME, User),
     createIdColumn(EntityKey.CUSTOMER_ID, ColumnLabel.CUSTOMER_ID, Users),
     createTextColumn(EntityKey.CUSTOMER_NAME, ColumnLabel.CUSTOMER_NAME, Users),
     {

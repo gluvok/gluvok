@@ -1,6 +1,6 @@
 /**
  * @file components/sidebar/data.tsx
- * @description Static navigation configuration data for mapping user profiles and project routes in the sidebar.
+ * @description Static navigation configuration data for mapping user navigation and project routes in the sidebar.
  */
 
 import { LifeBuoy, Send, Layers } from "lucide-react";

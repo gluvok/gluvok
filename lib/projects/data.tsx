@@ -52,9 +52,9 @@ export const PROJECTS: ProjectMetadata[] = [
     color: "text-purple-500",
   },
   {
-    slug: ProjectSlug.PROFILES,
-    name: ProjectName.PROFILES,
-    desc: "Manage user profiles and credentials",
+    slug: ProjectSlug.USERS,
+    name: ProjectName.USERS,
+    desc: "Manage users and account credentials",
     icon: UserCog,
     color: "text-pink-500",
   },

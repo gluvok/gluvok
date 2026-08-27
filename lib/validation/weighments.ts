@@ -84,7 +84,6 @@ export const addEntrySchema = z.object({
   [EntityKey.TYPE]: z.enum([EntryType.MANUAL, EntryType.AUTOMATIC]).optional(),
   [EntityKey.CENTER_ID]: integerIdSchema(ColumnLabel.CENTER),
   [EntityKey.USER_ID]: optionalIntegerIdSchema(ColumnLabel.USER),
-  [EntityKey.PROFILE_ID]: optionalIntegerIdSchema(ColumnLabel.PROFILE),
   [EntityKey.CUSTOMER_ID]: optionalIntegerIdSchema(ColumnLabel.CUSTOMER),
   [EntityKey.STATUS]: z
     .enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED])

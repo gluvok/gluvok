@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/db";
 import { getTokenExpiresIn, signJWT, signRefreshToken, verifyRefreshToken } from "@/lib/auth/jwt";
-import { AuthErrorMessage, CookieName, EntityKey, Role, TableName } from "@/lib/constants";
+import { AuthErrorMessage, CookieName, EntityKey, TableName } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
   try {
@@ -89,27 +89,14 @@ export async function POST(request: NextRequest) {
       return clearCookies(response);
     }
 
-    let profileId: number | undefined;
-    if (user.role === Role.OPERATOR) {
-      const { data: profile } = await db
-        .from(TableName.PROFILES)
-        .select(EntityKey.ID)
-        .eq(EntityKey.USER_ID, user.id)
-        .maybeSingle();
-
-      if (profile) {
-        profileId = profile.id;
-      }
-    }
-
     const factoryId = user.factory_id ?? null;
 
     const newAccessToken = await signJWT({
       sub: String(user.id),
       username: user.username,
+      name: user.name,
       role: user.role,
       factory_id: factoryId,
-      profile_id: profileId,
     });
     const accessExpiresIn = getTokenExpiresIn(newAccessToken);
 

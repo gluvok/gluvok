@@ -1,7 +1,7 @@
 /**
  * @file scripts/seed.ts
  * @description Master database seed script using Supabase JS client.
- * Seeds initial factory, admin user + linked profile, main center, and default commodities catalog.
+ * Seeds initial factory, admin user, main center, and default commodities catalog.
  */
 
 import { createClient } from "@supabase/supabase-js";

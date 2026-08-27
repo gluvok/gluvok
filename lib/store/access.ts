@@ -34,7 +34,7 @@ export type RbacMatrix = {
 
 export const RBAC_MATRIX: RbacMatrix = {
   [Role.ADMIN]: {
-    [ProjectSlug.PROFILES]: {
+    [ProjectSlug.USERS]: {
       read: true,
       write: true,
       delete: true,
@@ -101,7 +101,7 @@ export const RBAC_MATRIX: RbacMatrix = {
     },
   },
   [Role.MANAGER]: {
-    [ProjectSlug.PROFILES]: {
+    [ProjectSlug.USERS]: {
       read: true,
       write: true,
       delete: true,
@@ -167,7 +167,7 @@ export const RBAC_MATRIX: RbacMatrix = {
     },
   },
   [Role.OPERATOR]: {
-    [ProjectSlug.PROFILES]: {
+    [ProjectSlug.USERS]: {
       read: true,
       write: false,
       delete: false,
@@ -233,7 +233,7 @@ export const RBAC_MATRIX: RbacMatrix = {
     },
   },
   [Role.BASE]: {
-    [ProjectSlug.PROFILES]: {
+    [ProjectSlug.USERS]: {
       read: true,
       write: false,
       delete: false,
@@ -366,7 +366,7 @@ export function isColumnVisible(
   if (projectSlug === ProjectSlug.CUSTOMERS && columnKey === EntityKey.GOVT_ID) {
     if (factory?.govt_id_mode === FieldRequirementMode.NOT_REQUIRED) return false;
   }
-  if (projectSlug === ProjectSlug.PROFILES && columnKey === EntityKey.AADHAR_NUMBER) {
+  if (projectSlug === ProjectSlug.USERS && columnKey === EntityKey.AADHAR_NUMBER) {
     if (factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED) return false;
   }
 
@@ -389,7 +389,7 @@ export function isFieldVisible(
   if (projectSlug === ProjectSlug.CUSTOMERS && fieldKey === EntityKey.GOVT_ID) {
     if (factory?.govt_id_mode === FieldRequirementMode.NOT_REQUIRED) return false;
   }
-  if (projectSlug === ProjectSlug.PROFILES && fieldKey === EntityKey.AADHAR_NUMBER) {
+  if (projectSlug === ProjectSlug.USERS && fieldKey === EntityKey.AADHAR_NUMBER) {
     if (factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED) return false;
   }
 
@@ -410,7 +410,7 @@ export function isFieldRequired(
     )
       return false;
   }
-  if (projectSlug === ProjectSlug.PROFILES && fieldKey === EntityKey.AADHAR_NUMBER) {
+  if (projectSlug === ProjectSlug.USERS && fieldKey === EntityKey.AADHAR_NUMBER) {
     if (factory?.aadhar_number_mode === FieldRequirementMode.MANDATORY) return true;
     if (
       factory?.aadhar_number_mode === FieldRequirementMode.OPTIONAL ||

@@ -22,9 +22,7 @@ export const GET = withAuth(async (req, user, client) => {
   const statusParam = req.nextUrl.searchParams.get(EntityKey.STATUS);
   const typeParam = req.nextUrl.searchParams.get(EntityKey.TYPE);
   const centerIdParam = req.nextUrl.searchParams.get(EntityKey.CENTER_ID);
-  const userIdParam =
-    req.nextUrl.searchParams.get(EntityKey.USER_ID) ||
-    req.nextUrl.searchParams.get(EntityKey.PROFILE_ID);
+  const userIdParam = req.nextUrl.searchParams.get(EntityKey.USER_ID);
   const customerIdParam = req.nextUrl.searchParams.get(EntityKey.CUSTOMER_ID);
   const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE);
   const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE);

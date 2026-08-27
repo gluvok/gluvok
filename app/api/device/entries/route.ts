@@ -32,13 +32,12 @@ export async function POST(req: NextRequest) {
       weight,
       center_id,
       user_id,
-      profile_id,
       customer_id,
       status = EntryStatus.PENDING,
       images = [],
     } = body;
 
-    const operatorUserId = user_id || profile_id || (authUser ? parseInt(authUser.sub, 10) : null);
+    const operatorUserId = user_id || (authUser ? parseInt(authUser.sub, 10) : null);
 
     if (
       !detected_vehicle_number ||

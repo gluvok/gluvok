@@ -9,7 +9,7 @@ import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { ProjectSlug } from "@/lib/constants/enums";
 import { RatesFilters } from "./rates";
-import { ProfilesFilters } from "./profiles";
+import { UsersFilters } from "./users";
 import { WeighmentsFilters } from "./weighments";
 
 interface ProjectFiltersProps<TData extends RowData> {
@@ -24,8 +24,8 @@ export function ProjectFilters<TData extends RowData>({
   switch (projectSlug) {
     case ProjectSlug.RATES:
       return <RatesFilters table={table} />;
-    case ProjectSlug.PROFILES:
-      return <ProfilesFilters table={table} />;
+    case ProjectSlug.USERS:
+      return <UsersFilters table={table} />;
     case ProjectSlug.WEIGHMENTS:
       return <WeighmentsFilters table={table} />;
     default:

@@ -19,7 +19,7 @@ import { getRatesColumns } from "./rates";
 import { getCustomersColumns } from "./customers";
 import { getEntriesColumns } from "./entries";
 import { getWeighmentsColumns } from "./weighments";
-import { getProfilesColumns } from "./profiles";
+import { getUsersColumns } from "./users";
 import { getSettingsColumns } from "./settings";
 
 export interface ColumnActionsCallbacks<T = EntityRecord> {
@@ -43,8 +43,8 @@ function getSpecificColumns<T extends RowData>(
       return getEntriesColumns<T>();
     case ProjectSlug.WEIGHMENTS:
       return getWeighmentsColumns<T>();
-    case ProjectSlug.PROFILES:
-      return getProfilesColumns<T>();
+    case ProjectSlug.USERS:
+      return getUsersColumns<T>();
     case ProjectSlug.SETTINGS:
       return getSettingsColumns<T>();
 

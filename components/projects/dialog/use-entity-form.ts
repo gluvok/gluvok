@@ -24,7 +24,7 @@ import {
   ENTITY_EDIT_SCHEMAS,
   checkEditUniqueness,
   getDynamicCustomerSchema,
-  getDynamicProfileSchema,
+  getDynamicUserSchema,
 } from "@/lib/validation";
 import {
   useEntitiesStore,
@@ -63,8 +63,8 @@ export function useEntityForm({
     if (projectSlug === ProjectSlug.CUSTOMERS) {
       return getDynamicCustomerSchema(factory);
     }
-    if (projectSlug === ProjectSlug.PROFILES) {
-      return getDynamicProfileSchema(factory, isEdit);
+    if (projectSlug === ProjectSlug.USERS) {
+      return getDynamicUserSchema(factory, isEdit);
     }
     return isEdit
       ? ENTITY_EDIT_SCHEMAS[projectSlug as ProjectSlug]

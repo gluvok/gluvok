@@ -15,7 +15,7 @@ const SLUG_TO_API_ROUTE: Record<ProjectSlug, ApiRoutes> = {
   [ProjectSlug.CUSTOMERS]: ApiRoutes.CUSTOMERS,
   [ProjectSlug.ENTRIES]: ApiRoutes.ENTRIES,
   [ProjectSlug.WEIGHMENTS]: ApiRoutes.WEIGHMENTS,
-  [ProjectSlug.PROFILES]: ApiRoutes.PROFILES,
+  [ProjectSlug.USERS]: ApiRoutes.USERS,
   [ProjectSlug.SETTINGS]: ApiRoutes.SETTINGS,
 };
 

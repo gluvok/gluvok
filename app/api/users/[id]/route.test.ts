@@ -16,7 +16,7 @@ vi.mock("@/db/helpers", async (importOriginal) => {
 
 import { DELETE, PATCH } from "./route";
 
-type RawProfileHandler = (
+type RawUserHandler = (
   request: Request,
   user: {
     sub: string;
@@ -36,7 +36,7 @@ const sampleUser = {
 };
 
 const context = { params: Promise.resolve({ id: "1" }) };
-const request = new Request("http://localhost/api/profiles/1");
+const request = new Request("http://localhost/api/users/1");
 
 const mockDb = {
   from: vi.fn(() => ({
@@ -52,14 +52,14 @@ const mockDb = {
   })),
 };
 
-describe("Profile mutation guards", () => {
+describe("User mutation guards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it.each([
-    ["PATCH", PATCH as unknown as RawProfileHandler, PermissionKey.WRITE],
-    ["DELETE", DELETE as unknown as RawProfileHandler, PermissionKey.DELETE],
+    ["PATCH", PATCH as unknown as RawUserHandler, PermissionKey.WRITE],
+    ["DELETE", DELETE as unknown as RawUserHandler, PermissionKey.DELETE],
   ])(
     "rejects %s when the user lacks the required permission",
     async (_method, handler, permission) => {
@@ -68,7 +68,7 @@ describe("Profile mutation guards", () => {
       const response = await handler(request, sampleUser, mockDb, context);
 
       expect(response.status).toBe(403);
-      expect(mockHasPermission).toHaveBeenCalledWith(sampleUser, ProjectSlug.PROFILES, permission);
+      expect(mockHasPermission).toHaveBeenCalledWith(sampleUser, ProjectSlug.USERS, permission);
     },
   );
 });

@@ -8,7 +8,6 @@ import {
   EntityKey,
   CommodityName,
   ProjectName,
-  SystemSlug,
   SingularEntityName,
   Role,
   WeighmentType,
@@ -52,12 +51,10 @@ export function getReferencedEntitySlug(key: string | EntityKey): string | null 
       return ProjectSlug.RATES;
     case EntityKey.CENTER_ID:
       return ProjectSlug.CENTERS;
-    case EntityKey.PROFILE_ID:
-      return ProjectSlug.PROFILES;
     case EntityKey.CUSTOMER_ID:
       return ProjectSlug.CUSTOMERS;
     case EntityKey.USER_ID:
-      return SystemSlug.USERS;
+      return ProjectSlug.USERS;
     default:
       return null;
   }
@@ -233,8 +230,8 @@ export function getSingularName(name: string): string {
       return SingularEntityName.WEIGHMENT;
     case ProjectName.FACTORIES:
       return SingularEntityName.FACTORY;
-    case ProjectName.PROFILES:
-      return SingularEntityName.PROFILE;
+    case ProjectName.USERS:
+      return SingularEntityName.USER;
     case ProjectName.SETTINGS:
       return SingularEntityName.SETTING;
 

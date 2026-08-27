@@ -6,14 +6,11 @@
 import { create } from "zustand";
 import axios from "axios";
 import { toast } from "sonner";
-import { Role, EntityKey } from "@/lib/constants/enums";
+import { Role } from "@/lib/constants/enums";
 import { DEFAULT_AVATAR, AuthErrorMessage } from "@/lib/constants";
 
 import { useFactoryStore } from "./factory";
 import { useEntitiesStore } from "./entities";
-
-export const PROFILE_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.USER_ID}, ${EntityKey.NAME}, ${EntityKey.ROLE}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`;
-export const CUSTOMER_SELECT_FIELDS = `${EntityKey.ID}, ${EntityKey.NAME}, ${EntityKey.GOVT_ID}, ${EntityKey.FATHER_NAME}, ${EntityKey.FACTORY_ID}, ${EntityKey.USER_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`;
 
 export interface AuthUser {
   id: string;
@@ -29,7 +26,7 @@ interface AuthStore {
   user: AuthUser | null;
   hydrated: boolean;
   initialized: boolean;
-  profileLoading: boolean;
+  userLoading: boolean;
   initAuth: () => () => void;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -40,13 +37,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   hydrated: false,
   initialized: false,
-  profileLoading: false,
+  userLoading: false,
   initAuth: () => {
     if (get().initialized) {
       return () => {};
     }
 
-    set({ profileLoading: true });
+    set({ userLoading: true });
 
     axios
       .get<{ user: AuthUser | null }>("/api/auth/me", {
@@ -60,17 +57,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
               avatar: DEFAULT_AVATAR,
             },
             initialized: true,
-            profileLoading: false,
+            userLoading: false,
           });
           useFactoryStore.getState().fetchFactory();
           useEntitiesStore.getState().preloadAllFilters({ silent: true });
         } else {
-          set({ user: null, initialized: true, profileLoading: false });
+          set({ user: null, initialized: true, userLoading: false });
         }
       })
       .catch((err) => {
         console.error("Failed to check active auth session:", err);
-        set({ user: null, initialized: true, profileLoading: false });
+        set({ user: null, initialized: true, userLoading: false });
       });
 
     return () => {};
@@ -108,7 +105,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       useFactoryStore.getState().fetchFactory();
       useEntitiesStore.getState().preloadAllFilters({ silent: true });
 
-      toast.success(`Welcome back, ${data.user.username}! 🎉`);
+      const displayName = data.user.name || data.user.username;
+      toast.success(`Welcome back, ${displayName}! 🎉`);
       return true;
     } catch (err: unknown) {
       console.error("Login request error:", err);
@@ -123,14 +121,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
   logout: async () => {
     const currentUser = get().user;
-    const username = currentUser?.username || "there";
+    const displayName = currentUser?.name || currentUser?.username || "there";
     try {
       await axios.post("/api/auth/logout");
     } catch (err) {
       console.error("Logout request error:", err);
     } finally {
       set({ user: null });
-      toast.success(`See you soon, ${username}! Logged out successfully 👋`);
+      toast.success(`See you soon, ${displayName}! Logged out successfully 👋`);
     }
   },
   setHydrated: (state) => set({ hydrated: state }),

@@ -204,7 +204,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.FULL,
     },
   ],
-  [ProjectSlug.PROFILES]: [
+  [ProjectSlug.USERS]: [
     {
       key: EntityKey.AADHAR_NUMBER,
       label: ColumnLabel.AADHAR_NUMBER,
@@ -311,7 +311,7 @@ export const REQUIRED_CREATE_FIELDS: Record<string, EntityKey[]> = {
     EntityKey.UNIT,
     EntityKey.TYPE,
   ],
-  [ProjectSlug.PROFILES]: [
+  [ProjectSlug.USERS]: [
     EntityKey.AADHAR_NUMBER,
     EntityKey.NAME,
     EntityKey.USERNAME,

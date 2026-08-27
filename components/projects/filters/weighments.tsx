@@ -31,7 +31,7 @@ function useWeighmentsFilterData() {
 
   return {
     centers: weighmentFiltersData?.centers || [],
-    profiles: weighmentFiltersData?.profiles || [],
+    users: weighmentFiltersData?.users || [],
     customers: weighmentFiltersData?.customers || [],
     rates: weighmentFiltersData?.rates || [],
   };

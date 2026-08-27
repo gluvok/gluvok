@@ -4,16 +4,15 @@
  */
 
 import * as React from "react";
-import axios from "axios";
 import { ENTITY_EXTRACTORS, type Entity } from "@/lib/utils/entity-extractors";
 import { fetchEntityList } from "@/lib/services";
-import { ProjectSlug, SystemSlug, ApiRoutes } from "@/lib/constants/enums";
+import { ProjectSlug } from "@/lib/constants/enums";
 import { useEntitiesStore } from "@/lib/store";
 
 /**
  * useEntityOptions Hook
  * Returns options directly from the preloaded Zustand entities store when available,
- * or performs an API fallback request for dynamic entities (like users).
+ * or performs an API fallback request for dynamic entities.
  */
 export function useEntityOptions(
   entitySlug: string,
@@ -42,14 +41,16 @@ export function useEntityOptions(
           }));
         }
         break;
-      case ProjectSlug.PROFILES:
-        if (weighmentFiltersData?.profiles && weighmentFiltersData.profiles.length > 0) {
-          return weighmentFiltersData.profiles.map((p) => ({
+      case ProjectSlug.USERS: {
+        const usersList = weighmentFiltersData?.users;
+        if (usersList && usersList.length > 0) {
+          return usersList.map((p) => ({
             value: String(p.id),
             label: p.name ? `${p.name} (ID: ${p.id})` : String(p.id),
           }));
         }
         break;
+      }
       case ProjectSlug.CUSTOMERS:
         if (weighmentFiltersData?.customers && weighmentFiltersData.customers.length > 0) {
           return weighmentFiltersData.customers.map((c) => ({
@@ -82,17 +83,7 @@ export function useEntityOptions(
     async function load() {
       try {
         setApiLoading(true);
-        let rawList: Entity[] = [];
-        switch (entitySlug) {
-          case SystemSlug.USERS: {
-            const res = await axios.get<{ data: Entity[] }>(ApiRoutes.USERS);
-            rawList = res.data.data || [];
-            break;
-          }
-          default:
-            rawList = await fetchEntityList(entitySlug);
-            break;
-        }
+        const rawList: Entity[] = await fetchEntityList(entitySlug);
 
         if (!active) return;
 
@@ -104,12 +95,6 @@ export function useEntityOptions(
 
         const opts = rawList.map((item) => {
           const { id, name } = extractor(item);
-          if (entitySlug === SystemSlug.USERS) {
-            return {
-              value: id,
-              label: name || id,
-            };
-          }
           const displayId = id.length > 8 ? `${id.substring(0, 8)}...` : id;
           return {
             value: id,

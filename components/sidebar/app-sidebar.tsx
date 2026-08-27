@@ -3,7 +3,7 @@
 /**
  * @file components/sidebar/app-sidebar.tsx
  * @description Main application sidebar wrapper.
- * Houses headers, platform logo, main navigation routes, secondary links, and the logged-in user profile block.
+ * Houses headers, platform logo, main navigation routes, secondary links, and the logged-in user block.
  */
 
 import * as React from "react";

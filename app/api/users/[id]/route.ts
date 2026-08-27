@@ -10,10 +10,32 @@ import {
   StatusCodes,
   getFactory,
 } from "@/db/helpers";
-import { getDynamicProfileSchema } from "@/lib/validation";
+import { getDynamicUserSchema } from "@/lib/validation";
 import { hashPassword } from "@/lib/auth/password";
 import { PermissionKey, ProjectSlug, Role, TableName, EntityKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
+
+export const GET = withAuth(
+  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+    const existingQuery = client
+      .from(TableName.USERS)
+      .select(
+        `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.IS_ACTIVE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
+      )
+      .eq(EntityKey.ID, entityId)
+      .eq(EntityKey.FACTORY_ID, factoryId!);
+
+    const { data: existing, error } = await existingQuery.maybeSingle();
+    if (error || !existing) return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
+
+    const isOwn = String(existing.id) === String(user.sub);
+    if (!isOwn && !hasPermission(user, ProjectSlug.USERS, PermissionKey.READ)) {
+      return forbiddenError();
+    }
+
+    return formatEntityResponse(existing);
+  }),
+);
 
 export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
@@ -26,17 +48,17 @@ export const PATCH = withAuth(
       .eq(EntityKey.FACTORY_ID, factoryId!);
 
     const { data: existing } = await existingQuery.maybeSingle();
-    if (!existing) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND);
+    if (!existing) return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
 
     const isOwn = String(existing.id) === String(user.sub);
 
-    if (!isOwn && !hasPermission(user, ProjectSlug.PROFILES, PermissionKey.WRITE)) {
+    if (!isOwn && !hasPermission(user, ProjectSlug.USERS, PermissionKey.WRITE)) {
       return forbiddenError();
     }
 
     const body = await req.json();
     const factory = await getFactory(client, user.factory_id);
-    const dynamicSchema = getDynamicProfileSchema(factory, true);
+    const dynamicSchema = getDynamicUserSchema(factory, true);
     const parsed = dynamicSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -93,7 +115,7 @@ export const PATCH = withAuth(
       .single();
 
     if (error || !updated) {
-      return apiError(error?.message || ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND);
+      return apiError(error?.message || ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
     }
 
     return formatEntityResponse(updated);
@@ -109,11 +131,11 @@ export const DELETE = withAuth(
       .eq(EntityKey.FACTORY_ID, factoryId!);
 
     const { data: existing } = await existingQuery.maybeSingle();
-    if (!existing) return apiError(ApiErrorMessage.PROFILE_NOT_FOUND, StatusCodes.NOT_FOUND);
+    if (!existing) return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
 
     const isOwn = String(existing.id) === String(user.sub);
 
-    if (!isOwn && !hasPermission(user, ProjectSlug.PROFILES, PermissionKey.DELETE)) {
+    if (!isOwn && !hasPermission(user, ProjectSlug.USERS, PermissionKey.DELETE)) {
       return forbiddenError();
     }
 
@@ -126,7 +148,7 @@ export const DELETE = withAuth(
       .maybeSingle();
 
     if (linkedEntry) {
-      return apiError(ApiErrorMessage.CANNOT_DELETE_PROFILE, StatusCodes.BAD_REQUEST);
+      return apiError(ApiErrorMessage.CANNOT_DELETE_USER, StatusCodes.BAD_REQUEST);
     }
 
     // Check if any customers are linked to this user
@@ -138,7 +160,7 @@ export const DELETE = withAuth(
       .maybeSingle();
 
     if (linkedCustomer) {
-      return apiError(ApiErrorMessage.CANNOT_DELETE_PROFILE, StatusCodes.BAD_REQUEST);
+      return apiError(ApiErrorMessage.CANNOT_DELETE_USER, StatusCodes.BAD_REQUEST);
     }
 
     try {
@@ -153,7 +175,7 @@ export const DELETE = withAuth(
       return NextResponse.json({ success: true, id: entityId });
     } catch (error) {
       if (isFKViolation(error)) {
-        return apiError(ApiErrorMessage.CANNOT_DELETE_PROFILE, StatusCodes.BAD_REQUEST);
+        return apiError(ApiErrorMessage.CANNOT_DELETE_USER, StatusCodes.BAD_REQUEST);
       }
       throw error;
     }

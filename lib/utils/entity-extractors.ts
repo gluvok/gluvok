@@ -4,7 +4,7 @@
  * to a standardized `{ id, name }` shape.
  */
 
-import { ProjectSlug, SystemSlug } from "@/lib/constants/enums";
+import { ProjectSlug } from "@/lib/constants/enums";
 import { type Rate, type EntityRecord } from "@/types";
 
 export type Entity = EntityRecord | { id: string; username: string };
@@ -26,7 +26,7 @@ const extractByIdAndName = (item: { id: number; name: string }) => {
  */
 export const ENTITY_EXTRACTORS: Record<string, (item: Entity) => { id: string; name: string }> = {
   [ProjectSlug.CUSTOMERS]: (item) => extractByIdAndName(item as { id: number; name: string }),
-  [ProjectSlug.PROFILES]: (item) => extractByIdAndName(item as { id: number; name: string }),
+  [ProjectSlug.USERS]: (item) => extractByIdAndName(item as { id: number; name: string }),
   [ProjectSlug.CENTERS]: (item) => extractByIdAndName(item as { id: number; name: string }),
   [ProjectSlug.COMMODITIES]: (item) => extractByIdAndName(item as { id: number; name: string }),
   [ProjectSlug.SETTINGS]: (item) => {
@@ -35,10 +35,6 @@ export const ENTITY_EXTRACTORS: Record<string, (item: Entity) => { id: string; n
       id: String(c.id),
       name: c.name ? `Setting (${c.name})` : `Setting #${c.id}`,
     };
-  },
-  [SystemSlug.USERS]: (item) => {
-    const u = item as { id: string; username: string };
-    return { id: u.id, name: u.username };
   },
   [ProjectSlug.RATES]: (item) => {
     const p = item as Rate;

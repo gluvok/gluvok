@@ -91,7 +91,6 @@ export interface Weighment {
   rate_id: number;
   center_id: number;
   user_id?: number;
-  profile_id?: number;
   customer_id: number;
   is_active: boolean;
   created_at: string;
@@ -99,8 +98,6 @@ export interface Weighment {
   // Flattened join fields
   center_name?: string;
   user_name?: string;
-  profile_name?: string;
-  profile_aadhar?: string;
   customer_name?: string;
   customer_govt_id?: number;
   commodity_id?: number;
@@ -122,10 +119,6 @@ export interface User {
   factory_name?: string;
 }
 
-export interface Profile extends User {
-  user_id?: string;
-}
-
 /** Union of all entity types used across the app */
 export type EntityRecord =
   | Center
@@ -135,5 +128,4 @@ export type EntityRecord =
   | Weighment
   | Factory
   | User
-  | Profile
   | Settings;

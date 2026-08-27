@@ -1,6 +1,6 @@
 /**
- * @file components/projects/columns/profiles.tsx
- * @description Column definitions and rendering helpers for the Profiles entity table.
+ * @file components/projects/columns/users.tsx
+ * @description Column definitions and rendering helpers for the Users entity table.
  */
 
 import { type ColumnDef, type RowData } from "@tanstack/react-table";
@@ -11,7 +11,7 @@ import { getRoleIcon } from "@/lib/fields/helpers";
 import { RenderRoleIcon } from "@/components/sidebar/nav/user-info";
 import { createTextColumn, createCustomColumn } from "./helpers";
 
-export function getProfilesColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
+export function getUsersColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
     createTextColumn(
       EntityKey.AADHAR_NUMBER,

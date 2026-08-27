@@ -38,7 +38,7 @@ const MENU_ITEMS = [
 
 /**
  * NavUserDropdown Component
- * Populates dropdown options for the user profile trigger in the sidebar footer.
+ * Populates dropdown options for the user trigger in the sidebar footer.
  */
 export function NavUserDropdown({ user, isMobile }: NavUserDropdownProps) {
   const router = useRouter();

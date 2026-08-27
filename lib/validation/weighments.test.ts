@@ -7,7 +7,7 @@ const validEntry = {
   [EntityKey.VEHICLE_NUMBER]: "PB10XY1234",
   [EntityKey.WEIGHT]: "15.5",
   [EntityKey.CENTER_ID]: "1",
-  [EntityKey.PROFILE_ID]: "2",
+  [EntityKey.USER_ID]: "2",
 };
 
 describe("entries & weighments validation", () => {
@@ -18,7 +18,7 @@ describe("entries & weighments validation", () => {
     expect(result[EntityKey.CUSTOMER_ID]).toBeNull();
   });
 
-  it("parses valid manual entry with omitted detected_vehicle_number and profile_id", () => {
+  it("parses valid manual entry with omitted detected_vehicle_number and user_id", () => {
     const result = addEntrySchema.parse({
       [EntityKey.VEHICLE_NUMBER]: "MH12AB1234",
       [EntityKey.WEIGHT]: "15000",

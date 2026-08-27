@@ -170,14 +170,14 @@ export function getDynamicCustomerSchema(factory: Factory | null, isEdit = false
     });
 }
 
-export function getDynamicProfileSchema(factory: Factory | null, isEdit = false) {
+export function getDynamicUserSchema(factory: Factory | null, isEdit = false) {
   const aadharSchema = buildAadharSchema(factory);
 
   return z
     .object({
       [EntityKey.USERNAME]: z.string().optional().or(z.literal("")),
       [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
-      [EntityKey.ROLE]: z.nativeEnum(Role, {
+      [EntityKey.ROLE]: z.enum(Role, {
         message: "Please select a valid role",
       }),
       [EntityKey.AADHAR_NUMBER]: aadharSchema,

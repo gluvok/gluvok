@@ -40,7 +40,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((state) => state.user);
   const authHydrated = useAuthStore((state) => state.hydrated);
   const initialized = useAuthStore((state) => state.initialized);
-  const profileLoading = useAuthStore((state) => state.profileLoading);
+  const userLoading = useAuthStore((state) => state.userLoading);
 
   const factoryInitialized = useFactoryStore((state) => state.factoryInitialized);
   const filtersInitialized = useEntitiesStore((state) => state.filtersInitialized);
@@ -79,7 +79,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [user, factoryInitialized, filtersInitialized]);
 
   useEffect(() => {
-    if (!authHydrated || !initialized || profileLoading) return;
+    if (!authHydrated || !initialized || userLoading) return;
 
     switch (true) {
       // 1. Unauthenticated users trying to access protected pages
@@ -101,7 +101,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     user,
     authHydrated,
     initialized,
-    profileLoading,
+    userLoading,
     isAuthPage,
     isPublicPage,
     pathname,
@@ -110,14 +110,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     router,
   ]);
 
-  // Public pages can render immediately without blocking on auth initialization or profile loading
+  // Public pages can render immediately without blocking on auth initialization or user loading
   if (isPublicPage) {
     return <>{children}</>;
   }
 
-  // Show loading only during initial rehydration or while profile check is in-flight.
+  // Show loading only during initial rehydration or while user check is in-flight.
   // Factory and filter preloads happen in the background — components handle their own loading states.
-  if (!authHydrated || !initialized || (profileLoading && !user)) {
+  if (!authHydrated || !initialized || (userLoading && !user)) {
     return <FullScreenStatus message="Booting up..." />;
   }
 

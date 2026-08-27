@@ -39,17 +39,16 @@ function hasRowModifyPermission(
   if (!currentUser) return false;
 
   switch (projectSlug) {
-    case ProjectSlug.PROFILES: {
+    case ProjectSlug.USERS: {
       const itemId = getField(item, EntityKey.ID);
-      const itemUserId = getField(item, EntityKey.USER_ID);
       const itemRole = getField(item, EntityKey.ROLE);
 
-      const isOwnProfile = String(itemUserId || itemId) === String(currentUser.id);
+      const isOwnUser = String(itemId) === String(currentUser.id);
       const isAdminOfFactory = currentUser.role === Role.ADMIN;
       const isManagerOfFactory = currentUser.role === Role.MANAGER;
 
       return (
-        isOwnProfile ||
+        isOwnUser ||
         (isAdminOfFactory && [Role.MANAGER, Role.OPERATOR, Role.BASE].includes(itemRole as Role)) ||
         (isManagerOfFactory && [Role.OPERATOR, Role.BASE].includes(itemRole as Role))
       );

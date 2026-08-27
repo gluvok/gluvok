@@ -25,7 +25,7 @@ export interface RateOption {
 interface PreloadPayload {
   commodities: { id: number; name: string }[];
   centers: { id: number; name: string }[];
-  profiles: { id: number; name: string }[];
+  users: { id: number; name: string }[];
   customers: { id: number; name: string }[];
   rates: { id: number; unit_price: string; unit: string; commodity_name?: string }[];
 }
@@ -44,7 +44,7 @@ interface EntitiesState {
   commodities: { id: number; name: string }[];
   weighmentFiltersData: {
     centers: IdNamePair[];
-    profiles: IdNamePair[];
+    users: IdNamePair[];
     customers: IdNamePair[];
     rates: RateOption[];
   } | null;
@@ -86,7 +86,7 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
         commodities: payload?.commodities || [],
         weighmentFiltersData: {
           centers: payload?.centers || [],
-          profiles: payload?.profiles || [],
+          users: payload?.users || [],
           customers: payload?.customers || [],
           rates: rateOpts,
         },
@@ -98,8 +98,9 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
           toast.success("Data synced successfully");
         }
       }
+      set({ filtersInitialized: true });
     } catch (err) {
-      console.error("Failed to preload filter entities:", err);
+      console.error("Failed to preload filters:", err);
       if (!isSilent) {
         if (toastId) {
           toast.error("Failed to sync data", { id: toastId });
@@ -108,16 +109,16 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
         }
       }
     } finally {
-      set({ filtersLoading: false, filtersInitialized: true });
+      set({ filtersLoading: false });
     }
   },
 
   addEntity: async (slug, newE) => {
     const created = (await insertRow(slug, newE)) as unknown as Record<string, unknown> | undefined;
+    const createdId = Number(created?.id || newE.id);
     const state = get();
 
     if (created && typeof created === "object") {
-      const createdId = Number(created.id);
       const name = String(created.name || newE.name || "");
 
       switch (slug) {
@@ -144,19 +145,20 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
             });
           }
           break;
-        case ProjectSlug.PROFILES:
+        case ProjectSlug.USERS: {
           if (createdId && state.weighmentFiltersData) {
             set({
               weighmentFiltersData: {
                 ...state.weighmentFiltersData,
-                profiles: [
-                  ...state.weighmentFiltersData.profiles.filter((p) => p.id !== createdId),
+                users: [
+                  ...state.weighmentFiltersData.users.filter((u) => u.id !== createdId),
                   { id: createdId, name },
                 ],
               },
             });
           }
           break;
+        }
         case ProjectSlug.CUSTOMERS:
           if (createdId && state.weighmentFiltersData) {
             set({
@@ -233,18 +235,19 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
             });
           }
           break;
-        case ProjectSlug.PROFILES:
+        case ProjectSlug.USERS: {
           if (state.weighmentFiltersData) {
             set({
               weighmentFiltersData: {
                 ...state.weighmentFiltersData,
-                profiles: state.weighmentFiltersData.profiles.map((p) =>
-                  p.id === targetId ? { id: targetId, name } : p,
+                users: state.weighmentFiltersData.users.map((u) =>
+                  u.id === targetId ? { id: targetId, name } : u,
                 ),
               },
             });
           }
           break;
+        }
         case ProjectSlug.CUSTOMERS:
           if (state.weighmentFiltersData) {
             set({
@@ -311,16 +314,17 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
           });
         }
         break;
-      case ProjectSlug.PROFILES:
+      case ProjectSlug.USERS: {
         if (state.weighmentFiltersData) {
           set({
             weighmentFiltersData: {
               ...state.weighmentFiltersData,
-              profiles: state.weighmentFiltersData.profiles.filter((p) => p.id !== targetId),
+              users: state.weighmentFiltersData.users.filter((u) => u.id !== targetId),
             },
           });
         }
         break;
+      }
       case ProjectSlug.CUSTOMERS:
         if (state.weighmentFiltersData) {
           set({

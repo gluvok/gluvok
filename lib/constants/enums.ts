@@ -58,7 +58,6 @@ export const SingularEntityName = {
   WEIGHMENT: "Weighment",
   ENTRY: "Entry",
   FACTORY: "Factory",
-  PROFILE: "Profile",
   USER: "User",
   SETTING: "Setting",
 } as const;
@@ -83,7 +82,6 @@ export const ColumnLabel = {
   COMMODITY_NAME: "Commodity Name",
   RATE_ID: "Rate ID",
   CENTER_ID: "Center ID",
-  PROFILE_ID: "Profile ID",
   CUSTOMER_ID: "Customer ID",
   ROLE: "Role",
   CREATED_AT: "Created At",
@@ -93,7 +91,7 @@ export const ColumnLabel = {
   USER_ID: "User ID",
   IS_ACTIVE: "Status",
   FACTORY_NAME: "Factory Name",
-  PROFILE_NAME: "Profile Name",
+  USER_NAME: "User Name",
   CUSTOMER_NAME: "Customer Name",
   CENTER_NAME: "Center Name",
   USERNAME: "Username",
@@ -112,10 +110,10 @@ export const ColumnLabel = {
   IN_CENTER_NAME: "In-Center Name",
   OUT_CENTER_ID: "Out-Center ID",
   OUT_CENTER_NAME: "Out-Center Name",
-  IN_PROFILE_ID: "In-Profile ID",
-  IN_PROFILE_NAME: "In-Profile Name",
-  OUT_PROFILE_ID: "Out-Profile ID",
-  OUT_PROFILE_NAME: "Out-Profile Name",
+  IN_USER_ID: "In-User ID",
+  IN_USER_NAME: "In-User Name",
+  OUT_USER_ID: "Out-User ID",
+  OUT_USER_NAME: "Out-User Name",
   IN_CUSTOMER_ID: "In-Customer ID",
   IN_CUSTOMER_NAME: "In-Customer Name",
   OUT_CUSTOMER_ID: "Out-Customer ID",
@@ -147,7 +145,6 @@ export enum ApiRoutes {
   AUTH_REFRESH = "/api/auth/refresh",
   AUTH_LOGOUT = "/api/auth/logout",
   AUTH_ME = "/api/auth/me",
-  PROFILES = "/api/profiles",
   CUSTOMERS = "/api/customers",
   CENTERS = "/api/centers",
   RATES = "/api/rates",
@@ -167,7 +164,7 @@ export enum ProjectSlug {
   CUSTOMERS = "customers",
   ENTRIES = "entries",
   WEIGHMENTS = "weighments",
-  PROFILES = "profiles",
+  USERS = "users",
   SETTINGS = "settings",
 }
 
@@ -202,7 +199,6 @@ export enum EntityKey {
   COMMODITY_NAME = "commodity_name",
   RATE_ID = "rate_id",
   CENTER_ID = "center_id",
-  PROFILE_ID = "profile_id",
   CUSTOMER_ID = "customer_id",
   ROLE = "role",
   CREATED_AT = "created_at",
@@ -214,8 +210,7 @@ export enum EntityKey {
   USER_ID = "user_id",
   IS_ACTIVE = "is_active",
   FACTORY_NAME = "factory_name",
-  PROFILE_NAME = "profile_name",
-  PROFILE_AADHAR = "profile_aadhar",
+  USER_NAME = "user_name",
   CUSTOMER_NAME = "customer_name",
   CENTER_NAME = "center_name",
   CUSTOMER_GOVT_ID = "customer_govt_id",
@@ -224,7 +219,6 @@ export enum EntityKey {
   USER = "user",
   RATE = "rate",
   CENTER = "center",
-  PROFILE = "profile",
   CUSTOMER = "customer",
   CONFIRM_PASSWORD = "confirmPassword",
   AADHAR_NUMBER_MODE = "aadhar_number_mode",
@@ -240,10 +234,10 @@ export enum EntityKey {
   IN_CENTER_NAME = "in_center_name",
   OUT_CENTER_ID = "out_center_id",
   OUT_CENTER_NAME = "out_center_name",
-  IN_PROFILE_ID = "in_profile_id",
-  IN_PROFILE_NAME = "in_profile_name",
-  OUT_PROFILE_ID = "out_profile_id",
-  OUT_PROFILE_NAME = "out_profile_name",
+  IN_USER_ID = "in_user_id",
+  IN_USER_NAME = "in_user_name",
+  OUT_USER_ID = "out_user_id",
+  OUT_USER_NAME = "out_user_name",
   IN_CUSTOMER_ID = "in_customer_id",
   IN_CUSTOMER_NAME = "in_customer_name",
   OUT_CUSTOMER_ID = "out_customer_id",
@@ -279,12 +273,8 @@ export enum ProjectName {
   ENTRIES = "Entries",
   WEIGHMENTS = "Weighments",
   FACTORIES = "Factories",
-  PROFILES = "Profiles",
+  USERS = "Users",
   SETTINGS = "Settings",
-}
-
-export enum SystemSlug {
-  USERS = "users",
 }
 
 export enum DatePreset {
@@ -311,7 +301,6 @@ export enum TableName {
   RATES = "rates",
   USERS = "users",
   CUSTOMERS = "customers",
-  PROFILES = "profiles",
   ENTRIES = "entries",
   WEIGHMENTS = "weighments",
 }
@@ -333,7 +322,6 @@ export enum RequestHeader {
   USERNAME = "x-user-username",
   ROLE = "x-user-role",
   FACTORY_ID = "x-user-factory-id",
-  PROFILE_ID = "x-user-profile-id",
 }
 
 export enum PermissionKey {

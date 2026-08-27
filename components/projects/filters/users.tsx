@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * @file components/projects/filters/profiles.tsx
- * @description Filter controls for the Profiles entity table.
+ * @file components/projects/filters/users.tsx
+ * @description Filter controls for the Users entity table.
  */
 
 import * as React from "react";
@@ -12,7 +12,7 @@ import { Role, EntityKey, FilterValue, FieldType } from "@/lib/constants/enums";
 import { Shield } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
 
-interface ProfilesFiltersProps<TData extends RowData> {
+interface UsersFiltersProps<TData extends RowData> {
   table: ReactTable<ProjectTableFeatures, TData>;
 }
 
@@ -23,7 +23,7 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: Role.BASE, label: Role.BASE },
 ];
 
-export function ProfilesFilters<TData extends RowData>({ table }: ProfilesFiltersProps<TData>) {
+export function UsersFilters<TData extends RowData>({ table }: UsersFiltersProps<TData>) {
   const columnFilters = table.state.columnFilters;
   const currentRole = columnFilters.find((f) => f.id === EntityKey.ROLE)?.value as
     | string

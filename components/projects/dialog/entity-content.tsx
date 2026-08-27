@@ -10,15 +10,7 @@ import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FormFieldInput } from "@/components/form";
 import { type EntityDialogContentProps } from "./types";
-import {
-  FieldType,
-  Role,
-  FieldSpan,
-  EntityKey,
-  PermissionKey,
-  ProjectSlug,
-  WeighmentType,
-} from "@/lib/constants/enums";
+import { FieldType, Role, FieldSpan, EntityKey, PermissionKey } from "@/lib/constants/enums";
 import { type FieldConfig, getSingularName } from "@/lib/fields";
 import { useAuthStore, hasPermission, isFieldVisible, isFieldRequired } from "@/lib/store";
 
@@ -144,21 +136,6 @@ export function EntityDialogContent({
     // Hide createOnly fields (e.g. password, confirmPassword) when editing
     if (isEdit && field.createOnly) {
       return false;
-    }
-    // Weighments Edit Modal visibility rules:
-    if (isEdit && projectSlug === ProjectSlug.WEIGHMENTS) {
-      if (field.key === EntityKey.TYPE) {
-        const typeVal = form.getValues(EntityKey.TYPE);
-        if (typeVal && typeVal !== WeighmentType.UNASSIGNED) {
-          return false;
-        }
-      }
-      if (field.key === EntityKey.UNIT) {
-        const rateId = form.getValues(EntityKey.RATE_ID);
-        if (rateId !== null && rateId !== undefined && rateId !== "") {
-          return false;
-        }
-      }
     }
     return true;
   });

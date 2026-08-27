@@ -20,6 +20,7 @@ import {
 } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
+import { uploadBase64ImagesToStorage } from "@/lib/services/storage";
 import { addEntrySchema } from "@/lib/validation";
 
 export const GET = withAuth(async (req, user, client) => {
@@ -28,7 +29,7 @@ export const GET = withAuth(async (req, user, client) => {
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
   const startDate = req.nextUrl.searchParams.get(QueryParam.START_DATE);
   const endDate = req.nextUrl.searchParams.get(QueryParam.END_DATE);
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.UPDATED_AT;
+  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT;
   const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
     ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
     : true;
@@ -150,6 +151,7 @@ export const POST = withAuth(async (req, user, client) => {
 
     const userId = parseInt(user.sub, 10);
     const nowStr = new Date().toISOString();
+    const uploadedImageUrls = await uploadBase64ImagesToStorage(images, user.factory_id);
 
     if (status === EntryStatus.APPROVED) {
       await validateSequentialApproval(
@@ -174,7 +176,7 @@ export const POST = withAuth(async (req, user, client) => {
         [EntityKey.CUSTOMER_ID]: customer_id ? Number(customer_id) : null,
         [EntityKey.FACTORY_ID]: user.factory_id,
         [EntityKey.STATUS]: status,
-        [EntityKey.IMAGES]: images,
+        [EntityKey.IMAGES]: uploadedImageUrls,
         [EntityKey.CREATED_AT]: nowStr,
         [EntityKey.UPDATED_AT]: nowStr,
       })

@@ -14,7 +14,7 @@ vi.mock("@/db/helpers", async (importOriginal) => {
   };
 });
 
-import { DELETE } from "./route";
+import { DELETE, PATCH } from "./route";
 
 type RawHandler = (
   request: Request,
@@ -151,5 +151,84 @@ describe("Weighments [id] DELETE route handler", () => {
 
     expect(weighmentUpdateMock).toHaveBeenCalled();
     expect(entriesUpdateMock).toHaveBeenCalled();
+  });
+});
+
+describe("Weighments [id] PATCH route handler", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockHasPermission.mockReturnValue(true);
+  });
+
+  it("updates weighment type when currently unassigned", async () => {
+    const patchRequest = new Request("http://localhost/api/weighments/100", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "in" }),
+    });
+
+    const updateMock = vi.fn(() => ({
+      eq: vi.fn(() => ({
+        is: vi.fn(() => ({
+          select: vi.fn(() => ({
+            single: vi.fn().mockResolvedValue({
+              data: { id: 100, type: "in" },
+              error: null,
+            }),
+          })),
+        })),
+      })),
+    }));
+
+    const mockDb = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            is: vi.fn(() => ({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: 100, type: "unassigned", rate_id: null },
+                error: null,
+              }),
+            })),
+          })),
+        })),
+        update: updateMock,
+      })),
+    };
+
+    const handler = PATCH as unknown as RawHandler;
+    const response = await handler(patchRequest, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.data.type).toBe("in");
+  });
+
+  it("rejects modifying type if type is already set to 'in' or 'out'", async () => {
+    const patchRequest = new Request("http://localhost/api/weighments/100", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "out" }),
+    });
+
+    const mockDb = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            is: vi.fn(() => ({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: 100, type: "in", rate_id: null },
+                error: null,
+              }),
+            })),
+          })),
+        })),
+      })),
+    };
+
+    const handler = PATCH as unknown as RawHandler;
+    const response = await handler(patchRequest, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(400);
   });
 });

@@ -17,22 +17,44 @@ import {
   ArrowLeftRight,
 } from "lucide-react";
 import { EntityKey, ColumnLabel, WeighmentType } from "@/lib/constants/enums";
-import { createTextColumn, createBaseColumn, createIdColumn, badgeBaseClass } from "./helpers";
+import { getTypeIcon } from "@/lib/fields/helpers";
+import { cn } from "@/lib/utils";
+import {
+  createTextColumn,
+  createBaseColumn,
+  createCustomColumn,
+  createIdColumn,
+  badgeBaseClass,
+} from "./helpers";
 import { WeighmentImagesCell } from "./weighments-cell";
 
 export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
     createTextColumn(EntityKey.UNIT, ColumnLabel.UNIT, Ruler),
-    createBaseColumn(EntityKey.TYPE, ColumnLabel.TYPE, ArrowLeftRight, ({ row }) => {
-      const val = (row.getValue(EntityKey.TYPE) as string) || WeighmentType.UNASSIGNED;
-      let badgeColor = "bg-muted/80 text-muted-foreground border-border";
-      if (val === WeighmentType.IN) {
-        badgeColor =
-          "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
-      } else if (val === WeighmentType.OUT) {
-        badgeColor = "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20";
+    createCustomColumn(EntityKey.TYPE, ColumnLabel.TYPE, ArrowLeftRight, (val) => {
+      const type = ((val as string) || WeighmentType.UNASSIGNED).toLowerCase();
+      let typeClass = "bg-muted text-muted-foreground border border-border";
+      const Icon = getTypeIcon(type);
+
+      if (type === WeighmentType.IN) {
+        typeClass =
+          "bg-emerald-50 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/30";
+      } else if (type === WeighmentType.OUT) {
+        typeClass =
+          "bg-indigo-50 text-indigo-700 border border-indigo-200/50 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-800/30";
+      } else if (type === WeighmentType.UNASSIGNED) {
+        typeClass =
+          "bg-amber-50 text-amber-700 border border-amber-200/50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/30";
       }
-      return <span className={`${badgeBaseClass} ${badgeColor} capitalize`}>{val}</span>;
+
+      return (
+        <span
+          className={cn(badgeBaseClass, "capitalize inline-flex items-center gap-1.5", typeClass)}
+        >
+          <Icon className="h-3 w-3 shrink-0" />
+          {type}
+        </span>
+      );
     }),
     createBaseColumn(EntityKey.GROSS_WEIGHT, ColumnLabel.GROSS_WEIGHT, Weight, ({ row }) => {
       const val = row.getValue(EntityKey.GROSS_WEIGHT) as number;

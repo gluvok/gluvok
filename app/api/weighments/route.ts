@@ -37,7 +37,9 @@ export const GET = withAuth(async (req, user, client) => {
   const inCustomerIdParam = req.nextUrl.searchParams.get(EntityKey.IN_CUSTOMER_ID);
   const outCustomerIdParam = req.nextUrl.searchParams.get(EntityKey.OUT_CUSTOMER_ID);
   const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT;
-  const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true";
+  const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
+    ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
+    : true;
   const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE);
   const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE);
 

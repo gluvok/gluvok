@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { apiError, StatusCodes, getAuthUser, validateDeviceSecret } from "@/db/helpers";
 import { TableName, EntityKey, EntryStatus, EntryType } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
+import { uploadBase64ImagesToStorage } from "@/lib/services/storage";
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     const nowStr = new Date().toISOString();
+    const uploadedImageUrls = await uploadBase64ImagesToStorage(images, factoryId);
 
     const { data: newEntry, error: insertErr } = await db
       .from(TableName.ENTRIES)
@@ -58,7 +60,7 @@ export async function POST(req: NextRequest) {
         [EntityKey.CUSTOMER_ID]: null,
         [EntityKey.FACTORY_ID]: factoryId,
         [EntityKey.STATUS]: EntryStatus.PENDING,
-        [EntityKey.IMAGES]: images,
+        [EntityKey.IMAGES]: uploadedImageUrls,
         [EntityKey.CREATED_AT]: nowStr,
         [EntityKey.UPDATED_AT]: nowStr,
       })

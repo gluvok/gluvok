@@ -161,8 +161,8 @@ describe("useProjectTable Hook", () => {
     expect(fetchEntityListPaginated).toHaveBeenCalledWith("centers", {
       page: 0,
       pageSize: 10,
-      sortColumn: undefined,
-      sortDesc: undefined,
+      sortColumn: "created_at",
+      sortDesc: true,
       search: "",
       filters: {},
     });

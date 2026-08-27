@@ -18,7 +18,9 @@ export const GET = withAuth(async (req, user, client) => {
   const pagination = getPaginationParams(req.nextUrl);
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
   const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT;
-  const sortDesc = req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true";
+  const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
+    ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
+    : true;
 
   let query = client
     .from(TableName.COMMODITIES)

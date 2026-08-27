@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { EntityKey, ColumnLabel, WeighmentType } from "@/lib/constants/enums";
 import { getTypeIcon } from "@/lib/fields/helpers";
-import { cn } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 import {
   createTextColumn,
   createBaseColumn,
@@ -89,18 +89,22 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
       enableSorting: false,
     },
     createIdColumn(EntityKey.IN_ENTRY_ID, ColumnLabel.IN_ENTRY_ID, Tag),
-    createTextColumn(
+    createCustomColumn(
       EntityKey.IN_ENTRY_CREATED_AT,
       ColumnLabel.IN_ENTRY_CREATED_AT,
       Clock,
-      "font-mono text-muted-foreground text-xs",
+      (val) => (
+        <span className="font-mono text-muted-foreground text-xs">{formatDateTime(val)}</span>
+      ),
     ),
     createIdColumn(EntityKey.OUT_ENTRY_ID, ColumnLabel.OUT_ENTRY_ID, Tag),
-    createTextColumn(
+    createCustomColumn(
       EntityKey.OUT_ENTRY_CREATED_AT,
       ColumnLabel.OUT_ENTRY_CREATED_AT,
       Clock,
-      "font-mono text-muted-foreground text-xs",
+      (val) => (
+        <span className="font-mono text-muted-foreground text-xs">{formatDateTime(val)}</span>
+      ),
     ),
     createIdColumn(EntityKey.IN_CENTER_ID, ColumnLabel.IN_CENTER_ID, Building),
     createTextColumn(EntityKey.IN_CENTER_NAME, ColumnLabel.IN_CENTER_NAME, Building),

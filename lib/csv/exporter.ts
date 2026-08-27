@@ -1,15 +1,24 @@
 /**
  * @file lib/csv/exporter.ts
- * @description CSV export utilities for table records (exporter).
+ * @description CSV and PDF export utilities for table records with image rendering and IST date formatting.
  */
 
 import { type RowData, type Table } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
+import { EntityKey } from "@/lib/constants/enums";
+import { formatDateTime } from "../utils";
 import { printPdf } from "../pdf/exporter";
 import { generatePdfHtml } from "../pdf/template";
 
+const DATE_COLUMN_IDS = new Set<string>([
+  EntityKey.CREATED_AT,
+  EntityKey.UPDATED_AT,
+  EntityKey.IN_ENTRY_CREATED_AT,
+  EntityKey.OUT_ENTRY_CREATED_AT,
+]);
+
 /**
- * Downloads the selected rows in a table as a PDF.
+ * Downloads the selected rows in a table as a PDF with inline image thumbnails and full scan gallery.
  */
 export function downloadPDF<TData extends RowData>(
   table: Table<ProjectTableFeatures, TData>,
@@ -20,18 +29,75 @@ export function downloadPDF<TData extends RowData>(
   const headersHtml = cols
     .map((c) => `<th>${(c.columnDef.meta as Record<string, unknown>)?.label || c.id}</th>`)
     .join("");
+
   const rowsHtml = selectedRows
     .map((row) => {
       const cells = cols
         .map((c) => {
           const val = row.getValue(c.id);
-          return `<td>${Array.isArray(val) ? `${val.length} image(s)` : String(val ?? "")}</td>`;
+          if (Array.isArray(val)) {
+            if (val.length === 0) return "<td>—</td>";
+            return `<td>${val.length} image${val.length === 1 ? "" : "s"}</td>`;
+          }
+          if (DATE_COLUMN_IDS.has(c.id)) {
+            return `<td>${formatDateTime(val as string)}</td>`;
+          }
+          return `<td>${val !== null && val !== undefined && val !== "" ? String(val) : "—"}</td>`;
         })
         .join("");
       return `<tr>${cells}</tr>`;
     })
     .join("");
-  printPdf(generatePdfHtml(projectName, headersHtml, rowsHtml, selectedRows.length));
+
+  // Collect image attachments for appendix gallery
+  const imagesList: { id: string; vehicleNumber?: string; images: string[] }[] = [];
+  selectedRows.forEach((row) => {
+    const rowOrig = (row.original as Record<string, unknown>) || {};
+    const rawImages = (row.getValue(EntityKey.IMAGES) || rowOrig[EntityKey.IMAGES]) as
+      | string[]
+      | undefined;
+    if (Array.isArray(rawImages) && rawImages.length > 0) {
+      const id = String(rowOrig[EntityKey.ID] ?? row.id);
+      const vehicleNumber = (rowOrig[EntityKey.VEHICLE_NUMBER] as string) || undefined;
+      imagesList.push({ id, vehicleNumber, images: rawImages });
+    }
+  });
+
+  let imagesHtml: string | undefined;
+  if (imagesList.length > 0) {
+    imagesHtml = `
+      <div class="pdf-scans-header">
+        <h2>Attached Scans & Images</h2>
+      </div>
+      <div class="pdf-scans-grid">
+        ${imagesList
+          .map(
+            (item) => `
+          <div class="pdf-scan-card">
+            <div class="pdf-scan-card-header">
+              Record #${item.id}${item.vehicleNumber ? ` &bull; Vehicle: ${item.vehicleNumber}` : ""}
+            </div>
+            <div class="pdf-scan-card-images">
+              ${item.images
+                .map(
+                  (img, idx) => `
+                <div class="pdf-scan-img-container">
+                  <img src="${img}" alt="Scan ${idx + 1}" class="pdf-scan-full-img" />
+                  <div class="pdf-scan-caption">Image ${idx + 1}</div>
+                </div>
+              `,
+                )
+                .join("")}
+            </div>
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+    `;
+  }
+
+  printPdf(generatePdfHtml(projectName, headersHtml, rowsHtml, selectedRows.length, imagesHtml));
 }
 
 /**
@@ -57,7 +123,9 @@ export function downloadCSV<TData extends RowData>(
           const val = row.getValue(c.id);
           let cellVal = "";
           if (Array.isArray(val)) {
-            cellVal = `${val.length} image(s)`;
+            cellVal = val.join("; ");
+          } else if (DATE_COLUMN_IDS.has(c.id)) {
+            cellVal = formatDateTime(val as string);
           } else {
             cellVal = String(val ?? "");
           }

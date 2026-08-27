@@ -59,32 +59,17 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
     };
   }, [api, isOpen]);
 
-  const hasImages = images && images.length > 0;
-  const firstImage = hasImages
-    ? images[0].startsWith("/") || images[0].startsWith("http")
-      ? images[0]
-      : `/${images[0]}`
-    : null;
+  const hasImages = Boolean(images && images.length > 0);
 
   return (
     <>
       {hasImages ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="group inline-flex items-center gap-1.5 py-0.5 pl-1.5 pr-2.5 rounded-full border border-muted-foreground/15 bg-muted/60 hover:bg-muted/90 text-[10px] font-mono font-semibold text-foreground transition-all duration-200 active:scale-[0.97] outline-none focus-visible:ring-1 focus-visible:ring-ring shadow-sm cursor-pointer select-none"
+          className="group inline-flex items-center gap-1.5 py-0.5 px-2 rounded-full border border-muted-foreground/15 bg-muted/60 hover:bg-muted/90 text-[10px] font-mono font-semibold text-foreground transition-all duration-200 active:scale-[0.97] outline-none focus-visible:ring-1 focus-visible:ring-ring shadow-sm cursor-pointer select-none"
           title="View images"
         >
-          {/* Small thumbnail preview inside the pill */}
-          <div className="relative h-4 w-4 rounded-sm overflow-hidden border border-muted-foreground/10 shrink-0 bg-background/50">
-            <Image
-              src={firstImage!}
-              alt="Thumbnail"
-              fill
-              sizes="16px"
-              className="object-cover group-hover:scale-110 transition-transform duration-300 ease-out"
-              unoptimized
-            />
-          </div>
+          <ImageIcon className="h-3 w-3 stroke-[1.5] text-muted-foreground/70 group-hover:text-foreground transition-colors shrink-0" />
           <span className="text-muted-foreground group-hover:text-foreground transition-colors">
             {images.length} {images.length === 1 ? "image" : "images"}
           </span>

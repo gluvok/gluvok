@@ -17,24 +17,34 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * formatDateTime utility
- * Converts ISO date strings into human-readable date-time strings (e.g. Oct 12, 2026, 10:30 AM).
+ * Converts ISO date strings / Dates into human-readable IST (Asia/Kolkata) strings (e.g. 28 Aug 2026, 02:24 AM).
  */
-export function formatDateTime(dateStr: string) {
+export function formatDateTime(dateStr: string | Date | null | undefined): string {
   if (!dateStr) return "-";
   try {
-    const date = new Date(dateStr.replace(" ", "T"));
-    if (!isNaN(date.getTime())) {
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
+    const date = typeof dateStr === "string" ? new Date(dateStr.replace(" ", "T")) : dateStr;
+    if (date instanceof Date && !isNaN(date.getTime())) {
+      const parts = new Intl.DateTimeFormat("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
         month: "short",
-        day: "numeric",
+        year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
         hour12: true,
-      });
+      }).formatToParts(date);
+
+      const day = parts.find((p) => p.type === "day")?.value;
+      const month = parts.find((p) => p.type === "month")?.value;
+      const year = parts.find((p) => p.type === "year")?.value;
+      const hour = parts.find((p) => p.type === "hour")?.value;
+      const minute = parts.find((p) => p.type === "minute")?.value;
+      const dayPeriod = (parts.find((p) => p.type === "dayPeriod")?.value || "").toUpperCase();
+
+      return `${day} ${month} ${year}, ${hour}:${minute} ${dayPeriod}`;
     }
   } catch {}
-  return dateStr;
+  return String(dateStr);
 }
 
 /**

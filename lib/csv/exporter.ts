@@ -80,7 +80,7 @@ export function downloadPDF<TData extends RowData>(
   const headersHtml = cols
     .map(
       (c) =>
-        `<th class="px-4 py-3 bg-slate-50/90 border-b border-slate-200 text-slate-700 font-bold text-left text-[10px] uppercase tracking-wider">${(c.columnDef.meta as Record<string, unknown>)?.label || c.id}</th>`,
+        `<th class="px-4 py-3 bg-slate-50/90 border-b border-slate-200 text-slate-700 font-bold text-left text-2xs uppercase tracking-wider">${(c.columnDef.meta as Record<string, unknown>)?.label || c.id}</th>`,
     )
     .join("");
 
@@ -92,7 +92,7 @@ export function downloadPDF<TData extends RowData>(
           if (Array.isArray(val)) {
             if (val.length === 0)
               return '<td class="px-4 py-3 border-b border-slate-100 text-xs text-slate-400 align-middle">—</td>';
-            return `<td class="px-4 py-3 border-b border-slate-100 text-xs text-slate-700 align-middle"><span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/70 font-mono">${val.length} image${val.length === 1 ? "" : "s"}</span></td>`;
+            return `<td class="px-4 py-3 border-b border-slate-100 text-xs text-slate-700 align-middle"><span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/70 font-mono">${val.length} image${val.length === 1 ? "" : "s"}</span></td>`;
           }
           if (DATE_COLUMN_IDS.has(c.id)) {
             return `<td class="px-4 py-3 border-b border-slate-100 text-xs text-slate-600 align-middle font-mono">${formatDateTime(val as string)}</td>`;
@@ -124,23 +124,23 @@ export function downloadPDF<TData extends RowData>(
       .map(
         (item) => `
       <div class="pdf-scan-wrapper pt-6 first:pt-0">
-        <div class="pdf-scan-card rounded-2xl border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/40 p-5 shadow-sm">
+        <div class="pdf-scan-card border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/40 p-5 shadow-sm">
           <div class="pdf-scan-card-header pb-3 mb-4 border-b border-slate-200 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-bold text-xs bg-slate-900 text-white font-mono shadow-2xs">Record #${item.id}</span>
-              ${item.vehicleNumber ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-mono text-[11px] font-semibold bg-white border border-slate-200 text-slate-800 shadow-2xs">Vehicle: ${item.vehicleNumber}</span>` : ""}
+              <span class="inline-flex items-center px-2.5 py-0.5 font-bold text-xs bg-slate-900 text-white font-mono shadow-2xs">Record #${item.id}</span>
+              ${item.vehicleNumber ? `<span class="inline-flex items-center px-2.5 py-0.5 font-mono text-2xs font-semibold bg-white border border-slate-200 text-slate-800 shadow-2xs">Vehicle: ${item.vehicleNumber}</span>` : ""}
             </div>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium font-mono bg-slate-100 text-slate-600 border border-slate-200">${item.images.length} photo${item.images.length === 1 ? "" : "s"} attached</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 text-2xs font-medium font-mono bg-slate-100 text-slate-600 border border-slate-200">${item.images.length} photo${item.images.length === 1 ? "" : "s"} attached</span>
           </div>
           <div class="pdf-scan-card-images flex flex-wrap gap-4">
             ${item.images
               .map(
                 (img, idx) => `
-              <div class="pdf-scan-img-container rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden flex flex-col items-center">
+              <div class="pdf-scan-img-container border border-slate-200 bg-white shadow-xs overflow-hidden flex flex-col items-center">
                 <div class="flex items-center justify-center p-2 bg-slate-50/40 min-w-[160px] min-h-[140px]">
-                  <img src="${img}" alt="Scan ${idx + 1}" class="pdf-scan-full-img max-w-[280px] max-h-[220px] w-auto h-auto object-contain rounded-md" />
+                  <img src="${img}" alt="Scan ${idx + 1}" class="pdf-scan-full-img max-w-[280px] max-h-[220px] w-auto h-auto object-contain" />
                 </div>
-                <div class="pdf-scan-caption w-full text-[10px] font-mono font-semibold text-slate-600 text-center py-1.5 px-3 bg-slate-50 border-t border-slate-100">
+                <div class="pdf-scan-caption w-full text-2xs font-mono font-semibold text-slate-600 text-center py-1.5 px-3 bg-slate-50 border-t border-slate-100">
                   Image ${idx + 1}
                 </div>
               </div>

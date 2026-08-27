@@ -19,6 +19,11 @@ export const PDF_STYLES = `
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
+  .text-2xs {
+    font-size: 0.625rem;
+    line-height: calc(1 / 0.625);
+  }
+
   tr {
     page-break-inside: avoid;
     break-inside: avoid;

@@ -14,6 +14,7 @@ import { AppRoutes, Role } from "@/lib/constants/enums";
  */
 export const SIDEBAR_DATA = {
   user: {
+    name: "Admin",
     username: "admin",
     role: Role.ADMIN,
     avatar: DEFAULT_AVATAR,

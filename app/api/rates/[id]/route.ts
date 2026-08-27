@@ -25,7 +25,13 @@ export const GET = withAuth(
     const { data: rate, error } = await query.maybeSingle();
     if (error || !rate) return apiError(ApiErrorMessage.RATE_NOT_FOUND, StatusCodes.NOT_FOUND);
 
-    return formatEntityResponse(rate);
+    const commodities = rate.commodities as Record<string, unknown> | undefined;
+    const formatted = {
+      ...rate,
+      [EntityKey.COMMODITY_NAME]: commodities?.name || "",
+    };
+
+    return formatEntityResponse(formatted);
   }),
 );
 

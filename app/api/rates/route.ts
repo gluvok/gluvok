@@ -7,7 +7,6 @@ import {
   forbiddenError,
   hasPermission,
   StatusCodes,
-  fetchPaginatedResult,
   formatEntityResponse,
   parseBulkIds,
 } from "@/db/helpers";
@@ -60,7 +59,26 @@ export const GET = withAuth(async (req, user, client) => {
     }
   }
 
-  return fetchPaginatedResult(query, pagination);
+  const { page, limit, offset } = pagination;
+  const { data, count, error } = await query.range(offset, offset + limit - 1);
+  if (error) {
+    console.error("Supabase query error:", error);
+    return apiError(error.message || "Database query failed", StatusCodes.INTERNAL_SERVER_ERROR);
+  }
+
+  const formattedData = (data || []).map((row: Record<string, unknown>) => {
+    const commodities = row.commodities as Record<string, unknown> | undefined;
+    return {
+      ...row,
+      [EntityKey.COMMODITY_NAME]: commodities?.name || "",
+    };
+  });
+
+  const total = count ?? formattedData.length;
+  return NextResponse.json({
+    data: formattedData,
+    pagination: { page, limit, total },
+  });
 });
 
 export const POST = withAuth(async (req, user, client) => {

@@ -20,6 +20,7 @@ export const ApiErrorMessage = {
   COMMODITY_NOT_FOUND: "Commodity not found",
   SETTING_NOT_FOUND: "Setting not found",
   USER_NOT_FOUND: "User not found",
+  ENTRY_NOT_FOUND: "Entry not found",
 
   // Single Entity FK Violations
   CANNOT_DELETE_CENTER:
@@ -33,6 +34,7 @@ export const ApiErrorMessage = {
     "Cannot delete this weighment because it is referenced by other records.",
   CANNOT_DELETE_COMMODITY:
     "Cannot delete this commodity because it is referenced by existing rates or weighments.",
+  CANNOT_DELETE_ENTRY: "Cannot delete this entry because it is part of a merged weighment record.",
 
   // Bulk Delete FK Violations
   CANNOT_DELETE_SELECTED_CENTERS:
@@ -47,6 +49,8 @@ export const ApiErrorMessage = {
     "Cannot delete selected weighments because they are referenced by other records.",
   CANNOT_DELETE_SELECTED_COMMODITIES:
     "Cannot delete selected commodities because they are referenced by existing rates or weighments.",
+  CANNOT_DELETE_SELECTED_ENTRIES:
+    "Cannot delete selected entries because one or more are part of a merged weighment record.",
 
   // Bulk Delete Not Found
   ONE_OR_MORE_CENTERS_NOT_FOUND: "One or more centers were not found",
@@ -56,6 +60,7 @@ export const ApiErrorMessage = {
   ONE_OR_MORE_WEIGHMENTS_NOT_FOUND: "One or more weighments were not found",
   ONE_OR_MORE_COMMODITIES_NOT_FOUND: "One or more commodities were not found",
   ONE_OR_MORE_SETTINGS_NOT_FOUND: "One or more settings were not found",
+  ONE_OR_MORE_ENTRIES_NOT_FOUND: "One or more entries were not found",
 
   // Generic & Validation
   PROVIDE_VALID_IDS: "Provide between 1 and 100 valid IDs",

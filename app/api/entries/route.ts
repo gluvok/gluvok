@@ -4,7 +4,8 @@ import {
   getPaginationParams,
   apiError,
   StatusCodes,
-  fetchPaginatedResult,
+  forbiddenError,
+  hasPermission,
 } from "@/db/helpers";
 import {
   TableName,
@@ -13,7 +14,10 @@ import {
   EntryStatus,
   EntryType,
   FilterValue,
+  ProjectSlug,
+  PermissionKey,
 } from "@/lib/constants/enums";
+import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
 
 export const GET = withAuth(async (req, user, client) => {
@@ -80,7 +84,31 @@ export const GET = withAuth(async (req, user, client) => {
     }
   }
 
-  return fetchPaginatedResult(query, pagination);
+  const { page, limit, offset } = pagination;
+  const { data, count, error } = await query.range(offset, offset + limit - 1);
+  if (error) {
+    console.error("Supabase query error:", error);
+    return apiError(error.message || "Database query failed", StatusCodes.INTERNAL_SERVER_ERROR);
+  }
+
+  const formattedData = (data || []).map((row: Record<string, unknown>) => {
+    const centers = row.centers as Record<string, unknown> | undefined;
+    const users = row.users as Record<string, unknown> | undefined;
+    const customers = row.customers as Record<string, unknown> | undefined;
+
+    return {
+      ...row,
+      [EntityKey.CENTER_NAME]: centers?.name || "",
+      [EntityKey.USER_NAME]: users?.name || "",
+      [EntityKey.CUSTOMER_NAME]: customers?.name || "",
+    };
+  });
+
+  const total = count ?? formattedData.length;
+  return NextResponse.json({
+    data: formattedData,
+    pagination: { page, limit, total },
+  });
 });
 
 export const POST = withAuth(async (req, user, client) => {
@@ -169,4 +197,57 @@ export const POST = withAuth(async (req, user, client) => {
     const msg = err instanceof Error ? err.message : "Failed to process entry creation.";
     return apiError(msg, StatusCodes.BAD_REQUEST);
   }
+});
+
+export const DELETE = withAuth(async (req, user, client) => {
+  if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.DELETE)) return forbiddenError();
+
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return apiError(ApiErrorMessage.PROVIDE_VALID_IDS, StatusCodes.BAD_REQUEST);
+  }
+
+  const { ids } = body;
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 100) {
+    return apiError(ApiErrorMessage.PROVIDE_VALID_IDS, StatusCodes.BAD_REQUEST);
+  }
+
+  // Check if any active weighments are linked to these entries
+  const { data: linkedWeighments } = await client
+    .from(TableName.WEIGHMENTS)
+    .select(EntityKey.ID)
+    .or(`in_entry_id.in.(${ids.join(",")}),out_entry_id.in.(${ids.join(",")})`)
+    .is(EntityKey.DELETED_AT, null)
+    .limit(1);
+
+  if (linkedWeighments && linkedWeighments.length > 0) {
+    return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_ENTRIES, StatusCodes.BAD_REQUEST);
+  }
+
+  const { data: deletedEntries, error } = await client
+    .from(TableName.ENTRIES)
+    .update({
+      [EntityKey.DELETED_AT]: new Date().toISOString(),
+      [EntityKey.UPDATED_AT]: new Date().toISOString(),
+    })
+    .in(EntityKey.ID, ids)
+    .is(EntityKey.DELETED_AT, null)
+    .eq(EntityKey.FACTORY_ID, user.factory_id!)
+    .select(EntityKey.ID);
+
+  if (error) {
+    return apiError(
+      error.message || ApiErrorMessage.CANNOT_DELETE_SELECTED_ENTRIES,
+      StatusCodes.BAD_REQUEST,
+    );
+  }
+
+  const deletedCount = deletedEntries?.length || 0;
+  if (deletedCount !== ids.length) {
+    return apiError(ApiErrorMessage.ONE_OR_MORE_ENTRIES_NOT_FOUND, StatusCodes.NOT_FOUND);
+  }
+
+  return NextResponse.json({ success: true, deleted_count: deletedCount });
 });

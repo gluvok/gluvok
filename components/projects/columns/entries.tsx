@@ -31,7 +31,6 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       }
       return <span className={cn(badgeBaseClass, "capitalize", typeClass)}>{type}</span>;
     }),
-    createTextColumn(EntityKey.DETECTED_VEHICLE_NUMBER, ColumnLabel.DETECTED_VEHICLE_NUMBER, Car),
     createTextColumn(EntityKey.VEHICLE_NUMBER, ColumnLabel.VEHICLE_NUMBER, Car),
     createBaseColumn(EntityKey.WEIGHT, ColumnLabel.WEIGHT, Weight, ({ row }) => {
       const val = row.getValue(EntityKey.WEIGHT) as number;
@@ -53,11 +52,32 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       return <span className={cn(badgeBaseClass, "capitalize", statusClass)}>{status}</span>;
     }),
     createIdColumn(EntityKey.CENTER_ID, ColumnLabel.CENTER_ID, Building),
-    createTextColumn(EntityKey.CENTER_NAME, ColumnLabel.CENTER_NAME, Building),
+    createCustomColumn(EntityKey.CENTER_NAME, ColumnLabel.CENTER_NAME, Building, (_val, row) => {
+      const rec = row as Record<string, unknown>;
+      const name =
+        (rec[EntityKey.CENTER_NAME] as string) ||
+        (rec.centers as { name?: string } | undefined)?.name ||
+        "";
+      return <div className="font-semibold text-foreground text-xs">{name || "—"}</div>;
+    }),
     createIdColumn(EntityKey.USER_ID, ColumnLabel.USER_ID, User),
-    createTextColumn(EntityKey.USER_NAME, ColumnLabel.USER_NAME, User),
+    createCustomColumn(EntityKey.USER_NAME, ColumnLabel.USER_NAME, User, (_val, row) => {
+      const rec = row as Record<string, unknown>;
+      const name =
+        (rec[EntityKey.USER_NAME] as string) ||
+        (rec.users as { name?: string } | undefined)?.name ||
+        "";
+      return <div className="font-semibold text-foreground text-xs">{name || "—"}</div>;
+    }),
     createIdColumn(EntityKey.CUSTOMER_ID, ColumnLabel.CUSTOMER_ID, Users),
-    createTextColumn(EntityKey.CUSTOMER_NAME, ColumnLabel.CUSTOMER_NAME, Users),
+    createCustomColumn(EntityKey.CUSTOMER_NAME, ColumnLabel.CUSTOMER_NAME, Users, (_val, row) => {
+      const rec = row as Record<string, unknown>;
+      const name =
+        (rec[EntityKey.CUSTOMER_NAME] as string) ||
+        (rec.customers as { name?: string } | undefined)?.name ||
+        "";
+      return <div className="font-semibold text-foreground text-xs">{name || "—"}</div>;
+    }),
     {
       ...createBaseColumn(EntityKey.IMAGES, ColumnLabel.IMAGES, Image, ({ row }) => {
         const images = row.getValue(EntityKey.IMAGES) as string[] | undefined;

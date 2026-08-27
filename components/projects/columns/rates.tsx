@@ -12,12 +12,14 @@ import { getCommodityIcon } from "@/lib/fields";
 
 export function getRatesColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
-    createCustomColumn<T>(EntityKey.COMMODITY_NAME, ColumnLabel.COMMODITY_NAME, Tag, (val) => {
-      const Icon = getCommodityIcon(val);
+    createCustomColumn<T>(EntityKey.COMMODITY_NAME, ColumnLabel.COMMODITY_NAME, Tag, (val, row) => {
+      const rec = row as Record<string, unknown>;
+      const name = val || (rec.commodities as { name?: string } | undefined)?.name || "";
+      const Icon = getCommodityIcon(name);
       return (
         <div className="flex items-center gap-1.5 font-semibold text-foreground text-xs">
           <Icon className="h-3.5 w-3.5 text-muted-foreground/75" />
-          {val}
+          {name || "—"}
         </div>
       );
     }),

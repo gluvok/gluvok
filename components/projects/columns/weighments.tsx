@@ -22,7 +22,6 @@ import { WeighmentImagesCell } from "./weighments-cell";
 
 export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
-    createIdColumn(EntityKey.ID, ColumnLabel.ID, Tag),
     createTextColumn(EntityKey.UNIT, ColumnLabel.UNIT, Ruler),
     createBaseColumn(EntityKey.TYPE, ColumnLabel.TYPE, ArrowLeftRight, ({ row }) => {
       const val = (row.getValue(EntityKey.TYPE) as string) || WeighmentType.UNASSIGNED;
@@ -93,17 +92,5 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
     createTextColumn(EntityKey.IN_CUSTOMER_NAME, ColumnLabel.IN_CUSTOMER_NAME, Users),
     createIdColumn(EntityKey.OUT_CUSTOMER_ID, ColumnLabel.OUT_CUSTOMER_ID, Users),
     createTextColumn(EntityKey.OUT_CUSTOMER_NAME, ColumnLabel.OUT_CUSTOMER_NAME, Users),
-    createTextColumn(
-      EntityKey.CREATED_AT,
-      ColumnLabel.CREATED_AT,
-      Clock,
-      "font-mono text-muted-foreground text-xs",
-    ),
-    createTextColumn(
-      EntityKey.UPDATED_AT,
-      ColumnLabel.UPDATED_AT,
-      Clock,
-      "font-mono text-muted-foreground text-xs",
-    ),
   ];
 }

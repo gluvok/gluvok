@@ -1,6 +1,20 @@
 import { NextResponse } from "next/server";
-import { withAuth, apiError, StatusCodes } from "@/db/helpers";
-import { TableName, EntityKey, EntryStatus } from "@/lib/constants/enums";
+import {
+  withAuth,
+  withEntityScope,
+  apiError,
+  forbiddenError,
+  hasPermission,
+  StatusCodes,
+} from "@/db/helpers";
+import {
+  ProjectSlug,
+  PermissionKey,
+  TableName,
+  EntityKey,
+  EntryStatus,
+} from "@/lib/constants/enums";
+import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
 
 export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
@@ -18,10 +32,21 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
     .maybeSingle();
 
   if (error || !data) {
-    return apiError("Entry not found", StatusCodes.NOT_FOUND);
+    return apiError(ApiErrorMessage.ENTRY_NOT_FOUND, StatusCodes.NOT_FOUND);
   }
 
-  return NextResponse.json({ data });
+  const centers = data.centers as Record<string, unknown> | undefined;
+  const users = data.users as Record<string, unknown> | undefined;
+  const customers = data.customers as Record<string, unknown> | undefined;
+
+  const formatted = {
+    ...data,
+    [EntityKey.CENTER_NAME]: centers?.name || "",
+    [EntityKey.USER_NAME]: users?.name || "",
+    [EntityKey.CUSTOMER_NAME]: customers?.name || "",
+  };
+
+  return NextResponse.json({ data: formatted });
 });
 
 export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => {
@@ -39,10 +64,14 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     .maybeSingle();
 
   if (fetchErr || !existing) {
-    return apiError("Entry not found", StatusCodes.NOT_FOUND);
+    return apiError(ApiErrorMessage.ENTRY_NOT_FOUND, StatusCodes.NOT_FOUND);
   }
 
   // 2. Strict Edit Lock Matrix Verification
+  if (existing.status === EntryStatus.REJECTED) {
+    return apiError("Rejected entries cannot be modified or approved.", StatusCodes.FORBIDDEN);
+  }
+
   if (existing.status === EntryStatus.APPROVED && existing.customer_id !== null) {
     return apiError(
       "Approved entries with an assigned customer are fully locked and cannot be edited.",
@@ -64,7 +93,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
       updates[EntityKey.CUSTOMER_ID] = body.customer_id ? Number(body.customer_id) : null;
     }
   } else {
-    // Status is pending or rejected: vehicle_number, customer_id, images, status can be edited
+    // Status is pending: vehicle_number, customer_id, images, status can be edited
     if (body.vehicle_number !== undefined) {
       updates[EntityKey.VEHICLE_NUMBER] = body.vehicle_number;
     }
@@ -127,3 +156,46 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   return NextResponse.json({ data: updatedEntry });
 });
+
+export const DELETE = withAuth(
+  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.DELETE)) return forbiddenError();
+
+    // Check if any active weighments are linked to this entry
+    const { data: linkedWeighment } = await client
+      .from(TableName.WEIGHMENTS)
+      .select(EntityKey.ID)
+      .or(`${EntityKey.IN_ENTRY_ID}.eq.${entityId},${EntityKey.OUT_ENTRY_ID}.eq.${entityId}`)
+      .is(EntityKey.DELETED_AT, null)
+      .limit(1)
+      .maybeSingle();
+
+    if (linkedWeighment) {
+      return apiError(ApiErrorMessage.CANNOT_DELETE_ENTRY, StatusCodes.BAD_REQUEST);
+    }
+
+    const query = client
+      .from(TableName.ENTRIES)
+      .update({
+        [EntityKey.DELETED_AT]: new Date().toISOString(),
+        [EntityKey.UPDATED_AT]: new Date().toISOString(),
+      })
+      .eq(EntityKey.ID, entityId)
+      .is(EntityKey.DELETED_AT, null)
+      .eq(EntityKey.FACTORY_ID, factoryId!);
+
+    const { data, error } = await query.select(EntityKey.ID);
+    if (error) {
+      return apiError(
+        error.message || ApiErrorMessage.CANNOT_DELETE_ENTRY,
+        StatusCodes.BAD_REQUEST,
+      );
+    }
+
+    if (!data || data.length === 0) {
+      return apiError(ApiErrorMessage.ENTRY_NOT_FOUND, StatusCodes.NOT_FOUND);
+    }
+
+    return NextResponse.json({ success: true, id: entityId });
+  }),
+);

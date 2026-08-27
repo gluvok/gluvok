@@ -33,7 +33,6 @@ describe("Auth Cookie Helpers", () => {
     clearAuthCookies(res);
 
     expect(res.cookies.get(CookieName.TOKEN)?.value).toBe("");
-    expect(res.cookies.get(CookieName.AUTH_TOKEN)?.value).toBe("");
     expect(res.cookies.get(CookieName.REFRESH_TOKEN)?.value).toBe("");
   });
 });

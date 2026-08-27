@@ -14,8 +14,7 @@ import { CookieName, EntityKey, TableName } from "@/lib/constants";
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const token =
-      cookieStore.get(CookieName.TOKEN)?.value || cookieStore.get(CookieName.AUTH_TOKEN)?.value;
+    const token = cookieStore.get(CookieName.TOKEN)?.value;
 
     const payload = token ? await verifyJWT(token) : null;
 

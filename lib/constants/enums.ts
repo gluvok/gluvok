@@ -180,6 +180,7 @@ export enum EntityKey {
   NAME = "name",
   USERNAME = "username",
   PASSWORD = "password",
+  PASSWORD_HASH = "password_hash",
   FACTORY_ID = "factory_id",
   UNIT_PRICE = "unit_price",
   UNIT = "unit",
@@ -340,7 +341,6 @@ export enum QueryParam {
 
 export enum CookieName {
   TOKEN = "token",
-  AUTH_TOKEN = "auth_token",
   REFRESH_TOKEN = "refresh_token",
 }
 

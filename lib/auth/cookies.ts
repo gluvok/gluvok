@@ -49,13 +49,12 @@ export function setAuthCookies<T extends NextResponse | Response>(
 }
 
 /**
- * Clears all authentication token cookies (token, auth_token, refresh_token) on a NextResponse.
+ * Clears all authentication token cookies (token, refresh_token) on a NextResponse.
  */
 export function clearAuthCookies<T extends NextResponse | Response>(response: T): T {
   if ("cookies" in response && typeof response.cookies?.set === "function") {
     const clearOptions = getAuthCookieOptions(0);
     response.cookies.set(CookieName.TOKEN, "", clearOptions);
-    response.cookies.set(CookieName.AUTH_TOKEN, "", clearOptions);
     response.cookies.set(CookieName.REFRESH_TOKEN, "", clearOptions);
   }
   return response;

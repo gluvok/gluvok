@@ -115,9 +115,7 @@ export async function getAuthUser(
   let token: string | undefined;
 
   if ("cookies" in req && typeof (req as NextRequest).cookies?.get === "function") {
-    token =
-      (req as NextRequest).cookies.get(CookieName.TOKEN)?.value ||
-      (req as NextRequest).cookies.get(CookieName.AUTH_TOKEN)?.value;
+    token = (req as NextRequest).cookies.get(CookieName.TOKEN)?.value;
   }
 
   if (!token) {
@@ -350,7 +348,7 @@ export function formatEntityResponse<T extends Record<string, unknown>>(
   const formatted: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(record)) {
-    if (key === "password_hash" || key === "passwordHash") {
+    if (key === "password_hash" || key === EntityKey.PASSWORD_HASH) {
       continue;
     }
     formatted[key] = value;

@@ -174,14 +174,10 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
           break;
         case ProjectSlug.RATES: {
           if (createdId && state.weighmentFiltersData) {
-            const commodityId = Number(
-              created.commodity_id || created.commodityId || newE.commodity_id,
-            );
+            const commodityId = Number(created.commodity_id || newE.commodity_id);
             const foundCommodity = state.commodities.find((c) => c.id === commodityId);
             const commodityName = String(created.commodity_name || foundCommodity?.name || "Rate");
-            const unitPrice = String(
-              created.unit_price || created.unitPrice || newE.unit_price || "",
-            );
+            const unitPrice = String(created.unit_price || newE.unit_price || "");
             const unit = String(created.unit || newE.unit || "");
             const label = `${commodityName} · ₹${unitPrice}/${unit} (ID: ${createdId})`;
 
@@ -262,14 +258,10 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
           break;
         case ProjectSlug.RATES: {
           if (state.weighmentFiltersData) {
-            const commodityId = Number(
-              updated.commodity_id || updated.commodityId || fields.commodity_id,
-            );
+            const commodityId = Number(updated.commodity_id || fields.commodity_id);
             const foundCommodity = state.commodities.find((c) => c.id === commodityId);
             const commodityName = String(updated.commodity_name || foundCommodity?.name || "Rate");
-            const unitPrice = String(
-              updated.unit_price || updated.unitPrice || fields.unit_price || "",
-            );
+            const unitPrice = String(updated.unit_price || fields.unit_price || "");
             const unit = String(updated.unit || fields.unit || "");
             const label = `${commodityName} · ₹${unitPrice}/${unit} (ID: ${targetId})`;
 

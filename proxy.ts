@@ -26,7 +26,6 @@ export async function proxy(request: NextRequest) {
 
   const token =
     request.cookies.get(CookieName.TOKEN)?.value ||
-    request.cookies.get(CookieName.AUTH_TOKEN)?.value ||
     request.headers.get("authorization")?.match(/^Bearer (.+)$/i)?.[1];
 
   const isApiRoute = pathname.startsWith(ApiPrefix.API);

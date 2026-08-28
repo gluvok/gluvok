@@ -1,7 +1,11 @@
+/**
+ * @file app/api/auth/device/login/route.ts
+ * @description API route for hardware microcontroller authentication and Bearer token issuance.
+ */
+
 import { NextRequest } from "next/server";
-import { handleLogin } from "../../login/handler";
-import { LoginClient } from "@/lib/constants/enums";
+import { authenticateDeviceUser } from "@/lib/auth/device";
 
 export async function POST(request: NextRequest) {
-  return handleLogin(request, LoginClient.DEVICE);
+  return authenticateDeviceUser(request);
 }

@@ -10,11 +10,6 @@ export enum Role {
   BASE = "base",
 }
 
-export enum LoginClient {
-  BROWSER = "browser",
-  DEVICE = "device",
-}
-
 export enum Unit {
   KG = "kg",
   Q = "q",

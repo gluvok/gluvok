@@ -1,14 +1,14 @@
-"use client";
-
 /**
  * @file components/form/standard-input.tsx
  * @description Standard HTML text/number input fields, with validation and transform-on-change hook bindings.
  */
 
+"use client";
+
 import { type UseFormReturn, type FieldValues } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { type FieldConfig } from "@/lib/fields";
-import { FieldType, AutoComplete, InputStep } from "@/lib/constants/enums";
+import { FieldType } from "@/lib/constants/enums";
 import { cn } from "@/lib/utils";
 
 interface StandardInputProps {
@@ -25,10 +25,10 @@ interface StandardInputProps {
 export function StandardInput({ field, form, fieldId, disabled }: StandardInputProps) {
   const inputType =
     field.type === FieldType.PASSWORD
-      ? FieldType.PASSWORD
+      ? "password"
       : field.type === FieldType.NUMBER
-        ? FieldType.NUMBER
-        : FieldType.TEXT;
+        ? "number"
+        : "text";
 
   return (
     <Input
@@ -36,8 +36,8 @@ export function StandardInput({ field, form, fieldId, disabled }: StandardInputP
       type={inputType}
       inputMode={field.inputMode}
       disabled={disabled}
-      autoComplete={inputType === FieldType.PASSWORD ? AutoComplete.NEW_PASSWORD : undefined}
-      step={field.type === FieldType.NUMBER ? InputStep.ANY : undefined}
+      autoComplete={inputType === "password" ? "new-password" : undefined}
+      step={field.type === FieldType.NUMBER ? "any" : undefined}
       {...form.register(field.key, {
         onChange: (e) => {
           if (field.transformOnChange) {

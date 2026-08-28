@@ -9,8 +9,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore, useFactoryStore, useEntitiesStore, hasPageAccess } from "@/lib/store";
-import { AppRoutes } from "@/lib/constants/enums";
-import { AUTH_ROUTES, PUBLIC_ROUTES } from "@/lib/constants";
+import { AppRoutes, AUTH_ROUTES, PUBLIC_ROUTES } from "@/lib/constants";
 import NotFound from "@/app/not-found";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/sidebar";
@@ -46,8 +45,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const isAuthPage = AUTH_ROUTES.includes(pathname as AppRoutes);
-  const isPublicPage = PUBLIC_ROUTES.includes(pathname as AppRoutes);
+  const isAuthPage = AUTH_ROUTES.includes(pathname);
+  const isPublicPage = PUBLIC_ROUTES.includes(pathname);
   const projectMatch = pathname.match(/^\/projects\/([^/]+)/);
   const projectSlug = projectMatch ? projectMatch[1] : null;
 

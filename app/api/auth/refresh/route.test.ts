@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { POST } from "./route";
-import { Role, CookieName } from "@/lib/constants/enums";
+import { Role } from "@/lib/constants/enums";
 import { signRefreshToken } from "@/lib/auth/jwt";
 
 const { mockCookies, mockDb } = vi.hoisted(() => ({
@@ -61,7 +61,7 @@ describe("POST /api/auth/refresh", () => {
 
     mockCookies.mockResolvedValue({
       get: vi.fn().mockImplementation((name: string) => {
-        if (name === CookieName.REFRESH_TOKEN) return { value: refreshToken };
+        if (name === "refresh_token") return { value: refreshToken };
         return undefined;
       }),
     });
@@ -101,7 +101,7 @@ describe("POST /api/auth/refresh", () => {
 
     mockCookies.mockResolvedValue({
       get: vi.fn().mockImplementation((name: string) => {
-        if (name === CookieName.REFRESH_TOKEN) return { value: refreshToken };
+        if (name === "refresh_token") return { value: refreshToken };
         return undefined;
       }),
     });
@@ -135,7 +135,7 @@ describe("POST /api/auth/refresh", () => {
 
     mockCookies.mockResolvedValue({
       get: vi.fn().mockImplementation((name: string) => {
-        if (name === CookieName.REFRESH_TOKEN) return { value: refreshToken };
+        if (name === "refresh_token") return { value: refreshToken };
         return undefined;
       }),
     });

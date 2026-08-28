@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarIcon, X, Zap, CalendarCheck } from "lucide-react";
-import { DatePreset, QueryParam } from "@/lib/constants/enums";
+import { DatePreset } from "@/lib/constants/enums";
 
 interface DateRangeFilterProps<TData extends RowData> {
   table: ReactTable<ProjectTableFeatures, TData>;
@@ -35,8 +35,8 @@ const PRESET_OPTIONS: { id: DatePreset; label: string }[] = [
 
 export function DateRangeFilter<TData extends RowData>({
   table,
-  startKey = QueryParam.START_DATE,
-  endKey = QueryParam.END_DATE,
+  startKey = "start_date",
+  endKey = "end_date",
   className = "w-auto",
 }: DateRangeFilterProps<TData>) {
   const columnFilters = table.state.columnFilters;

@@ -6,13 +6,12 @@
 import { type ColumnDef, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { IndianRupee, Ruler, Tag } from "lucide-react";
-import { ColumnLabel } from "@/lib/constants/enums";
 import { createCustomColumn, createTextColumn } from "./helpers";
 import { getCommodityIcon } from "@/lib/fields";
 
 export function getRatesColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
-    createCustomColumn<T>("commodity_name", ColumnLabel.COMMODITY_NAME, Tag, (val, row) => {
+    createCustomColumn<T>("commodity_name", "Commodity Name", Tag, (val, row) => {
       const rec = row as Record<string, unknown>;
       const name = val || (rec.commodities as { name?: string } | undefined)?.name || "";
       const Icon = getCommodityIcon(name);
@@ -23,7 +22,7 @@ export function getRatesColumns<T extends RowData>(): ColumnDef<ProjectTableFeat
         </div>
       );
     }),
-    createCustomColumn("unit_price", ColumnLabel.UNIT_PRICE, IndianRupee, (val) => {
+    createCustomColumn("unit_price", "Unit Price", IndianRupee, (val) => {
       const price = parseFloat(val);
       const formatted = new Intl.NumberFormat("en-IN", {
         style: "currency",
@@ -35,6 +34,6 @@ export function getRatesColumns<T extends RowData>(): ColumnDef<ProjectTableFeat
         </div>
       );
     }),
-    createTextColumn("unit", ColumnLabel.UNIT, Ruler),
+    createTextColumn("unit", "Unit", Ruler),
   ];
 }

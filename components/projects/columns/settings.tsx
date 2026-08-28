@@ -7,7 +7,7 @@ import * as React from "react";
 import { type ColumnDef, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Building, Fingerprint, ShieldCheck } from "lucide-react";
-import { FieldRequirementMode, ColumnLabel } from "@/lib/constants/enums";
+import { FieldRequirementMode } from "@/lib/constants/enums";
 import { getModeIcon, getModeColorClass, getFieldRequirementModeLabel } from "@/lib/fields";
 import { createCustomColumn } from "./helpers";
 
@@ -29,16 +29,13 @@ function ModeBadgeCell({ mode }: { mode: string }) {
 
 export function getSettingsColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
-    createCustomColumn<T>("name", ColumnLabel.FACTORY_NAME, Building, (val) => (
+    createCustomColumn<T>("name", "Factory Name", Building, (val) => (
       <span className="font-medium text-foreground">{String(val || "-")}</span>
     )),
-    createCustomColumn<T>(
-      "aadhar_number_mode",
-      ColumnLabel.AADHAR_NUMBER_MODE,
-      Fingerprint,
-      (val) => <ModeBadgeCell mode={val} />,
-    ),
-    createCustomColumn<T>("govt_id_mode", ColumnLabel.GOVT_ID_MODE, ShieldCheck, (val) => (
+    createCustomColumn<T>("aadhar_number_mode", "Aadhaar Number Mode", Fingerprint, (val) => (
+      <ModeBadgeCell mode={val} />
+    )),
+    createCustomColumn<T>("govt_id_mode", "Govt ID Mode", ShieldCheck, (val) => (
       <ModeBadgeCell mode={val} />
     )),
   ];

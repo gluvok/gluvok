@@ -4,11 +4,11 @@
  */
 
 import { type LucideIcon } from "lucide-react";
-import { ProjectSlug, ProjectName } from "@/lib/constants/enums";
+import { ProjectSlug } from "@/lib/constants/enums";
 
 export interface ProjectMetadata {
   slug: ProjectSlug;
-  name: ProjectName;
+  name: string;
   desc: string;
   icon: LucideIcon;
   color: string;

@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { apiError, StatusCodes, getAuthUser, validateDeviceSecret } from "@/db/helpers";
-import { TableName, EntryStatus, EntryType } from "@/lib/constants/enums";
+import { EntryStatus, EntryType } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { uploadBase64ImagesToStorage } from "@/lib/services/storage";
 
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     // Verify center exists and belongs to the active factory
     const { data: centerRecord } = await db
-      .from(TableName.CENTERS)
+      .from("centers")
       .select("id")
       .eq("id", Number(center_id))
       .eq("factory_id", factoryId)
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     const uploadedImageUrls = await uploadBase64ImagesToStorage(images, factoryId);
 
     const { data: newEntry, error: insertErr } = await db
-      .from(TableName.ENTRIES)
+      .from("entries")
       .insert({
         detected_vehicle_number,
         vehicle_number,

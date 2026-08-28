@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { POST } from "./route";
-import { Role, RequestHeader } from "@/lib/constants/enums";
+import { Role } from "@/lib/constants/enums";
 import { AuthErrorMessage } from "@/lib/constants/messages";
 import { hashPassword } from "@/lib/auth/password";
 
@@ -84,7 +84,7 @@ describe("POST /api/auth/device/login", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [RequestHeader.MICROCONTROLLER_SECRET]: "wrong-secret",
+        "x-microcontroller-secret": "wrong-secret",
       },
       body: JSON.stringify({ username: "operator1", password: "password123" }),
     });
@@ -121,7 +121,7 @@ describe("POST /api/auth/device/login", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [RequestHeader.MICROCONTROLLER_SECRET]: defaultSecret,
+        "x-microcontroller-secret": defaultSecret,
       },
       body: JSON.stringify({ username: "baseuser", password: "password123" }),
     });
@@ -159,7 +159,7 @@ describe("POST /api/auth/device/login", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [RequestHeader.MICROCONTROLLER_SECRET]: defaultSecret,
+        "x-microcontroller-secret": defaultSecret,
       },
       body: JSON.stringify({ username: "admin", password: "adminpass123" }),
     });

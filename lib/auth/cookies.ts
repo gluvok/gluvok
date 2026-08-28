@@ -4,7 +4,6 @@
  */
 
 import { NextResponse } from "next/server";
-import { CookieName } from "@/lib/constants/enums";
 
 export interface SetAuthCookiesParams {
   accessToken: string;
@@ -34,13 +33,9 @@ export function setAuthCookies<T extends NextResponse | Response>(
   tokens: SetAuthCookiesParams,
 ): T {
   if ("cookies" in response && typeof response.cookies?.set === "function") {
+    response.cookies.set("token", tokens.accessToken, getAuthCookieOptions(tokens.accessExpiresIn));
     response.cookies.set(
-      CookieName.TOKEN,
-      tokens.accessToken,
-      getAuthCookieOptions(tokens.accessExpiresIn),
-    );
-    response.cookies.set(
-      CookieName.REFRESH_TOKEN,
+      "refresh_token",
       tokens.refreshToken,
       getAuthCookieOptions(tokens.refreshExpiresIn),
     );
@@ -54,8 +49,8 @@ export function setAuthCookies<T extends NextResponse | Response>(
 export function clearAuthCookies<T extends NextResponse | Response>(response: T): T {
   if ("cookies" in response && typeof response.cookies?.set === "function") {
     const clearOptions = getAuthCookieOptions(0);
-    response.cookies.set(CookieName.TOKEN, "", clearOptions);
-    response.cookies.set(CookieName.REFRESH_TOKEN, "", clearOptions);
+    response.cookies.set("token", "", clearOptions);
+    response.cookies.set("refresh_token", "", clearOptions);
   }
   return response;
 }

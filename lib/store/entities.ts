@@ -8,7 +8,7 @@
 
 import { create } from "zustand";
 import axios from "axios";
-import { ProjectSlug, ApiRoutes } from "@/lib/constants/enums";
+import { ProjectSlug } from "@/lib/constants/enums";
 import { toast } from "sonner";
 import { insertRow, updateRow, deleteRow, deleteRows } from "@/lib/services";
 import { useFactoryStore } from "@/lib/store/factory";
@@ -80,7 +80,7 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
         ? toast.loading("Syncing data...", { id: "sync-data-toast" })
         : undefined;
     try {
-      const res = await axios.get<PreloadPayload>(ApiRoutes.FILTERS_PRELOAD);
+      const res = await axios.get<PreloadPayload>("/api/filters/preload");
       const payload = res?.data;
 
       const rateOpts: RateOption[] = (payload?.rates || []).map((rate) => {

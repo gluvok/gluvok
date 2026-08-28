@@ -16,7 +16,7 @@ import {
   Clock,
   ArrowLeftRight,
 } from "lucide-react";
-import { ColumnLabel, WeighmentType } from "@/lib/constants/enums";
+import { WeighmentType } from "@/lib/constants/enums";
 import { getTypeIcon } from "@/lib/fields/helpers";
 import { cn, formatDateTime } from "@/lib/utils";
 import {
@@ -30,8 +30,8 @@ import { WeighmentImagesCell } from "./weighments-cell";
 
 export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
-    createTextColumn("unit", ColumnLabel.UNIT, Ruler),
-    createCustomColumn("type", ColumnLabel.TYPE, ArrowLeftRight, (val) => {
+    createTextColumn("unit", "Unit", Ruler),
+    createCustomColumn("type", "Type", ArrowLeftRight, (val) => {
       const type = ((val as string) || WeighmentType.UNASSIGNED).toLowerCase();
       let typeClass = "bg-muted text-muted-foreground border border-border";
       const Icon = getTypeIcon(type);
@@ -56,7 +56,7 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
         </span>
       );
     }),
-    createBaseColumn("gross_weight", ColumnLabel.GROSS_WEIGHT, Weight, ({ row }) => {
+    createBaseColumn("gross_weight", "Gross Weight", Weight, ({ row }) => {
       const val = row.getValue("gross_weight") as number;
       return (
         <div className="font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400">
@@ -64,7 +64,7 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
         </div>
       );
     }),
-    createBaseColumn("tare_weight", ColumnLabel.TARE_WEIGHT, Weight, ({ row }) => {
+    createBaseColumn("tare_weight", "Tare Weight", Weight, ({ row }) => {
       const val = row.getValue("tare_weight") as number;
       return (
         <div className="font-mono text-xs font-semibold text-amber-600 dark:text-amber-400">
@@ -72,14 +72,14 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
         </div>
       );
     }),
-    createBaseColumn("net_weight", ColumnLabel.NET_WEIGHT, Weight, ({ row }) => {
+    createBaseColumn("net_weight", "Net Weight", Weight, ({ row }) => {
       const val = row.getValue("net_weight") as number;
       return (
         <div className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{val}</div>
       );
     }),
     {
-      ...createBaseColumn("images", ColumnLabel.IMAGES, Image, ({ row }) => {
+      ...createBaseColumn("images", "Images", Image, ({ row }) => {
         const images = row.getValue("images") as string[] | undefined;
         const vehicleNumber =
           ((row.original as Record<string, unknown>)?.vehicle_number as string) || "Weighment";
@@ -88,25 +88,25 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
       enableGlobalFilter: false,
       enableSorting: false,
     },
-    createIdColumn("in_entry_id", ColumnLabel.IN_ENTRY_ID, Tag),
-    createCustomColumn("in_entry_created_at", ColumnLabel.IN_ENTRY_CREATED_AT, Clock, (val) => (
+    createIdColumn("in_entry_id", "In-Entry ID", Tag),
+    createCustomColumn("in_entry_created_at", "In-Entry Time", Clock, (val) => (
       <span className="font-mono text-muted-foreground text-xs">{formatDateTime(val)}</span>
     )),
-    createIdColumn("out_entry_id", ColumnLabel.OUT_ENTRY_ID, Tag),
-    createCustomColumn("out_entry_created_at", ColumnLabel.OUT_ENTRY_CREATED_AT, Clock, (val) => (
+    createIdColumn("out_entry_id", "Out-Entry ID", Tag),
+    createCustomColumn("out_entry_created_at", "Out-Entry Time", Clock, (val) => (
       <span className="font-mono text-muted-foreground text-xs">{formatDateTime(val)}</span>
     )),
-    createIdColumn("in_center_id", ColumnLabel.IN_CENTER_ID, Building),
-    createTextColumn("in_center_name", ColumnLabel.IN_CENTER_NAME, Building),
-    createIdColumn("out_center_id", ColumnLabel.OUT_CENTER_ID, Building),
-    createTextColumn("out_center_name", ColumnLabel.OUT_CENTER_NAME, Building),
-    createIdColumn("in_user_id", ColumnLabel.IN_USER_ID, User),
-    createTextColumn("in_user_name", ColumnLabel.IN_USER_NAME, User),
-    createIdColumn("out_user_id", ColumnLabel.OUT_USER_ID, User),
-    createTextColumn("out_user_name", ColumnLabel.OUT_USER_NAME, User),
-    createIdColumn("in_customer_id", ColumnLabel.IN_CUSTOMER_ID, Users),
-    createTextColumn("in_customer_name", ColumnLabel.IN_CUSTOMER_NAME, Users),
-    createIdColumn("out_customer_id", ColumnLabel.OUT_CUSTOMER_ID, Users),
-    createTextColumn("out_customer_name", ColumnLabel.OUT_CUSTOMER_NAME, Users),
+    createIdColumn("in_center_id", "In-Center ID", Building),
+    createTextColumn("in_center_name", "In-Center Name", Building),
+    createIdColumn("out_center_id", "Out-Center ID", Building),
+    createTextColumn("out_center_name", "Out-Center Name", Building),
+    createIdColumn("in_user_id", "In-User ID", User),
+    createTextColumn("in_user_name", "In-User Name", User),
+    createIdColumn("out_user_id", "Out-User ID", User),
+    createTextColumn("out_user_name", "Out-User Name", User),
+    createIdColumn("in_customer_id", "In-Customer ID", Users),
+    createTextColumn("in_customer_name", "In-Customer Name", Users),
+    createIdColumn("out_customer_id", "Out-Customer ID", Users),
+    createTextColumn("out_customer_name", "Out-Customer Name", Users),
   ];
 }

@@ -9,7 +9,7 @@ import {
   getFactory,
   formatEntityResponse,
 } from "@/db/helpers";
-import { ProjectSlug, PermissionKey, TableName } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { getDynamicCustomerSchema } from "@/lib/validation";
 import { hashPassword } from "@/lib/auth/password";
@@ -17,7 +17,7 @@ import { hashPassword } from "@/lib/auth/password";
 export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client
-      .from(TableName.CUSTOMERS)
+      .from("customers")
       .select("id, user_id, name")
       .eq("id", entityId)
       .eq("factory_id", factoryId)
@@ -46,7 +46,7 @@ export const PATCH = withAuth(
     if (username && typeof username === "string" && username.trim().length > 0) {
       const cleanUsername = username.trim();
       let userQuery = client
-        .from(TableName.USERS)
+        .from("users")
         .select("id")
         .eq("username", cleanUsername)
         .is("deleted_at", null);
@@ -88,7 +88,7 @@ export const DELETE = withAuth(
 
     // Check if any active entries are linked to this customer
     const { data: linkedEntry } = await client
-      .from(TableName.ENTRIES)
+      .from("entries")
       .select("id")
       .eq("customer_id", entityId)
       .is("deleted_at", null)

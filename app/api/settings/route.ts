@@ -7,7 +7,7 @@ import {
   formatEntityResponse,
   getFactory,
 } from "@/db/helpers";
-import { ProjectSlug, PermissionKey, TableName } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { editSettingsSchema } from "@/lib/validation";
 
@@ -39,7 +39,7 @@ export const PATCH = withAuth(async (req, user, client) => {
     const { name, aadhar_number_mode, govt_id_mode } = parsed.data;
 
     const { data: updated, error } = await client
-      .from(TableName.FACTORIES)
+      .from("factories")
       .update({
         ...(name ? { name } : {}),
         ...(aadhar_number_mode ? { aadhar_number_mode } : {}),

@@ -9,12 +9,12 @@ import { cookies } from "next/headers";
 import { verifyRefreshToken } from "@/lib/auth/jwt";
 import { clearAuthCookies, setAuthCookies } from "@/lib/auth/cookies";
 import { fetchActiveUserById, generateAuthTokens, toUserSessionPayload } from "@/lib/auth/common";
-import { AuthErrorMessage, CookieName } from "@/lib/constants";
+import { AuthErrorMessage } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    let refreshToken = cookieStore.get(CookieName.REFRESH_TOKEN)?.value;
+    let refreshToken = cookieStore.get("refresh_token")?.value;
 
     if (!refreshToken) {
       try {

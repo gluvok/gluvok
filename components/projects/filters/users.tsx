@@ -8,7 +8,7 @@
 import * as React from "react";
 import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import { Role, FilterValue, FieldType } from "@/lib/constants/enums";
+import { Role, FieldType } from "@/lib/constants/enums";
 import { Shield } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
 
@@ -39,7 +39,7 @@ export function UsersFilters<TData extends RowData>({ table }: UsersFiltersProps
 
   const roleOptions = React.useMemo(() => {
     return [
-      { value: FilterValue.ALL, label: "All Roles" },
+      { value: "all", label: "All Roles" },
       ...ROLE_OPTIONS.map((r) => ({
         value: r.value,
         label: r.label,
@@ -51,8 +51,8 @@ export function UsersFilters<TData extends RowData>({ table }: UsersFiltersProps
     <div className="flex items-center gap-2">
       <BaseCombobox
         type={FieldType.ROLE}
-        value={currentRole ?? FilterValue.ALL}
-        onChange={(val) => setColumnFilter("role", val === FilterValue.ALL ? undefined : val)}
+        value={currentRole ?? "all"}
+        onChange={(val) => setColumnFilter("role", val === "all" ? undefined : val)}
         data={roleOptions}
         placeholder="All Roles"
         searchPlaceholder="Search role..."

@@ -4,7 +4,7 @@
  */
 
 import { supabase } from "@/db";
-import { TableName, EntryStatus, EntryType, Unit } from "@/lib/constants/enums";
+import { EntryStatus, EntryType, Unit } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
 export async function validateSequentialApproval(
@@ -16,7 +16,7 @@ export async function validateSequentialApproval(
   entryType?: EntryType,
 ): Promise<void> {
   let query = client
-    .from(TableName.ENTRIES)
+    .from("entries")
     .select("id, created_at, type")
     .eq("center_id", centerId)
     .eq("vehicle_number", vehicleNumber)
@@ -60,7 +60,7 @@ export async function tryMergeEntries(
 ): Promise<Record<string, unknown> | null> {
   // 1. Fetch current entry E2
   const { data: e2, error: fetchErr } = await client
-    .from(TableName.ENTRIES)
+    .from("entries")
     .select("*")
     .eq("id", entryId)
     .eq("factory_id", factoryId)
@@ -73,7 +73,7 @@ export async function tryMergeEntries(
 
   // 2. Check if E2 is already linked in active weighments
   const { data: existingW2 } = await client
-    .from(TableName.WEIGHMENTS)
+    .from("weighments")
     .select("id")
     .or(`in_entry_id.eq.${entryId},out_entry_id.eq.${entryId}`)
     .is("deleted_at", null)
@@ -85,7 +85,7 @@ export async function tryMergeEntries(
 
   // 3. Find latest preceding approved entry E1 for the same vehicle, factory, AND matching entry type
   let e1Query = client
-    .from(TableName.ENTRIES)
+    .from("entries")
     .select("*")
     .eq("factory_id", factoryId)
     .eq("vehicle_number", e2.vehicle_number)
@@ -110,7 +110,7 @@ export async function tryMergeEntries(
 
   // 4. Check if E1 is already linked in active weighments
   const { data: existingW1 } = await client
-    .from(TableName.WEIGHMENTS)
+    .from("weighments")
     .select("id")
     .or(`in_entry_id.eq.${e1.id},out_entry_id.eq.${e1.id}`)
     .is("deleted_at", null)
@@ -123,7 +123,7 @@ export async function tryMergeEntries(
 
   // 5. Create new weighment record linking E1 (In) and E2 (Out)
   const { data: newWeighment, error: insertErr } = await client
-    .from(TableName.WEIGHMENTS)
+    .from("weighments")
     .insert({
       in_entry_id: e1.id,
       out_entry_id: e2.id,

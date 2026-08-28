@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { NextResponse } from "next/server";
-import { CookieName } from "@/lib/constants/enums";
 import { getAuthCookieOptions, setAuthCookies, clearAuthCookies } from "./cookies";
 
 describe("Auth Cookie Helpers", () => {
@@ -24,15 +23,15 @@ describe("Auth Cookie Helpers", () => {
       refreshExpiresIn: 604800,
     });
 
-    expect(res.cookies.get(CookieName.TOKEN)?.value).toBe("access-token-xyz");
-    expect(res.cookies.get(CookieName.REFRESH_TOKEN)?.value).toBe("refresh-token-abc");
+    expect(res.cookies.get("token")?.value).toBe("access-token-xyz");
+    expect(res.cookies.get("refresh_token")?.value).toBe("refresh-token-abc");
   });
 
   it("clears all auth token cookies on NextResponse", () => {
     const res = NextResponse.json({ ok: true });
     clearAuthCookies(res);
 
-    expect(res.cookies.get(CookieName.TOKEN)?.value).toBe("");
-    expect(res.cookies.get(CookieName.REFRESH_TOKEN)?.value).toBe("");
+    expect(res.cookies.get("token")?.value).toBe("");
+    expect(res.cookies.get("refresh_token")?.value).toBe("");
   });
 });

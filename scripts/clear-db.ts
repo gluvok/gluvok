@@ -4,7 +4,6 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { TableName } from "@/lib/constants/enums";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey =
@@ -21,14 +20,14 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Order: Dependent child tables first -> Independent/parent tables last
 const tables = [
-  TableName.WEIGHMENTS,
-  TableName.ENTRIES,
-  TableName.RATES,
-  TableName.CUSTOMERS,
-  TableName.COMMODITIES,
-  TableName.CENTERS,
-  TableName.USERS,
-  TableName.FACTORIES,
+  "weighments",
+  "entries",
+  "rates",
+  "customers",
+  "commodities",
+  "centers",
+  "users",
+  "factories",
 ];
 
 async function main() {
@@ -62,6 +61,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("Clear database failed:", err);
+  console.error("Database clear failed:", err);
   process.exit(1);
 });

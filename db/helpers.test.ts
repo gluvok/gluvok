@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
-import { Role, CookieName } from "@/lib/constants/enums";
+import { Role } from "@/lib/constants/enums";
 import { signJWT, signRefreshToken } from "@/lib/auth/jwt";
 import {
   fetchPaginatedResult,
@@ -150,7 +150,7 @@ describe("withAuth and server-side auto-refresh", () => {
     });
 
     const req = new NextRequest("http://localhost/api/test");
-    req.cookies.set(CookieName.TOKEN, token);
+    req.cookies.set("token", token);
 
     const response = await authedHandler(req, { params: Promise.resolve({}) });
     expect(response.status).toBe(200);
@@ -187,14 +187,14 @@ describe("withAuth and server-side auto-refresh", () => {
     });
 
     const req = new NextRequest("http://localhost/api/test");
-    req.cookies.set(CookieName.TOKEN, "expired.or.invalid.token");
-    req.cookies.set(CookieName.REFRESH_TOKEN, refreshToken);
+    req.cookies.set("token", "expired.or.invalid.token");
+    req.cookies.set("refresh_token", refreshToken);
 
     const response = await authedHandler(req, { params: Promise.resolve({}) });
     expect(response.status).toBe(200);
     expect(handler).toHaveBeenCalled();
-    expect(response.cookies.get(CookieName.TOKEN)?.value).toBeDefined();
-    expect(response.cookies.get(CookieName.REFRESH_TOKEN)?.value).toBeDefined();
+    expect(response.cookies.get("token")?.value).toBeDefined();
+    expect(response.cookies.get("refresh_token")?.value).toBeDefined();
   });
 
   it("returns 401 when neither token nor refresh token is valid", async () => {

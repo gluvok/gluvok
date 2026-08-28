@@ -8,15 +8,7 @@ import {
   hasPermission,
   parseBulkIds,
 } from "@/db/helpers";
-import {
-  TableName,
-  QueryParam,
-  EntryStatus,
-  EntryType,
-  FilterValue,
-  ProjectSlug,
-  PermissionKey,
-} from "@/lib/constants/enums";
+import { EntryStatus, EntryType, ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
 import { uploadBase64ImagesToStorage } from "@/lib/services/storage";
@@ -25,20 +17,17 @@ import { addEntrySchema } from "@/lib/validation";
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
-  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
-  const startDate = req.nextUrl.searchParams.get(QueryParam.START_DATE);
-  const endDate = req.nextUrl.searchParams.get(QueryParam.END_DATE);
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at";
-  const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
-    ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
+  const search = req.nextUrl.searchParams.get("search");
+  const startDate = req.nextUrl.searchParams.get("start_date");
+  const endDate = req.nextUrl.searchParams.get("end_date");
+  const sortColumn = req.nextUrl.searchParams.get("sort_column") || "created_at";
+  const sortDesc = req.nextUrl.searchParams.has("sort_desc")
+    ? req.nextUrl.searchParams.get("sort_desc") === "true"
     : true;
 
   let query = client
-    .from(TableName.ENTRIES)
-    .select(
-      `*, ${TableName.CENTERS}(name), ${TableName.USERS}(name), ${TableName.CUSTOMERS}(name)`,
-      { count: "exact" },
-    )
+    .from("entries")
+    .select(`*, centers(name), users(name), customers(name)`, { count: "exact" })
     .eq("factory_id", user.factory_id)
     .is("deleted_at", null)
     .order(sortColumn, { ascending: !sortDesc });
@@ -52,7 +41,7 @@ export const GET = withAuth(async (req, user, client) => {
   };
 
   for (const [key, val] of Object.entries(filterParams)) {
-    if (val && val !== FilterValue.ALL) {
+    if (val && val !== "all") {
       const num = Number(val);
       query = query.eq(key, isNaN(num) ? val : num);
     }
@@ -120,7 +109,7 @@ export const POST = withAuth(async (req, user, client) => {
 
     // Verify center_id belongs to the user's factory and is active
     const { data: centerRecord } = await client
-      .from(TableName.CENTERS)
+      .from("centers")
       .select("id")
       .eq("id", Number(center_id))
       .eq("factory_id", user.factory_id)
@@ -134,7 +123,7 @@ export const POST = withAuth(async (req, user, client) => {
     // Verify customer_id belongs to the user's factory and is active (if provided)
     if (customer_id) {
       const { data: customerRecord } = await client
-        .from(TableName.CUSTOMERS)
+        .from("customers")
         .select("id")
         .eq("id", Number(customer_id))
         .eq("factory_id", user.factory_id)
@@ -162,7 +151,7 @@ export const POST = withAuth(async (req, user, client) => {
     }
 
     const { data: newEntry, error: insertErr } = await client
-      .from(TableName.ENTRIES)
+      .from("entries")
       .insert({
         detected_vehicle_number: null,
         vehicle_number,
@@ -204,7 +193,7 @@ export const DELETE = withAuth(async (req, user, client) => {
 
   // Check if any active weighments are linked to these entries
   const { data: linkedWeighments } = await client
-    .from(TableName.WEIGHMENTS)
+    .from("weighments")
     .select("id")
     .or(`in_entry_id.in.(${ids.join(",")}),out_entry_id.in.(${ids.join(",")})`)
     .is("deleted_at", null)
@@ -215,7 +204,7 @@ export const DELETE = withAuth(async (req, user, client) => {
   }
 
   const { data: deletedEntries, error } = await client
-    .from(TableName.ENTRIES)
+    .from("entries")
     .update({
       deleted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

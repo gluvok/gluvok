@@ -4,7 +4,7 @@
  */
 
 import * as z from "zod";
-import { FieldRequirementMode, ColumnLabel } from "@/lib/constants/enums";
+import { FieldRequirementMode } from "@/lib/constants/enums";
 import { ValidationMessage } from "@/lib/constants/messages";
 import { integerIdSchema } from "./helpers";
 
@@ -12,7 +12,7 @@ export const addSettingsSchema = z.object({
   name: z
     .string({ message: ValidationMessage.FACTORY_NAME_REQUIRED })
     .min(1, ValidationMessage.FACTORY_NAME_REQUIRED),
-  factory_id: integerIdSchema(ColumnLabel.FACTORY_ID).optional().nullable(),
+  factory_id: integerIdSchema("Factory ID").optional().nullable(),
   aadhar_number_mode: z.enum(FieldRequirementMode, {
     message: ValidationMessage.VALID_AADHAR_MODE_REQUIRED,
   }),

@@ -3,14 +3,7 @@ import { StatusCodes, ReasonPhrases } from "http-status-codes";
 import { verifyJWT, verifyRefreshToken, JWTPayload } from "@/lib/auth/jwt";
 import { setAuthCookies } from "@/lib/auth/cookies";
 import { fetchActiveUserById, generateAuthTokens } from "@/lib/auth/common";
-import {
-  Role,
-  RequestHeader,
-  ProjectSlug,
-  QueryParam,
-  CookieName,
-  TableName,
-} from "@/lib/constants/enums";
+import { Role, ProjectSlug } from "@/lib/constants/enums";
 export { hasPermission } from "@/lib/store/access";
 import { REQUIRED_CREATE_FIELDS } from "@/lib/fields/config";
 import { db, supabase } from "@/db";
@@ -55,14 +48,14 @@ export function forbiddenError(message = ReasonPhrases.FORBIDDEN): NextResponse 
 }
 
 export function validateDeviceSecret(req: NextRequest | Request): boolean {
-  const secret = req.headers.get(RequestHeader.MICROCONTROLLER_SECRET);
+  const secret = req.headers.get("x-microcontroller-secret");
   const expectedSecret = process.env.MICROCONTROLLER_SECRET || "default-pi-secret-key";
   return Boolean(secret && secret === expectedSecret);
 }
 
 export function getPaginationParams(url: URL): PaginationParams {
-  const pageParam = url.searchParams.get(QueryParam.PAGE);
-  const limitParam = url.searchParams.get(QueryParam.LIMIT);
+  const pageParam = url.searchParams.get("page");
+  const limitParam = url.searchParams.get("limit");
 
   const page = pageParam ? Math.max(1, parseInt(pageParam, 10)) : 1;
   const limit = limitParam ? Math.min(100, Math.max(1, parseInt(limitParam, 10))) : 10;
@@ -95,11 +88,11 @@ export interface RefreshedTokens {
 export async function getAuthUser(
   req: NextRequest | Request,
 ): Promise<{ user: JWTPayload; refreshedTokens?: RefreshedTokens } | null> {
-  const userId = req.headers.get(RequestHeader.USER_ID);
-  const username = req.headers.get(RequestHeader.USERNAME);
-  const rawName = req.headers.get(RequestHeader.NAME);
-  const role = req.headers.get(RequestHeader.ROLE);
-  const factoryIdStr = req.headers.get(RequestHeader.FACTORY_ID);
+  const userId = req.headers.get("x-user-id");
+  const username = req.headers.get("x-user-username");
+  const rawName = req.headers.get("x-user-name");
+  const role = req.headers.get("x-user-role");
+  const factoryIdStr = req.headers.get("x-user-factory-id");
 
   if (userId && username && role && rawName) {
     return {
@@ -116,7 +109,7 @@ export async function getAuthUser(
   let token: string | undefined;
 
   if ("cookies" in req && typeof (req as NextRequest).cookies?.get === "function") {
-    token = (req as NextRequest).cookies.get(CookieName.TOKEN)?.value;
+    token = (req as NextRequest).cookies.get("token")?.value;
   }
 
   if (!token) {
@@ -136,7 +129,7 @@ export async function getAuthUser(
   // Fallback: Check refresh token to automatically re-authenticate and mint fresh tokens
   let refreshToken: string | undefined;
   if ("cookies" in req && typeof (req as NextRequest).cookies?.get === "function") {
-    refreshToken = (req as NextRequest).cookies.get(CookieName.REFRESH_TOKEN)?.value;
+    refreshToken = (req as NextRequest).cookies.get("refresh_token")?.value;
   }
 
   if (!refreshToken) {
@@ -264,7 +257,7 @@ export async function getFactory(client: typeof supabase, factoryId: number | nu
   if (!factoryId) return null;
   try {
     const { data } = await client
-      .from(TableName.FACTORIES)
+      .from("factories")
       .select("id, name, aadhar_number_mode, govt_id_mode, created_at, updated_at")
       .eq("id", factoryId)
       .maybeSingle();

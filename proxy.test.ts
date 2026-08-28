@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { proxy } from "./proxy";
-import { CookieName, Role } from "@/lib/constants/enums";
+import { Role } from "@/lib/constants/enums";
 import { signJWT, signRefreshToken } from "@/lib/auth/jwt";
 
 describe("Next.js Middleware Proxy", () => {
@@ -32,7 +32,7 @@ describe("Next.js Middleware Proxy", () => {
     });
 
     const req = new NextRequest("http://localhost/projects/centers");
-    req.cookies.set(CookieName.TOKEN, token);
+    req.cookies.set("token", token);
 
     const res = await proxy(req);
     expect(res.status).toBe(200);
@@ -46,8 +46,8 @@ describe("Next.js Middleware Proxy", () => {
     });
 
     const req = new NextRequest("http://localhost/projects/centers");
-    req.cookies.set(CookieName.TOKEN, "expired.or.invalid.token");
-    req.cookies.set(CookieName.REFRESH_TOKEN, refreshToken);
+    req.cookies.set("token", "expired.or.invalid.token");
+    req.cookies.set("refresh_token", refreshToken);
 
     const res = await proxy(req);
     expect(res.status).toBe(200);
@@ -61,8 +61,8 @@ describe("Next.js Middleware Proxy", () => {
     });
 
     const req = new NextRequest("http://localhost/api/centers");
-    req.cookies.set(CookieName.TOKEN, "expired.or.invalid.token");
-    req.cookies.set(CookieName.REFRESH_TOKEN, refreshToken);
+    req.cookies.set("token", "expired.or.invalid.token");
+    req.cookies.set("refresh_token", refreshToken);
 
     const res = await proxy(req);
     expect(res.status).toBe(200);

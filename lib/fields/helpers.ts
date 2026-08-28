@@ -1,18 +1,14 @@
 /**
  * @file lib/fields/helpers.ts
- * @description Helper definitions or configuration for entity table fields (helpers).
+ * @description Helper definitions or configuration for entity table fields.
  */
 
 import {
   ProjectSlug,
-  CommodityName,
-  ProjectName,
-  SingularEntityName,
   Role,
   WeighmentType,
   EntryType,
   EntryStatus,
-  FilterValue,
   FieldRequirementMode,
   FieldType,
 } from "@/lib/constants/enums";
@@ -69,20 +65,20 @@ export function isCommoditySlug(slug: string | ProjectSlug): boolean {
   return slug === ProjectSlug.COMMODITIES;
 }
 
-const COMMODITY_ICON_MAP: Record<CommodityName, LucideIcon> = {
-  [CommodityName.WHEAT]: Wheat,
-  [CommodityName.CORN]: Sprout,
-  [CommodityName.CRUDE_OIL]: Droplet,
-  [CommodityName.SCRAP_COPPER]: Hammer,
-  [CommodityName.BARLEY]: Leaf,
-  [CommodityName.WINE]: Wine,
-  [CommodityName.CABLE]: Cable,
+const COMMODITY_ICON_MAP: Record<string, LucideIcon> = {
+  Wheat: Wheat,
+  Corn: Sprout,
+  "Crude Oil": Droplet,
+  "Scrap Copper": Hammer,
+  Barley: Leaf,
+  Wine: Wine,
+  Cable: Cable,
 };
 
 export function getCommodityIcon(name: string): LucideIcon {
   if (!name) return Package;
   const baseName = name.split(" (ID:")[0].trim();
-  return COMMODITY_ICON_MAP[baseName as CommodityName] ?? Package;
+  return COMMODITY_ICON_MAP[baseName] ?? Package;
 }
 
 export function getRoleBadgeClass(role?: string): string {
@@ -130,7 +126,7 @@ export function getRoleIcon(role?: string): LucideIcon {
 }
 
 export function getTypeIcon(typeVal?: string): LucideIcon {
-  if (!typeVal || typeVal === FilterValue.ALL) return SlidersHorizontal;
+  if (!typeVal || typeVal === "all") return SlidersHorizontal;
   const normalized = typeVal.toLowerCase().trim();
   switch (normalized) {
     case WeighmentType.IN:
@@ -207,7 +203,7 @@ export function getFieldRequirementModeLabel(modeVal?: string): string {
 }
 
 export function getStatusIcon(statusVal?: string): LucideIcon {
-  if (!statusVal || statusVal === FilterValue.ALL) return SlidersHorizontal;
+  if (!statusVal || statusVal === "all") return SlidersHorizontal;
   const normalized = statusVal.toLowerCase().trim();
   switch (normalized) {
     case EntryStatus.PENDING:
@@ -254,22 +250,24 @@ export function getSelectPlaceholder(entity: string): string {
 
 export function getSingularName(name: string): string {
   switch (name) {
-    case ProjectName.CENTERS:
-      return SingularEntityName.CENTER;
-    case ProjectName.COMMODITIES:
-      return SingularEntityName.COMMODITY;
-    case ProjectName.RATES:
-      return SingularEntityName.RATE;
-    case ProjectName.CUSTOMERS:
-      return SingularEntityName.CUSTOMER;
-    case ProjectName.WEIGHMENTS:
-      return SingularEntityName.WEIGHMENT;
-    case ProjectName.FACTORIES:
-      return SingularEntityName.FACTORY;
-    case ProjectName.USERS:
-      return SingularEntityName.USER;
-    case ProjectName.SETTINGS:
-      return SingularEntityName.SETTING;
+    case "Centers":
+      return "Center";
+    case "Commodities":
+      return "Commodity";
+    case "Rates":
+      return "Rate";
+    case "Customers":
+      return "Customer";
+    case "Weighments":
+      return "Weighment";
+    case "Factories":
+      return "Factory";
+    case "Users":
+      return "User";
+    case "Settings":
+      return "Setting";
+    case "Entries":
+      return "Entry";
 
     default:
       if (name.endsWith("ies")) {

@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { StatusCodes, ReasonPhrases } from "http-status-codes";
 import { verifyJWT, verifyRefreshToken } from "@/lib/auth/jwt";
-import { AppRoutes, ApiPrefix, CookieName, RequestHeader } from "@/lib/constants/enums";
-import { PUBLIC_ROUTES, AUTH_ROUTES, PUBLIC_API_ROUTES } from "@/lib/constants/routes";
+import { AppRoutes, PUBLIC_ROUTES, AUTH_ROUTES, PUBLIC_API_ROUTES } from "@/lib/constants/routes";
 
 const PUBLIC_PATHNAMES = new Set<string>([...AUTH_ROUTES, ...PUBLIC_ROUTES, ...PUBLIC_API_ROUTES]);
 
@@ -13,8 +12,8 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (
-    pathname.startsWith(ApiPrefix.NEXT) ||
-    pathname.startsWith(ApiPrefix.FAVICON) ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon.ico") ||
     STATIC_EXTENSIONS.test(pathname)
   ) {
     return NextResponse.next();
@@ -25,15 +24,15 @@ export async function proxy(request: NextRequest) {
   }
 
   const token =
-    request.cookies.get(CookieName.TOKEN)?.value ||
+    request.cookies.get("token")?.value ||
     request.headers.get("authorization")?.match(/^Bearer (.+)$/i)?.[1];
 
-  const isApiRoute = pathname.startsWith(ApiPrefix.API);
+  const isApiRoute = pathname.startsWith("/api/");
 
   const payload = token ? await verifyJWT(token) : null;
 
   if (!payload) {
-    const refreshToken = request.cookies.get(CookieName.REFRESH_TOKEN)?.value;
+    const refreshToken = request.cookies.get("refresh_token")?.value;
     const refreshPayload = refreshToken ? await verifyRefreshToken(refreshToken) : null;
 
     if (refreshPayload) {
@@ -49,13 +48,13 @@ export async function proxy(request: NextRequest) {
   }
 
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set(RequestHeader.USER_ID, payload.sub);
-  requestHeaders.set(RequestHeader.USERNAME, payload.username);
-  requestHeaders.set(RequestHeader.NAME, payload.name);
-  requestHeaders.set(RequestHeader.ROLE, payload.role);
+  requestHeaders.set("x-user-id", payload.sub);
+  requestHeaders.set("x-user-username", payload.username);
+  requestHeaders.set("x-user-name", payload.name);
+  requestHeaders.set("x-user-role", payload.role);
 
   if (payload.factory_id != null) {
-    requestHeaders.set(RequestHeader.FACTORY_ID, String(payload.factory_id));
+    requestHeaders.set("x-user-factory-id", String(payload.factory_id));
   }
 
   return NextResponse.next({ request: { headers: requestHeaders } });

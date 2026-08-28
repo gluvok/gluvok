@@ -4,14 +4,14 @@
  */
 
 import * as z from "zod";
-import { Role, ColumnLabel } from "@/lib/constants/enums";
+import { Role } from "@/lib/constants/enums";
 import { ValidationMessage } from "@/lib/constants/messages";
 import { nameSchema } from "./helpers";
 
 export const addUserSchema = z
   .object({
-    username: z.string().min(3, ValidationMessage.MIN_LENGTH(ColumnLabel.USERNAME, 3)),
-    password: z.string().min(6, ValidationMessage.MIN_LENGTH(ColumnLabel.PASSWORD, 6)),
+    username: z.string().min(3, ValidationMessage.MIN_LENGTH("Username", 3)),
+    password: z.string().min(6, ValidationMessage.MIN_LENGTH("Password", 6)),
     confirmPassword: z
       .string({ message: ValidationMessage.CONFIRM_PASSWORD_REQUIRED })
       .min(1, ValidationMessage.CONFIRM_PASSWORD_REQUIRED),
@@ -20,14 +20,14 @@ export const addUserSchema = z
         (val) => (typeof val === "string" ? val.replace(/\s/g, "") : val),
         z
           .string()
-          .length(12, ValidationMessage.EXACT_DIGITS(ColumnLabel.AADHAR_NUMBER, 12))
-          .regex(/^\d+$/, ValidationMessage.DIGITS_ONLY(ColumnLabel.AADHAR_NUMBER))
+          .length(12, ValidationMessage.EXACT_DIGITS("Aadhar Number", 12))
+          .regex(/^\d+$/, ValidationMessage.DIGITS_ONLY("Aadhar Number"))
           .optional()
           .nullable()
           .or(z.literal("")),
       )
       .transform((v) => (v === "" || v === undefined ? null : v)),
-    name: nameSchema(ColumnLabel.NAME),
+    name: nameSchema("Name"),
     role: z.enum(Role, {
       message: ValidationMessage.VALID_ROLE_REQUIRED,
     }),
@@ -42,20 +42,20 @@ export const createUserSchema = addUserSchema;
 
 export const editUserSchema = z
   .object({
-    username: z.string().min(3, ValidationMessage.MIN_LENGTH(ColumnLabel.USERNAME, 3)),
+    username: z.string().min(3, ValidationMessage.MIN_LENGTH("Username", 3)),
     aadhar_number: z
       .preprocess(
         (val) => (typeof val === "string" ? val.replace(/\s/g, "") : val),
         z
           .string()
-          .length(12, ValidationMessage.EXACT_DIGITS(ColumnLabel.AADHAR_NUMBER, 12))
-          .regex(/^\d+$/, ValidationMessage.DIGITS_ONLY(ColumnLabel.AADHAR_NUMBER))
+          .length(12, ValidationMessage.EXACT_DIGITS("Aadhar Number", 12))
+          .regex(/^\d+$/, ValidationMessage.DIGITS_ONLY("Aadhar Number"))
           .optional()
           .nullable()
           .or(z.literal("")),
       )
       .transform((v) => (v === "" || v === undefined ? null : v)),
-    name: nameSchema(ColumnLabel.NAME),
+    name: nameSchema("Name"),
     role: z.enum(Role, {
       message: ValidationMessage.VALID_ROLE_REQUIRED,
     }),
@@ -80,7 +80,7 @@ export const editUserSchema = z
     if (hasPassword && rawPassword!.trim().length < 6) {
       ctx.addIssue({
         code: "custom",
-        message: ValidationMessage.MIN_LENGTH(ColumnLabel.PASSWORD, 6),
+        message: ValidationMessage.MIN_LENGTH("Password", 6),
         path: ["password"],
       });
     }

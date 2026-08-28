@@ -3,11 +3,10 @@
  * @description Helper component or configuration for project dashboards (registry).
  */
 
-import { ProjectName } from "@/lib/constants/enums";
 import { PROJECTS } from "./data";
 
 export interface ProjectConfig {
-  name: ProjectName;
+  name: string;
   icon: React.ComponentType<{ className?: string }>;
   desc: string;
 }

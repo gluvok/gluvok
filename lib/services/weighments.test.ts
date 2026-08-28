@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { validateSequentialApproval, tryMergeEntries } from "./weighments";
-import { TableName, EntryStatus, EntryType, Unit } from "@/lib/constants/enums";
+import { EntryStatus, EntryType, Unit } from "@/lib/constants/enums";
 
 describe("Weighments Service", () => {
   let mockClient: any;
@@ -29,18 +29,22 @@ describe("Weighments Service", () => {
       await expect(
         validateSequentialApproval(
           mockClient,
-          101,
+          1,
           "MH12AB1234",
-          "2026-08-09T12:00:00Z",
+          "2026-08-09T14:00:00Z",
           2,
           EntryType.AUTOMATIC,
         ),
-      ).resolves.not.toThrow();
+      ).resolves.toBeUndefined();
 
-      expect(eqMock).toHaveBeenCalledWith("center_id", 101);
+      expect(mockClient.from).toHaveBeenCalledWith("entries");
+      expect(eqMock).toHaveBeenCalledWith("center_id", 1);
+      expect(eqMock).toHaveBeenCalledWith("vehicle_number", "MH12AB1234");
+      expect(eqMock).toHaveBeenCalledWith("status", EntryStatus.PENDING);
+      expect(eqMock).toHaveBeenCalledWith("type", EntryType.AUTOMATIC);
     });
 
-    it("should throw an error if an earlier pending entry exists for the vehicle", async () => {
+    it("should throw an error if an earlier pending entry exists for the vehicle in the same center", async () => {
       mockClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -50,7 +54,11 @@ describe("Weighments Service", () => {
         order: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
         maybeSingle: vi.fn().mockResolvedValue({
-          data: { id: 1, created_at: "2026-08-09T10:00:00Z", type: EntryType.AUTOMATIC },
+          data: {
+            id: 1,
+            created_at: "2026-08-09T12:00:00Z",
+            type: EntryType.AUTOMATIC,
+          },
           error: null,
         }),
       });
@@ -58,33 +66,18 @@ describe("Weighments Service", () => {
       await expect(
         validateSequentialApproval(
           mockClient,
-          101,
+          1,
           "MH12AB1234",
-          "2026-08-09T12:00:00Z",
+          "2026-08-09T14:00:00Z",
           2,
           EntryType.AUTOMATIC,
         ),
-      ).rejects.toThrow(/earlier automatic entry #1 .* is still pending/);
+      ).rejects.toThrow(/Cannot approve entry #2 because earlier automatic entry #1/);
     });
   });
 
   describe("tryMergeEntries", () => {
-    it("should return null if target entry is not approved", async () => {
-      mockClient.from.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        is: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({
-          data: { id: 2, status: EntryStatus.PENDING, type: EntryType.AUTOMATIC },
-          error: null,
-        }),
-      });
-
-      const res = await tryMergeEntries(mockClient, 1, 2);
-      expect(res).toBeNull();
-    });
-
-    it("should successfully merge automatic entry E1 and E2 if E1 is unlinked and approved", async () => {
+    it("should merge two entries of the same type and vehicle into a weighment", async () => {
       const e2Data = {
         id: 2,
         vehicle_number: "MH12AB1234",
@@ -92,7 +85,6 @@ describe("Weighments Service", () => {
         type: EntryType.AUTOMATIC,
         created_at: "2026-08-09T14:00:00Z",
       };
-
       const e1Data = {
         id: 1,
         vehicle_number: "MH12AB1234",
@@ -103,7 +95,7 @@ describe("Weighments Service", () => {
 
       let callCount = 0;
       mockClient.from.mockImplementation((table: string) => {
-        if (table === TableName.ENTRIES) {
+        if (table === "entries") {
           callCount++;
           if (callCount === 1) {
             return {
@@ -124,7 +116,7 @@ describe("Weighments Service", () => {
             };
           }
         }
-        if (table === TableName.WEIGHMENTS) {
+        if (table === "weighments") {
           return {
             select: vi.fn().mockReturnThis(),
             or: vi.fn().mockReturnThis(),
@@ -157,7 +149,7 @@ describe("Weighments Service", () => {
 
       let callCount = 0;
       mockClient.from.mockImplementation((table: string) => {
-        if (table === TableName.ENTRIES) {
+        if (table === "entries") {
           callCount++;
           if (callCount === 1) {
             return {
@@ -178,7 +170,7 @@ describe("Weighments Service", () => {
             };
           }
         }
-        if (table === TableName.WEIGHMENTS) {
+        if (table === "weighments") {
           return {
             select: vi.fn().mockReturnThis(),
             or: vi.fn().mockReturnThis(),

@@ -7,7 +7,7 @@ import {
   hasPermission,
   StatusCodes,
 } from "@/db/helpers";
-import { ProjectSlug, PermissionKey, TableName, EntryStatus } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey, EntryStatus } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
 import { editEntrySchema } from "@/lib/validation";
@@ -18,8 +18,8 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
   const entryId = Number(id);
 
   const { data, error } = await client
-    .from(TableName.ENTRIES)
-    .select(`*, ${TableName.CENTERS}(name), ${TableName.USERS}(name), ${TableName.CUSTOMERS}(name)`)
+    .from("entries")
+    .select(`*, centers(name), users(name), customers(name)`)
     .eq("id", entryId)
     .eq("factory_id", user.factory_id!)
     .is("deleted_at", null)
@@ -56,7 +56,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   // 1. Fetch current entry
   const { data: existing, error: fetchErr } = await client
-    .from(TableName.ENTRIES)
+    .from("entries")
     .select("*")
     .eq("id", entryId)
     .eq("factory_id", user.factory_id)
@@ -131,7 +131,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   // 4. Perform update
   const { data: updatedEntry, error: updateErr } = await client
-    .from(TableName.ENTRIES)
+    .from("entries")
     .update(updates)
     .eq("id", entryId)
     .eq("factory_id", user.factory_id)
@@ -158,7 +158,7 @@ export const DELETE = withAuth(
 
     // Check if any active weighments are linked to this entry
     const { data: linkedWeighment } = await client
-      .from(TableName.WEIGHMENTS)
+      .from("weighments")
       .select("id")
       .or(`in_entry_id.eq.${entityId},out_entry_id.eq.${entityId}`)
       .is("deleted_at", null)
@@ -170,7 +170,7 @@ export const DELETE = withAuth(
     }
 
     const query = client
-      .from(TableName.ENTRIES)
+      .from("entries")
       .update({
         deleted_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Construction, Clock, ArrowLeft, Layers, type LucideIcon } from "lucide-react";
 import { jakarta, inter } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
-import { AppRoutes } from "@/lib/constants/enums";
+import { AppRoutes } from "@/lib/constants";
 
 interface UnderConstructionPageProps {
   title: string;

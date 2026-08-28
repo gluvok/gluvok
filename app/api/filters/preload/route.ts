@@ -1,40 +1,39 @@
 import { NextResponse } from "next/server";
 import { withAuth, StatusCodes } from "@/db/helpers";
-import { TableName } from "@/lib/constants/enums";
 
 export const GET = withAuth(async (_req, user, client) => {
   const factoryId = user.factory_id;
 
   const centersQuery = client
-    .from(TableName.CENTERS)
+    .from("centers")
     .select("id, name")
     .eq("factory_id", factoryId)
     .is("deleted_at", null)
     .order("name", { ascending: true });
 
   const usersQuery = client
-    .from(TableName.USERS)
+    .from("users")
     .select("id, name")
     .eq("factory_id", factoryId)
     .is("deleted_at", null)
     .order("name", { ascending: true });
 
   const customersQuery = client
-    .from(TableName.CUSTOMERS)
+    .from("customers")
     .select("id, name")
     .eq("factory_id", factoryId)
     .is("deleted_at", null)
     .order("name", { ascending: true });
 
   const ratesQuery = client
-    .from(TableName.RATES)
-    .select(`id, unit_price, unit, ${TableName.COMMODITIES}!left(name)`)
+    .from("rates")
+    .select(`id, unit_price, unit, commodities!left(name)`)
     .eq("factory_id", factoryId)
     .is("deleted_at", null)
     .order("id", { ascending: true });
 
   const commoditiesQuery = client
-    .from(TableName.COMMODITIES)
+    .from("commodities")
     .select("id, name")
     .is("deleted_at", null)
     .order("name", { ascending: true });
@@ -48,7 +47,7 @@ export const GET = withAuth(async (_req, user, client) => {
   ] = await Promise.all([commoditiesQuery, centersQuery, usersQuery, customersQuery, ratesQuery]);
 
   const formattedRates = (rateRows || []).map((r) => {
-    const rawCommodity = (r as Record<string, unknown>)[TableName.COMMODITIES];
+    const rawCommodity = (r as Record<string, unknown>)["commodities"];
     const commodity_name = Array.isArray(rawCommodity)
       ? (rawCommodity[0] as { name?: string })?.name
       : (rawCommodity as { name?: string } | null)?.name;
@@ -62,12 +61,12 @@ export const GET = withAuth(async (_req, user, client) => {
 
   return NextResponse.json(
     {
-      [TableName.COMMODITIES]: commodityRows || [],
-      [TableName.FACTORIES]: [],
-      [TableName.CENTERS]: centerRows || [],
-      [TableName.USERS]: userRows || [],
-      [TableName.CUSTOMERS]: customerRows || [],
-      [TableName.RATES]: formattedRates,
+      commodities: commodityRows || [],
+      factories: [],
+      centers: centerRows || [],
+      users: userRows || [],
+      customers: customerRows || [],
+      rates: formattedRates,
     },
     { status: StatusCodes.OK },
   );

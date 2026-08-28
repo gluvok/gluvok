@@ -3,8 +3,8 @@
  * @description Helper definitions or configuration for entity table fields (types).
  */
 
-import { ComponentType } from "react";
-import { FieldType, InputMode, Role, FieldSpan } from "@/lib/constants/enums";
+import { ComponentType, HTMLAttributes } from "react";
+import { FieldType, Role, FieldSpan } from "@/lib/constants/enums";
 
 export { FieldSpan };
 
@@ -19,7 +19,7 @@ export interface FieldConfig {
   newRow?: boolean;
   className?: string;
   transformOnChange?: (value: string) => string;
-  inputMode?: InputMode;
+  inputMode?: HTMLAttributes<HTMLInputElement>["inputMode"];
   icon?: ComponentType<{ className?: string }>;
   visibleRoles?: Role[];
   editVisibleRoles?: Role[];

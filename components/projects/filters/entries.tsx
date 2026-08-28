@@ -8,7 +8,7 @@
 import * as React from "react";
 import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import { EntryStatus, EntryType, FilterValue, FieldType, ProjectSlug } from "@/lib/constants/enums";
+import { EntryStatus, EntryType, FieldType, ProjectSlug } from "@/lib/constants/enums";
 import { useEntitiesStore } from "@/lib/store";
 import { Building, User as UserIcon, Users } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
@@ -51,7 +51,7 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
 
   const statusOptions = React.useMemo(() => {
     return [
-      { value: FilterValue.ALL, label: "All Statuses" },
+      { value: "all", label: "All Statuses" },
       { value: EntryStatus.PENDING, label: "Pending" },
       { value: EntryStatus.APPROVED, label: "Approved" },
       { value: EntryStatus.REJECTED, label: "Rejected" },
@@ -60,7 +60,7 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
 
   const typeOptions = React.useMemo(() => {
     return [
-      { value: FilterValue.ALL, label: "All Types" },
+      { value: "all", label: "All Types" },
       { value: EntryType.MANUAL, label: "Manual" },
       { value: EntryType.AUTOMATIC, label: "Automatic" },
     ];
@@ -68,7 +68,7 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
 
   const centerOptions = React.useMemo(() => {
     return [
-      { value: FilterValue.ALL, label: "All Centers" },
+      { value: "all", label: "All Centers" },
       ...centers.map((c) => ({
         value: String(c.id),
         label: c.name,
@@ -78,7 +78,7 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
 
   const userOptions = React.useMemo(() => {
     return [
-      { value: FilterValue.ALL, label: "All Operators" },
+      { value: "all", label: "All Operators" },
       ...users.map((u) => ({
         value: String(u.id),
         label: u.name,
@@ -88,7 +88,7 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
 
   const customerOptions = React.useMemo(() => {
     return [
-      { value: FilterValue.ALL, label: "All Customers" },
+      { value: "all", label: "All Customers" },
       ...customers.map((c) => ({
         value: String(c.id),
         label: c.name,
@@ -104,8 +104,8 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
       {/* Status */}
       <BaseCombobox
         type={FieldType.ENTRY_STATUS}
-        value={currentStatus ? String(currentStatus) : FilterValue.ALL}
-        onChange={(val) => setColumnFilter("status", val === FilterValue.ALL ? undefined : val)}
+        value={currentStatus ? String(currentStatus) : "all"}
+        onChange={(val) => setColumnFilter("status", val === "all" ? undefined : val)}
         data={statusOptions}
         placeholder="All Statuses"
         searchPlaceholder="Search status..."
@@ -117,8 +117,8 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
       {/* Type */}
       <BaseCombobox
         type={FieldType.TYPE}
-        value={currentType ? String(currentType) : FilterValue.ALL}
-        onChange={(val) => setColumnFilter("type", val === FilterValue.ALL ? undefined : val)}
+        value={currentType ? String(currentType) : "all"}
+        onChange={(val) => setColumnFilter("type", val === "all" ? undefined : val)}
         data={typeOptions}
         placeholder="All Types"
         searchPlaceholder="Search type..."
@@ -130,10 +130,8 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
       {/* Center */}
       <BaseCombobox
         type={ProjectSlug.CENTERS}
-        value={currentCenterId ? String(currentCenterId) : FilterValue.ALL}
-        onChange={(val) =>
-          setColumnFilter("center_id", val === FilterValue.ALL ? undefined : Number(val))
-        }
+        value={currentCenterId ? String(currentCenterId) : "all"}
+        onChange={(val) => setColumnFilter("center_id", val === "all" ? undefined : Number(val))}
         data={centerOptions}
         placeholder="All Centers"
         searchPlaceholder="Search center..."
@@ -145,10 +143,8 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
       {/* Operator / User */}
       <BaseCombobox
         type={ProjectSlug.USERS}
-        value={currentUserId ? String(currentUserId) : FilterValue.ALL}
-        onChange={(val) =>
-          setColumnFilter("user_id", val === FilterValue.ALL ? undefined : Number(val))
-        }
+        value={currentUserId ? String(currentUserId) : "all"}
+        onChange={(val) => setColumnFilter("user_id", val === "all" ? undefined : Number(val))}
         data={userOptions}
         placeholder="All Operators"
         searchPlaceholder="Search operator..."
@@ -160,10 +156,8 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
       {/* Customer */}
       <BaseCombobox
         type={ProjectSlug.CUSTOMERS}
-        value={currentCustomerId ? String(currentCustomerId) : FilterValue.ALL}
-        onChange={(val) =>
-          setColumnFilter("customer_id", val === FilterValue.ALL ? undefined : Number(val))
-        }
+        value={currentCustomerId ? String(currentCustomerId) : "all"}
+        onChange={(val) => setColumnFilter("customer_id", val === "all" ? undefined : Number(val))}
         data={customerOptions}
         placeholder="All Customers"
         searchPlaceholder="Search customer..."

@@ -8,7 +8,7 @@ import {
   StatusCodes,
   formatEntityResponse,
 } from "@/db/helpers";
-import { ProjectSlug, PermissionKey, TableName } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { editCenterSchema } from "@/lib/validation";
 
@@ -25,7 +25,7 @@ export const PATCH = withAuth(
     const { name } = parsed.data;
 
     const query = client
-      .from(TableName.CENTERS)
+      .from("centers")
       .update({
         ...(name ? { name } : {}),
         updated_at: new Date().toISOString(),
@@ -47,7 +47,7 @@ export const DELETE = withAuth(
 
     // Check if any active entries are linked to this center
     const { data: linkedEntry } = await client
-      .from(TableName.ENTRIES)
+      .from("entries")
       .select("id")
       .eq("center_id", entityId)
       .is("deleted_at", null)
@@ -59,7 +59,7 @@ export const DELETE = withAuth(
     }
 
     const query = client
-      .from(TableName.CENTERS)
+      .from("centers")
       .update({
         deleted_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

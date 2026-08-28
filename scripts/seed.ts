@@ -5,7 +5,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { Role, TableName } from "../lib/constants/enums";
+import { Role } from "../lib/constants/enums";
 import { hashPassword } from "../lib/auth/password";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -37,7 +37,7 @@ async function main() {
 
   let factoryId: number;
   const { data: existingFactory } = await supabase
-    .from(TableName.FACTORIES)
+    .from("factories")
     .select("id")
     .eq("name", factoryName)
     .maybeSingle();
@@ -47,7 +47,7 @@ async function main() {
     console.log(`Found existing factory '${factoryName}' with id=${factoryId}`);
   } else {
     const { data: newFactory, error } = await supabase
-      .from(TableName.FACTORIES)
+      .from("factories")
       .insert({ name: factoryName })
       .select("id")
       .single();
@@ -59,14 +59,14 @@ async function main() {
   const centerName = process.env.CENTER_NAME || "Main Center";
   console.log(`Ensuring center '${centerName}' exists...`);
   const { data: existingCenter } = await supabase
-    .from(TableName.CENTERS)
+    .from("centers")
     .select("id")
     .eq("name", centerName)
     .eq("factory_id", factoryId)
     .maybeSingle();
 
   if (!existingCenter) {
-    await supabase.from(TableName.CENTERS).insert({
+    await supabase.from("centers").insert({
       name: centerName,
       factory_id: factoryId,
     });
@@ -78,7 +78,7 @@ async function main() {
 
   console.log("Inserting admin user ('admin')...");
   const { data: existingUser } = await supabase
-    .from(TableName.USERS)
+    .from("users")
     .select("id")
     .eq("username", "admin")
     .maybeSingle();
@@ -86,7 +86,7 @@ async function main() {
   let adminUserId: number;
   if (!existingUser) {
     const { data: newUser, error: userErr } = await supabase
-      .from(TableName.USERS)
+      .from("users")
       .insert({
         username: "admin",
         password_hash: passwordHash,
@@ -108,13 +108,13 @@ async function main() {
   console.log("Seeding default commodities catalog...");
   for (const item of DEFAULT_COMMODITIES) {
     const { data: existingComm } = await supabase
-      .from(TableName.COMMODITIES)
+      .from("commodities")
       .select("id")
       .eq("name", item.name)
       .maybeSingle();
 
     if (!existingComm) {
-      await supabase.from(TableName.COMMODITIES).insert({
+      await supabase.from("commodities").insert({
         name: item.name,
       });
     }

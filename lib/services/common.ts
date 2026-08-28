@@ -4,27 +4,13 @@
  */
 
 import axios from "axios";
-import { ProjectSlug, ApiRoutes, QueryParam } from "@/lib/constants/enums";
+import { ProjectSlug } from "@/lib/constants/enums";
 import { type EntityRecord } from "@/types";
 import { type PaginatedParams } from "./scoping";
-
-const SLUG_TO_API_ROUTE: Record<ProjectSlug, ApiRoutes> = {
-  [ProjectSlug.CENTERS]: ApiRoutes.CENTERS,
-  [ProjectSlug.COMMODITIES]: ApiRoutes.COMMODITIES,
-  [ProjectSlug.RATES]: ApiRoutes.RATES,
-  [ProjectSlug.CUSTOMERS]: ApiRoutes.CUSTOMERS,
-  [ProjectSlug.ENTRIES]: ApiRoutes.ENTRIES,
-  [ProjectSlug.WEIGHMENTS]: ApiRoutes.WEIGHMENTS,
-  [ProjectSlug.USERS]: ApiRoutes.USERS,
-  [ProjectSlug.SETTINGS]: ApiRoutes.SETTINGS,
-};
-
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
-export function getEndpoint(slug: ProjectSlug): ApiRoutes {
-  const endpoint = SLUG_TO_API_ROUTE[slug];
-  if (!endpoint) throw new Error(`Unknown API route for slug: ${slug}`);
-  return endpoint;
+export function getEndpoint(slug: ProjectSlug | string): string {
+  return `/api/${slug}`;
 }
 
 export async function apiRequest<T>(requestFn: () => Promise<T>): Promise<T> {
@@ -72,11 +58,11 @@ export async function fetchEntityPaginatedFromApi<T = EntityRecord>(
   return apiRequest(async () => {
     const res = await axios.get<{ data: T[]; pagination: { total: number } }>(endpoint, {
       params: {
-        [QueryParam.PAGE]: page + 1,
-        [QueryParam.LIMIT]: pageSize,
-        [QueryParam.SEARCH]: search,
-        [QueryParam.SORT_COLUMN]: sortColumn,
-        [QueryParam.SORT_DESC]: sortDesc,
+        page: page + 1,
+        limit: pageSize,
+        search: search,
+        sort_column: sortColumn,
+        sort_desc: sortDesc,
         ...filters,
       },
     });

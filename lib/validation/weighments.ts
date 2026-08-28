@@ -4,7 +4,7 @@
  */
 
 import * as z from "zod";
-import { ColumnLabel, Unit, EntryStatus, EntryType, WeighmentType } from "@/lib/constants/enums";
+import { Unit, EntryStatus, EntryType, WeighmentType } from "@/lib/constants/enums";
 import { ValidationMessage } from "@/lib/constants/messages";
 import { integerIdSchema, optionalIntegerIdSchema } from "./helpers";
 
@@ -57,8 +57,8 @@ export const addEntrySchema = z.object({
   detected_vehicle_number: z.string().optional().nullable(),
   vehicle_number: z
     .string()
-    .min(1, ValidationMessage.INDIAN_PLATE_REQUIRED(ColumnLabel.VEHICLE_NUMBER))
-    .max(15, ValidationMessage.INDIAN_PLATE_MAX(ColumnLabel.VEHICLE_NUMBER, 15))
+    .min(1, ValidationMessage.INDIAN_PLATE_REQUIRED("Vehicle Number"))
+    .max(15, ValidationMessage.INDIAN_PLATE_MAX("Vehicle Number", 15))
     .regex(INDIAN_PLATE_REGEX, ValidationMessage.INDIAN_PLATE_FORMAT)
     .refine(
       (val) => {
@@ -70,12 +70,12 @@ export const addEntrySchema = z.object({
       },
     ),
   weight: z.coerce
-    .number({ message: ValidationMessage.MUST_BE_NUMBER(ColumnLabel.WEIGHT) })
-    .positive(ValidationMessage.MUST_BE_POSITIVE_NUMBER(ColumnLabel.WEIGHT)),
+    .number({ message: ValidationMessage.MUST_BE_NUMBER("Weight") })
+    .positive(ValidationMessage.MUST_BE_POSITIVE_NUMBER("Weight")),
   type: z.enum([EntryType.MANUAL, EntryType.AUTOMATIC]).optional(),
-  center_id: integerIdSchema(ColumnLabel.CENTER),
-  user_id: optionalIntegerIdSchema(ColumnLabel.USER),
-  customer_id: optionalIntegerIdSchema(ColumnLabel.CUSTOMER),
+  center_id: integerIdSchema("Center"),
+  user_id: optionalIntegerIdSchema("User"),
+  customer_id: optionalIntegerIdSchema("Customer"),
   status: z
     .enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED])
     .default(EntryStatus.PENDING),
@@ -84,7 +84,7 @@ export const addEntrySchema = z.object({
 
 export const editEntrySchema = z.object({
   vehicle_number: z.string().optional(),
-  customer_id: optionalIntegerIdSchema(ColumnLabel.CUSTOMER),
+  customer_id: optionalIntegerIdSchema("Customer"),
   status: z.enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED]).optional(),
   images: z.array(z.string()).optional(),
 });

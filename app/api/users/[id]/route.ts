@@ -12,13 +12,13 @@ import {
 import { getDynamicUserSchema } from "@/lib/validation";
 import { hashPassword } from "@/lib/auth/password";
 import { clearAuthCookies } from "@/lib/auth/cookies";
-import { PermissionKey, ProjectSlug, Role, TableName } from "@/lib/constants/enums";
+import { PermissionKey, ProjectSlug, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
 export const GET = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client
-      .from(TableName.USERS)
+      .from("users")
       .select("id, username, name, aadhar_number, role, factory_id, created_at, updated_at")
       .eq("id", entityId)
       .eq("factory_id", factoryId)
@@ -39,7 +39,7 @@ export const GET = withAuth(
 export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client
-      .from(TableName.USERS)
+      .from("users")
       .select("id, username, name, aadhar_number, role, factory_id, token_version")
       .eq("id", entityId)
       .eq("factory_id", factoryId)
@@ -69,7 +69,7 @@ export const PATCH = withAuth(
 
     if (aadhar_number && aadhar_number !== existing.aadhar_number) {
       const { data: duplicateAadhar } = await client
-        .from(TableName.USERS)
+        .from("users")
         .select("id")
         .eq("aadhar_number", aadhar_number)
         .eq("factory_id", factoryId)
@@ -101,7 +101,7 @@ export const PATCH = withAuth(
     }
 
     const { data: updated, error } = await client
-      .from(TableName.USERS)
+      .from("users")
       .update(updates)
       .eq("id", entityId)
       .eq("factory_id", factoryId)
@@ -120,7 +120,7 @@ export const PATCH = withAuth(
 export const DELETE = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client
-      .from(TableName.USERS)
+      .from("users")
       .select("id")
       .eq("id", entityId)
       .eq("factory_id", factoryId)
@@ -137,7 +137,7 @@ export const DELETE = withAuth(
 
     // Check if any active entries are linked to this user
     const { data: linkedEntry } = await client
-      .from(TableName.ENTRIES)
+      .from("entries")
       .select("id")
       .eq("user_id", entityId)
       .is("deleted_at", null)
@@ -150,7 +150,7 @@ export const DELETE = withAuth(
 
     // Check if any active customers are linked to this user
     const { data: linkedCustomer } = await client
-      .from(TableName.CUSTOMERS)
+      .from("customers")
       .select("id")
       .eq("user_id", entityId)
       .is("deleted_at", null)
@@ -162,7 +162,7 @@ export const DELETE = withAuth(
     }
 
     const { error } = await client
-      .from(TableName.USERS)
+      .from("users")
       .update({
         deleted_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

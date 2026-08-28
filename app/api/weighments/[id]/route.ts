@@ -7,14 +7,7 @@ import {
   forbiddenError,
   hasPermission,
 } from "@/db/helpers";
-import {
-  TableName,
-  RelationAlias,
-  WeighmentType,
-  Unit,
-  ProjectSlug,
-  PermissionKey,
-} from "@/lib/constants/enums";
+import { WeighmentType, Unit, ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { editWeighmentSchema } from "@/lib/validation";
 
 export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
@@ -23,12 +16,12 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
   const weighmentId = Number(id);
 
   const { data: row, error } = await client
-    .from(TableName.WEIGHMENTS)
+    .from("weighments")
     .select(
-      `*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(*, ${TableName.CENTERS}(name), ${TableName.USERS}(name), ${TableName.CUSTOMERS}(name)), ${RelationAlias.OUT_ENTRY}:${TableName.ENTRIES}!out_entry_id(*, ${TableName.CENTERS}(name), ${TableName.USERS}(name), ${TableName.CUSTOMERS}(name))`,
+      `*, in_entry:entries!in_entry_id(*, centers(name), users(name), customers(name)), out_entry:entries!out_entry_id(*, centers(name), users(name), customers(name))`,
     )
     .eq("id", weighmentId)
-    .eq(`${RelationAlias.IN_ENTRY}.factory_id`, user.factory_id!)
+    .eq("in_entry.factory_id", user.factory_id!)
     .is("deleted_at", null)
     .maybeSingle();
 
@@ -36,10 +29,10 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
     return apiError("Weighment not found", StatusCodes.NOT_FOUND);
   }
 
-  const inEntry = (row[RelationAlias.IN_ENTRY] as Record<string, unknown>) || {};
-  const outEntry = (row[RelationAlias.OUT_ENTRY] as Record<string, unknown>) || {};
-  const inWeight = Number(inEntry.weight || 0);
-  const outWeight = Number(outEntry.weight || 0);
+  const inEntry = (row["in_entry"] as Record<string, unknown>) || {};
+  const outEntry = (row["out_entry"] as Record<string, unknown>) || {};
+  const inWeight = Number(inEntry.weight);
+  const outWeight = Number(outEntry.weight);
   const grossWeight = Math.max(inWeight, outWeight);
   const tareWeight = Math.min(inWeight, outWeight);
   const netWeight = grossWeight - tareWeight;
@@ -101,7 +94,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   // 1. Fetch existing weighment
   const { data: existing, error: fetchErr } = await client
-    .from(TableName.WEIGHMENTS)
+    .from("weighments")
     .select("id, rate_id, type")
     .eq("id", weighmentId)
     .is("deleted_at", null)
@@ -144,7 +137,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   updates["updated_at"] = new Date().toISOString();
 
   const { data: updated, error } = await client
-    .from(TableName.WEIGHMENTS)
+    .from("weighments")
     .update(updates)
     .eq("id", weighmentId)
     .is("deleted_at", null)
@@ -165,10 +158,10 @@ export const DELETE = withAuth(
 
     // 1. Fetch weighment with factory verification
     const { data: weighment, error: fetchErr } = await client
-      .from(TableName.WEIGHMENTS)
-      .select(`*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(factory_id)`)
+      .from("weighments")
+      .select(`*, in_entry:entries!in_entry_id(factory_id)`)
       .eq("id", entityId)
-      .eq(`${RelationAlias.IN_ENTRY}.factory_id`, factoryId)
+      .eq("in_entry.factory_id", factoryId)
       .is("deleted_at", null)
       .maybeSingle();
 
@@ -180,7 +173,7 @@ export const DELETE = withAuth(
 
     // 2. Soft delete the weighment
     const { error: deleteErr } = await client
-      .from(TableName.WEIGHMENTS)
+      .from("weighments")
       .update({
         deleted_at: now,
         updated_at: now,
@@ -200,7 +193,7 @@ export const DELETE = withAuth(
 
     if (entryIds.length > 0) {
       const { error: cascadeErr } = await client
-        .from(TableName.ENTRIES)
+        .from("entries")
         .update({
           deleted_at: now,
           updated_at: now,

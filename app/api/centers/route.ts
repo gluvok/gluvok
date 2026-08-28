@@ -10,21 +10,21 @@ import {
   formatEntityResponse,
   parseBulkIds,
 } from "@/db/helpers";
-import { ProjectSlug, QueryParam, PermissionKey, TableName } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { addCenterSchema } from "@/lib/validation";
 
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
-  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at";
-  const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
-    ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
+  const search = req.nextUrl.searchParams.get("search");
+  const sortColumn = req.nextUrl.searchParams.get("sort_column") || "created_at";
+  const sortDesc = req.nextUrl.searchParams.has("sort_desc")
+    ? req.nextUrl.searchParams.get("sort_desc") === "true"
     : true;
 
   let query = client
-    .from(TableName.CENTERS)
+    .from("centers")
     .select("*", { count: "exact" })
     .order(sortColumn, { ascending: !sortDesc })
     .eq("factory_id", user.factory_id)
@@ -57,7 +57,7 @@ export const POST = withAuth(async (req, user, client) => {
   };
 
   const { data: newCenter, error } = await client
-    .from(TableName.CENTERS)
+    .from("centers")
     .insert(insertValues)
     .select()
     .single();
@@ -77,7 +77,7 @@ export const DELETE = withAuth(async (req, user, client) => {
 
   // Check if any active entries are linked to any of the selected centers
   const { data: linkedEntries } = await client
-    .from(TableName.ENTRIES)
+    .from("entries")
     .select("id")
     .in("center_id", ids)
     .is("deleted_at", null)
@@ -88,7 +88,7 @@ export const DELETE = withAuth(async (req, user, client) => {
   }
 
   const query = client
-    .from(TableName.CENTERS)
+    .from("centers")
     .update({
       deleted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

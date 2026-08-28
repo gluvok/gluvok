@@ -1,12 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from "vitest";
-import { TableName } from "@/lib/constants/enums";
 
 describe("Rate edit lock rules", () => {
   it("should detect when a rate is linked to weighment records", async () => {
     const mockClient: any = {
       from: vi.fn().mockImplementation((table: string) => {
-        if (table === TableName.WEIGHMENTS) {
+        if (table === "weighments") {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
@@ -21,7 +20,7 @@ describe("Rate edit lock rules", () => {
     };
 
     const { data: linkedWeighments } = await mockClient
-      .from(TableName.WEIGHMENTS)
+      .from("weighments")
       .select("id")
       .eq("rate_id", 5)
       .limit(1);

@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserAvatarInfo, type UserInfo } from "./user-info";
 import { useAuthStore, useEntitiesStore } from "@/lib/store";
-import { AppRoutes } from "@/lib/constants/enums";
+import { AppRoutes } from "@/lib/constants";
 
 interface NavUserDropdownProps {
   user: UserInfo;

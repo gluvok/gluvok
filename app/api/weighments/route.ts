@@ -8,21 +8,12 @@ import {
   hasPermission,
   parseBulkIds,
 } from "@/db/helpers";
-import {
-  QueryParam,
-  TableName,
-  RelationAlias,
-  FilterValue,
-  WeighmentType,
-  Unit,
-  ProjectSlug,
-  PermissionKey,
-} from "@/lib/constants/enums";
+import { WeighmentType, Unit, ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
-  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
+  const search = req.nextUrl.searchParams.get("search");
   const typeParam = req.nextUrl.searchParams.get("type");
   const unitParam = req.nextUrl.searchParams.get("unit");
   const rateIdParam = req.nextUrl.searchParams.get("rate_id");
@@ -35,78 +26,72 @@ export const GET = withAuth(async (req, user, client) => {
   const outUserIdParam = req.nextUrl.searchParams.get("out_user_id");
   const inCustomerIdParam = req.nextUrl.searchParams.get("in_customer_id");
   const outCustomerIdParam = req.nextUrl.searchParams.get("out_customer_id");
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at";
-  const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
-    ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
+  const sortColumn = req.nextUrl.searchParams.get("sort_column") || "created_at";
+  const sortDesc = req.nextUrl.searchParams.has("sort_desc")
+    ? req.nextUrl.searchParams.get("sort_desc") === "true"
     : true;
-  const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE);
-  const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE);
+  const startDateParam = req.nextUrl.searchParams.get("start_date");
+  const endDateParam = req.nextUrl.searchParams.get("end_date");
 
   // Query weighments joined with in_entry and out_entry and their related centers, users, customers
   let query = client
-    .from(TableName.WEIGHMENTS)
+    .from("weighments")
     .select(
-      `*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(*, ${TableName.CENTERS}(name), ${TableName.USERS}(name), ${TableName.CUSTOMERS}(name)), ${RelationAlias.OUT_ENTRY}:${TableName.ENTRIES}!out_entry_id(*, ${TableName.CENTERS}(name), ${TableName.USERS}(name), ${TableName.CUSTOMERS}(name))`,
+      `*, in_entry:entries!in_entry_id(*, centers(name), users(name), customers(name)), out_entry:entries!out_entry_id(*, centers(name), users(name), customers(name))`,
       { count: "exact" },
     )
-    .eq(`${RelationAlias.IN_ENTRY}.factory_id`, user.factory_id!)
+    .eq("in_entry.factory_id", user.factory_id!)
     .is("deleted_at", null);
 
-  if (typeParam && typeParam !== FilterValue.ALL) {
+  if (typeParam && typeParam !== "all") {
     query = query.eq("type", typeParam);
   }
 
-  if (unitParam && unitParam !== FilterValue.ALL) {
+  if (unitParam && unitParam !== "all") {
     query = query.eq("unit", unitParam);
   }
 
-  if (rateIdParam && rateIdParam !== FilterValue.ALL) {
+  if (rateIdParam && rateIdParam !== "all") {
     query = query.eq("rate_id", Number(rateIdParam));
   }
 
-  if (centerIdParam && centerIdParam !== FilterValue.ALL) {
+  if (centerIdParam && centerIdParam !== "all") {
     const cId = Number(centerIdParam);
-    query = query.or(
-      `${RelationAlias.IN_ENTRY}.center_id.eq.${cId},${RelationAlias.OUT_ENTRY}.center_id.eq.${cId}`,
-    );
+    query = query.or(`in_entry.center_id.eq.${cId},out_entry.center_id.eq.${cId}`);
   }
 
-  if (userIdParam && userIdParam !== FilterValue.ALL) {
+  if (userIdParam && userIdParam !== "all") {
     const uId = Number(userIdParam);
-    query = query.or(
-      `${RelationAlias.IN_ENTRY}.user_id.eq.${uId},${RelationAlias.OUT_ENTRY}.user_id.eq.${uId}`,
-    );
+    query = query.or(`in_entry.user_id.eq.${uId},out_entry.user_id.eq.${uId}`);
   }
 
-  if (customerIdParam && customerIdParam !== FilterValue.ALL) {
+  if (customerIdParam && customerIdParam !== "all") {
     const custId = Number(customerIdParam);
-    query = query.or(
-      `${RelationAlias.IN_ENTRY}.customer_id.eq.${custId},${RelationAlias.OUT_ENTRY}.customer_id.eq.${custId}`,
-    );
+    query = query.or(`in_entry.customer_id.eq.${custId},out_entry.customer_id.eq.${custId}`);
   }
 
-  if (inCenterIdParam && inCenterIdParam !== FilterValue.ALL) {
-    query = query.eq(`${RelationAlias.IN_ENTRY}.center_id`, Number(inCenterIdParam));
+  if (inCenterIdParam && inCenterIdParam !== "all") {
+    query = query.eq("in_entry.center_id", Number(inCenterIdParam));
   }
 
-  if (outCenterIdParam && outCenterIdParam !== FilterValue.ALL) {
-    query = query.eq(`${RelationAlias.OUT_ENTRY}.center_id`, Number(outCenterIdParam));
+  if (outCenterIdParam && outCenterIdParam !== "all") {
+    query = query.eq("out_entry.center_id", Number(outCenterIdParam));
   }
 
-  if (inUserIdParam && inUserIdParam !== FilterValue.ALL) {
-    query = query.eq(`${RelationAlias.IN_ENTRY}.user_id`, Number(inUserIdParam));
+  if (inUserIdParam && inUserIdParam !== "all") {
+    query = query.eq("in_entry.user_id", Number(inUserIdParam));
   }
 
-  if (outUserIdParam && outUserIdParam !== FilterValue.ALL) {
-    query = query.eq(`${RelationAlias.OUT_ENTRY}.user_id`, Number(outUserIdParam));
+  if (outUserIdParam && outUserIdParam !== "all") {
+    query = query.eq("out_entry.user_id", Number(outUserIdParam));
   }
 
-  if (inCustomerIdParam && inCustomerIdParam !== FilterValue.ALL) {
-    query = query.eq(`${RelationAlias.IN_ENTRY}.customer_id`, Number(inCustomerIdParam));
+  if (inCustomerIdParam && inCustomerIdParam !== "all") {
+    query = query.eq("in_entry.customer_id", Number(inCustomerIdParam));
   }
 
-  if (outCustomerIdParam && outCustomerIdParam !== FilterValue.ALL) {
-    query = query.eq(`${RelationAlias.OUT_ENTRY}.customer_id`, Number(outCustomerIdParam));
+  if (outCustomerIdParam && outCustomerIdParam !== "all") {
+    query = query.eq("out_entry.customer_id", Number(outCustomerIdParam));
   }
 
   if (startDateParam) {
@@ -121,10 +106,10 @@ export const GET = withAuth(async (req, user, client) => {
     const searchNum = parseInt(search, 10);
     if (!isNaN(searchNum)) {
       query = query.or(
-        `in_entry_id.eq.${searchNum},out_entry_id.eq.${searchNum},${RelationAlias.IN_ENTRY}.vehicle_number.ilike.%${search}%`,
+        `in_entry_id.eq.${searchNum},out_entry_id.eq.${searchNum},in_entry.vehicle_number.ilike.%${search}%`,
       );
     } else {
-      query = query.or(`${RelationAlias.IN_ENTRY}.vehicle_number.ilike.%${search}%`);
+      query = query.or(`in_entry.vehicle_number.ilike.%${search}%`);
     }
   }
 
@@ -141,11 +126,11 @@ export const GET = withAuth(async (req, user, client) => {
   ) {
     query = query.order(sortColumn, { ascending: !sortDesc });
   } else if (sortColumn === "in_entry_created_at") {
-    query = query.order(`${RelationAlias.IN_ENTRY}.created_at`, {
+    query = query.order("in_entry.created_at", {
       ascending: !sortDesc,
     });
   } else if (sortColumn === "out_entry_created_at") {
-    query = query.order(`${RelationAlias.OUT_ENTRY}.created_at`, {
+    query = query.order("out_entry.created_at", {
       ascending: !sortDesc,
     });
   } else {
@@ -162,8 +147,8 @@ export const GET = withAuth(async (req, user, client) => {
 
   // Format response rows with computed derived fields
   const formattedData = (data || []).map((row: Record<string, unknown>) => {
-    const inEntry = (row[RelationAlias.IN_ENTRY] as Record<string, unknown>) || {};
-    const outEntry = (row[RelationAlias.OUT_ENTRY] as Record<string, unknown>) || {};
+    const inEntry = (row["in_entry"] as Record<string, unknown>) || {};
+    const outEntry = (row["out_entry"] as Record<string, unknown>) || {};
 
     const inWeight = Number(inEntry.weight || 0);
     const outWeight = Number(outEntry.weight || 0);
@@ -237,8 +222,8 @@ export const DELETE = withAuth(async (req, user, client) => {
 
   // 1. Query target weighments with factory verification
   const { data: weighments, error: fetchErr } = await client
-    .from(TableName.WEIGHMENTS)
-    .select(`*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(factory_id)`)
+    .from("weighments")
+    .select(`*, in_entry:entries!in_entry_id(factory_id)`)
     .in("id", ids)
     .is("deleted_at", null);
 
@@ -248,7 +233,7 @@ export const DELETE = withAuth(async (req, user, client) => {
   }
 
   const validWeighments = (weighments || []).filter((w: Record<string, unknown>) => {
-    const inEntry = w[RelationAlias.IN_ENTRY] as Record<string, unknown> | undefined;
+    const inEntry = w["in_entry"] as Record<string, unknown> | undefined;
     return inEntry?.factory_id === user.factory_id!;
   });
 
@@ -261,7 +246,7 @@ export const DELETE = withAuth(async (req, user, client) => {
 
   // 2. Soft delete weighment records
   const { error: deleteErr } = await client
-    .from(TableName.WEIGHMENTS)
+    .from("weighments")
     .update({
       deleted_at: now,
       updated_at: now,
@@ -285,7 +270,7 @@ export const DELETE = withAuth(async (req, user, client) => {
   const uniqueEntryIds = [...new Set(linkedEntryIds)];
   if (uniqueEntryIds.length > 0) {
     const { error: cascadeErr } = await client
-      .from(TableName.ENTRIES)
+      .from("entries")
       .update({
         deleted_at: now,
         updated_at: now,

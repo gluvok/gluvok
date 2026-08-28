@@ -17,7 +17,7 @@ import {
   Cpu,
   PenTool,
 } from "lucide-react";
-import { ColumnLabel, EntryStatus, EntryType } from "@/lib/constants/enums";
+import { EntryStatus, EntryType } from "@/lib/constants/enums";
 import { getStatusIcon } from "@/lib/fields";
 import { cn } from "@/lib/utils";
 import {
@@ -31,7 +31,7 @@ import { WeighmentImagesCell } from "./weighments-cell";
 
 export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
-    createCustomColumn("type", ColumnLabel.TYPE, Sliders, (val) => {
+    createCustomColumn("type", "Type", Sliders, (val) => {
       const type = String(val || EntryType.AUTOMATIC).toLowerCase();
       let typeClass = "bg-muted text-muted-foreground border border-border";
       const Icon = type === EntryType.AUTOMATIC ? Cpu : PenTool;
@@ -51,12 +51,12 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         </span>
       );
     }),
-    createTextColumn("vehicle_number", ColumnLabel.VEHICLE_NUMBER, Car),
-    createBaseColumn("weight", ColumnLabel.WEIGHT, Weight, ({ row }) => {
+    createTextColumn("vehicle_number", "Vehicle Number", Car),
+    createBaseColumn("weight", "Weight", Weight, ({ row }) => {
       const val = row.getValue("weight") as number;
       return <div className="font-mono text-xs font-semibold text-foreground">{val}</div>;
     }),
-    createCustomColumn("status", ColumnLabel.STATUS, ShieldCheck, (val) => {
+    createCustomColumn("status", "Status", ShieldCheck, (val) => {
       const status = String(val).toLowerCase();
       let statusClass = "bg-muted text-muted-foreground border border-border";
       const Icon = getStatusIcon(status);
@@ -79,22 +79,22 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         </span>
       );
     }),
-    createIdColumn("center_id", ColumnLabel.CENTER_ID, Building),
-    createCustomColumn("center_name", ColumnLabel.CENTER_NAME, Building, (_val, row) => {
+    createIdColumn("center_id", "Center ID", Building),
+    createCustomColumn("center_name", "Center Name", Building, (_val, row) => {
       const rec = row as Record<string, unknown>;
       const name =
         (rec.center_name as string) || (rec.centers as { name?: string } | undefined)?.name || "";
       return <div className="font-semibold text-foreground text-xs">{name || "—"}</div>;
     }),
-    createIdColumn("user_id", ColumnLabel.USER_ID, User),
-    createCustomColumn("user_name", ColumnLabel.USER_NAME, User, (_val, row) => {
+    createIdColumn("user_id", "User ID", User),
+    createCustomColumn("user_name", "User Name", User, (_val, row) => {
       const rec = row as Record<string, unknown>;
       const name =
         (rec.user_name as string) || (rec.users as { name?: string } | undefined)?.name || "";
       return <div className="font-semibold text-foreground text-xs">{name || "—"}</div>;
     }),
-    createIdColumn("customer_id", ColumnLabel.CUSTOMER_ID, Users),
-    createCustomColumn("customer_name", ColumnLabel.CUSTOMER_NAME, Users, (_val, row) => {
+    createIdColumn("customer_id", "Customer ID", Users),
+    createCustomColumn("customer_name", "Customer Name", Users, (_val, row) => {
       const rec = row as Record<string, unknown>;
       const name =
         (rec.customer_name as string) ||
@@ -103,7 +103,7 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       return <div className="font-semibold text-foreground text-xs">{name || "—"}</div>;
     }),
     {
-      ...createBaseColumn("images", ColumnLabel.IMAGES, Image, ({ row }) => {
+      ...createBaseColumn("images", "Images", Image, ({ row }) => {
         const images = row.getValue("images") as string[] | undefined;
         const vehicleNumber = row.getValue("vehicle_number") as string;
         return <WeighmentImagesCell images={images} vehicleNumber={vehicleNumber} />;

@@ -4,7 +4,7 @@
  */
 
 import { db } from "@/db";
-import { TableName, Role } from "@/lib/constants/enums";
+import { Role } from "@/lib/constants/enums";
 import { AuthErrorMessage } from "@/lib/constants/messages";
 import { verifyPassword } from "@/lib/auth/password";
 import { signJWT, signRefreshToken, getTokenExpiresIn } from "@/lib/auth/jwt";
@@ -58,7 +58,7 @@ export function toUserSessionPayload(user: AuthenticatedUserRecord): UserSession
  */
 export async function fetchActiveUserById(userId: number): Promise<AuthenticatedUserRecord | null> {
   const { data: user, error } = await db
-    .from(TableName.USERS)
+    .from("users")
     .select("*")
     .eq("id", userId)
     .is("deleted_at", null)
@@ -83,7 +83,7 @@ export async function verifyUserCredentials(
   }
 
   const { data: user, error: userError } = await db
-    .from(TableName.USERS)
+    .from("users")
     .select("*")
     .eq("username", username)
     .is("deleted_at", null)

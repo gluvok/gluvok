@@ -3,14 +3,7 @@
  * @description Field configuration definitions for dialog form fields across project entities.
  */
 
-import {
-  ProjectSlug,
-  ColumnLabel,
-  FieldType,
-  InputMode,
-  FieldSpan,
-  SingularEntityName,
-} from "@/lib/constants/enums";
+import { ProjectSlug, FieldType, FieldSpan } from "@/lib/constants/enums";
 import { getSelectPlaceholder } from "./helpers";
 import { type FieldConfig } from "./types";
 import {
@@ -34,7 +27,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   [ProjectSlug.CENTERS]: [
     {
       key: "name",
-      label: ColumnLabel.NAME,
+      label: "Name",
       placeholder: "e.g. Center F",
       type: FieldType.TEXT,
       required: true,
@@ -45,7 +38,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   [ProjectSlug.COMMODITIES]: [
     {
       key: "name",
-      label: ColumnLabel.NAME,
+      label: "Name",
       placeholder: "e.g. Barley",
       type: FieldType.TEXT,
       required: true,
@@ -56,8 +49,8 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   [ProjectSlug.RATES]: [
     {
       key: "commodity_id",
-      label: ColumnLabel.COMMODITY,
-      placeholder: getSelectPlaceholder(SingularEntityName.COMMODITY),
+      label: "Commodity",
+      placeholder: getSelectPlaceholder("Commodity"),
       type: FieldType.TEXT,
       required: true,
       icon: Tag,
@@ -65,7 +58,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "unit_price",
-      label: ColumnLabel.UNIT_PRICE,
+      label: "Unit Price",
       placeholder: "e.g. 15000",
       type: FieldType.NUMBER,
       required: true,
@@ -74,7 +67,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "unit",
-      label: ColumnLabel.UNIT,
+      label: "Unit",
       placeholder: "Select unit...",
       type: FieldType.UNIT,
       required: true,
@@ -85,7 +78,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   [ProjectSlug.CUSTOMERS]: [
     {
       key: "govt_id",
-      label: ColumnLabel.GOVT_ID,
+      label: "Govt ID",
       placeholder: "e.g. 1001",
       type: FieldType.NUMBER,
       required: true,
@@ -94,7 +87,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "name",
-      label: ColumnLabel.NAME,
+      label: "Name",
       placeholder: "e.g. Ajay Kumar",
       type: FieldType.TEXT,
       required: true,
@@ -103,7 +96,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "father_name",
-      label: ColumnLabel.FATHER_NAME,
+      label: "Father's Name",
       placeholder: "e.g. Vijay Kumar",
       type: FieldType.TEXT,
       required: true,
@@ -112,7 +105,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "username",
-      label: ColumnLabel.USERNAME,
+      label: "Username",
       placeholder: "e.g. ajay123 (optional)",
       type: FieldType.TEXT,
       icon: AtSign,
@@ -120,7 +113,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "password",
-      label: ColumnLabel.PASSWORD,
+      label: "Password",
       placeholder: "Optional login password",
       type: FieldType.PASSWORD,
       icon: KeyRound,
@@ -129,7 +122,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "confirmPassword",
-      label: ColumnLabel.CONFIRM_PASSWORD,
+      label: "Confirm Password",
       placeholder: "Repeat password",
       type: FieldType.PASSWORD,
       icon: KeyRound,
@@ -139,7 +132,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   [ProjectSlug.ENTRIES]: [
     {
       key: "vehicle_number",
-      label: ColumnLabel.VEHICLE_NUMBER,
+      label: "Vehicle Number",
       placeholder: "e.g. MH12AB1234",
       type: FieldType.TEXT,
       required: true,
@@ -150,18 +143,18 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "weight",
-      label: ColumnLabel.WEIGHT,
+      label: "Weight",
       placeholder: "e.g. 15000",
       type: FieldType.TEXT,
-      inputMode: InputMode.DECIMAL,
+      inputMode: "decimal",
       required: true,
       icon: Weight,
       span: FieldSpan.HALF,
     },
     {
       key: "center_id",
-      label: SingularEntityName.CENTER,
-      placeholder: getSelectPlaceholder(SingularEntityName.CENTER),
+      label: "Center",
+      placeholder: getSelectPlaceholder("Center"),
       type: FieldType.TEXT,
       required: true,
       icon: Building,
@@ -169,15 +162,15 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "customer_id",
-      label: SingularEntityName.CUSTOMER,
-      placeholder: getSelectPlaceholder(SingularEntityName.CUSTOMER),
+      label: "Customer",
+      placeholder: getSelectPlaceholder("Customer"),
       type: FieldType.TEXT,
       icon: Users,
       span: FieldSpan.HALF,
     },
     {
       key: "images",
-      label: ColumnLabel.IMAGES,
+      label: "Images",
       placeholder: "Upload entry images...",
       type: FieldType.IMAGES,
       required: false,
@@ -188,7 +181,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   [ProjectSlug.WEIGHMENTS]: [
     {
       key: "type",
-      label: ColumnLabel.TYPE,
+      label: "Type",
       placeholder: "Select type...",
       type: FieldType.TYPE,
       required: false,
@@ -199,11 +192,11 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   [ProjectSlug.USERS]: [
     {
       key: "aadhar_number",
-      label: ColumnLabel.AADHAR_NUMBER,
+      label: "Aadhar Number",
       placeholder: "e.g. 1234 5678 9012",
       type: FieldType.TEXT,
       required: true,
-      inputMode: InputMode.NUMERIC,
+      inputMode: "numeric",
       transformOnChange: (v: string) => {
         const digits = v.replace(/\D/g, "").slice(0, 12);
         const match = digits.match(/(\d{1,4})/g);
@@ -214,7 +207,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "name",
-      label: ColumnLabel.NAME,
+      label: "Name",
       placeholder: "e.g. Amit Sharma",
       type: FieldType.TEXT,
       required: true,
@@ -223,7 +216,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "username",
-      label: ColumnLabel.USERNAME,
+      label: "Username",
       placeholder: "e.g. amits123",
       type: FieldType.TEXT,
       required: true,
@@ -232,7 +225,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "role",
-      label: ColumnLabel.ROLE,
+      label: "Role",
       placeholder: "Select role...",
       type: FieldType.ROLE,
       required: true,
@@ -241,7 +234,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "password",
-      label: ColumnLabel.PASSWORD,
+      label: "Password",
       placeholder: "Account password",
       type: FieldType.PASSWORD,
       required: true,
@@ -251,7 +244,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "confirmPassword",
-      label: ColumnLabel.CONFIRM_PASSWORD,
+      label: "Confirm Password",
       placeholder: "Repeat password",
       type: FieldType.PASSWORD,
       required: true,
@@ -262,7 +255,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   [ProjectSlug.SETTINGS]: [
     {
       key: "name",
-      label: ColumnLabel.FACTORY_NAME,
+      label: "Factory Name",
       placeholder: "Factory Name...",
       type: FieldType.TEXT,
       required: true,
@@ -271,7 +264,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "aadhar_number_mode",
-      label: ColumnLabel.AADHAR_NUMBER_MODE,
+      label: "Aadhaar Number Mode",
       placeholder: "Select Aadhaar Mode...",
       type: FieldType.FIELD_REQUIREMENT_MODE,
       required: true,
@@ -280,7 +273,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
     {
       key: "govt_id_mode",
-      label: ColumnLabel.GOVT_ID_MODE,
+      label: "Govt ID Mode",
       placeholder: "Select Govt ID Mode...",
       type: FieldType.FIELD_REQUIREMENT_MODE,
       required: true,

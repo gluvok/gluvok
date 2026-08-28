@@ -4,7 +4,6 @@
  */
 
 import * as z from "zod";
-import { ColumnLabel } from "@/lib/constants/enums";
 import { ValidationMessage } from "@/lib/constants/messages";
 import { nameSchema } from "./helpers";
 
@@ -16,8 +15,8 @@ const baseCustomerSchema = z
         z.number().int().positive().nullable().optional(),
       )
       .transform((v) => (v === undefined || Number.isNaN(v) ? null : v)),
-    name: nameSchema(ColumnLabel.NAME),
-    father_name: nameSchema(ColumnLabel.FATHER_NAME),
+    name: nameSchema("Name"),
+    father_name: nameSchema("Father's Name"),
     factory_id: z.coerce.number().optional().nullable(),
     username: z
       .string()
@@ -46,7 +45,7 @@ const baseCustomerSchema = z
     if (hasPassword && !hasUsername) {
       ctx.addIssue({
         code: "custom",
-        message: ValidationMessage.USERNAME_REQUIRED_WITH_PASSWORD(ColumnLabel.USERNAME),
+        message: ValidationMessage.USERNAME_REQUIRED_WITH_PASSWORD("Username"),
         path: ["username"],
       });
     }
@@ -54,7 +53,7 @@ const baseCustomerSchema = z
     if (hasUsername && !hasPassword) {
       ctx.addIssue({
         code: "custom",
-        message: ValidationMessage.PASSWORD_REQUIRED_WITH_USERNAME(ColumnLabel.PASSWORD),
+        message: ValidationMessage.PASSWORD_REQUIRED_WITH_USERNAME("Password"),
         path: ["password"],
       });
     }
@@ -62,7 +61,7 @@ const baseCustomerSchema = z
     if (hasUsername && rawUsername!.trim().length < 3) {
       ctx.addIssue({
         code: "custom",
-        message: ValidationMessage.MIN_LENGTH(ColumnLabel.USERNAME, 3),
+        message: ValidationMessage.MIN_LENGTH("Username", 3),
         path: ["username"],
       });
     }
@@ -70,7 +69,7 @@ const baseCustomerSchema = z
     if (hasPassword && rawPassword!.trim().length < 6) {
       ctx.addIssue({
         code: "custom",
-        message: ValidationMessage.MIN_LENGTH(ColumnLabel.PASSWORD, 6),
+        message: ValidationMessage.MIN_LENGTH("Password", 6),
         path: ["password"],
       });
     }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { PermissionKey, ProjectSlug, Role, TableName } from "@/lib/constants/enums";
+import { PermissionKey, ProjectSlug, Role } from "@/lib/constants/enums";
 
 const { mockHasPermission } = vi.hoisted(() => ({
   mockHasPermission: vi.fn(),
@@ -110,7 +110,7 @@ describe("Weighments [id] DELETE route handler", () => {
 
     const mockDb = {
       from: vi.fn((table: string) => {
-        if (table === TableName.WEIGHMENTS) {
+        if (table === "weighments") {
           return {
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
@@ -132,7 +132,7 @@ describe("Weighments [id] DELETE route handler", () => {
             update: weighmentUpdateMock,
           };
         }
-        if (table === TableName.ENTRIES) {
+        if (table === "entries") {
           return {
             update: entriesUpdateMock,
           };

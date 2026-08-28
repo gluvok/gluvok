@@ -11,13 +11,7 @@ import {
   formatEntityResponse,
   parseBulkIds,
 } from "@/db/helpers";
-import {
-  ProjectSlug,
-  PermissionKey,
-  QueryParam,
-  FieldRequirementMode,
-  TableName,
-} from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey, FieldRequirementMode } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { hashPassword } from "@/lib/auth/password";
 import { getDynamicCustomerSchema } from "@/lib/validation";
@@ -25,18 +19,18 @@ import { getDynamicCustomerSchema } from "@/lib/validation";
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
-  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at";
-  const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
-    ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
+  const search = req.nextUrl.searchParams.get("search");
+  const sortColumn = req.nextUrl.searchParams.get("sort_column") || "created_at";
+  const sortDesc = req.nextUrl.searchParams.has("sort_desc")
+    ? req.nextUrl.searchParams.get("sort_desc") === "true"
     : true;
 
   const factory = await getFactory(client, user.factory_id);
   const isGovtIdNotRequired = factory?.govt_id_mode === FieldRequirementMode.NOT_REQUIRED;
 
   let query = client
-    .from(TableName.CUSTOMERS)
-    .select(`*, ${TableName.USERS}!left(username)`, {
+    .from("customers")
+    .select(`*, users!left(username)`, {
       count: "exact",
     })
     .order(sortColumn, { ascending: !sortDesc })
@@ -84,7 +78,7 @@ export const POST = withAuth(async (req, user, client) => {
 
   if (govt_id != null) {
     const existingQuery = client
-      .from(TableName.CUSTOMERS)
+      .from("customers")
       .select("id")
       .eq("govt_id", Number(govt_id))
       .eq("factory_id", factoryId)
@@ -99,7 +93,7 @@ export const POST = withAuth(async (req, user, client) => {
   let passwordHash: string | null = null;
   if (username && password) {
     const { data: existingUser } = await client
-      .from(TableName.USERS)
+      .from("users")
       .select("id")
       .eq("username", username)
       .is("deleted_at", null)
@@ -139,7 +133,7 @@ export const DELETE = withAuth(async (req, user, client) => {
 
   // Check if any active entries are linked to any of the selected customers
   const { data: linkedEntries } = await client
-    .from(TableName.ENTRIES)
+    .from("entries")
     .select("id")
     .in("customer_id", ids)
     .is("deleted_at", null)

@@ -3,12 +3,11 @@ import { cookies } from "next/headers";
 import { verifyJWT, verifyRefreshToken } from "@/lib/auth/jwt";
 import { setAuthCookies } from "@/lib/auth/cookies";
 import { fetchActiveUserById, generateAuthTokens, toUserSessionPayload } from "@/lib/auth/common";
-import { CookieName } from "@/lib/constants";
 
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get(CookieName.TOKEN)?.value;
+    const token = cookieStore.get("token")?.value;
 
     const payload = token ? await verifyJWT(token) : null;
     if (payload) {
@@ -22,7 +21,7 @@ export async function GET() {
     }
 
     // Access token is missing or expired — fallback to refresh_token self-healing
-    const refreshToken = cookieStore.get(CookieName.REFRESH_TOKEN)?.value;
+    const refreshToken = cookieStore.get("refresh_token")?.value;
     if (refreshToken) {
       const refreshPayload = await verifyRefreshToken(refreshToken);
       if (refreshPayload) {

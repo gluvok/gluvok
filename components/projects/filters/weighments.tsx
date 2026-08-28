@@ -8,7 +8,7 @@
 import * as React from "react";
 import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import { Unit, WeighmentType, FilterValue, FieldType, ProjectSlug } from "@/lib/constants/enums";
+import { Unit, WeighmentType, FieldType, ProjectSlug } from "@/lib/constants/enums";
 import { useEntitiesStore } from "@/lib/store";
 import { Building, IndianRupee, Ruler, User as UserIcon, Users } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
@@ -53,7 +53,7 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
 
   const typeOptions = React.useMemo(() => {
     return [
-      { value: FilterValue.ALL, label: "All Types" },
+      { value: "all", label: "All Types" },
       { value: WeighmentType.IN, label: "In" },
       { value: WeighmentType.OUT, label: "Out" },
       { value: WeighmentType.UNASSIGNED, label: "Unassigned" },
@@ -62,7 +62,7 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
 
   const unitOptions = React.useMemo(() => {
     return [
-      { value: FilterValue.ALL, label: "All Units" },
+      { value: "all", label: "All Units" },
       ...Object.values(Unit).map((u) => ({
         value: u,
         label: u,
@@ -72,7 +72,7 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
 
   const rateOptions = React.useMemo(() => {
     return [
-      { value: FilterValue.ALL, label: "All Rates" },
+      { value: "all", label: "All Rates" },
       ...rates.map((r) => ({
         value: String(r.id),
         label: r.label,
@@ -82,7 +82,7 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
 
   const centerOptions = React.useMemo(() => {
     return [
-      { value: FilterValue.ALL, label: "All Centers" },
+      { value: "all", label: "All Centers" },
       ...centers.map((c) => ({
         value: String(c.id),
         label: c.name,
@@ -92,7 +92,7 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
 
   const userOptions = React.useMemo(() => {
     return [
-      { value: FilterValue.ALL, label: "All Operators" },
+      { value: "all", label: "All Operators" },
       ...users.map((u) => ({
         value: String(u.id),
         label: u.name,
@@ -102,7 +102,7 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
 
   const customerOptions = React.useMemo(() => {
     return [
-      { value: FilterValue.ALL, label: "All Customers" },
+      { value: "all", label: "All Customers" },
       ...customers.map((c) => ({
         value: String(c.id),
         label: c.name,
@@ -118,8 +118,8 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
       {/* Type */}
       <BaseCombobox
         type={FieldType.TYPE}
-        value={currentType ? String(currentType) : FilterValue.ALL}
-        onChange={(val) => setColumnFilter("type", val === FilterValue.ALL ? undefined : val)}
+        value={currentType ? String(currentType) : "all"}
+        onChange={(val) => setColumnFilter("type", val === "all" ? undefined : val)}
         data={typeOptions}
         placeholder="All Types"
         searchPlaceholder="Search type..."
@@ -131,8 +131,8 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
       {/* Unit */}
       <BaseCombobox
         type={FieldType.UNIT}
-        value={currentUnit ? String(currentUnit) : FilterValue.ALL}
-        onChange={(val) => setColumnFilter("unit", val === FilterValue.ALL ? undefined : val)}
+        value={currentUnit ? String(currentUnit) : "all"}
+        onChange={(val) => setColumnFilter("unit", val === "all" ? undefined : val)}
         data={unitOptions}
         placeholder="All Units"
         searchPlaceholder="Search unit..."
@@ -144,10 +144,8 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
       {/* Rate */}
       <BaseCombobox
         type={ProjectSlug.RATES}
-        value={currentRateId ? String(currentRateId) : FilterValue.ALL}
-        onChange={(val) =>
-          setColumnFilter("rate_id", val === FilterValue.ALL ? undefined : Number(val))
-        }
+        value={currentRateId ? String(currentRateId) : "all"}
+        onChange={(val) => setColumnFilter("rate_id", val === "all" ? undefined : Number(val))}
         data={rateOptions}
         placeholder="All Rates"
         searchPlaceholder="Search rate..."
@@ -159,10 +157,8 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
       {/* Center */}
       <BaseCombobox
         type={ProjectSlug.CENTERS}
-        value={currentCenterId ? String(currentCenterId) : FilterValue.ALL}
-        onChange={(val) =>
-          setColumnFilter("center_id", val === FilterValue.ALL ? undefined : Number(val))
-        }
+        value={currentCenterId ? String(currentCenterId) : "all"}
+        onChange={(val) => setColumnFilter("center_id", val === "all" ? undefined : Number(val))}
         data={centerOptions}
         placeholder="All Centers"
         searchPlaceholder="Search center..."
@@ -174,10 +170,8 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
       {/* Operator / User */}
       <BaseCombobox
         type={ProjectSlug.USERS}
-        value={currentUserId ? String(currentUserId) : FilterValue.ALL}
-        onChange={(val) =>
-          setColumnFilter("user_id", val === FilterValue.ALL ? undefined : Number(val))
-        }
+        value={currentUserId ? String(currentUserId) : "all"}
+        onChange={(val) => setColumnFilter("user_id", val === "all" ? undefined : Number(val))}
         data={userOptions}
         placeholder="All Operators"
         searchPlaceholder="Search operator..."
@@ -189,10 +183,8 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
       {/* Customer */}
       <BaseCombobox
         type={ProjectSlug.CUSTOMERS}
-        value={currentCustomerId ? String(currentCustomerId) : FilterValue.ALL}
-        onChange={(val) =>
-          setColumnFilter("customer_id", val === FilterValue.ALL ? undefined : Number(val))
-        }
+        value={currentCustomerId ? String(currentCustomerId) : "all"}
+        onChange={(val) => setColumnFilter("customer_id", val === "all" ? undefined : Number(val))}
         data={customerOptions}
         placeholder="All Customers"
         searchPlaceholder="Search customer..."

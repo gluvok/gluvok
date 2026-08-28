@@ -11,15 +11,7 @@ import {
   formatEntityResponse,
   parseBulkIds,
 } from "@/db/helpers";
-import {
-  Role,
-  ProjectSlug,
-  PermissionKey,
-  QueryParam,
-  FilterValue,
-  FieldRequirementMode,
-  TableName,
-} from "@/lib/constants/enums";
+import { Role, ProjectSlug, PermissionKey, FieldRequirementMode } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { getDynamicUserSchema } from "@/lib/validation";
 import { hashPassword } from "@/lib/auth/password";
@@ -28,10 +20,10 @@ import { clearAuthCookies } from "@/lib/auth/cookies";
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.USERS, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
-  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at";
-  const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
-    ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
+  const search = req.nextUrl.searchParams.get("search");
+  const sortColumn = req.nextUrl.searchParams.get("sort_column") || "created_at";
+  const sortDesc = req.nextUrl.searchParams.has("sort_desc")
+    ? req.nextUrl.searchParams.get("sort_desc") === "true"
     : true;
   const roleParam = req.nextUrl.searchParams.get("role");
 
@@ -40,7 +32,7 @@ export const GET = withAuth(async (req, user, client) => {
   const isAadharNotRequired = factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED;
 
   let query = client
-    .from(TableName.USERS)
+    .from("users")
     .select("id, username, name, aadhar_number, role, factory_id, created_at, updated_at", {
       count: "exact",
     })
@@ -48,7 +40,7 @@ export const GET = withAuth(async (req, user, client) => {
     .eq("factory_id", factoryId)
     .is("deleted_at", null);
 
-  if (roleParam && roleParam !== FilterValue.ALL) {
+  if (roleParam && roleParam !== "all") {
     query = query.eq("role", roleParam);
   }
 
@@ -99,7 +91,7 @@ export const POST = withAuth(async (req, user, client) => {
   };
 
   const { data: existingUser } = await client
-    .from(TableName.USERS)
+    .from("users")
     .select("id")
     .eq("username", username)
     .is("deleted_at", null)
@@ -109,7 +101,7 @@ export const POST = withAuth(async (req, user, client) => {
 
   if (aadhar_number) {
     const aadharQuery = client
-      .from(TableName.USERS)
+      .from("users")
       .select("id")
       .eq("aadhar_number", aadhar_number)
       .eq("factory_id", factoryId)
@@ -123,7 +115,7 @@ export const POST = withAuth(async (req, user, client) => {
   const passwordHash = await hashPassword(password);
 
   const { data: newUser, error } = await client
-    .from(TableName.USERS)
+    .from("users")
     .insert({
       username,
       password_hash: passwordHash,
@@ -153,7 +145,7 @@ export const DELETE = withAuth(async (req, user, client) => {
 
   // Check if any active entries are linked to any of the selected users
   const { data: linkedEntries } = await client
-    .from(TableName.ENTRIES)
+    .from("entries")
     .select("id")
     .in("user_id", ids)
     .is("deleted_at", null)
@@ -165,7 +157,7 @@ export const DELETE = withAuth(async (req, user, client) => {
 
   // Check if any active customers are linked to any of the selected users
   const { data: linkedCustomers } = await client
-    .from(TableName.CUSTOMERS)
+    .from("customers")
     .select("id")
     .in("user_id", ids)
     .is("deleted_at", null)
@@ -176,7 +168,7 @@ export const DELETE = withAuth(async (req, user, client) => {
   }
 
   const { data: deletedUsers, error } = await client
-    .from(TableName.USERS)
+    .from("users")
     .update({
       deleted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

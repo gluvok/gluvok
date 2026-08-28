@@ -8,7 +8,7 @@
 import * as React from "react";
 import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import { Unit, FilterValue, FieldType, ProjectSlug } from "@/lib/constants/enums";
+import { Unit, FieldType, ProjectSlug } from "@/lib/constants/enums";
 import { useEntitiesStore } from "@/lib/store";
 import { Package, Ruler } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
@@ -37,7 +37,7 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
 
   const commodityOptions = React.useMemo(() => {
     return [
-      { value: FilterValue.ALL, label: "All Commodities" },
+      { value: "all", label: "All Commodities" },
       ...commodities.map((c) => ({
         value: String(c.id),
         label: c.name,
@@ -47,7 +47,7 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
 
   const unitOptions = React.useMemo(() => {
     return [
-      { value: FilterValue.ALL, label: "All Units" },
+      { value: "all", label: "All Units" },
       ...Object.values(Unit).map((u) => ({
         value: u,
         label: u,
@@ -63,10 +63,8 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
       {/* Commodity */}
       <BaseCombobox
         type={ProjectSlug.COMMODITIES}
-        value={currentCommodityId ? String(currentCommodityId) : FilterValue.ALL}
-        onChange={(val) =>
-          setColumnFilter("commodity_id", val === FilterValue.ALL ? undefined : Number(val))
-        }
+        value={currentCommodityId ? String(currentCommodityId) : "all"}
+        onChange={(val) => setColumnFilter("commodity_id", val === "all" ? undefined : Number(val))}
         data={commodityOptions}
         placeholder="All Commodities"
         searchPlaceholder="Search commodity..."
@@ -78,8 +76,8 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
       {/* Unit */}
       <BaseCombobox
         type={FieldType.UNIT}
-        value={currentUnit ? String(currentUnit) : FilterValue.ALL}
-        onChange={(val) => setColumnFilter("unit", val === FilterValue.ALL ? undefined : val)}
+        value={currentUnit ? String(currentUnit) : "all"}
+        onChange={(val) => setColumnFilter("unit", val === "all" ? undefined : val)}
         data={unitOptions}
         placeholder="All Units"
         searchPlaceholder="Search unit..."

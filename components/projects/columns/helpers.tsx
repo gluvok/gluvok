@@ -8,11 +8,10 @@ import * as React from "react";
 import { type ColumnDef, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { DataTableColumnHeader } from "@/components/data-table";
-import { ColumnLabel } from "@/lib/constants/enums";
 
 export function createBaseColumn<T extends RowData>(
   key: string,
-  label: ColumnLabel | string,
+  label: string,
   Icon: React.ComponentType<{ className?: string }>,
   cell: ColumnDef<ProjectTableFeatures, T, any>["cell"],
   id?: string,
@@ -39,7 +38,7 @@ export function createBaseColumn<T extends RowData>(
 
 export function createCustomColumn<T extends RowData>(
   key: string,
-  label: ColumnLabel | string,
+  label: string,
   Icon: React.ComponentType<{ className?: string }>,
   renderCell: (value: string, row: T) => React.ReactNode,
   id?: string,
@@ -59,7 +58,7 @@ export function createCustomColumn<T extends RowData>(
 
 export function createTextColumn<T extends RowData>(
   key: string,
-  label: ColumnLabel | string,
+  label: string,
   Icon: React.ComponentType<{ className?: string }>,
   className = "font-semibold text-foreground text-xs",
   id?: string,
@@ -79,7 +78,7 @@ export function createTextColumn<T extends RowData>(
 
 export function createIdColumn<T extends RowData>(
   key: string,
-  label: ColumnLabel | string,
+  label: string,
   Icon: React.ComponentType<{ className?: string }>,
   id?: string,
 ): ColumnDef<ProjectTableFeatures, T, any> {

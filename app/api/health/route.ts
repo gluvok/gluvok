@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { TableName } from "@/lib/constants/enums";
 
 export async function GET() {
   try {
-    const { error } = await db.from(TableName.FACTORIES).select("id").limit(1);
+    const { error } = await db.from("factories").select("id").limit(1);
 
     if (error) throw error;
 

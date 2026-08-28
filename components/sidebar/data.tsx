@@ -5,8 +5,8 @@
 
 import { LifeBuoy, Send, Layers } from "lucide-react";
 import { PROJECTS } from "@/lib/projects";
-import { DEFAULT_AVATAR } from "@/lib/constants";
-import { AppRoutes, Role } from "@/lib/constants/enums";
+import { DEFAULT_AVATAR, AppRoutes } from "@/lib/constants";
+import { Role } from "@/lib/constants/enums";
 
 /**
  * SIDEBAR_DATA configuration

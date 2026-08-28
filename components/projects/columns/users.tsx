@@ -6,7 +6,6 @@
 import { type ColumnDef, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Fingerprint, Tag, Shield, AtSign } from "lucide-react";
-import { ColumnLabel } from "@/lib/constants/enums";
 import { getRoleIcon } from "@/lib/fields/helpers";
 import { RenderRoleIcon } from "@/components/sidebar/nav/user-info";
 import { createTextColumn, createCustomColumn } from "./helpers";
@@ -15,17 +14,17 @@ export function getUsersColumns<T extends RowData>(): ColumnDef<ProjectTableFeat
   return [
     createTextColumn(
       "aadhar_number",
-      ColumnLabel.AADHAR_NUMBER,
+      "Aadhar Number",
       Fingerprint,
       "font-mono text-muted-foreground text-xs",
     ),
-    createTextColumn("name", ColumnLabel.NAME, Tag),
-    createCustomColumn("username", ColumnLabel.USERNAME, AtSign, (val) => {
+    createTextColumn("name", "Name", Tag),
+    createCustomColumn("username", "Username", AtSign, (val) => {
       const u = String(val || "");
       if (!u) return <span className="text-muted-foreground/40 text-xs">—</span>;
       return <span className="font-mono text-xs text-muted-foreground">@{u}</span>;
     }),
-    createCustomColumn("role", ColumnLabel.ROLE, Shield, (val) => {
+    createCustomColumn("role", "Role", Shield, (val) => {
       const roleStr = String(val || "");
       return (
         <div className="flex items-center gap-1.5 text-muted-foreground">

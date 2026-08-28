@@ -14,13 +14,12 @@ import {
   Tag,
   type LucideIcon,
 } from "lucide-react";
-import { ColumnLabel } from "@/lib/constants/enums";
 import { formatDateTime } from "@/lib/utils";
 import { createCustomColumn } from "./helpers";
 import { getCommodityIcon } from "@/lib/fields";
 
 interface PrimaryKeyConfig {
-  label: ColumnLabel;
+  label: string;
   icon: LucideIcon;
   renderCell: (val: string) => React.ReactNode;
 }
@@ -31,17 +30,17 @@ const renderTextCell = (val: string) => (
 
 const PRIMARY_KEY_CONFIGS: Record<string, PrimaryKeyConfig> = {
   govt_id: {
-    label: ColumnLabel.GOVT_ID,
+    label: "Govt ID",
     icon: ShieldCheck,
     renderCell: (val) => renderTextCell(val),
   },
   aadhar_number: {
-    label: ColumnLabel.AADHAR_NUMBER,
+    label: "Aadhar Number",
     icon: Fingerprint,
     renderCell: (val) => renderTextCell(val),
   },
   name: {
-    label: ColumnLabel.NAME,
+    label: "Name",
     icon: Tag,
     renderCell: (val) => {
       const Icon = getCommodityIcon(val);
@@ -54,7 +53,7 @@ const PRIMARY_KEY_CONFIGS: Record<string, PrimaryKeyConfig> = {
     },
   },
   id: {
-    label: ColumnLabel.ID,
+    label: "ID",
     icon: Hash,
     renderCell: (val) => renderTextCell(val),
   },
@@ -68,13 +67,13 @@ export function getSystemColumns<T extends RowData>(
   return [
     createCustomColumn<T>(primaryIdKey, config.label, config.icon, config.renderCell),
     {
-      ...createCustomColumn<T>("created_at", ColumnLabel.CREATED_AT, Calendar, (val) => (
+      ...createCustomColumn<T>("created_at", "Created At", Calendar, (val) => (
         <span className="text-muted-foreground text-xs font-medium">{formatDateTime(val)}</span>
       )),
       enableGlobalFilter: false,
     },
     {
-      ...createCustomColumn<T>("updated_at", ColumnLabel.UPDATED_AT, CalendarClock, (val) => (
+      ...createCustomColumn<T>("updated_at", "Updated At", CalendarClock, (val) => (
         <span className="text-muted-foreground text-xs font-medium">{formatDateTime(val)}</span>
       )),
       enableGlobalFilter: false,

@@ -4,7 +4,7 @@
  */
 
 import * as z from "zod";
-import { ColumnLabel, FieldRequirementMode, Role } from "@/lib/constants/enums";
+import { FieldRequirementMode, Role } from "@/lib/constants/enums";
 import { ValidationMessage } from "@/lib/constants/messages";
 import { type Factory } from "@/types";
 import { integerIdSchema, nameSchema } from "./helpers";
@@ -24,10 +24,10 @@ function buildAadharSchema(factory: Factory | null): z.ZodTypeAny {
             ? ""
             : val,
       z
-        .string({ message: ValidationMessage.REQUIRED(ColumnLabel.AADHAR_NUMBER) })
-        .min(1, ValidationMessage.REQUIRED(ColumnLabel.AADHAR_NUMBER))
-        .length(12, ValidationMessage.EXACT_DIGITS(ColumnLabel.AADHAR_NUMBER, 12))
-        .regex(/^\d+$/, ValidationMessage.DIGITS_ONLY(ColumnLabel.AADHAR_NUMBER)),
+        .string({ message: ValidationMessage.REQUIRED("Aadhar Number") })
+        .min(1, ValidationMessage.REQUIRED("Aadhar Number"))
+        .length(12, ValidationMessage.EXACT_DIGITS("Aadhar Number", 12))
+        .regex(/^\d+$/, ValidationMessage.DIGITS_ONLY("Aadhar Number")),
     );
   }
 
@@ -37,8 +37,8 @@ function buildAadharSchema(factory: Factory | null): z.ZodTypeAny {
         (val) => (typeof val === "string" ? val.replace(/\s/g, "") : val),
         z
           .string()
-          .length(12, ValidationMessage.EXACT_DIGITS(ColumnLabel.AADHAR_NUMBER, 12))
-          .regex(/^\d+$/, ValidationMessage.DIGITS_ONLY(ColumnLabel.AADHAR_NUMBER))
+          .length(12, ValidationMessage.EXACT_DIGITS("Aadhar Number", 12))
+          .regex(/^\d+$/, ValidationMessage.DIGITS_ONLY("Aadhar Number"))
           .optional()
           .nullable()
           .or(z.literal("")),
@@ -88,15 +88,15 @@ export function validatePasswordRefinement(
       ctx.addIssue({
         code: "custom",
         message: hasPassword
-          ? ValidationMessage.USERNAME_REQUIRED_WITH_PASSWORD(ColumnLabel.USERNAME)
-          : ValidationMessage.REQUIRED(ColumnLabel.USERNAME),
+          ? ValidationMessage.USERNAME_REQUIRED_WITH_PASSWORD("Username")
+          : ValidationMessage.REQUIRED("Username"),
         path: ["username"],
       });
     }
   } else if (rawUsername!.trim().length < 3) {
     ctx.addIssue({
       code: "custom",
-      message: ValidationMessage.MIN_LENGTH(ColumnLabel.USERNAME, 3),
+      message: ValidationMessage.MIN_LENGTH("Username", 3),
       path: ["username"],
     });
   }
@@ -106,7 +106,7 @@ export function validatePasswordRefinement(
   if (isPasswordRequired && !hasPassword) {
     ctx.addIssue({
       code: "custom",
-      message: ValidationMessage.REQUIRED(ColumnLabel.PASSWORD),
+      message: ValidationMessage.REQUIRED("Password"),
       path: ["password"],
     });
   }
@@ -115,7 +115,7 @@ export function validatePasswordRefinement(
   if (hasPassword && rawPassword!.trim().length < 6) {
     ctx.addIssue({
       code: "custom",
-      message: ValidationMessage.MIN_LENGTH(ColumnLabel.PASSWORD, 6),
+      message: ValidationMessage.MIN_LENGTH("Password", 6),
       path: ["password"],
     });
   }
@@ -142,7 +142,7 @@ export function getDynamicCustomerSchema(factory: Factory | null, isEdit = false
 
   let govtIdSchema: z.ZodTypeAny;
   if (govtIdMode === FieldRequirementMode.MANDATORY) {
-    govtIdSchema = integerIdSchema(ColumnLabel.GOVT_ID);
+    govtIdSchema = integerIdSchema("Govt ID");
   } else if (govtIdMode === FieldRequirementMode.OPTIONAL) {
     govtIdSchema = z
       .preprocess(
@@ -157,8 +157,8 @@ export function getDynamicCustomerSchema(factory: Factory | null, isEdit = false
 
   return z
     .object({
-      name: nameSchema(ColumnLabel.NAME),
-      father_name: nameSchema(ColumnLabel.FATHER_NAME),
+      name: nameSchema("Name"),
+      father_name: nameSchema("Father's Name"),
       govt_id: govtIdSchema,
       factory_id: z.coerce.number().optional().nullable(),
       username: z.string().optional().or(z.literal("")),
@@ -176,7 +176,7 @@ export function getDynamicUserSchema(factory: Factory | null, isEdit = false) {
   return z
     .object({
       username: z.string().optional().or(z.literal("")),
-      name: nameSchema(ColumnLabel.NAME),
+      name: nameSchema("Name"),
       role: z.enum(Role, {
         message: ValidationMessage.VALID_ROLE_REQUIRED,
       }),

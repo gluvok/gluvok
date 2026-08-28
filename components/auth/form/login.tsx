@@ -14,7 +14,7 @@ import { FieldGroup } from "@/components/ui/field";
 import { AuthCard, AuthInput } from "@/components/auth/common";
 import { useAuthStore } from "@/lib/store";
 import { cn, getNextParam } from "@/lib/utils";
-import { AppRoutes } from "@/lib/constants/enums";
+import { AppRoutes } from "@/lib/constants/routes";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),

@@ -9,40 +9,34 @@ import {
   formatEntityResponse,
   parseBulkIds,
 } from "@/db/helpers";
-import {
-  ProjectSlug,
-  PermissionKey,
-  FilterValue,
-  QueryParam,
-  TableName,
-} from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { addRateSchema } from "@/lib/validation";
 
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
-  const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at";
-  const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
-    ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
+  const search = req.nextUrl.searchParams.get("search");
+  const sortColumn = req.nextUrl.searchParams.get("sort_column") || "created_at";
+  const sortDesc = req.nextUrl.searchParams.has("sort_desc")
+    ? req.nextUrl.searchParams.get("sort_desc") === "true"
     : true;
   const commodityIdParam = req.nextUrl.searchParams.get("commodity_id");
   const unitParam = req.nextUrl.searchParams.get("unit");
-  const startDateParam = req.nextUrl.searchParams.get(QueryParam.START_DATE);
-  const endDateParam = req.nextUrl.searchParams.get(QueryParam.END_DATE);
+  const startDateParam = req.nextUrl.searchParams.get("start_date");
+  const endDateParam = req.nextUrl.searchParams.get("end_date");
 
   let query = client
-    .from(TableName.RATES)
-    .select(`*, ${TableName.COMMODITIES}!left(name)`, { count: "exact" })
+    .from("rates")
+    .select(`*, commodities!left(name)`, { count: "exact" })
     .order(sortColumn, { ascending: !sortDesc })
     .eq("factory_id", user.factory_id!)
     .is("deleted_at", null);
 
-  if (commodityIdParam && commodityIdParam !== FilterValue.ALL) {
+  if (commodityIdParam && commodityIdParam !== "all") {
     query = query.eq("commodity_id", Number(commodityIdParam));
   }
-  if (unitParam && unitParam !== FilterValue.ALL) {
+  if (unitParam && unitParam !== "all") {
     query = query.eq("unit", unitParam);
   }
   if (startDateParam) {
@@ -100,7 +94,7 @@ export const POST = withAuth(async (req, user, client) => {
   };
 
   const { data: newRate, error } = await client
-    .from(TableName.RATES)
+    .from("rates")
     .insert(insertValues)
     .select()
     .single();
@@ -120,7 +114,7 @@ export const DELETE = withAuth(async (req, user, client) => {
 
   // Check if any active weighments are linked to any of the selected rates
   const { data: linkedWeighments } = await client
-    .from(TableName.WEIGHMENTS)
+    .from("weighments")
     .select("id")
     .in("rate_id", ids)
     .is("deleted_at", null)
@@ -131,7 +125,7 @@ export const DELETE = withAuth(async (req, user, client) => {
   }
 
   const query = client
-    .from(TableName.RATES)
+    .from("rates")
     .update({
       deleted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

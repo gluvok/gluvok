@@ -8,7 +8,7 @@ import {
   StatusCodes,
   formatEntityResponse,
 } from "@/db/helpers";
-import { ProjectSlug, PermissionKey, TableName } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { editRateSchema } from "@/lib/validation";
 
@@ -17,8 +17,8 @@ export const GET = withAuth(
     if (!hasPermission(user, ProjectSlug.RATES, PermissionKey.READ)) return forbiddenError();
 
     const query = client
-      .from(TableName.RATES)
-      .select(`*, ${TableName.COMMODITIES}!left(name)`)
+      .from("rates")
+      .select(`*, commodities!left(name)`)
       .eq("id", entityId)
       .eq("factory_id", factoryId)
       .is("deleted_at", null);
@@ -42,7 +42,7 @@ export const PATCH = withAuth(
 
     // Check if this rate is associated with any active weighment
     const { data: linkedWeighments } = await client
-      .from(TableName.WEIGHMENTS)
+      .from("weighments")
       .select("id")
       .eq("rate_id", entityId)
       .is("deleted_at", null)
@@ -64,7 +64,7 @@ export const PATCH = withAuth(
     const { unit_price, unit, commodity_id } = parsed.data;
 
     const query = client
-      .from(TableName.RATES)
+      .from("rates")
       .update({
         ...(unit_price ? { unit_price: String(unit_price) } : {}),
         ...(unit ? { unit } : {}),
@@ -88,7 +88,7 @@ export const DELETE = withAuth(
 
     // Check if any active weighments are linked to this rate
     const { data: linkedWeighment } = await client
-      .from(TableName.WEIGHMENTS)
+      .from("weighments")
       .select("id")
       .eq("rate_id", entityId)
       .is("deleted_at", null)
@@ -100,7 +100,7 @@ export const DELETE = withAuth(
     }
 
     const query = client
-      .from(TableName.RATES)
+      .from("rates")
       .update({
         deleted_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

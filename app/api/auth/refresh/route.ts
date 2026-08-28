@@ -67,10 +67,7 @@ export async function POST(request: NextRequest) {
       .is(EntityKey.DELETED_AT, null)
       .maybeSingle();
 
-    const currentTokenVersion =
-      user && typeof user.token_version === "number" ? user.token_version : 1;
-
-    if (userError || !user || currentTokenVersion !== payload.token_version) {
+    if (userError || !user || user.token_version !== payload.token_version) {
       const response = NextResponse.json(
         { error: AuthErrorMessage.INVALID_CREDENTIALS },
         { status: 401 },
@@ -91,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     const newRefreshToken = await signRefreshToken({
       sub: String(user.id),
-      token_version: currentTokenVersion,
+      token_version: user.token_version,
     });
     const refreshExpiresIn = getTokenExpiresIn(newRefreshToken);
 

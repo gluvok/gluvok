@@ -20,11 +20,8 @@ export function getUsersColumns<T extends RowData>(): ColumnDef<ProjectTableFeat
       "font-mono text-muted-foreground text-xs",
     ),
     createTextColumn(EntityKey.NAME, ColumnLabel.NAME, Tag),
-    createCustomColumn(EntityKey.USERNAME, ColumnLabel.USERNAME, AtSign, (_val, row) => {
-      const rec = row as Record<string, unknown>;
-      const u =
-        (rec[EntityKey.USERNAME] as string) ||
-        (rec.users as { username?: string } | null)?.username;
+    createCustomColumn(EntityKey.USERNAME, ColumnLabel.USERNAME, AtSign, (val) => {
+      const u = String(val || "");
       if (!u) return <span className="text-muted-foreground/40 text-xs">—</span>;
       return <span className="font-mono text-xs text-muted-foreground">@{u}</span>;
     }),

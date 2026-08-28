@@ -168,10 +168,7 @@ export async function getAuthUser(
     .is(EntityKey.DELETED_AT, null)
     .maybeSingle();
 
-  const currentTokenVersion =
-    dbUser && typeof dbUser.token_version === "number" ? dbUser.token_version : 1;
-
-  if (userError || !dbUser || currentTokenVersion !== refreshPayload.token_version) {
+  if (userError || !dbUser || dbUser.token_version !== refreshPayload.token_version) {
     return null;
   }
 
@@ -188,7 +185,7 @@ export async function getAuthUser(
 
   const newRefreshToken = await signRefreshToken({
     sub: String(dbUser.id),
-    token_version: currentTokenVersion,
+    token_version: dbUser.token_version,
   });
   const refreshExpiresIn = getTokenExpiresIn(newRefreshToken);
 

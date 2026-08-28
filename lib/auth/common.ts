@@ -90,7 +90,7 @@ export async function verifyUserCredentials(
  */
 export async function generateAuthTokens(user: AuthenticatedUserRecord): Promise<AuthTokens> {
   const factoryId = user.factory_id;
-  const tokenVersion = typeof user.token_version === "number" ? user.token_version : 1;
+  const tokenVersion = user.token_version ?? 1;
 
   const accessToken = await signJWT({
     sub: String(user.id),

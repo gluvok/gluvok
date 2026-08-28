@@ -4,7 +4,14 @@
  * Includes flattened and computed fields used across views and forms.
  */
 
-import { Role, Unit, WeighmentType, FieldRequirementMode } from "@/lib/constants/enums";
+import {
+  Role,
+  Unit,
+  WeighmentType,
+  EntryType,
+  EntryStatus,
+  FieldRequirementMode,
+} from "@/lib/constants/enums";
 
 /**
  * Center Entity
@@ -50,7 +57,7 @@ export interface Customer {
   aadhar_number?: string | null;
   name: string;
   father_name: string;
-  user_id?: string;
+  user_id?: number | null;
   factory_id: number;
   created_at: string;
   updated_at: string;
@@ -70,8 +77,8 @@ export interface Factory {
 
 export interface Settings {
   id: number;
-  name?: string;
-  factory_id?: number;
+  name: string;
+  factory_id: number;
   aadhar_number_mode: FieldRequirementMode;
   govt_id_mode: FieldRequirementMode;
   created_at: string;
@@ -80,27 +87,46 @@ export interface Settings {
   factory_name?: string;
 }
 
-export interface Weighment {
+export interface Entry {
   id: number;
+  detected_vehicle_number?: string | null;
   vehicle_number: string;
-  weight: string;
-  unit: Unit;
-  type: WeighmentType;
-  images: string[];
-  rate_id: number;
+  weight: number | string;
+  type: EntryType;
   center_id: number;
-  user_id?: number;
-  customer_id: number;
+  user_id: number;
+  customer_id?: number | null;
+  factory_id: number;
+  status: EntryStatus;
+  images: string[];
   created_at: string;
   updated_at: string;
   // Flattened join fields
   center_name?: string;
   user_name?: string;
   customer_name?: string;
-  customer_govt_id?: number;
-  commodity_id?: number;
+}
+
+export interface Weighment {
+  id: number;
+  in_entry_id: number;
+  out_entry_id: number;
+  unit: Unit;
+  type: WeighmentType;
+  rate_id?: number | null;
+  created_at: string;
+  updated_at: string;
+  // Flattened join/computed fields
+  gross_weight?: string | number;
+  tare_weight?: string | number;
+  net_weight?: string | number;
+  vehicle_number?: string;
+  center_name?: string;
+  user_name?: string;
+  customer_name?: string;
+  customer_govt_id?: number | null;
   commodity_name?: string;
-  unit_price?: string;
+  unit_price?: string | number;
 }
 
 export interface User {
@@ -110,6 +136,7 @@ export interface User {
   aadhar_number?: string | null;
   role: Role;
   factory_id: number;
+  token_version?: number;
   created_at: string;
   updated_at: string;
   // Flattened join/view fields
@@ -123,6 +150,7 @@ export type EntityRecord =
   | Rate
   | Customer
   | Weighment
+  | Entry
   | Factory
   | User
   | Settings;

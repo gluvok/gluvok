@@ -30,15 +30,15 @@ export const ENTITY_EXTRACTORS: Record<string, (item: Entity) => { id: string; n
   [ProjectSlug.CENTERS]: (item) => extractByIdAndName(item as { id: number; name: string }),
   [ProjectSlug.COMMODITIES]: (item) => extractByIdAndName(item as { id: number; name: string }),
   [ProjectSlug.SETTINGS]: (item) => {
-    const c = item as unknown as { id: number; name?: string };
+    const c = item as unknown as { id: number; name: string };
     return {
       id: String(c.id),
-      name: c.name ? `Setting (${c.name})` : `Setting #${c.id}`,
+      name: `Setting (${c.name})`,
     };
   },
   [ProjectSlug.RATES]: (item) => {
     const p = item as Rate;
-    const priceInfo = p.unit_price ? ` (₹${parseFloat(p.unit_price)})` : "";
+    const priceInfo = ` (₹${parseFloat(p.unit_price)})`;
     return {
       id: String(p.id),
       name: `${p.commodity_name || "Rate"}${priceInfo}`,

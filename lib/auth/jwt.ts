@@ -90,7 +90,7 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
       username: payload.username,
       name: typeof payload.name === "string" ? payload.name : payload.username,
       role: payload.role,
-      factory_id: typeof payload.factory_id === "number" ? payload.factory_id : 0,
+      factory_id: Number(payload.factory_id),
       token_version: typeof payload.token_version === "number" ? payload.token_version : undefined,
     };
   } catch {

@@ -57,10 +57,7 @@ export async function GET() {
             .is(EntityKey.DELETED_AT, null)
             .maybeSingle();
 
-          const currentTokenVersion =
-            user && typeof user.token_version === "number" ? user.token_version : 1;
-
-          if (!userError && user && currentTokenVersion === refreshPayload.token_version) {
+          if (!userError && user && user.token_version === refreshPayload.token_version) {
             const factoryId = user.factory_id;
 
             const newAccessToken = await signJWT({
@@ -74,7 +71,7 @@ export async function GET() {
 
             const newRefreshToken = await signRefreshToken({
               sub: String(user.id),
-              token_version: currentTokenVersion,
+              token_version: user.token_version,
             });
             const refreshExpiresIn = getTokenExpiresIn(newRefreshToken);
 

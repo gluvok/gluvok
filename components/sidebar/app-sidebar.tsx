@@ -34,7 +34,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const hydrated = useAuthStore((state) => state.hydrated);
 
   const activeUser = {
-    name: user?.name || user?.username || SIDEBAR_DATA.user.name,
+    name: user?.name || SIDEBAR_DATA.user.name,
     username: user?.username || SIDEBAR_DATA.user.username,
     role: user?.role || SIDEBAR_DATA.user.role,
     avatar: user?.avatar || SIDEBAR_DATA.user.avatar,

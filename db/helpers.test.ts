@@ -51,6 +51,7 @@ describe("withEntityScope", () => {
   const sampleUser = {
     sub: "1",
     username: "admin",
+    name: "Admin",
     role: Role.ADMIN,
     factory_id: 1,
   };
@@ -143,6 +144,7 @@ describe("withAuth and server-side auto-refresh", () => {
     const token = await signJWT({
       sub: "1",
       username: "admin",
+      name: "Admin",
       role: Role.ADMIN,
       factory_id: 1,
     });

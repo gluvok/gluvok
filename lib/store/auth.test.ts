@@ -167,21 +167,16 @@ describe("Auth Store (Zustand with custom JWT API via Axios)", () => {
       );
     });
 
-    it("should fallback to username on logout if name is absent", async () => {
+    it("should fallback to 'there' on logout if user is null", async () => {
       useAuthStore.setState({
-        user: {
-          id: "u1",
-          username: "u1",
-          role: Role.BASE,
-          factory_id: 1,
-        },
+        user: null,
       });
 
       vi.mocked(axios.post).mockResolvedValueOnce({ data: { success: true } });
 
       await useAuthStore.getState().logout();
 
-      expect(toast.success).toHaveBeenCalledWith("See you soon, u1! Logged out successfully 👋");
+      expect(toast.success).toHaveBeenCalledWith("See you soon, there! Logged out successfully 👋");
     });
   });
 });

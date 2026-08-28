@@ -98,6 +98,8 @@ export async function POST(request: NextRequest) {
     const userPayload = {
       id: user.id,
       username: user.username,
+      name: user.name,
+      aadhar_number: user.aadhar_number ?? null,
       role: user.role,
       factory_id: factoryId,
     };

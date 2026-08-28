@@ -148,6 +148,8 @@ describe("POST /api/auth/refresh", () => {
               data: {
                 id: 10,
                 username: "operator_01",
+                name: "Operator One",
+                aadhar_number: null,
                 role: Role.OPERATOR,
                 factory_id: 1,
                 token_version: 1,
@@ -171,6 +173,8 @@ describe("POST /api/auth/refresh", () => {
     expect(json.user).toEqual({
       id: 10,
       username: "operator_01",
+      name: "Operator One",
+      aadhar_number: null,
       role: Role.OPERATOR,
       factory_id: 1,
     });

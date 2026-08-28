@@ -309,6 +309,7 @@ export enum RequestHeader {
   HOST = "host",
   USER_ID = "x-user-id",
   USERNAME = "x-user-username",
+  NAME = "x-user-name",
   ROLE = "x-user-role",
   FACTORY_ID = "x-user-factory-id",
   MICROCONTROLLER_SECRET = "x-microcontroller-secret",

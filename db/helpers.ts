@@ -104,14 +104,16 @@ export async function getAuthUser(
 ): Promise<{ user: JWTPayload; refreshedTokens?: RefreshedTokens } | null> {
   const userId = req.headers.get(RequestHeader.USER_ID);
   const username = req.headers.get(RequestHeader.USERNAME);
+  const rawName = req.headers.get(RequestHeader.NAME);
   const role = req.headers.get(RequestHeader.ROLE);
   const factoryIdStr = req.headers.get(RequestHeader.FACTORY_ID);
 
-  if (userId && username && role) {
+  if (userId && username && role && rawName) {
     return {
       user: {
         sub: userId,
         username,
+        name: rawName,
         role: role as Role,
         factory_id: factoryIdStr ? parseInt(factoryIdStr, 10) : 0,
       },

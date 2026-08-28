@@ -42,6 +42,7 @@ describe("JWT claims", () => {
       {
         sub: "42",
         username: "operator_01",
+        name: "Operator 01",
         role: "operator",
         factory_id: 7,
       },

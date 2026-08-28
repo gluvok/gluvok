@@ -17,9 +17,9 @@ function getJwtSecret(): Uint8Array {
 export interface JWTPayload {
   sub: string;
   username: string;
+  name: string;
   role: string;
   factory_id: number;
-  name?: string;
   token_version?: number;
 }
 
@@ -37,9 +37,9 @@ export async function signJWT(
 ): Promise<string> {
   return new SignJWT({
     username: payload.username,
+    name: payload.name,
     role: payload.role,
     factory_id: payload.factory_id,
-    ...(payload.name != null ? { name: payload.name } : {}),
     ...(payload.token_version != null ? { token_version: payload.token_version } : {}),
   })
     .setProtectedHeader({ alg: "HS256" })
@@ -88,9 +88,9 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
     return {
       sub: payload.sub,
       username: payload.username,
+      name: typeof payload.name === "string" ? payload.name : payload.username,
       role: payload.role,
       factory_id: typeof payload.factory_id === "number" ? payload.factory_id : 0,
-      name: typeof payload.name === "string" ? payload.name : undefined,
       token_version: typeof payload.token_version === "number" ? payload.token_version : undefined,
     };
   } catch {

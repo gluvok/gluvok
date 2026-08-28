@@ -11,7 +11,7 @@ import { useAuthStore } from "@/lib/store";
 import { getRoleIcon } from "@/lib/fields/helpers";
 
 export interface UserInfo {
-  name?: string;
+  name: string;
   username: string;
   role?: string;
   avatar: string;
@@ -33,7 +33,7 @@ export function RenderRoleIcon({
  */
 export function UserAvatarInfo({ user }: { user: UserInfo }) {
   const authUser = useAuthStore((state) => state.user);
-  const name = user.name || authUser?.name || user.username || authUser?.username || "User";
+  const name = user.name;
   const username = user.username || authUser?.username || "";
   const rawRole = user.role || authUser?.role || "admin";
 
@@ -43,9 +43,7 @@ export function UserAvatarInfo({ user }: { user: UserInfo }) {
     <>
       <Avatar className="h-8 w-8 rounded-lg shrink-0">
         <AvatarImage src={user.avatar} alt={name} />
-        <AvatarFallback className="rounded-lg">
-          {name ? name.slice(0, 2).toUpperCase() : "??"}
-        </AvatarFallback>
+        <AvatarFallback className="rounded-lg">{name.slice(0, 2).toUpperCase()}</AvatarFallback>
       </Avatar>
       <div className="grid flex-1 text-left text-xs leading-tight min-w-0 gap-0.5">
         <span className="truncate font-semibold text-xs text-foreground">{name}</span>

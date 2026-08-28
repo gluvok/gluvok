@@ -51,6 +51,7 @@ export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(RequestHeader.USER_ID, payload.sub);
   requestHeaders.set(RequestHeader.USERNAME, payload.username);
+  requestHeaders.set(RequestHeader.NAME, payload.name);
   requestHeaders.set(RequestHeader.ROLE, payload.role);
 
   if (payload.factory_id != null) {

@@ -15,7 +15,7 @@ import { useEntitiesStore } from "./entities";
 export interface AuthUser {
   id: string;
   username: string;
-  name?: string;
+  name: string;
   avatar?: string;
   aadhar_number?: string | null;
   role: Role;
@@ -125,7 +125,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
   logout: async () => {
     const currentUser = get().user;
-    const displayName = currentUser?.name || currentUser?.username || "there";
+    const displayName = currentUser?.name || "there";
     try {
       await axios.post("/api/auth/logout");
     } catch (err) {

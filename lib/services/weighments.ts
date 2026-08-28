@@ -5,10 +5,11 @@
 
 import { supabase } from "@/db";
 import { TableName, EntryStatus, EntryType, EntityKey, Unit } from "@/lib/constants/enums";
+import { ApiErrorMessage } from "@/lib/constants/messages";
 
 export async function validateSequentialApproval(
   client: typeof supabase,
-  factoryId: number,
+  centerId: number,
   vehicleNumber: string,
   targetCreatedAt: string,
   targetEntryId: number,
@@ -17,7 +18,7 @@ export async function validateSequentialApproval(
   let query = client
     .from(TableName.ENTRIES)
     .select(`${EntityKey.ID}, ${EntityKey.CREATED_AT}, ${EntityKey.TYPE}`)
-    .eq(EntityKey.FACTORY_ID, factoryId)
+    .eq(EntityKey.CENTER_ID, centerId)
     .eq(EntityKey.VEHICLE_NUMBER, vehicleNumber)
     .eq(EntityKey.STATUS, EntryStatus.PENDING)
     .lt(EntityKey.CREATED_AT, targetCreatedAt)
@@ -35,15 +36,19 @@ export async function validateSequentialApproval(
 
   if (error) {
     console.error("Error checking earlier entries:", error);
-    throw new Error("Failed to validate entry sequence.");
+    throw new Error(ApiErrorMessage.VALIDATE_SEQUENCE_FAILED);
   }
 
   if (earlierPending) {
     const typeLabel = earlierPending.type ? `${earlierPending.type} ` : "";
     throw new Error(
-      `Cannot approve entry #${targetEntryId} because earlier ${typeLabel}entry #${earlierPending.id} (from ${new Date(
-        earlierPending.created_at,
-      ).toLocaleString()}) for vehicle "${vehicleNumber}" is still pending. Please approve entries in sequential order.`,
+      ApiErrorMessage.CANNOT_APPROVE_PENDING_EARLIER_ENTRY(
+        targetEntryId,
+        earlierPending.id,
+        new Date(earlierPending.created_at).toLocaleString(),
+        vehicleNumber,
+        typeLabel,
+      ),
     );
   }
 }

@@ -4,33 +4,34 @@
  */
 
 import * as z from "zod";
+import { ValidationMessage } from "@/lib/constants/messages";
 
 export const integerIdSchema = (fieldName: string) =>
   z.preprocess(
     (val) => (val === "" || val === null || val === undefined ? NaN : Number(val)),
     z
-      .number({ message: `${fieldName} is required` })
-      .int(`${fieldName} must be an integer`)
-      .positive(`${fieldName} is required and must be a positive number`),
+      .number({ message: ValidationMessage.REQUIRED(fieldName) })
+      .int(ValidationMessage.MUST_BE_INTEGER(fieldName))
+      .positive(ValidationMessage.POSITIVE_INTEGER_REQUIRED(fieldName)),
   );
 
 export const optionalIntegerIdSchema = (fieldName: string) =>
   z.preprocess(
     (val) => (val === "" || val === null || val === undefined ? null : Number(val)),
     z
-      .number({ message: `${fieldName} must be an integer` })
-      .int(`${fieldName} must be an integer`)
-      .positive(`${fieldName} must be a positive integer`)
+      .number({ message: ValidationMessage.MUST_BE_INTEGER(fieldName) })
+      .int(ValidationMessage.MUST_BE_INTEGER(fieldName))
+      .positive(ValidationMessage.MUST_BE_POSITIVE_INTEGER(fieldName))
       .nullable(),
   );
 
-export const uuidSchema = (fieldName: string) => z.uuid(`${fieldName} must be a valid UUID`);
+export const uuidSchema = (fieldName: string) => z.uuid(ValidationMessage.VALID_UUID(fieldName));
 
 export const nameSchema = (fieldName: string, min = 3, max = 255) =>
   z
     .string()
-    .min(min, `${fieldName} must be at least ${min} characters`)
-    .max(max, `${fieldName} must be ${max} characters or less`);
+    .min(min, ValidationMessage.MIN_LENGTH(fieldName, min))
+    .max(max, ValidationMessage.MAX_LENGTH(fieldName, max));
 
 export const requiredStringSchema = (fieldName: string) =>
-  z.string().min(1, `${fieldName} is required`);
+  z.string().min(1, ValidationMessage.REQUIRED(fieldName));

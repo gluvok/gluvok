@@ -13,10 +13,11 @@ describe("Weighments Service", () => {
   });
 
   describe("validateSequentialApproval", () => {
-    it("should pass if no earlier pending entries exist for the vehicle", async () => {
+    it("should pass if no earlier pending entries exist for the vehicle in the same center", async () => {
+      const eqMock = vi.fn().mockReturnThis();
       mockClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
+        eq: eqMock,
         lt: vi.fn().mockReturnThis(),
         neq: vi.fn().mockReturnThis(),
         is: vi.fn().mockReturnThis(),
@@ -28,13 +29,15 @@ describe("Weighments Service", () => {
       await expect(
         validateSequentialApproval(
           mockClient,
-          1,
+          101,
           "MH12AB1234",
           "2026-08-09T12:00:00Z",
           2,
           EntryType.AUTOMATIC,
         ),
       ).resolves.not.toThrow();
+
+      expect(eqMock).toHaveBeenCalledWith("center_id", 101);
     });
 
     it("should throw an error if an earlier pending entry exists for the vehicle", async () => {
@@ -55,7 +58,7 @@ describe("Weighments Service", () => {
       await expect(
         validateSequentialApproval(
           mockClient,
-          1,
+          101,
           "MH12AB1234",
           "2026-08-09T12:00:00Z",
           2,

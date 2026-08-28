@@ -5,6 +5,7 @@
 
 import * as z from "zod";
 import { EntityKey, ColumnLabel, FieldRequirementMode, Role } from "@/lib/constants/enums";
+import { ValidationMessage } from "@/lib/constants/messages";
 import { type Factory } from "@/types";
 import { integerIdSchema, nameSchema } from "./helpers";
 
@@ -23,10 +24,10 @@ function buildAadharSchema(factory: Factory | null): z.ZodTypeAny {
             ? ""
             : val,
       z
-        .string({ message: `${ColumnLabel.AADHAR_NUMBER} is required` })
-        .min(1, `${ColumnLabel.AADHAR_NUMBER} is required`)
-        .length(12, `${ColumnLabel.AADHAR_NUMBER} must be exactly 12 digits`)
-        .regex(/^\d+$/, `${ColumnLabel.AADHAR_NUMBER} must contain only digits`),
+        .string({ message: ValidationMessage.REQUIRED(ColumnLabel.AADHAR_NUMBER) })
+        .min(1, ValidationMessage.REQUIRED(ColumnLabel.AADHAR_NUMBER))
+        .length(12, ValidationMessage.EXACT_DIGITS(ColumnLabel.AADHAR_NUMBER, 12))
+        .regex(/^\d+$/, ValidationMessage.DIGITS_ONLY(ColumnLabel.AADHAR_NUMBER)),
     );
   }
 
@@ -36,8 +37,8 @@ function buildAadharSchema(factory: Factory | null): z.ZodTypeAny {
         (val) => (typeof val === "string" ? val.replace(/\s/g, "") : val),
         z
           .string()
-          .length(12, `${ColumnLabel.AADHAR_NUMBER} must be exactly 12 digits`)
-          .regex(/^\d+$/, `${ColumnLabel.AADHAR_NUMBER} must contain only digits`)
+          .length(12, ValidationMessage.EXACT_DIGITS(ColumnLabel.AADHAR_NUMBER, 12))
+          .regex(/^\d+$/, ValidationMessage.DIGITS_ONLY(ColumnLabel.AADHAR_NUMBER))
           .optional()
           .nullable()
           .or(z.literal("")),
@@ -87,15 +88,15 @@ export function validatePasswordRefinement(
       ctx.addIssue({
         code: "custom",
         message: hasPassword
-          ? `${ColumnLabel.USERNAME} is required when setting a password`
-          : `${ColumnLabel.USERNAME} is required`,
+          ? ValidationMessage.USERNAME_REQUIRED_WITH_PASSWORD(ColumnLabel.USERNAME)
+          : ValidationMessage.REQUIRED(ColumnLabel.USERNAME),
         path: [EntityKey.USERNAME],
       });
     }
   } else if (rawUsername!.trim().length < 3) {
     ctx.addIssue({
       code: "custom",
-      message: `${ColumnLabel.USERNAME} must be at least 3 characters`,
+      message: ValidationMessage.MIN_LENGTH(ColumnLabel.USERNAME, 3),
       path: [EntityKey.USERNAME],
     });
   }
@@ -105,7 +106,7 @@ export function validatePasswordRefinement(
   if (isPasswordRequired && !hasPassword) {
     ctx.addIssue({
       code: "custom",
-      message: `${ColumnLabel.PASSWORD} is required`,
+      message: ValidationMessage.REQUIRED(ColumnLabel.PASSWORD),
       path: [EntityKey.PASSWORD],
     });
   }
@@ -114,7 +115,7 @@ export function validatePasswordRefinement(
   if (hasPassword && rawPassword!.trim().length < 6) {
     ctx.addIssue({
       code: "custom",
-      message: `${ColumnLabel.PASSWORD} must be at least 6 characters`,
+      message: ValidationMessage.MIN_LENGTH(ColumnLabel.PASSWORD, 6),
       path: [EntityKey.PASSWORD],
     });
   }
@@ -124,13 +125,13 @@ export function validatePasswordRefinement(
   if (isConfirmRequired && !hasConfirm) {
     ctx.addIssue({
       code: "custom",
-      message: "Please confirm your password",
+      message: ValidationMessage.CONFIRM_PASSWORD_REQUIRED,
       path: [EntityKey.CONFIRM_PASSWORD],
     });
   } else if (hasPassword && rawPassword !== rawConfirm) {
     ctx.addIssue({
       code: "custom",
-      message: "Passwords do not match",
+      message: ValidationMessage.PASSWORDS_DO_NOT_MATCH,
       path: [EntityKey.CONFIRM_PASSWORD],
     });
   }
@@ -177,7 +178,7 @@ export function getDynamicUserSchema(factory: Factory | null, isEdit = false) {
       [EntityKey.USERNAME]: z.string().optional().or(z.literal("")),
       [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
       [EntityKey.ROLE]: z.enum(Role, {
-        message: "Please select a valid role",
+        message: ValidationMessage.VALID_ROLE_REQUIRED,
       }),
       [EntityKey.AADHAR_NUMBER]: aadharSchema,
       [EntityKey.PASSWORD]: z.string().optional().or(z.literal("")),

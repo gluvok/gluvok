@@ -31,6 +31,7 @@ export function formatDateTime(dateStr: string | Date | null | undefined): strin
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
+        second: "2-digit",
         hour12: true,
       }).formatToParts(date);
 
@@ -39,9 +40,10 @@ export function formatDateTime(dateStr: string | Date | null | undefined): strin
       const year = parts.find((p) => p.type === "year")?.value;
       const hour = parts.find((p) => p.type === "hour")?.value;
       const minute = parts.find((p) => p.type === "minute")?.value;
+      const second = parts.find((p) => p.type === "second")?.value;
       const dayPeriod = (parts.find((p) => p.type === "dayPeriod")?.value || "").toUpperCase();
 
-      return `${day} ${month} ${year}, ${hour}:${minute} ${dayPeriod}`;
+      return `${day} ${month} ${year}, ${hour}:${minute}:${second} ${dayPeriod}`;
     }
   } catch {}
   return String(dateStr);

@@ -70,8 +70,8 @@ describe("downloadPDF, downloadCSV and getExportFileName", () => {
     // Single record grammar
     expect(generatedHtml).toContain("1 Record");
 
-    // IST date formatting
-    expect(generatedHtml).toContain("28 Aug 2026, 02:24 AM");
+    // IST date formatting with seconds
+    expect(generatedHtml).toContain("28 Aug 2026, 02:24:16 AM");
 
     // Attached scan gallery section with images
     expect(generatedHtml).toContain("Attached Scans & Images");

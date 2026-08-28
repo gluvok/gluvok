@@ -131,7 +131,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     try {
       await validateSequentialApproval(
         client,
-        user.factory_id,
+        existing.center_id,
         targetVehicle,
         existing.created_at,
         entryId,

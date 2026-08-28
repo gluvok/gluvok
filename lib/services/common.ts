@@ -19,6 +19,8 @@ const SLUG_TO_API_ROUTE: Record<ProjectSlug, ApiRoutes> = {
   [ProjectSlug.SETTINGS]: ApiRoutes.SETTINGS,
 };
 
+import { ApiErrorMessage } from "@/lib/constants/messages";
+
 export function getEndpoint(slug: ProjectSlug): ApiRoutes {
   const endpoint = SLUG_TO_API_ROUTE[slug];
   if (!endpoint) throw new Error(`Unknown API route for slug: ${slug}`);
@@ -35,13 +37,13 @@ export async function apiRequest<T>(requestFn: () => Promise<T>): Promise<T> {
         throw new Error(serverError);
       }
       if (error.response?.status === 405) {
-        throw new Error("This action is not supported or not allowed for this record.");
+        throw new Error(ApiErrorMessage.METHOD_NOT_ALLOWED);
       }
       if (error.response?.status === 403) {
-        throw new Error("You do not have permission to perform this action.");
+        throw new Error(ApiErrorMessage.FORBIDDEN);
       }
       if (error.response?.status === 404) {
-        throw new Error("The requested record was not found.");
+        throw new Error(ApiErrorMessage.RECORD_NOT_FOUND);
       }
     }
     throw error;

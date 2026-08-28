@@ -5,6 +5,7 @@
 
 import * as z from "zod";
 import { EntityKey, ColumnLabel } from "@/lib/constants/enums";
+import { ValidationMessage } from "@/lib/constants/messages";
 import { nameSchema } from "./helpers";
 
 const baseCustomerSchema = z
@@ -45,7 +46,7 @@ const baseCustomerSchema = z
     if (hasPassword && !hasUsername) {
       ctx.addIssue({
         code: "custom",
-        message: `${ColumnLabel.USERNAME} is required when setting a password`,
+        message: ValidationMessage.USERNAME_REQUIRED_WITH_PASSWORD(ColumnLabel.USERNAME),
         path: [EntityKey.USERNAME],
       });
     }
@@ -53,7 +54,7 @@ const baseCustomerSchema = z
     if (hasUsername && !hasPassword) {
       ctx.addIssue({
         code: "custom",
-        message: `${ColumnLabel.PASSWORD} is required when providing a username`,
+        message: ValidationMessage.PASSWORD_REQUIRED_WITH_USERNAME(ColumnLabel.PASSWORD),
         path: [EntityKey.PASSWORD],
       });
     }
@@ -61,7 +62,7 @@ const baseCustomerSchema = z
     if (hasUsername && rawUsername!.trim().length < 3) {
       ctx.addIssue({
         code: "custom",
-        message: `${ColumnLabel.USERNAME} must be at least 3 characters`,
+        message: ValidationMessage.MIN_LENGTH(ColumnLabel.USERNAME, 3),
         path: [EntityKey.USERNAME],
       });
     }
@@ -69,7 +70,7 @@ const baseCustomerSchema = z
     if (hasPassword && rawPassword!.trim().length < 6) {
       ctx.addIssue({
         code: "custom",
-        message: `${ColumnLabel.PASSWORD} must be at least 6 characters`,
+        message: ValidationMessage.MIN_LENGTH(ColumnLabel.PASSWORD, 6),
         path: [EntityKey.PASSWORD],
       });
     }
@@ -77,7 +78,7 @@ const baseCustomerSchema = z
     if (hasPassword && rawPassword !== rawConfirm) {
       ctx.addIssue({
         code: "custom",
-        message: "Passwords do not match",
+        message: ValidationMessage.PASSWORDS_DO_NOT_MATCH,
         path: [EntityKey.CONFIRM_PASSWORD],
       });
     }

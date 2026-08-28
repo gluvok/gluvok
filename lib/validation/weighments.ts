@@ -12,6 +12,7 @@ import {
   EntityKey,
   WeighmentType,
 } from "@/lib/constants/enums";
+import { ValidationMessage } from "@/lib/constants/messages";
 import { integerIdSchema, optionalIntegerIdSchema } from "./helpers";
 
 const STATE_CODES = [
@@ -63,24 +64,21 @@ export const addEntrySchema = z.object({
   [EntityKey.DETECTED_VEHICLE_NUMBER]: z.string().optional().nullable(),
   [EntityKey.VEHICLE_NUMBER]: z
     .string()
-    .min(1, `${ColumnLabel.VEHICLE_NUMBER} plate number is required`)
-    .max(15, `${ColumnLabel.VEHICLE_NUMBER} plate must be 15 characters or less`)
-    .regex(
-      INDIAN_PLATE_REGEX,
-      `Must match standard Indian plate (e.g. MH04BG6491, PB10XY1234) or BH series (e.g. 22BH1234AA)`,
-    )
+    .min(1, ValidationMessage.INDIAN_PLATE_REQUIRED(ColumnLabel.VEHICLE_NUMBER))
+    .max(15, ValidationMessage.INDIAN_PLATE_MAX(ColumnLabel.VEHICLE_NUMBER, 15))
+    .regex(INDIAN_PLATE_REGEX, ValidationMessage.INDIAN_PLATE_FORMAT)
     .refine(
       (val) => {
         if (/^\d{2}[\s.-]?BH/i.test(val)) return true;
         return STATE_CODES.includes(val.substring(0, 2).toUpperCase());
       },
       {
-        message: `First two characters must be a valid Indian state or union territory code`,
+        message: ValidationMessage.INDIAN_PLATE_STATE,
       },
     ),
   [EntityKey.WEIGHT]: z.coerce
-    .number({ message: `${ColumnLabel.WEIGHT} must be a number` })
-    .positive(`Measured ${ColumnLabel.WEIGHT.toLowerCase()} must be a positive number`),
+    .number({ message: ValidationMessage.MUST_BE_NUMBER(ColumnLabel.WEIGHT) })
+    .positive(ValidationMessage.MUST_BE_POSITIVE_NUMBER(ColumnLabel.WEIGHT)),
   [EntityKey.TYPE]: z.enum([EntryType.MANUAL, EntryType.AUTOMATIC]).optional(),
   [EntityKey.CENTER_ID]: integerIdSchema(ColumnLabel.CENTER),
   [EntityKey.USER_ID]: optionalIntegerIdSchema(ColumnLabel.USER),

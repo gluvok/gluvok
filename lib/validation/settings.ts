@@ -5,18 +5,19 @@
 
 import * as z from "zod";
 import { EntityKey, FieldRequirementMode, ColumnLabel } from "@/lib/constants/enums";
+import { ValidationMessage } from "@/lib/constants/messages";
 import { integerIdSchema } from "./helpers";
 
 export const addSettingsSchema = z.object({
   [EntityKey.NAME]: z
-    .string({ message: "Factory Name is required" })
-    .min(1, "Factory Name is required"),
+    .string({ message: ValidationMessage.FACTORY_NAME_REQUIRED })
+    .min(1, ValidationMessage.FACTORY_NAME_REQUIRED),
   [EntityKey.FACTORY_ID]: integerIdSchema(ColumnLabel.FACTORY_ID).optional().nullable(),
   [EntityKey.AADHAR_NUMBER_MODE]: z.enum(FieldRequirementMode, {
-    message: "Please select a valid Aadhaar Number mode",
+    message: ValidationMessage.VALID_AADHAR_MODE_REQUIRED,
   }),
   [EntityKey.GOVT_ID_MODE]: z.enum(FieldRequirementMode, {
-    message: "Please select a valid Govt ID mode",
+    message: ValidationMessage.VALID_GOVT_ID_MODE_REQUIRED,
   }),
 });
 

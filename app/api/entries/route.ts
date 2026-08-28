@@ -156,7 +156,7 @@ export const POST = withAuth(async (req, user, client) => {
     if (status === EntryStatus.APPROVED) {
       await validateSequentialApproval(
         client,
-        user.factory_id,
+        Number(center_id),
         vehicle_number,
         nowStr,
         0,

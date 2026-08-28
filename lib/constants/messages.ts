@@ -13,6 +13,11 @@ export const AuthErrorMessage = {
 } as const;
 
 export const ApiErrorMessage = {
+  // HTTP Protocol & Client Errors
+  METHOD_NOT_ALLOWED: "This action is not supported or not allowed for this record.",
+  FORBIDDEN: "You do not have permission to perform this action.",
+  RECORD_NOT_FOUND: "The requested record was not found.",
+
   // Entity Not Found
   CENTER_NOT_FOUND: "Center not found",
   CUSTOMER_NOT_FOUND: "Customer not found",
@@ -104,6 +109,15 @@ export const ApiErrorMessage = {
   CANNOT_MODIFY_APPROVED_ENTRY: (field: string) => `Cannot modify ${field} on approved entries.`,
   FAILED_TO_UPDATE_ENTRY: "Failed to update entry",
   SEQUENTIAL_APPROVAL_FAILED: "Sequential approval validation failed.",
+  VALIDATE_SEQUENCE_FAILED: "Failed to validate entry sequence.",
+  CANNOT_APPROVE_PENDING_EARLIER_ENTRY: (
+    targetEntryId: number | string,
+    earlierId: number | string,
+    dateStr: string,
+    vehicleNumber: string,
+    typeLabel = "",
+  ) =>
+    `Cannot approve entry #${targetEntryId} because earlier ${typeLabel}entry #${earlierId} (from ${dateStr}) for vehicle "${vehicleNumber}" is still pending. Please approve entries in sequential order.`,
   INVALID_DEVICE_SECRET: "Access denied: Invalid or missing microcontroller device secret.",
   UNAUTHORIZED: "Unauthorized",
   MISSING_REQUIRED_ENTRY_FIELDS: "Missing required entry fields.",
@@ -111,4 +125,37 @@ export const ApiErrorMessage = {
   PROCESS_DEVICE_ENTRY_FAILED: "Failed to process device entry creation.",
   PROCESS_ENTRY_FAILED: "Failed to process entry creation.",
   DATABASE_QUERY_FAILED: "Database query failed",
+} as const;
+
+export const ValidationMessage = {
+  REQUIRED: (fieldName: string) => `${fieldName} is required`,
+  MIN_LENGTH: (fieldName: string, min: number) => `${fieldName} must be at least ${min} characters`,
+  MAX_LENGTH: (fieldName: string, max: number) => `${fieldName} must be ${max} characters or less`,
+  MUST_BE_INTEGER: (fieldName: string) => `${fieldName} must be an integer`,
+  MUST_BE_POSITIVE_INTEGER: (fieldName: string) => `${fieldName} must be a positive integer`,
+  POSITIVE_INTEGER_REQUIRED: (fieldName: string) =>
+    `${fieldName} is required and must be a positive number`,
+  MUST_BE_NUMBER: (fieldName: string) => `${fieldName} must be a number`,
+  MUST_BE_POSITIVE_NUMBER: (fieldName: string) => `${fieldName} must be a positive number`,
+  VALID_UUID: (fieldName: string) => `${fieldName} must be a valid UUID`,
+  EXACT_DIGITS: (fieldName: string, digits: number) =>
+    `${fieldName} must be exactly ${digits} digits`,
+  DIGITS_ONLY: (fieldName: string) => `${fieldName} must contain only digits`,
+  PASSWORDS_DO_NOT_MATCH: "Passwords do not match",
+  CONFIRM_PASSWORD_REQUIRED: "Please confirm your password",
+  VALID_ROLE_REQUIRED: "Please select a valid role",
+  VALID_UNIT_REQUIRED: "Unit must be a valid unit (kg, q, or gal)",
+  VALID_AADHAR_MODE_REQUIRED: "Please select a valid Aadhaar Number mode",
+  VALID_GOVT_ID_MODE_REQUIRED: "Please select a valid Govt ID mode",
+  FACTORY_NAME_REQUIRED: "Factory Name is required",
+  INDIAN_PLATE_REQUIRED: (fieldName: string) => `${fieldName} plate number is required`,
+  INDIAN_PLATE_MAX: (fieldName: string, max = 15) =>
+    `${fieldName} plate must be ${max} characters or less`,
+  INDIAN_PLATE_FORMAT:
+    "Must match standard Indian plate (e.g. MH04BG6491, PB10XY1234) or BH series (e.g. 22BH1234AA)",
+  INDIAN_PLATE_STATE: "First two characters must be a valid Indian state or union territory code",
+  USERNAME_REQUIRED_WITH_PASSWORD: (fieldName: string) =>
+    `${fieldName} is required when setting a password`,
+  PASSWORD_REQUIRED_WITH_USERNAME: (fieldName: string) =>
+    `${fieldName} is required when providing a username`,
 } as const;

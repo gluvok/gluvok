@@ -8,14 +8,7 @@
 import * as React from "react";
 import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import {
-  EntityKey,
-  Unit,
-  WeighmentType,
-  FilterValue,
-  FieldType,
-  ProjectSlug,
-} from "@/lib/constants/enums";
+import { Unit, WeighmentType, FilterValue, FieldType, ProjectSlug } from "@/lib/constants/enums";
 import { useEntitiesStore } from "@/lib/store";
 import { Building, IndianRupee, Ruler, User as UserIcon, Users } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
@@ -41,12 +34,12 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
   const { centers, users, customers, rates } = useWeighmentsFilterData();
 
   const columnFilters = table.state.columnFilters;
-  const currentType = columnFilters.find((f) => f.id === EntityKey.TYPE)?.value;
-  const currentUnit = columnFilters.find((f) => f.id === EntityKey.UNIT)?.value;
-  const currentRateId = columnFilters.find((f) => f.id === EntityKey.RATE_ID)?.value;
-  const currentCenterId = columnFilters.find((f) => f.id === EntityKey.CENTER_ID)?.value;
-  const currentUserId = columnFilters.find((f) => f.id === EntityKey.USER_ID)?.value;
-  const currentCustomerId = columnFilters.find((f) => f.id === EntityKey.CUSTOMER_ID)?.value;
+  const currentType = columnFilters.find((f) => f.id === "type")?.value;
+  const currentUnit = columnFilters.find((f) => f.id === "unit")?.value;
+  const currentRateId = columnFilters.find((f) => f.id === "rate_id")?.value;
+  const currentCenterId = columnFilters.find((f) => f.id === "center_id")?.value;
+  const currentUserId = columnFilters.find((f) => f.id === "user_id")?.value;
+  const currentCustomerId = columnFilters.find((f) => f.id === "customer_id")?.value;
 
   const setColumnFilter = (id: string, value: unknown) => {
     table.setColumnFilters((prev) => {
@@ -126,9 +119,7 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
       <BaseCombobox
         type={FieldType.TYPE}
         value={currentType ? String(currentType) : FilterValue.ALL}
-        onChange={(val) =>
-          setColumnFilter(EntityKey.TYPE, val === FilterValue.ALL ? undefined : val)
-        }
+        onChange={(val) => setColumnFilter("type", val === FilterValue.ALL ? undefined : val)}
         data={typeOptions}
         placeholder="All Types"
         searchPlaceholder="Search type..."
@@ -141,9 +132,7 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
       <BaseCombobox
         type={FieldType.UNIT}
         value={currentUnit ? String(currentUnit) : FilterValue.ALL}
-        onChange={(val) =>
-          setColumnFilter(EntityKey.UNIT, val === FilterValue.ALL ? undefined : val)
-        }
+        onChange={(val) => setColumnFilter("unit", val === FilterValue.ALL ? undefined : val)}
         data={unitOptions}
         placeholder="All Units"
         searchPlaceholder="Search unit..."
@@ -157,7 +146,7 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
         type={ProjectSlug.RATES}
         value={currentRateId ? String(currentRateId) : FilterValue.ALL}
         onChange={(val) =>
-          setColumnFilter(EntityKey.RATE_ID, val === FilterValue.ALL ? undefined : Number(val))
+          setColumnFilter("rate_id", val === FilterValue.ALL ? undefined : Number(val))
         }
         data={rateOptions}
         placeholder="All Rates"
@@ -172,7 +161,7 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
         type={ProjectSlug.CENTERS}
         value={currentCenterId ? String(currentCenterId) : FilterValue.ALL}
         onChange={(val) =>
-          setColumnFilter(EntityKey.CENTER_ID, val === FilterValue.ALL ? undefined : Number(val))
+          setColumnFilter("center_id", val === FilterValue.ALL ? undefined : Number(val))
         }
         data={centerOptions}
         placeholder="All Centers"
@@ -187,7 +176,7 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
         type={ProjectSlug.USERS}
         value={currentUserId ? String(currentUserId) : FilterValue.ALL}
         onChange={(val) =>
-          setColumnFilter(EntityKey.USER_ID, val === FilterValue.ALL ? undefined : Number(val))
+          setColumnFilter("user_id", val === FilterValue.ALL ? undefined : Number(val))
         }
         data={userOptions}
         placeholder="All Operators"
@@ -202,7 +191,7 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
         type={ProjectSlug.CUSTOMERS}
         value={currentCustomerId ? String(currentCustomerId) : FilterValue.ALL}
         onChange={(val) =>
-          setColumnFilter(EntityKey.CUSTOMER_ID, val === FilterValue.ALL ? undefined : Number(val))
+          setColumnFilter("customer_id", val === FilterValue.ALL ? undefined : Number(val))
         }
         data={customerOptions}
         placeholder="All Customers"

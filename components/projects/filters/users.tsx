@@ -8,7 +8,7 @@
 import * as React from "react";
 import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import { Role, EntityKey, FilterValue, FieldType } from "@/lib/constants/enums";
+import { Role, FilterValue, FieldType } from "@/lib/constants/enums";
 import { Shield } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
 
@@ -25,9 +25,7 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
 
 export function UsersFilters<TData extends RowData>({ table }: UsersFiltersProps<TData>) {
   const columnFilters = table.state.columnFilters;
-  const currentRole = columnFilters.find((f) => f.id === EntityKey.ROLE)?.value as
-    | string
-    | undefined;
+  const currentRole = columnFilters.find((f) => f.id === "role")?.value as string | undefined;
 
   const setColumnFilter = (id: string, value: unknown) => {
     table.setColumnFilters((prev) => {
@@ -54,9 +52,7 @@ export function UsersFilters<TData extends RowData>({ table }: UsersFiltersProps
       <BaseCombobox
         type={FieldType.ROLE}
         value={currentRole ?? FilterValue.ALL}
-        onChange={(val) =>
-          setColumnFilter(EntityKey.ROLE, val === FilterValue.ALL ? undefined : val)
-        }
+        onChange={(val) => setColumnFilter("role", val === FilterValue.ALL ? undefined : val)}
         data={roleOptions}
         placeholder="All Roles"
         searchPlaceholder="Search role..."

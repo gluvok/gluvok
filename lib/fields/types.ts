@@ -4,12 +4,12 @@
  */
 
 import { ComponentType } from "react";
-import { EntityKey, FieldType, InputMode, Role, FieldSpan } from "@/lib/constants/enums";
+import { FieldType, InputMode, Role, FieldSpan } from "@/lib/constants/enums";
 
 export { FieldSpan };
 
 export interface FieldConfig {
-  key: EntityKey;
+  key: string;
   label: string;
   placeholder: string;
   type: FieldType;

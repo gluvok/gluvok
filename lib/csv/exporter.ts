@@ -5,17 +5,16 @@
 
 import { type RowData, type Table } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import { EntityKey } from "@/lib/constants/enums";
 import { useFactoryStore } from "@/lib/store/factory";
 import { formatDateTime } from "../utils";
 import { printPdf } from "../pdf/exporter";
 import { generatePdfHtml } from "../pdf/template";
 
 const DATE_COLUMN_IDS = new Set<string>([
-  EntityKey.CREATED_AT,
-  EntityKey.UPDATED_AT,
-  EntityKey.IN_ENTRY_CREATED_AT,
-  EntityKey.OUT_ENTRY_CREATED_AT,
+  "created_at",
+  "updated_at",
+  "in_entry_created_at",
+  "out_entry_created_at",
 ]);
 
 /**
@@ -108,12 +107,10 @@ export function downloadPDF<TData extends RowData>(
   const imagesList: { id: string; vehicleNumber?: string; images: string[] }[] = [];
   selectedRows.forEach((row) => {
     const rowOrig = (row.original as Record<string, unknown>) || {};
-    const rawImages = (row.getValue(EntityKey.IMAGES) || rowOrig[EntityKey.IMAGES]) as
-      | string[]
-      | undefined;
+    const rawImages = (row.getValue("images") || rowOrig["images"]) as string[] | undefined;
     if (Array.isArray(rawImages) && rawImages.length > 0) {
-      const id = String(rowOrig[EntityKey.ID] ?? row.id);
-      const vehicleNumber = (rowOrig[EntityKey.VEHICLE_NUMBER] as string) || undefined;
+      const id = String(rowOrig["id"] ?? row.id);
+      const vehicleNumber = (rowOrig["vehicle_number"] as string) || undefined;
       imagesList.push({ id, vehicleNumber, images: rawImages });
     }
   });

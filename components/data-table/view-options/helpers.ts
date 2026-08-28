@@ -17,28 +17,28 @@ import {
   IndianRupee,
   Ruler,
 } from "lucide-react";
-import { ColumnLabel, EntityKey } from "@/lib/constants/enums";
+import { ColumnLabel } from "@/lib/constants/enums";
 
 /**
  * COLUMN_ICONS mapping
  * Icons associated with common column keys (id, name, dates, requirement modes, etc.).
  */
 export const COLUMN_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  [EntityKey.ID]: Hash,
-  [EntityKey.NAME]: Tag,
-  [EntityKey.CREATED_AT]: Calendar,
-  [EntityKey.UPDATED_AT]: CalendarClock,
-  [EntityKey.IMAGES]: Image,
-  [EntityKey.FACTORY_ID]: Factory,
-  [EntityKey.FACTORY_NAME]: Factory,
-  [EntityKey.AADHAR_NUMBER_MODE]: Fingerprint,
-  [EntityKey.GOVT_ID_MODE]: ShieldCheck,
-  [EntityKey.AADHAR_NUMBER]: Fingerprint,
-  [EntityKey.GOVT_ID]: ShieldCheck,
-  [EntityKey.USERNAME]: AtSign,
-  [EntityKey.USER_ID]: User,
-  [EntityKey.UNIT_PRICE]: IndianRupee,
-  [EntityKey.UNIT]: Ruler,
+  id: Hash,
+  name: Tag,
+  created_at: Calendar,
+  updated_at: CalendarClock,
+  images: Image,
+  factory_id: Factory,
+  factory_name: Factory,
+  aadhar_number_mode: Fingerprint,
+  govt_id_mode: ShieldCheck,
+  aadhar_number: Fingerprint,
+  govt_id: ShieldCheck,
+  username: AtSign,
+  user_id: User,
+  unit_price: IndianRupee,
+  unit: Ruler,
 };
 
 /**
@@ -47,111 +47,111 @@ export const COLUMN_ICONS: Record<string, React.ComponentType<{ className?: stri
  */
 export function getColumnLabel(id: string): string {
   switch (id) {
-    case EntityKey.ID:
+    case "id":
       return ColumnLabel.ID;
-    case EntityKey.GOVT_ID:
+    case "govt_id":
       return ColumnLabel.GOVT_ID;
-    case EntityKey.AADHAR_NUMBER:
+    case "aadhar_number":
       return ColumnLabel.AADHAR_NUMBER;
-    case EntityKey.NAME:
+    case "name":
       return ColumnLabel.NAME;
-    case EntityKey.FACTORY_ID:
+    case "factory_id":
       return ColumnLabel.FACTORY_ID;
-    case EntityKey.UNIT_PRICE:
+    case "unit_price":
       return ColumnLabel.UNIT_PRICE;
-    case EntityKey.UNIT:
+    case "unit":
       return ColumnLabel.UNIT;
-    case EntityKey.FATHER_NAME:
+    case "father_name":
       return ColumnLabel.FATHER_NAME;
-    case EntityKey.USERNAME:
+    case "username":
       return ColumnLabel.USERNAME;
-    case EntityKey.VEHICLE_NUMBER:
+    case "vehicle_number":
       return ColumnLabel.VEHICLE_NUMBER;
-    case EntityKey.WEIGHT:
+    case "weight":
       return ColumnLabel.WEIGHT;
-    case EntityKey.COMMODITY_ID:
+    case "commodity_id":
       return ColumnLabel.COMMODITY_ID;
-    case EntityKey.COMMODITY_NAME:
+    case "commodity_name":
       return ColumnLabel.COMMODITY_NAME;
-    case EntityKey.RATE_ID:
+    case "rate_id":
       return ColumnLabel.RATE_ID;
-    case EntityKey.CENTER_ID:
+    case "center_id":
       return ColumnLabel.CENTER_ID;
-    case EntityKey.CUSTOMER_ID:
+    case "customer_id":
       return ColumnLabel.CUSTOMER_ID;
-    case EntityKey.ROLE:
+    case "role":
       return ColumnLabel.ROLE;
-    case EntityKey.CREATED_AT:
+    case "created_at":
       return ColumnLabel.CREATED_AT;
-    case EntityKey.UPDATED_AT:
+    case "updated_at":
       return ColumnLabel.UPDATED_AT;
-    case EntityKey.IMAGES:
+    case "images":
       return ColumnLabel.IMAGES;
-    case EntityKey.USER_ID:
+    case "user_id":
       return ColumnLabel.USER_ID;
-    case EntityKey.FACTORY_NAME:
+    case "factory_name":
       return ColumnLabel.FACTORY_NAME;
-    case EntityKey.USER_NAME:
+    case "user_name":
       return ColumnLabel.USER_NAME;
-    case EntityKey.CUSTOMER_NAME:
+    case "customer_name":
       return ColumnLabel.CUSTOMER_NAME;
-    case EntityKey.CENTER_NAME:
+    case "center_name":
       return ColumnLabel.CENTER_NAME;
-    case EntityKey.CUSTOMER_GOVT_ID:
+    case "customer_govt_id":
       return ColumnLabel.GOVT_ID;
-    case EntityKey.COMMODITY:
+    case "commodity":
       return ColumnLabel.COMMODITY;
-    case EntityKey.FACTORY:
+    case "factory":
       return ColumnLabel.FACTORY;
-    case EntityKey.USER:
+    case "user":
       return ColumnLabel.USER;
-    case EntityKey.RATE:
+    case "rate":
       return ColumnLabel.RATE;
-    case EntityKey.CENTER:
+    case "center":
       return ColumnLabel.CENTER;
-    case EntityKey.CUSTOMER:
+    case "customer":
       return ColumnLabel.CUSTOMER;
-    case EntityKey.AADHAR_NUMBER_MODE:
+    case "aadhar_number_mode":
       return ColumnLabel.AADHAR_NUMBER_MODE;
-    case EntityKey.GOVT_ID_MODE:
+    case "govt_id_mode":
       return ColumnLabel.GOVT_ID_MODE;
-    case EntityKey.IN_ENTRY_ID:
+    case "in_entry_id":
       return ColumnLabel.IN_ENTRY_ID;
-    case EntityKey.OUT_ENTRY_ID:
+    case "out_entry_id":
       return ColumnLabel.OUT_ENTRY_ID;
-    case EntityKey.IN_ENTRY_CREATED_AT:
+    case "in_entry_created_at":
       return ColumnLabel.IN_ENTRY_CREATED_AT;
-    case EntityKey.OUT_ENTRY_CREATED_AT:
+    case "out_entry_created_at":
       return ColumnLabel.OUT_ENTRY_CREATED_AT;
-    case EntityKey.GROSS_WEIGHT:
+    case "gross_weight":
       return ColumnLabel.GROSS_WEIGHT;
-    case EntityKey.TARE_WEIGHT:
+    case "tare_weight":
       return ColumnLabel.TARE_WEIGHT;
-    case EntityKey.NET_WEIGHT:
+    case "net_weight":
       return ColumnLabel.NET_WEIGHT;
-    case EntityKey.IN_CENTER_ID:
+    case "in_center_id":
       return ColumnLabel.IN_CENTER_ID;
-    case EntityKey.IN_CENTER_NAME:
+    case "in_center_name":
       return ColumnLabel.IN_CENTER_NAME;
-    case EntityKey.OUT_CENTER_ID:
+    case "out_center_id":
       return ColumnLabel.OUT_CENTER_ID;
-    case EntityKey.OUT_CENTER_NAME:
+    case "out_center_name":
       return ColumnLabel.OUT_CENTER_NAME;
-    case EntityKey.IN_USER_ID:
+    case "in_user_id":
       return ColumnLabel.IN_USER_ID;
-    case EntityKey.IN_USER_NAME:
+    case "in_user_name":
       return ColumnLabel.IN_USER_NAME;
-    case EntityKey.OUT_USER_ID:
+    case "out_user_id":
       return ColumnLabel.OUT_USER_ID;
-    case EntityKey.OUT_USER_NAME:
+    case "out_user_name":
       return ColumnLabel.OUT_USER_NAME;
-    case EntityKey.IN_CUSTOMER_ID:
+    case "in_customer_id":
       return ColumnLabel.IN_CUSTOMER_ID;
-    case EntityKey.IN_CUSTOMER_NAME:
+    case "in_customer_name":
       return ColumnLabel.IN_CUSTOMER_NAME;
-    case EntityKey.OUT_CUSTOMER_ID:
+    case "out_customer_id":
       return ColumnLabel.OUT_CUSTOMER_ID;
-    case EntityKey.OUT_CUSTOMER_NAME:
+    case "out_customer_name":
       return ColumnLabel.OUT_CUSTOMER_NAME;
     default:
       return id;

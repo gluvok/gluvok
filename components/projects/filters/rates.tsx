@@ -8,7 +8,7 @@
 import * as React from "react";
 import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import { Unit, EntityKey, FilterValue, FieldType, ProjectSlug } from "@/lib/constants/enums";
+import { Unit, FilterValue, FieldType, ProjectSlug } from "@/lib/constants/enums";
 import { useEntitiesStore } from "@/lib/store";
 import { Package, Ruler } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
@@ -22,8 +22,8 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
   const commodities = useEntitiesStore((state) => state.commodities);
 
   const columnFilters = table.state.columnFilters;
-  const currentCommodityId = columnFilters.find((f) => f.id === EntityKey.COMMODITY_ID)?.value;
-  const currentUnit = columnFilters.find((f) => f.id === EntityKey.UNIT)?.value;
+  const currentCommodityId = columnFilters.find((f) => f.id === "commodity_id")?.value;
+  const currentUnit = columnFilters.find((f) => f.id === "unit")?.value;
 
   const setColumnFilter = (id: string, value: unknown) => {
     table.setColumnFilters((prev) => {
@@ -65,7 +65,7 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
         type={ProjectSlug.COMMODITIES}
         value={currentCommodityId ? String(currentCommodityId) : FilterValue.ALL}
         onChange={(val) =>
-          setColumnFilter(EntityKey.COMMODITY_ID, val === FilterValue.ALL ? undefined : Number(val))
+          setColumnFilter("commodity_id", val === FilterValue.ALL ? undefined : Number(val))
         }
         data={commodityOptions}
         placeholder="All Commodities"
@@ -79,9 +79,7 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
       <BaseCombobox
         type={FieldType.UNIT}
         value={currentUnit ? String(currentUnit) : FilterValue.ALL}
-        onChange={(val) =>
-          setColumnFilter(EntityKey.UNIT, val === FilterValue.ALL ? undefined : val)
-        }
+        onChange={(val) => setColumnFilter("unit", val === FilterValue.ALL ? undefined : val)}
         data={unitOptions}
         placeholder="All Units"
         searchPlaceholder="Search unit..."

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Role, ProjectSlug, EntityKey, PermissionKey } from "@/lib/constants/enums";
+import { Role, ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import {
   getPermissions,
   hasPermission,
@@ -153,36 +153,16 @@ describe("RBAC Access Controls", () => {
   describe("hasPermission", () => {
     it("allows only admins to edit weighment weight", () => {
       expect(
-        hasPermission(
-          Role.ADMIN,
-          ProjectSlug.WEIGHMENTS,
-          PermissionKey.EDIT_FIELD,
-          EntityKey.WEIGHT,
-        ),
+        hasPermission(Role.ADMIN, ProjectSlug.WEIGHMENTS, PermissionKey.EDIT_FIELD, "weight"),
       ).toBe(true);
       expect(
-        hasPermission(
-          Role.MANAGER,
-          ProjectSlug.WEIGHMENTS,
-          PermissionKey.EDIT_FIELD,
-          EntityKey.WEIGHT,
-        ),
+        hasPermission(Role.MANAGER, ProjectSlug.WEIGHMENTS, PermissionKey.EDIT_FIELD, "weight"),
       ).toBe(false);
       expect(
-        hasPermission(
-          Role.OPERATOR,
-          ProjectSlug.WEIGHMENTS,
-          PermissionKey.EDIT_FIELD,
-          EntityKey.WEIGHT,
-        ),
+        hasPermission(Role.OPERATOR, ProjectSlug.WEIGHMENTS, PermissionKey.EDIT_FIELD, "weight"),
       ).toBe(false);
       expect(
-        hasPermission(
-          Role.BASE,
-          ProjectSlug.WEIGHMENTS,
-          PermissionKey.EDIT_FIELD,
-          EntityKey.WEIGHT,
-        ),
+        hasPermission(Role.BASE, ProjectSlug.WEIGHMENTS, PermissionKey.EDIT_FIELD, "weight"),
       ).toBe(false);
     });
   });
@@ -191,12 +171,12 @@ describe("RBAC Access Controls", () => {
     it("should hide factory_id and factory_name columns and fields across all roles", () => {
       const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE];
       for (const role of roles) {
-        expect(isColumnVisible(role, ProjectSlug.CENTERS, EntityKey.FACTORY_ID)).toBe(false);
-        expect(isColumnVisible(role, ProjectSlug.CENTERS, EntityKey.FACTORY_NAME)).toBe(false);
-        expect(isFieldVisible(role, ProjectSlug.CENTERS, EntityKey.FACTORY_ID)).toBe(false);
+        expect(isColumnVisible(role, ProjectSlug.CENTERS, "factory_id")).toBe(false);
+        expect(isColumnVisible(role, ProjectSlug.CENTERS, "factory_name")).toBe(false);
+        expect(isFieldVisible(role, ProjectSlug.CENTERS, "factory_id")).toBe(false);
 
-        expect(isColumnVisible(role, ProjectSlug.CENTERS, EntityKey.NAME)).toBe(true);
-        expect(isFieldVisible(role, ProjectSlug.CENTERS, EntityKey.NAME)).toBe(true);
+        expect(isColumnVisible(role, ProjectSlug.CENTERS, "name")).toBe(true);
+        expect(isFieldVisible(role, ProjectSlug.CENTERS, "name")).toBe(true);
       }
     });
   });

@@ -17,7 +17,7 @@ import {
   Cpu,
   PenTool,
 } from "lucide-react";
-import { EntityKey, ColumnLabel, EntryStatus, EntryType } from "@/lib/constants/enums";
+import { ColumnLabel, EntryStatus, EntryType } from "@/lib/constants/enums";
 import { getStatusIcon } from "@/lib/fields";
 import { cn } from "@/lib/utils";
 import {
@@ -31,7 +31,7 @@ import { WeighmentImagesCell } from "./weighments-cell";
 
 export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
-    createCustomColumn(EntityKey.TYPE, ColumnLabel.TYPE, Sliders, (val) => {
+    createCustomColumn("type", ColumnLabel.TYPE, Sliders, (val) => {
       const type = String(val || EntryType.AUTOMATIC).toLowerCase();
       let typeClass = "bg-muted text-muted-foreground border border-border";
       const Icon = type === EntryType.AUTOMATIC ? Cpu : PenTool;
@@ -51,12 +51,12 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         </span>
       );
     }),
-    createTextColumn(EntityKey.VEHICLE_NUMBER, ColumnLabel.VEHICLE_NUMBER, Car),
-    createBaseColumn(EntityKey.WEIGHT, ColumnLabel.WEIGHT, Weight, ({ row }) => {
-      const val = row.getValue(EntityKey.WEIGHT) as number;
+    createTextColumn("vehicle_number", ColumnLabel.VEHICLE_NUMBER, Car),
+    createBaseColumn("weight", ColumnLabel.WEIGHT, Weight, ({ row }) => {
+      const val = row.getValue("weight") as number;
       return <div className="font-mono text-xs font-semibold text-foreground">{val}</div>;
     }),
-    createCustomColumn(EntityKey.STATUS, ColumnLabel.STATUS, ShieldCheck, (val) => {
+    createCustomColumn("status", ColumnLabel.STATUS, ShieldCheck, (val) => {
       const status = String(val).toLowerCase();
       let statusClass = "bg-muted text-muted-foreground border border-border";
       const Icon = getStatusIcon(status);
@@ -79,37 +79,33 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         </span>
       );
     }),
-    createIdColumn(EntityKey.CENTER_ID, ColumnLabel.CENTER_ID, Building),
-    createCustomColumn(EntityKey.CENTER_NAME, ColumnLabel.CENTER_NAME, Building, (_val, row) => {
+    createIdColumn("center_id", ColumnLabel.CENTER_ID, Building),
+    createCustomColumn("center_name", ColumnLabel.CENTER_NAME, Building, (_val, row) => {
       const rec = row as Record<string, unknown>;
       const name =
-        (rec[EntityKey.CENTER_NAME] as string) ||
-        (rec.centers as { name?: string } | undefined)?.name ||
-        "";
+        (rec.center_name as string) || (rec.centers as { name?: string } | undefined)?.name || "";
       return <div className="font-semibold text-foreground text-xs">{name || "—"}</div>;
     }),
-    createIdColumn(EntityKey.USER_ID, ColumnLabel.USER_ID, User),
-    createCustomColumn(EntityKey.USER_NAME, ColumnLabel.USER_NAME, User, (_val, row) => {
+    createIdColumn("user_id", ColumnLabel.USER_ID, User),
+    createCustomColumn("user_name", ColumnLabel.USER_NAME, User, (_val, row) => {
       const rec = row as Record<string, unknown>;
       const name =
-        (rec[EntityKey.USER_NAME] as string) ||
-        (rec.users as { name?: string } | undefined)?.name ||
-        "";
+        (rec.user_name as string) || (rec.users as { name?: string } | undefined)?.name || "";
       return <div className="font-semibold text-foreground text-xs">{name || "—"}</div>;
     }),
-    createIdColumn(EntityKey.CUSTOMER_ID, ColumnLabel.CUSTOMER_ID, Users),
-    createCustomColumn(EntityKey.CUSTOMER_NAME, ColumnLabel.CUSTOMER_NAME, Users, (_val, row) => {
+    createIdColumn("customer_id", ColumnLabel.CUSTOMER_ID, Users),
+    createCustomColumn("customer_name", ColumnLabel.CUSTOMER_NAME, Users, (_val, row) => {
       const rec = row as Record<string, unknown>;
       const name =
-        (rec[EntityKey.CUSTOMER_NAME] as string) ||
+        (rec.customer_name as string) ||
         (rec.customers as { name?: string } | undefined)?.name ||
         "";
       return <div className="font-semibold text-foreground text-xs">{name || "—"}</div>;
     }),
     {
-      ...createBaseColumn(EntityKey.IMAGES, ColumnLabel.IMAGES, Image, ({ row }) => {
-        const images = row.getValue(EntityKey.IMAGES) as string[] | undefined;
-        const vehicleNumber = row.getValue(EntityKey.VEHICLE_NUMBER) as string;
+      ...createBaseColumn("images", ColumnLabel.IMAGES, Image, ({ row }) => {
+        const images = row.getValue("images") as string[] | undefined;
+        const vehicleNumber = row.getValue("vehicle_number") as string;
         return <WeighmentImagesCell images={images} vehicleNumber={vehicleNumber} />;
       }),
       enableGlobalFilter: false,

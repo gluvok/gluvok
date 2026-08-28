@@ -12,19 +12,17 @@ import {
 import { getDynamicUserSchema } from "@/lib/validation";
 import { hashPassword } from "@/lib/auth/password";
 import { clearAuthCookies } from "@/lib/auth/cookies";
-import { PermissionKey, ProjectSlug, Role, TableName, EntityKey } from "@/lib/constants/enums";
+import { PermissionKey, ProjectSlug, Role, TableName } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
 export const GET = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client
       .from(TableName.USERS)
-      .select(
-        `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
-      )
-      .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId)
-      .is(EntityKey.DELETED_AT, null);
+      .select("id, username, name, aadhar_number, role, factory_id, created_at, updated_at")
+      .eq("id", entityId)
+      .eq("factory_id", factoryId)
+      .is("deleted_at", null);
 
     const { data: existing, error } = await existingQuery.maybeSingle();
     if (error || !existing) return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
@@ -42,12 +40,10 @@ export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client
       .from(TableName.USERS)
-      .select(
-        `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.FACTORY_ID}, ${EntityKey.TOKEN_VERSION}`,
-      )
-      .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId)
-      .is(EntityKey.DELETED_AT, null);
+      .select("id, username, name, aadhar_number, role, factory_id, token_version")
+      .eq("id", entityId)
+      .eq("factory_id", factoryId)
+      .is("deleted_at", null);
 
     const { data: existing } = await existingQuery.maybeSingle();
     if (!existing) return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
@@ -74,11 +70,11 @@ export const PATCH = withAuth(
     if (aadhar_number && aadhar_number !== existing.aadhar_number) {
       const { data: duplicateAadhar } = await client
         .from(TableName.USERS)
-        .select(EntityKey.ID)
-        .eq(EntityKey.AADHAR_NUMBER, aadhar_number)
-        .eq(EntityKey.FACTORY_ID, factoryId)
-        .neq(EntityKey.ID, entityId)
-        .is(EntityKey.DELETED_AT, null)
+        .select("id")
+        .eq("aadhar_number", aadhar_number)
+        .eq("factory_id", factoryId)
+        .neq("id", entityId)
+        .is("deleted_at", null)
         .maybeSingle();
 
       if (duplicateAadhar) {
@@ -87,32 +83,30 @@ export const PATCH = withAuth(
     }
 
     const updates: Record<string, unknown> = {
-      [EntityKey.UPDATED_AT]: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     if (name && typeof name === "string" && name.trim().length > 0) {
-      updates[EntityKey.NAME] = name.trim();
+      updates["name"] = name.trim();
     }
     if (validRole) {
-      updates[EntityKey.ROLE] = validRole;
+      updates["role"] = validRole;
     }
     if (aadhar_number !== undefined) {
-      updates[EntityKey.AADHAR_NUMBER] = aadhar_number ? String(aadhar_number) : null;
+      updates["aadhar_number"] = aadhar_number ? String(aadhar_number) : null;
     }
     if (password && typeof password === "string" && password.trim().length > 0) {
       updates.password_hash = await hashPassword(password.trim());
-      updates[EntityKey.TOKEN_VERSION] = (existing.token_version || 1) + 1;
+      updates["token_version"] = (existing.token_version || 1) + 1;
     }
 
     const { data: updated, error } = await client
       .from(TableName.USERS)
       .update(updates)
-      .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId)
-      .is(EntityKey.DELETED_AT, null)
-      .select(
-        `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
-      )
+      .eq("id", entityId)
+      .eq("factory_id", factoryId)
+      .is("deleted_at", null)
+      .select("id, username, name, aadhar_number, role, factory_id, created_at, updated_at")
       .single();
 
     if (error || !updated) {
@@ -127,10 +121,10 @@ export const DELETE = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client
       .from(TableName.USERS)
-      .select(`${EntityKey.ID}`)
-      .eq(EntityKey.ID, entityId)
-      .eq(EntityKey.FACTORY_ID, factoryId)
-      .is(EntityKey.DELETED_AT, null);
+      .select("id")
+      .eq("id", entityId)
+      .eq("factory_id", factoryId)
+      .is("deleted_at", null);
 
     const { data: existing } = await existingQuery.maybeSingle();
     if (!existing) return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
@@ -144,9 +138,9 @@ export const DELETE = withAuth(
     // Check if any active entries are linked to this user
     const { data: linkedEntry } = await client
       .from(TableName.ENTRIES)
-      .select(EntityKey.ID)
-      .eq(EntityKey.USER_ID, entityId)
-      .is(EntityKey.DELETED_AT, null)
+      .select("id")
+      .eq("user_id", entityId)
+      .is("deleted_at", null)
       .limit(1)
       .maybeSingle();
 
@@ -157,9 +151,9 @@ export const DELETE = withAuth(
     // Check if any active customers are linked to this user
     const { data: linkedCustomer } = await client
       .from(TableName.CUSTOMERS)
-      .select(EntityKey.ID)
-      .eq(EntityKey.USER_ID, entityId)
-      .is(EntityKey.DELETED_AT, null)
+      .select("id")
+      .eq("user_id", entityId)
+      .is("deleted_at", null)
       .limit(1)
       .maybeSingle();
 
@@ -170,12 +164,12 @@ export const DELETE = withAuth(
     const { error } = await client
       .from(TableName.USERS)
       .update({
-        [EntityKey.DELETED_AT]: new Date().toISOString(),
-        [EntityKey.UPDATED_AT]: new Date().toISOString(),
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
-      .eq(EntityKey.ID, entityId)
-      .is(EntityKey.DELETED_AT, null)
-      .eq(EntityKey.FACTORY_ID, factoryId);
+      .eq("id", entityId)
+      .is("deleted_at", null)
+      .eq("factory_id", factoryId);
 
     if (error) {
       return apiError(

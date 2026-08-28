@@ -14,7 +14,6 @@ import {
   DialogMode,
   ProjectSlug,
   FieldType,
-  EntityKey,
   PermissionKey,
   EntryStatus,
   FieldSpan,
@@ -61,10 +60,10 @@ export function useEntityForm({
   const fields = React.useMemo(() => {
     const baseFields = PROJECT_FIELDS[projectSlug] || [];
     if (isEdit && projectSlug === ProjectSlug.ENTRIES && item) {
-      const status = getField(item, EntityKey.STATUS);
+      const status = getField(item, "status");
       if (status === EntryStatus.APPROVED) {
         return baseFields
-          .filter((f) => f.key === EntityKey.CUSTOMER_ID)
+          .filter((f) => f.key === "customer_id")
           .map((f) => ({ ...f, span: FieldSpan.FULL }));
       }
     }
@@ -103,7 +102,7 @@ export function useEntityForm({
         }
         if (field.type === FieldType.CHECKBOX) {
           defaults[field.key] = String(rawVal) === "true";
-        } else if (field.key === EntityKey.PASSWORD || field.key === EntityKey.CONFIRM_PASSWORD) {
+        } else if (field.key === "password" || field.key === "confirmPassword") {
           defaults[field.key] = "";
         } else {
           defaults[field.key] = Array.isArray(rawVal)
@@ -117,8 +116,8 @@ export function useEntityForm({
     } else {
       const defaultVals: Record<string, unknown> = {};
 
-      if (userFactoryId && fields.some((f) => f.key === EntityKey.FACTORY_ID)) {
-        defaultVals[EntityKey.FACTORY_ID] = userFactoryId;
+      if (userFactoryId && fields.some((f) => f.key === "factory_id")) {
+        defaultVals["factory_id"] = userFactoryId;
       }
 
       form.reset(defaultVals);
@@ -134,10 +133,10 @@ export function useEntityForm({
 
         if (
           projectSlug === ProjectSlug.ENTRIES &&
-          getField(item, EntityKey.STATUS) === EntryStatus.APPROVED
+          getField(item, "status") === EntryStatus.APPROVED
         ) {
           updateValues = {
-            [EntityKey.CUSTOMER_ID]: values[EntityKey.CUSTOMER_ID],
+            customer_id: values["customer_id"],
           };
         } else {
           updateValues = { ...values };
@@ -161,10 +160,10 @@ export function useEntityForm({
             return;
           }
 
-          if (Array.isArray(updateValues[EntityKey.IMAGES])) {
-            const originalImages = (getField(item, EntityKey.IMAGES) || []) as string[];
-            updateValues[EntityKey.IMAGES] = await processImageUploadsAndDeletions(
-              updateValues[EntityKey.IMAGES],
+          if (Array.isArray(updateValues["images"])) {
+            const originalImages = (getField(item, "images") || []) as string[];
+            updateValues["images"] = await processImageUploadsAndDeletions(
+              updateValues["images"],
               originalImages,
             );
           }
@@ -177,11 +176,8 @@ export function useEntityForm({
         );
         toast.success(`${singularName} updated successfully`);
       } else {
-        if (Array.isArray(values[EntityKey.IMAGES])) {
-          values[EntityKey.IMAGES] = await processImageUploadsAndDeletions(
-            values[EntityKey.IMAGES],
-            [],
-          );
+        if (Array.isArray(values["images"])) {
+          values["images"] = await processImageUploadsAndDeletions(values["images"], []);
         }
         await addEntity(projectSlug as ProjectSlug, values);
         toast.success(`${singularName} created successfully`);

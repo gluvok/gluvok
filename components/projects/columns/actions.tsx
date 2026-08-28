@@ -33,7 +33,7 @@ import { type EntityRecord } from "@/types";
 import { type ColumnActionsCallbacks } from "./index";
 
 import { type Permission, useAuthStore, type AuthUser } from "@/lib/store";
-import { ProjectSlug, EntityKey, Role, WeighmentType, EntryStatus } from "@/lib/constants/enums";
+import { ProjectSlug, Role, WeighmentType, EntryStatus } from "@/lib/constants/enums";
 
 /**
  * hasRowModifyPermission
@@ -49,8 +49,8 @@ function hasRowModifyPermission(
 
   switch (projectSlug) {
     case ProjectSlug.USERS: {
-      const itemId = getField(item, EntityKey.ID);
-      const itemRole = getField(item, EntityKey.ROLE);
+      const itemId = getField(item, "id");
+      const itemRole = getField(item, "role");
 
       const isOwnUser = String(itemId) === String(currentUser.id);
       const isAdminOfFactory = currentUser.role === Role.ADMIN;
@@ -90,7 +90,7 @@ function ActionCell<T extends EntityRecord>({
   const [approving, setApproving] = React.useState(false);
   const [rejecting, setRejecting] = React.useState(false);
   const [statusLoading, setStatusLoading] = React.useState(false);
-  const vehicleNumber = String(getField(item, EntityKey.VEHICLE_NUMBER) || "");
+  const vehicleNumber = String(getField(item, "vehicle_number") || "");
 
   const canModifyRow = hasRowModifyPermission(item, projectSlug, currentUser);
   let hasRowWrite = canWrite && canModifyRow;
@@ -98,7 +98,7 @@ function ActionCell<T extends EntityRecord>({
   let canRejectEntry = false;
 
   if (projectSlug === ProjectSlug.WEIGHMENTS) {
-    const typeVal = getField(item, EntityKey.TYPE);
+    const typeVal = getField(item, "type");
     const isTypeFixed =
       typeVal !== null &&
       typeVal !== undefined &&
@@ -110,8 +110,8 @@ function ActionCell<T extends EntityRecord>({
   }
 
   if (projectSlug === ProjectSlug.ENTRIES) {
-    const entryStatus = getField(item, EntityKey.STATUS) as EntryStatus | string;
-    const customerId = getField(item, EntityKey.CUSTOMER_ID);
+    const entryStatus = getField(item, "status") as EntryStatus | string;
+    const customerId = getField(item, "customer_id");
 
     if (entryStatus === EntryStatus.REJECTED) {
       hasRowWrite = false;
@@ -131,7 +131,7 @@ function ActionCell<T extends EntityRecord>({
     try {
       setStatusLoading(true);
       await useEntitiesStore.getState().updateEntity(ProjectSlug.ENTRIES, itemId, {
-        [EntityKey.STATUS]: EntryStatus.APPROVED,
+        status: EntryStatus.APPROVED,
       });
       toast.success(`Entry "${itemId}" approved successfully`);
       setApproving(false);
@@ -147,7 +147,7 @@ function ActionCell<T extends EntityRecord>({
     try {
       setStatusLoading(true);
       await useEntitiesStore.getState().updateEntity(ProjectSlug.ENTRIES, itemId, {
-        [EntityKey.STATUS]: EntryStatus.REJECTED,
+        status: EntryStatus.REJECTED,
       });
       toast.success(`Entry "${itemId}" marked as rejected`);
       setRejecting(false);

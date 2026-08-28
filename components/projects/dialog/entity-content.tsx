@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FormFieldInput } from "@/components/form";
 import { type EntityDialogContentProps } from "./types";
-import { FieldType, Role, FieldSpan, EntityKey, PermissionKey } from "@/lib/constants/enums";
+import { FieldType, Role, FieldSpan, PermissionKey } from "@/lib/constants/enums";
 import { type FieldConfig, getSingularName } from "@/lib/fields";
 import { useAuthStore, hasPermission, isFieldVisible, isFieldRequired } from "@/lib/store";
 
@@ -72,9 +72,9 @@ export function EntityDialogContent({
         );
       default: {
         const isPasswordInEdit =
-          isEdit && (field.key === EntityKey.PASSWORD || field.key === EntityKey.CONFIRM_PASSWORD);
+          isEdit && (field.key === "password" || field.key === "confirmPassword");
         const displayLabel = isPasswordInEdit
-          ? field.key === EntityKey.PASSWORD
+          ? field.key === "password"
             ? "New Password"
             : "Confirm New Password"
           : field.label;

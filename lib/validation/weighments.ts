@@ -4,14 +4,7 @@
  */
 
 import * as z from "zod";
-import {
-  ColumnLabel,
-  Unit,
-  EntryStatus,
-  EntryType,
-  EntityKey,
-  WeighmentType,
-} from "@/lib/constants/enums";
+import { ColumnLabel, Unit, EntryStatus, EntryType, WeighmentType } from "@/lib/constants/enums";
 import { ValidationMessage } from "@/lib/constants/messages";
 import { integerIdSchema, optionalIntegerIdSchema } from "./helpers";
 
@@ -61,8 +54,8 @@ const INDIAN_PLATE_REGEX =
   /^(?:([A-Z]{2})[\s.-]?([A-Z0-9]{1,2})[\s.-]?([A-Za-z]{1,3})[\s.-]?(\d{3,4})|(\d{2})[\s.-]?(BH)[\s.-]?(\d{4})[\s.-]?([A-Za-z]{1,2}))$/i;
 
 export const addEntrySchema = z.object({
-  [EntityKey.DETECTED_VEHICLE_NUMBER]: z.string().optional().nullable(),
-  [EntityKey.VEHICLE_NUMBER]: z
+  detected_vehicle_number: z.string().optional().nullable(),
+  vehicle_number: z
     .string()
     .min(1, ValidationMessage.INDIAN_PLATE_REQUIRED(ColumnLabel.VEHICLE_NUMBER))
     .max(15, ValidationMessage.INDIAN_PLATE_MAX(ColumnLabel.VEHICLE_NUMBER, 15))
@@ -76,39 +69,35 @@ export const addEntrySchema = z.object({
         message: ValidationMessage.INDIAN_PLATE_STATE,
       },
     ),
-  [EntityKey.WEIGHT]: z.coerce
+  weight: z.coerce
     .number({ message: ValidationMessage.MUST_BE_NUMBER(ColumnLabel.WEIGHT) })
     .positive(ValidationMessage.MUST_BE_POSITIVE_NUMBER(ColumnLabel.WEIGHT)),
-  [EntityKey.TYPE]: z.enum([EntryType.MANUAL, EntryType.AUTOMATIC]).optional(),
-  [EntityKey.CENTER_ID]: integerIdSchema(ColumnLabel.CENTER),
-  [EntityKey.USER_ID]: optionalIntegerIdSchema(ColumnLabel.USER),
-  [EntityKey.CUSTOMER_ID]: optionalIntegerIdSchema(ColumnLabel.CUSTOMER),
-  [EntityKey.STATUS]: z
+  type: z.enum([EntryType.MANUAL, EntryType.AUTOMATIC]).optional(),
+  center_id: integerIdSchema(ColumnLabel.CENTER),
+  user_id: optionalIntegerIdSchema(ColumnLabel.USER),
+  customer_id: optionalIntegerIdSchema(ColumnLabel.CUSTOMER),
+  status: z
     .enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED])
     .default(EntryStatus.PENDING),
-  [EntityKey.IMAGES]: z.array(z.string()).optional(),
+  images: z.array(z.string()).optional(),
 });
 
 export const editEntrySchema = z.object({
-  [EntityKey.VEHICLE_NUMBER]: z.string().optional(),
-  [EntityKey.CUSTOMER_ID]: optionalIntegerIdSchema(ColumnLabel.CUSTOMER),
-  [EntityKey.STATUS]: z
-    .enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED])
-    .optional(),
-  [EntityKey.IMAGES]: z.array(z.string()).optional(),
+  vehicle_number: z.string().optional(),
+  customer_id: optionalIntegerIdSchema(ColumnLabel.CUSTOMER),
+  status: z.enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED]).optional(),
+  images: z.array(z.string()).optional(),
 });
 
 export const addWeighmentSchema = z.object({
-  [EntityKey.IN_ENTRY_ID]: integerIdSchema("In-Entry"),
-  [EntityKey.OUT_ENTRY_ID]: integerIdSchema("Out-Entry"),
-  [EntityKey.UNIT]: z.enum([Unit.KG, Unit.Q, Unit.GAL]).default(Unit.KG),
-  [EntityKey.TYPE]: z
+  in_entry_id: integerIdSchema("In-Entry"),
+  out_entry_id: integerIdSchema("Out-Entry"),
+  unit: z.enum([Unit.KG, Unit.Q, Unit.GAL]).default(Unit.KG),
+  type: z
     .enum([WeighmentType.UNASSIGNED, WeighmentType.IN, WeighmentType.OUT])
     .default(WeighmentType.UNASSIGNED),
 });
 
 export const editWeighmentSchema = z.object({
-  [EntityKey.TYPE]: z
-    .enum([WeighmentType.UNASSIGNED, WeighmentType.IN, WeighmentType.OUT])
-    .optional(),
+  type: z.enum([WeighmentType.UNASSIGNED, WeighmentType.IN, WeighmentType.OUT]).optional(),
 });

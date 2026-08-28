@@ -17,7 +17,6 @@ import {
   QueryParam,
   FieldRequirementMode,
   TableName,
-  EntityKey,
 } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { hashPassword } from "@/lib/auth/password";
@@ -27,7 +26,7 @@ export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT;
+  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at";
   const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
     ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
     : true;
@@ -37,29 +36,25 @@ export const GET = withAuth(async (req, user, client) => {
 
   let query = client
     .from(TableName.CUSTOMERS)
-    .select(`*, ${TableName.USERS}!left(${EntityKey.USERNAME})`, {
+    .select(`*, ${TableName.USERS}!left(username)`, {
       count: "exact",
     })
     .order(sortColumn, { ascending: !sortDesc })
-    .eq(EntityKey.FACTORY_ID, user.factory_id!)
-    .is(EntityKey.DELETED_AT, null);
+    .eq("factory_id", user.factory_id!)
+    .is("deleted_at", null);
 
   if (search) {
     const searchNum = parseInt(search, 10);
     if (!isNaN(searchNum)) {
       if (!isGovtIdNotRequired) {
         query = query.or(
-          `${EntityKey.NAME}.ilike.%${search}%,${EntityKey.FATHER_NAME}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum},${EntityKey.GOVT_ID}.eq.${searchNum}`,
+          `name.ilike.%${search}%,father_name.ilike.%${search}%,id.eq.${searchNum},govt_id.eq.${searchNum}`,
         );
       } else {
-        query = query.or(
-          `${EntityKey.NAME}.ilike.%${search}%,${EntityKey.FATHER_NAME}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`,
-        );
+        query = query.or(`name.ilike.%${search}%,father_name.ilike.%${search}%,id.eq.${searchNum}`);
       }
     } else {
-      query = query.or(
-        `${EntityKey.NAME}.ilike.%${search}%,${EntityKey.FATHER_NAME}.ilike.%${search}%`,
-      );
+      query = query.or(`name.ilike.%${search}%,father_name.ilike.%${search}%`);
     }
   }
 
@@ -90,10 +85,10 @@ export const POST = withAuth(async (req, user, client) => {
   if (govt_id != null) {
     const existingQuery = client
       .from(TableName.CUSTOMERS)
-      .select(EntityKey.ID)
-      .eq(EntityKey.GOVT_ID, Number(govt_id))
-      .eq(EntityKey.FACTORY_ID, factoryId)
-      .is(EntityKey.DELETED_AT, null);
+      .select("id")
+      .eq("govt_id", Number(govt_id))
+      .eq("factory_id", factoryId)
+      .is("deleted_at", null);
 
     const { data: existingCustomer } = await existingQuery.maybeSingle();
     if (existingCustomer) {
@@ -105,9 +100,9 @@ export const POST = withAuth(async (req, user, client) => {
   if (username && password) {
     const { data: existingUser } = await client
       .from(TableName.USERS)
-      .select(EntityKey.ID)
-      .eq(EntityKey.USERNAME, username)
-      .is(EntityKey.DELETED_AT, null)
+      .select("id")
+      .eq("username", username)
+      .is("deleted_at", null)
       .maybeSingle();
 
     if (existingUser) {
@@ -145,9 +140,9 @@ export const DELETE = withAuth(async (req, user, client) => {
   // Check if any active entries are linked to any of the selected customers
   const { data: linkedEntries } = await client
     .from(TableName.ENTRIES)
-    .select(EntityKey.ID)
-    .in(EntityKey.CUSTOMER_ID, ids)
-    .is(EntityKey.DELETED_AT, null)
+    .select("id")
+    .in("customer_id", ids)
+    .is("deleted_at", null)
     .limit(1);
 
   if (linkedEntries && linkedEntries.length > 0) {

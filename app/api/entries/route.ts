@@ -10,7 +10,6 @@ import {
 } from "@/db/helpers";
 import {
   TableName,
-  EntityKey,
   QueryParam,
   EntryStatus,
   EntryType,
@@ -29,7 +28,7 @@ export const GET = withAuth(async (req, user, client) => {
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
   const startDate = req.nextUrl.searchParams.get(QueryParam.START_DATE);
   const endDate = req.nextUrl.searchParams.get(QueryParam.END_DATE);
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT;
+  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at";
   const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
     ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
     : true;
@@ -37,19 +36,19 @@ export const GET = withAuth(async (req, user, client) => {
   let query = client
     .from(TableName.ENTRIES)
     .select(
-      `*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.USERS}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME})`,
+      `*, ${TableName.CENTERS}(name), ${TableName.USERS}(name), ${TableName.CUSTOMERS}(name)`,
       { count: "exact" },
     )
-    .eq(EntityKey.FACTORY_ID, user.factory_id)
-    .is(EntityKey.DELETED_AT, null)
+    .eq("factory_id", user.factory_id)
+    .is("deleted_at", null)
     .order(sortColumn, { ascending: !sortDesc });
 
   const filterParams: Record<string, string | null> = {
-    [EntityKey.STATUS]: req.nextUrl.searchParams.get(EntityKey.STATUS),
-    [EntityKey.TYPE]: req.nextUrl.searchParams.get(EntityKey.TYPE),
-    [EntityKey.CENTER_ID]: req.nextUrl.searchParams.get(EntityKey.CENTER_ID),
-    [EntityKey.USER_ID]: req.nextUrl.searchParams.get(EntityKey.USER_ID),
-    [EntityKey.CUSTOMER_ID]: req.nextUrl.searchParams.get(EntityKey.CUSTOMER_ID),
+    status: req.nextUrl.searchParams.get("status"),
+    type: req.nextUrl.searchParams.get("type"),
+    center_id: req.nextUrl.searchParams.get("center_id"),
+    user_id: req.nextUrl.searchParams.get("user_id"),
+    customer_id: req.nextUrl.searchParams.get("customer_id"),
   };
 
   for (const [key, val] of Object.entries(filterParams)) {
@@ -59,17 +58,15 @@ export const GET = withAuth(async (req, user, client) => {
     }
   }
 
-  if (startDate) query = query.gte(EntityKey.CREATED_AT, startDate);
-  if (endDate) query = query.lte(EntityKey.CREATED_AT, endDate);
+  if (startDate) query = query.gte("created_at", startDate);
+  if (endDate) query = query.lte("created_at", endDate);
 
   if (search) {
     const searchNum = parseInt(search, 10);
     query = isNaN(searchNum)
-      ? query.or(
-          `${EntityKey.VEHICLE_NUMBER}.ilike.%${search}%,${EntityKey.DETECTED_VEHICLE_NUMBER}.ilike.%${search}%`,
-        )
+      ? query.or(`vehicle_number.ilike.%${search}%,detected_vehicle_number.ilike.%${search}%`)
       : query.or(
-          `${EntityKey.VEHICLE_NUMBER}.ilike.%${search}%,${EntityKey.DETECTED_VEHICLE_NUMBER}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`,
+          `vehicle_number.ilike.%${search}%,detected_vehicle_number.ilike.%${search}%,id.eq.${searchNum}`,
         );
   }
 
@@ -90,9 +87,9 @@ export const GET = withAuth(async (req, user, client) => {
 
     return {
       ...row,
-      [EntityKey.CENTER_NAME]: centers?.name || "",
-      [EntityKey.USER_NAME]: users?.name || "",
-      [EntityKey.CUSTOMER_NAME]: customers?.name || "",
+      center_name: centers?.name || "",
+      user_name: users?.name || "",
+      customer_name: customers?.name || "",
     };
   });
 
@@ -124,10 +121,10 @@ export const POST = withAuth(async (req, user, client) => {
     // Verify center_id belongs to the user's factory and is active
     const { data: centerRecord } = await client
       .from(TableName.CENTERS)
-      .select(EntityKey.ID)
-      .eq(EntityKey.ID, Number(center_id))
-      .eq(EntityKey.FACTORY_ID, user.factory_id)
-      .is(EntityKey.DELETED_AT, null)
+      .select("id")
+      .eq("id", Number(center_id))
+      .eq("factory_id", user.factory_id)
+      .is("deleted_at", null)
       .maybeSingle();
 
     if (!centerRecord) {
@@ -138,10 +135,10 @@ export const POST = withAuth(async (req, user, client) => {
     if (customer_id) {
       const { data: customerRecord } = await client
         .from(TableName.CUSTOMERS)
-        .select(EntityKey.ID)
-        .eq(EntityKey.ID, Number(customer_id))
-        .eq(EntityKey.FACTORY_ID, user.factory_id)
-        .is(EntityKey.DELETED_AT, null)
+        .select("id")
+        .eq("id", Number(customer_id))
+        .eq("factory_id", user.factory_id)
+        .is("deleted_at", null)
         .maybeSingle();
 
       if (!customerRecord) {
@@ -167,18 +164,18 @@ export const POST = withAuth(async (req, user, client) => {
     const { data: newEntry, error: insertErr } = await client
       .from(TableName.ENTRIES)
       .insert({
-        [EntityKey.DETECTED_VEHICLE_NUMBER]: null,
-        [EntityKey.VEHICLE_NUMBER]: vehicle_number,
-        [EntityKey.WEIGHT]: Number(weight),
-        [EntityKey.TYPE]: EntryType.MANUAL,
-        [EntityKey.CENTER_ID]: Number(center_id),
-        [EntityKey.USER_ID]: userId,
-        [EntityKey.CUSTOMER_ID]: customer_id ? Number(customer_id) : null,
-        [EntityKey.FACTORY_ID]: user.factory_id,
-        [EntityKey.STATUS]: status,
-        [EntityKey.IMAGES]: uploadedImageUrls,
-        [EntityKey.CREATED_AT]: nowStr,
-        [EntityKey.UPDATED_AT]: nowStr,
+        detected_vehicle_number: null,
+        vehicle_number,
+        weight: Number(weight),
+        type: EntryType.MANUAL,
+        center_id: Number(center_id),
+        user_id: userId,
+        customer_id: customer_id ? Number(customer_id) : null,
+        factory_id: user.factory_id,
+        status,
+        images: uploadedImageUrls,
+        created_at: nowStr,
+        updated_at: nowStr,
       })
       .select("*")
       .single();
@@ -208,9 +205,9 @@ export const DELETE = withAuth(async (req, user, client) => {
   // Check if any active weighments are linked to these entries
   const { data: linkedWeighments } = await client
     .from(TableName.WEIGHMENTS)
-    .select(EntityKey.ID)
+    .select("id")
     .or(`in_entry_id.in.(${ids.join(",")}),out_entry_id.in.(${ids.join(",")})`)
-    .is(EntityKey.DELETED_AT, null)
+    .is("deleted_at", null)
     .limit(1);
 
   if (linkedWeighments && linkedWeighments.length > 0) {
@@ -220,13 +217,13 @@ export const DELETE = withAuth(async (req, user, client) => {
   const { data: deletedEntries, error } = await client
     .from(TableName.ENTRIES)
     .update({
-      [EntityKey.DELETED_AT]: new Date().toISOString(),
-      [EntityKey.UPDATED_AT]: new Date().toISOString(),
+      deleted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    .in(EntityKey.ID, ids)
-    .is(EntityKey.DELETED_AT, null)
-    .eq(EntityKey.FACTORY_ID, user.factory_id)
-    .select(EntityKey.ID);
+    .in("id", ids)
+    .is("deleted_at", null)
+    .eq("factory_id", user.factory_id)
+    .select("id");
 
   if (error) {
     return apiError(

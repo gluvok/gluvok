@@ -3,13 +3,7 @@
  * @description Role-based access control (RBAC) matrix and permission helper functions.
  */
 
-import {
-  Role,
-  ProjectSlug,
-  EntityKey,
-  FieldRequirementMode,
-  PermissionKey,
-} from "@/lib/constants/enums";
+import { Role, ProjectSlug, FieldRequirementMode, PermissionKey } from "@/lib/constants/enums";
 import { useFactoryStore } from "./factory";
 
 export interface Permission {
@@ -89,7 +83,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       create: false,
       show: true,
       filter: true,
-      editableFields: [EntityKey.WEIGHT],
+      editableFields: ["weight"],
     },
     [ProjectSlug.SETTINGS]: {
       read: true,
@@ -355,7 +349,7 @@ export function isColumnVisible(
   projectSlug: string,
   columnKey: string,
 ): boolean {
-  if (columnKey === EntityKey.FACTORY_ID || columnKey === EntityKey.FACTORY_NAME) {
+  if (columnKey === "factory_id" || columnKey === "factory_name") {
     return false;
   }
 
@@ -363,10 +357,10 @@ export function isColumnVisible(
   if (perms.hiddenColumns && perms.hiddenColumns.includes(columnKey)) return false;
 
   const factory = useFactoryStore.getState().factory;
-  if (projectSlug === ProjectSlug.CUSTOMERS && columnKey === EntityKey.GOVT_ID) {
+  if (projectSlug === ProjectSlug.CUSTOMERS && columnKey === "govt_id") {
     if (factory?.govt_id_mode === FieldRequirementMode.NOT_REQUIRED) return false;
   }
-  if (projectSlug === ProjectSlug.USERS && columnKey === EntityKey.AADHAR_NUMBER) {
+  if (projectSlug === ProjectSlug.USERS && columnKey === "aadhar_number") {
     if (factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED) return false;
   }
 
@@ -378,7 +372,7 @@ export function isFieldVisible(
   projectSlug: string,
   fieldKey: string,
 ): boolean {
-  if (fieldKey === EntityKey.FACTORY_ID || fieldKey === EntityKey.FACTORY_NAME) {
+  if (fieldKey === "factory_id" || fieldKey === "factory_name") {
     return false;
   }
 
@@ -386,10 +380,10 @@ export function isFieldVisible(
   if (perms.hiddenFields && perms.hiddenFields.includes(fieldKey)) return false;
 
   const factory = useFactoryStore.getState().factory;
-  if (projectSlug === ProjectSlug.CUSTOMERS && fieldKey === EntityKey.GOVT_ID) {
+  if (projectSlug === ProjectSlug.CUSTOMERS && fieldKey === "govt_id") {
     if (factory?.govt_id_mode === FieldRequirementMode.NOT_REQUIRED) return false;
   }
-  if (projectSlug === ProjectSlug.USERS && fieldKey === EntityKey.AADHAR_NUMBER) {
+  if (projectSlug === ProjectSlug.USERS && fieldKey === "aadhar_number") {
     if (factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED) return false;
   }
 
@@ -402,7 +396,7 @@ export function isFieldRequired(
   defaultRequired?: boolean,
 ): boolean {
   const factory = useFactoryStore.getState().factory;
-  if (projectSlug === ProjectSlug.CUSTOMERS && fieldKey === EntityKey.GOVT_ID) {
+  if (projectSlug === ProjectSlug.CUSTOMERS && fieldKey === "govt_id") {
     if (factory?.govt_id_mode === FieldRequirementMode.MANDATORY) return true;
     if (
       factory?.govt_id_mode === FieldRequirementMode.OPTIONAL ||
@@ -410,7 +404,7 @@ export function isFieldRequired(
     )
       return false;
   }
-  if (projectSlug === ProjectSlug.USERS && fieldKey === EntityKey.AADHAR_NUMBER) {
+  if (projectSlug === ProjectSlug.USERS && fieldKey === "aadhar_number") {
     if (factory?.aadhar_number_mode === FieldRequirementMode.MANDATORY) return true;
     if (
       factory?.aadhar_number_mode === FieldRequirementMode.OPTIONAL ||

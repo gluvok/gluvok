@@ -7,13 +7,7 @@ import {
   hasPermission,
   StatusCodes,
 } from "@/db/helpers";
-import {
-  ProjectSlug,
-  PermissionKey,
-  TableName,
-  EntityKey,
-  EntryStatus,
-} from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey, TableName, EntryStatus } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
 import { editEntrySchema } from "@/lib/validation";
@@ -25,12 +19,10 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
 
   const { data, error } = await client
     .from(TableName.ENTRIES)
-    .select(
-      `*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.USERS}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME})`,
-    )
-    .eq(EntityKey.ID, entryId)
-    .eq(EntityKey.FACTORY_ID, user.factory_id!)
-    .is(EntityKey.DELETED_AT, null)
+    .select(`*, ${TableName.CENTERS}(name), ${TableName.USERS}(name), ${TableName.CUSTOMERS}(name)`)
+    .eq("id", entryId)
+    .eq("factory_id", user.factory_id!)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (error || !data) {
@@ -43,9 +35,9 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
 
   const formatted = {
     ...data,
-    [EntityKey.CENTER_NAME]: centers?.name || "",
-    [EntityKey.USER_NAME]: users?.name || "",
-    [EntityKey.CUSTOMER_NAME]: customers?.name || "",
+    center_name: centers?.name || "",
+    user_name: users?.name || "",
+    customer_name: customers?.name || "",
   };
 
   return NextResponse.json({ data: formatted });
@@ -66,9 +58,9 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   const { data: existing, error: fetchErr } = await client
     .from(TableName.ENTRIES)
     .select("*")
-    .eq(EntityKey.ID, entryId)
-    .eq(EntityKey.FACTORY_ID, user.factory_id)
-    .is(EntityKey.DELETED_AT, null)
+    .eq("id", entryId)
+    .eq("factory_id", user.factory_id)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (fetchErr || !existing) {
@@ -88,34 +80,26 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   if (existing.status === EntryStatus.APPROVED && existing.customer_id === null) {
     // ONLY customer_id can be updated on approved entries without customer
-    const lockedFields = [
-      EntityKey.VEHICLE_NUMBER,
-      EntityKey.WEIGHT,
-      EntityKey.CENTER_ID,
-      EntityKey.IMAGES,
-      EntityKey.STATUS,
-    ] as const;
+    const lockedFields = ["vehicle_number", "weight", "center_id", "images", "status"] as const;
 
     for (const field of lockedFields) {
       if (body[field] !== undefined && body[field] !== existing[field]) {
         return apiError(
-          ApiErrorMessage.CANNOT_MODIFY_APPROVED_ENTRY(
-            field === EntityKey.CENTER_ID ? "center" : field,
-          ),
+          ApiErrorMessage.CANNOT_MODIFY_APPROVED_ENTRY(field === "center_id" ? "center" : field),
           StatusCodes.BAD_REQUEST,
         );
       }
     }
     if (body.customer_id !== undefined) {
-      updates[EntityKey.CUSTOMER_ID] = body.customer_id ? Number(body.customer_id) : null;
+      updates["customer_id"] = body.customer_id ? Number(body.customer_id) : null;
     }
   } else {
     // Status is pending: vehicle_number, customer_id, images, status can be edited
-    for (const key of [EntityKey.VEHICLE_NUMBER, EntityKey.IMAGES, EntityKey.STATUS] as const) {
+    for (const key of ["vehicle_number", "images", "status"] as const) {
       if (body[key] !== undefined) updates[key] = body[key];
     }
     if (body.customer_id !== undefined) {
-      updates[EntityKey.CUSTOMER_ID] = body.customer_id ? Number(body.customer_id) : null;
+      updates["customer_id"] = body.customer_id ? Number(body.customer_id) : null;
     }
   }
 
@@ -123,8 +107,8 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     return NextResponse.json({ data: existing });
   }
 
-  const newStatus = (updates[EntityKey.STATUS] as string) || existing.status;
-  const targetVehicle = (updates[EntityKey.VEHICLE_NUMBER] as string) || existing.vehicle_number;
+  const newStatus = (updates["status"] as string) || existing.status;
+  const targetVehicle = (updates["vehicle_number"] as string) || existing.vehicle_number;
 
   // 3. Sequential Approval Validation if transitioning/staying as approved
   if (newStatus === EntryStatus.APPROVED && existing.status !== EntryStatus.APPROVED) {
@@ -143,15 +127,15 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     }
   }
 
-  updates[EntityKey.UPDATED_AT] = new Date().toISOString();
+  updates["updated_at"] = new Date().toISOString();
 
   // 4. Perform update
   const { data: updatedEntry, error: updateErr } = await client
     .from(TableName.ENTRIES)
     .update(updates)
-    .eq(EntityKey.ID, entryId)
-    .eq(EntityKey.FACTORY_ID, user.factory_id)
-    .is(EntityKey.DELETED_AT, null)
+    .eq("id", entryId)
+    .eq("factory_id", user.factory_id)
+    .is("deleted_at", null)
     .select("*")
     .single();
 
@@ -175,9 +159,9 @@ export const DELETE = withAuth(
     // Check if any active weighments are linked to this entry
     const { data: linkedWeighment } = await client
       .from(TableName.WEIGHMENTS)
-      .select(EntityKey.ID)
-      .or(`${EntityKey.IN_ENTRY_ID}.eq.${entityId},${EntityKey.OUT_ENTRY_ID}.eq.${entityId}`)
-      .is(EntityKey.DELETED_AT, null)
+      .select("id")
+      .or(`in_entry_id.eq.${entityId},out_entry_id.eq.${entityId}`)
+      .is("deleted_at", null)
       .limit(1)
       .maybeSingle();
 
@@ -188,14 +172,14 @@ export const DELETE = withAuth(
     const query = client
       .from(TableName.ENTRIES)
       .update({
-        [EntityKey.DELETED_AT]: new Date().toISOString(),
-        [EntityKey.UPDATED_AT]: new Date().toISOString(),
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
-      .eq(EntityKey.ID, entityId)
-      .is(EntityKey.DELETED_AT, null)
-      .eq(EntityKey.FACTORY_ID, factoryId);
+      .eq("id", entityId)
+      .is("deleted_at", null)
+      .eq("factory_id", factoryId);
 
-    const { data, error } = await query.select(EntityKey.ID);
+    const { data, error } = await query.select("id");
     if (error) {
       return apiError(
         error.message || ApiErrorMessage.CANNOT_DELETE_ENTRY(entityId),

@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { apiError, StatusCodes, getAuthUser, validateDeviceSecret } from "@/db/helpers";
-import { TableName, EntityKey, EntryStatus, EntryType } from "@/lib/constants/enums";
+import { TableName, EntryStatus, EntryType } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { uploadBase64ImagesToStorage } from "@/lib/services/storage";
 
@@ -35,10 +35,10 @@ export async function POST(req: NextRequest) {
     // Verify center exists and belongs to the active factory
     const { data: centerRecord } = await db
       .from(TableName.CENTERS)
-      .select(EntityKey.ID)
-      .eq(EntityKey.ID, Number(center_id))
-      .eq(EntityKey.FACTORY_ID, factoryId)
-      .is(EntityKey.DELETED_AT, null)
+      .select("id")
+      .eq("id", Number(center_id))
+      .eq("factory_id", factoryId)
+      .is("deleted_at", null)
       .maybeSingle();
 
     if (!centerRecord) {
@@ -51,18 +51,18 @@ export async function POST(req: NextRequest) {
     const { data: newEntry, error: insertErr } = await db
       .from(TableName.ENTRIES)
       .insert({
-        [EntityKey.DETECTED_VEHICLE_NUMBER]: detected_vehicle_number,
-        [EntityKey.VEHICLE_NUMBER]: vehicle_number,
-        [EntityKey.WEIGHT]: Number(weight),
-        [EntityKey.TYPE]: EntryType.AUTOMATIC,
-        [EntityKey.CENTER_ID]: Number(center_id),
-        [EntityKey.USER_ID]: operatorUserId,
-        [EntityKey.CUSTOMER_ID]: null,
-        [EntityKey.FACTORY_ID]: factoryId,
-        [EntityKey.STATUS]: EntryStatus.PENDING,
-        [EntityKey.IMAGES]: uploadedImageUrls,
-        [EntityKey.CREATED_AT]: nowStr,
-        [EntityKey.UPDATED_AT]: nowStr,
+        detected_vehicle_number,
+        vehicle_number,
+        weight: Number(weight),
+        type: EntryType.AUTOMATIC,
+        center_id: Number(center_id),
+        user_id: operatorUserId,
+        customer_id: null,
+        factory_id: factoryId,
+        status: EntryStatus.PENDING,
+        images: uploadedImageUrls,
+        created_at: nowStr,
+        updated_at: nowStr,
       })
       .select("*")
       .single();

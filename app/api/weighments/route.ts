@@ -10,7 +10,6 @@ import {
 } from "@/db/helpers";
 import {
   QueryParam,
-  EntityKey,
   TableName,
   RelationAlias,
   FilterValue,
@@ -24,19 +23,19 @@ export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
-  const typeParam = req.nextUrl.searchParams.get(EntityKey.TYPE);
-  const unitParam = req.nextUrl.searchParams.get(EntityKey.UNIT);
-  const rateIdParam = req.nextUrl.searchParams.get(EntityKey.RATE_ID);
-  const centerIdParam = req.nextUrl.searchParams.get(EntityKey.CENTER_ID);
-  const userIdParam = req.nextUrl.searchParams.get(EntityKey.USER_ID);
-  const customerIdParam = req.nextUrl.searchParams.get(EntityKey.CUSTOMER_ID);
-  const inCenterIdParam = req.nextUrl.searchParams.get(EntityKey.IN_CENTER_ID);
-  const outCenterIdParam = req.nextUrl.searchParams.get(EntityKey.OUT_CENTER_ID);
-  const inUserIdParam = req.nextUrl.searchParams.get(EntityKey.IN_USER_ID);
-  const outUserIdParam = req.nextUrl.searchParams.get(EntityKey.OUT_USER_ID);
-  const inCustomerIdParam = req.nextUrl.searchParams.get(EntityKey.IN_CUSTOMER_ID);
-  const outCustomerIdParam = req.nextUrl.searchParams.get(EntityKey.OUT_CUSTOMER_ID);
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT;
+  const typeParam = req.nextUrl.searchParams.get("type");
+  const unitParam = req.nextUrl.searchParams.get("unit");
+  const rateIdParam = req.nextUrl.searchParams.get("rate_id");
+  const centerIdParam = req.nextUrl.searchParams.get("center_id");
+  const userIdParam = req.nextUrl.searchParams.get("user_id");
+  const customerIdParam = req.nextUrl.searchParams.get("customer_id");
+  const inCenterIdParam = req.nextUrl.searchParams.get("in_center_id");
+  const outCenterIdParam = req.nextUrl.searchParams.get("out_center_id");
+  const inUserIdParam = req.nextUrl.searchParams.get("in_user_id");
+  const outUserIdParam = req.nextUrl.searchParams.get("out_user_id");
+  const inCustomerIdParam = req.nextUrl.searchParams.get("in_customer_id");
+  const outCustomerIdParam = req.nextUrl.searchParams.get("out_customer_id");
+  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at";
   const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
     ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
     : true;
@@ -47,116 +46,110 @@ export const GET = withAuth(async (req, user, client) => {
   let query = client
     .from(TableName.WEIGHMENTS)
     .select(
-      `*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.USERS}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME})), ${RelationAlias.OUT_ENTRY}:${TableName.ENTRIES}!out_entry_id(*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.USERS}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME}))`,
+      `*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(*, ${TableName.CENTERS}(name), ${TableName.USERS}(name), ${TableName.CUSTOMERS}(name)), ${RelationAlias.OUT_ENTRY}:${TableName.ENTRIES}!out_entry_id(*, ${TableName.CENTERS}(name), ${TableName.USERS}(name), ${TableName.CUSTOMERS}(name))`,
       { count: "exact" },
     )
-    .eq(`${RelationAlias.IN_ENTRY}.${EntityKey.FACTORY_ID}`, user.factory_id!)
-    .is(EntityKey.DELETED_AT, null);
+    .eq(`${RelationAlias.IN_ENTRY}.factory_id`, user.factory_id!)
+    .is("deleted_at", null);
 
   if (typeParam && typeParam !== FilterValue.ALL) {
-    query = query.eq(EntityKey.TYPE, typeParam);
+    query = query.eq("type", typeParam);
   }
 
   if (unitParam && unitParam !== FilterValue.ALL) {
-    query = query.eq(EntityKey.UNIT, unitParam);
+    query = query.eq("unit", unitParam);
   }
 
   if (rateIdParam && rateIdParam !== FilterValue.ALL) {
-    query = query.eq(EntityKey.RATE_ID, Number(rateIdParam));
+    query = query.eq("rate_id", Number(rateIdParam));
   }
 
   if (centerIdParam && centerIdParam !== FilterValue.ALL) {
     const cId = Number(centerIdParam);
     query = query.or(
-      `${RelationAlias.IN_ENTRY}.${EntityKey.CENTER_ID}.eq.${cId},${RelationAlias.OUT_ENTRY}.${EntityKey.CENTER_ID}.eq.${cId}`,
+      `${RelationAlias.IN_ENTRY}.center_id.eq.${cId},${RelationAlias.OUT_ENTRY}.center_id.eq.${cId}`,
     );
   }
 
   if (userIdParam && userIdParam !== FilterValue.ALL) {
     const uId = Number(userIdParam);
     query = query.or(
-      `${RelationAlias.IN_ENTRY}.${EntityKey.USER_ID}.eq.${uId},${RelationAlias.OUT_ENTRY}.${EntityKey.USER_ID}.eq.${uId}`,
+      `${RelationAlias.IN_ENTRY}.user_id.eq.${uId},${RelationAlias.OUT_ENTRY}.user_id.eq.${uId}`,
     );
   }
 
   if (customerIdParam && customerIdParam !== FilterValue.ALL) {
     const custId = Number(customerIdParam);
     query = query.or(
-      `${RelationAlias.IN_ENTRY}.${EntityKey.CUSTOMER_ID}.eq.${custId},${RelationAlias.OUT_ENTRY}.${EntityKey.CUSTOMER_ID}.eq.${custId}`,
+      `${RelationAlias.IN_ENTRY}.customer_id.eq.${custId},${RelationAlias.OUT_ENTRY}.customer_id.eq.${custId}`,
     );
   }
 
   if (inCenterIdParam && inCenterIdParam !== FilterValue.ALL) {
-    query = query.eq(`${RelationAlias.IN_ENTRY}.${EntityKey.CENTER_ID}`, Number(inCenterIdParam));
+    query = query.eq(`${RelationAlias.IN_ENTRY}.center_id`, Number(inCenterIdParam));
   }
 
   if (outCenterIdParam && outCenterIdParam !== FilterValue.ALL) {
-    query = query.eq(`${RelationAlias.OUT_ENTRY}.${EntityKey.CENTER_ID}`, Number(outCenterIdParam));
+    query = query.eq(`${RelationAlias.OUT_ENTRY}.center_id`, Number(outCenterIdParam));
   }
 
   if (inUserIdParam && inUserIdParam !== FilterValue.ALL) {
-    query = query.eq(`${RelationAlias.IN_ENTRY}.${EntityKey.USER_ID}`, Number(inUserIdParam));
+    query = query.eq(`${RelationAlias.IN_ENTRY}.user_id`, Number(inUserIdParam));
   }
 
   if (outUserIdParam && outUserIdParam !== FilterValue.ALL) {
-    query = query.eq(`${RelationAlias.OUT_ENTRY}.${EntityKey.USER_ID}`, Number(outUserIdParam));
+    query = query.eq(`${RelationAlias.OUT_ENTRY}.user_id`, Number(outUserIdParam));
   }
 
   if (inCustomerIdParam && inCustomerIdParam !== FilterValue.ALL) {
-    query = query.eq(
-      `${RelationAlias.IN_ENTRY}.${EntityKey.CUSTOMER_ID}`,
-      Number(inCustomerIdParam),
-    );
+    query = query.eq(`${RelationAlias.IN_ENTRY}.customer_id`, Number(inCustomerIdParam));
   }
 
   if (outCustomerIdParam && outCustomerIdParam !== FilterValue.ALL) {
-    query = query.eq(
-      `${RelationAlias.OUT_ENTRY}.${EntityKey.CUSTOMER_ID}`,
-      Number(outCustomerIdParam),
-    );
+    query = query.eq(`${RelationAlias.OUT_ENTRY}.customer_id`, Number(outCustomerIdParam));
   }
 
   if (startDateParam) {
-    query = query.gte(EntityKey.CREATED_AT, startDateParam);
+    query = query.gte("created_at", startDateParam);
   }
 
   if (endDateParam) {
-    query = query.lte(EntityKey.CREATED_AT, endDateParam);
+    query = query.lte("created_at", endDateParam);
   }
 
   if (search) {
     const searchNum = parseInt(search, 10);
     if (!isNaN(searchNum)) {
       query = query.or(
-        `${EntityKey.IN_ENTRY_ID}.eq.${searchNum},${EntityKey.OUT_ENTRY_ID}.eq.${searchNum},${RelationAlias.IN_ENTRY}.${EntityKey.VEHICLE_NUMBER}.ilike.%${search}%`,
+        `in_entry_id.eq.${searchNum},out_entry_id.eq.${searchNum},${RelationAlias.IN_ENTRY}.vehicle_number.ilike.%${search}%`,
       );
     } else {
-      query = query.or(`${RelationAlias.IN_ENTRY}.${EntityKey.VEHICLE_NUMBER}.ilike.%${search}%`);
+      query = query.or(`${RelationAlias.IN_ENTRY}.vehicle_number.ilike.%${search}%`);
     }
   }
 
   // Non-deprecated PostgreSQL ordering (including Computed Columns: gross_weight, tare_weight, net_weight)
   if (
-    sortColumn === EntityKey.CREATED_AT ||
-    sortColumn === EntityKey.ID ||
-    sortColumn === EntityKey.UNIT ||
-    sortColumn === EntityKey.IN_ENTRY_ID ||
-    sortColumn === EntityKey.OUT_ENTRY_ID ||
-    sortColumn === EntityKey.GROSS_WEIGHT ||
-    sortColumn === EntityKey.TARE_WEIGHT ||
-    sortColumn === EntityKey.NET_WEIGHT
+    sortColumn === "created_at" ||
+    sortColumn === "id" ||
+    sortColumn === "unit" ||
+    sortColumn === "in_entry_id" ||
+    sortColumn === "out_entry_id" ||
+    sortColumn === "gross_weight" ||
+    sortColumn === "tare_weight" ||
+    sortColumn === "net_weight"
   ) {
     query = query.order(sortColumn, { ascending: !sortDesc });
-  } else if (sortColumn === EntityKey.IN_ENTRY_CREATED_AT) {
-    query = query.order(`${RelationAlias.IN_ENTRY}.${EntityKey.CREATED_AT}`, {
+  } else if (sortColumn === "in_entry_created_at") {
+    query = query.order(`${RelationAlias.IN_ENTRY}.created_at`, {
       ascending: !sortDesc,
     });
-  } else if (sortColumn === EntityKey.OUT_ENTRY_CREATED_AT) {
-    query = query.order(`${RelationAlias.OUT_ENTRY}.${EntityKey.CREATED_AT}`, {
+  } else if (sortColumn === "out_entry_created_at") {
+    query = query.order(`${RelationAlias.OUT_ENTRY}.created_at`, {
       ascending: !sortDesc,
     });
   } else {
-    query = query.order(EntityKey.CREATED_AT, { ascending: false });
+    query = query.order("created_at", { ascending: false });
   }
 
   const { page, limit, offset } = pagination;
@@ -191,32 +184,32 @@ export const GET = withAuth(async (req, user, client) => {
     const outCustomers = outEntry.customers as Record<string, unknown> | undefined;
 
     return {
-      [EntityKey.ID]: row.id,
-      [EntityKey.UNIT]: row.unit || Unit.KG,
-      [EntityKey.TYPE]: row.type || WeighmentType.UNASSIGNED,
-      [EntityKey.GROSS_WEIGHT]: grossWeight,
-      [EntityKey.TARE_WEIGHT]: tareWeight,
-      [EntityKey.NET_WEIGHT]: netWeight,
-      [EntityKey.IMAGES]: combinedImages,
-      [EntityKey.IN_ENTRY_ID]: row.in_entry_id,
-      [EntityKey.IN_ENTRY_CREATED_AT]: inEntry.created_at,
-      [EntityKey.OUT_ENTRY_ID]: row.out_entry_id,
-      [EntityKey.OUT_ENTRY_CREATED_AT]: outEntry.created_at,
-      [EntityKey.IN_CENTER_ID]: inEntry.center_id,
-      [EntityKey.IN_CENTER_NAME]: inCenters?.name || "",
-      [EntityKey.OUT_CENTER_ID]: outEntry.center_id,
-      [EntityKey.OUT_CENTER_NAME]: outCenters?.name || "",
-      [EntityKey.IN_USER_ID]: inEntry.user_id,
-      [EntityKey.IN_USER_NAME]: inUsers?.name || "",
-      [EntityKey.OUT_USER_ID]: outEntry.user_id,
-      [EntityKey.OUT_USER_NAME]: outUsers?.name || "",
-      [EntityKey.IN_CUSTOMER_ID]: inEntry.customer_id,
-      [EntityKey.IN_CUSTOMER_NAME]: inCustomers?.name || "",
-      [EntityKey.OUT_CUSTOMER_ID]: outEntry.customer_id,
-      [EntityKey.OUT_CUSTOMER_NAME]: outCustomers?.name || "",
-      [EntityKey.VEHICLE_NUMBER]: inEntry.vehicle_number || outEntry.vehicle_number || "",
-      [EntityKey.CREATED_AT]: row.created_at,
-      [EntityKey.UPDATED_AT]: row.updated_at,
+      id: row.id,
+      unit: row.unit || Unit.KG,
+      type: row.type || WeighmentType.UNASSIGNED,
+      gross_weight: grossWeight,
+      tare_weight: tareWeight,
+      net_weight: netWeight,
+      images: combinedImages,
+      in_entry_id: row.in_entry_id,
+      in_entry_created_at: inEntry.created_at,
+      out_entry_id: row.out_entry_id,
+      out_entry_created_at: outEntry.created_at,
+      in_center_id: inEntry.center_id,
+      in_center_name: inCenters?.name || "",
+      out_center_id: outEntry.center_id,
+      out_center_name: outCenters?.name || "",
+      in_user_id: inEntry.user_id,
+      in_user_name: inUsers?.name || "",
+      out_user_id: outEntry.user_id,
+      out_user_name: outUsers?.name || "",
+      in_customer_id: inEntry.customer_id,
+      in_customer_name: inCustomers?.name || "",
+      out_customer_id: outEntry.customer_id,
+      out_customer_name: outCustomers?.name || "",
+      vehicle_number: inEntry.vehicle_number || outEntry.vehicle_number || "",
+      created_at: row.created_at,
+      updated_at: row.updated_at,
     };
   });
 
@@ -245,11 +238,9 @@ export const DELETE = withAuth(async (req, user, client) => {
   // 1. Query target weighments with factory verification
   const { data: weighments, error: fetchErr } = await client
     .from(TableName.WEIGHMENTS)
-    .select(
-      `*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(${EntityKey.FACTORY_ID})`,
-    )
-    .in(EntityKey.ID, ids)
-    .is(EntityKey.DELETED_AT, null);
+    .select(`*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(factory_id)`)
+    .in("id", ids)
+    .is("deleted_at", null);
 
   if (fetchErr) {
     console.error("Failed to fetch weighments for deletion:", fetchErr);
@@ -272,11 +263,11 @@ export const DELETE = withAuth(async (req, user, client) => {
   const { error: deleteErr } = await client
     .from(TableName.WEIGHMENTS)
     .update({
-      [EntityKey.DELETED_AT]: now,
-      [EntityKey.UPDATED_AT]: now,
+      deleted_at: now,
+      updated_at: now,
     })
-    .in(EntityKey.ID, validIds)
-    .is(EntityKey.DELETED_AT, null);
+    .in("id", validIds)
+    .is("deleted_at", null);
 
   if (deleteErr) {
     console.error("Failed to soft delete weighments:", deleteErr);
@@ -296,12 +287,12 @@ export const DELETE = withAuth(async (req, user, client) => {
     const { error: cascadeErr } = await client
       .from(TableName.ENTRIES)
       .update({
-        [EntityKey.DELETED_AT]: now,
-        [EntityKey.UPDATED_AT]: now,
+        deleted_at: now,
+        updated_at: now,
       })
-      .in(EntityKey.ID, uniqueEntryIds)
-      .eq(EntityKey.FACTORY_ID, user.factory_id)
-      .is(EntityKey.DELETED_AT, null);
+      .in("id", uniqueEntryIds)
+      .eq("factory_id", user.factory_id)
+      .is("deleted_at", null);
 
     if (cascadeErr) {
       console.error("Failed to cascade soft delete to entries:", cascadeErr);

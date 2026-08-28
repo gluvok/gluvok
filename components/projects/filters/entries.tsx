@@ -8,14 +8,7 @@
 import * as React from "react";
 import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import {
-  EntityKey,
-  EntryStatus,
-  EntryType,
-  FilterValue,
-  FieldType,
-  ProjectSlug,
-} from "@/lib/constants/enums";
+import { EntryStatus, EntryType, FilterValue, FieldType, ProjectSlug } from "@/lib/constants/enums";
 import { useEntitiesStore } from "@/lib/store";
 import { Building, User as UserIcon, Users } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
@@ -40,11 +33,11 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
   const { centers, users, customers } = useEntriesFilterData();
 
   const columnFilters = table.state.columnFilters;
-  const currentStatus = columnFilters.find((f) => f.id === EntityKey.STATUS)?.value;
-  const currentType = columnFilters.find((f) => f.id === EntityKey.TYPE)?.value;
-  const currentCenterId = columnFilters.find((f) => f.id === EntityKey.CENTER_ID)?.value;
-  const currentUserId = columnFilters.find((f) => f.id === EntityKey.USER_ID)?.value;
-  const currentCustomerId = columnFilters.find((f) => f.id === EntityKey.CUSTOMER_ID)?.value;
+  const currentStatus = columnFilters.find((f) => f.id === "status")?.value;
+  const currentType = columnFilters.find((f) => f.id === "type")?.value;
+  const currentCenterId = columnFilters.find((f) => f.id === "center_id")?.value;
+  const currentUserId = columnFilters.find((f) => f.id === "user_id")?.value;
+  const currentCustomerId = columnFilters.find((f) => f.id === "customer_id")?.value;
 
   const setColumnFilter = (id: string, value: unknown) => {
     table.setColumnFilters((prev) => {
@@ -112,9 +105,7 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
       <BaseCombobox
         type={FieldType.ENTRY_STATUS}
         value={currentStatus ? String(currentStatus) : FilterValue.ALL}
-        onChange={(val) =>
-          setColumnFilter(EntityKey.STATUS, val === FilterValue.ALL ? undefined : val)
-        }
+        onChange={(val) => setColumnFilter("status", val === FilterValue.ALL ? undefined : val)}
         data={statusOptions}
         placeholder="All Statuses"
         searchPlaceholder="Search status..."
@@ -127,9 +118,7 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
       <BaseCombobox
         type={FieldType.TYPE}
         value={currentType ? String(currentType) : FilterValue.ALL}
-        onChange={(val) =>
-          setColumnFilter(EntityKey.TYPE, val === FilterValue.ALL ? undefined : val)
-        }
+        onChange={(val) => setColumnFilter("type", val === FilterValue.ALL ? undefined : val)}
         data={typeOptions}
         placeholder="All Types"
         searchPlaceholder="Search type..."
@@ -143,7 +132,7 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
         type={ProjectSlug.CENTERS}
         value={currentCenterId ? String(currentCenterId) : FilterValue.ALL}
         onChange={(val) =>
-          setColumnFilter(EntityKey.CENTER_ID, val === FilterValue.ALL ? undefined : Number(val))
+          setColumnFilter("center_id", val === FilterValue.ALL ? undefined : Number(val))
         }
         data={centerOptions}
         placeholder="All Centers"
@@ -158,7 +147,7 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
         type={ProjectSlug.USERS}
         value={currentUserId ? String(currentUserId) : FilterValue.ALL}
         onChange={(val) =>
-          setColumnFilter(EntityKey.USER_ID, val === FilterValue.ALL ? undefined : Number(val))
+          setColumnFilter("user_id", val === FilterValue.ALL ? undefined : Number(val))
         }
         data={userOptions}
         placeholder="All Operators"
@@ -173,7 +162,7 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
         type={ProjectSlug.CUSTOMERS}
         value={currentCustomerId ? String(currentCustomerId) : FilterValue.ALL}
         onChange={(val) =>
-          setColumnFilter(EntityKey.CUSTOMER_ID, val === FilterValue.ALL ? undefined : Number(val))
+          setColumnFilter("customer_id", val === FilterValue.ALL ? undefined : Number(val))
         }
         data={customerOptions}
         placeholder="All Customers"

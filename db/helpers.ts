@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { StatusCodes, ReasonPhrases } from "http-status-codes";
-import {
-  verifyJWT,
-  verifyRefreshToken,
-  signJWT,
-  signRefreshToken,
-  getTokenExpiresIn,
-  JWTPayload,
-} from "@/lib/auth/jwt";
+import { verifyJWT, verifyRefreshToken, JWTPayload } from "@/lib/auth/jwt";
 import { setAuthCookies } from "@/lib/auth/cookies";
+import { fetchActiveUserById, generateAuthTokens } from "@/lib/auth/common";
 import {
   Role,
   RequestHeader,
@@ -16,7 +10,6 @@ import {
   QueryParam,
   CookieName,
   TableName,
-  EntityKey,
 } from "@/lib/constants/enums";
 export { hasPermission } from "@/lib/store/access";
 import { REQUIRED_CREATE_FIELDS } from "@/lib/fields/config";
@@ -161,50 +154,24 @@ export async function getAuthUser(
   const idNumber = parseInt(refreshPayload.sub, 10);
   if (isNaN(idNumber)) return null;
 
-  const { data: dbUser, error: userError } = await db
-    .from(TableName.USERS)
-    .select("*")
-    .eq(EntityKey.ID, idNumber)
-    .is(EntityKey.DELETED_AT, null)
-    .maybeSingle();
-
-  if (userError || !dbUser || dbUser.token_version !== refreshPayload.token_version) {
+  const dbUser = await fetchActiveUserById(idNumber);
+  if (!dbUser || dbUser.token_version !== refreshPayload.token_version) {
     return null;
   }
 
-  const factoryId = dbUser.factory_id;
-
-  const newAccessToken = await signJWT({
-    sub: String(dbUser.id),
-    username: dbUser.username,
-    name: dbUser.name,
-    role: dbUser.role,
-    factory_id: factoryId,
-  });
-  const accessExpiresIn = getTokenExpiresIn(newAccessToken);
-
-  const newRefreshToken = await signRefreshToken({
-    sub: String(dbUser.id),
-    token_version: dbUser.token_version,
-  });
-  const refreshExpiresIn = getTokenExpiresIn(newRefreshToken);
+  const tokens = await generateAuthTokens(dbUser);
 
   const userPayload: JWTPayload = {
     sub: String(dbUser.id),
     username: dbUser.username,
     name: dbUser.name,
     role: dbUser.role,
-    factory_id: factoryId,
+    factory_id: dbUser.factory_id,
   };
 
   return {
     user: userPayload,
-    refreshedTokens: {
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
-      accessExpiresIn,
-      refreshExpiresIn,
-    },
+    refreshedTokens: tokens,
   };
 }
 
@@ -298,19 +265,17 @@ export async function getFactory(client: typeof supabase, factoryId: number | nu
   try {
     const { data } = await client
       .from(TableName.FACTORIES)
-      .select(
-        `${EntityKey.ID}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER_MODE}, ${EntityKey.GOVT_ID_MODE}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
-      )
-      .eq(EntityKey.ID, factoryId)
+      .select("id, name, aadhar_number_mode, govt_id_mode, created_at, updated_at")
+      .eq("id", factoryId)
       .maybeSingle();
     if (!data) return null;
     return {
-      [EntityKey.ID]: data[EntityKey.ID],
-      [EntityKey.NAME]: data[EntityKey.NAME],
-      [EntityKey.AADHAR_NUMBER_MODE]: data[EntityKey.AADHAR_NUMBER_MODE],
-      [EntityKey.GOVT_ID_MODE]: data[EntityKey.GOVT_ID_MODE],
-      [EntityKey.CREATED_AT]: data[EntityKey.CREATED_AT],
-      [EntityKey.UPDATED_AT]: data[EntityKey.UPDATED_AT],
+      id: data.id,
+      name: data.name,
+      aadhar_number_mode: data.aadhar_number_mode,
+      govt_id_mode: data.govt_id_mode,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
     };
   } catch {
     return null;
@@ -353,7 +318,7 @@ export function formatEntityResponse<T extends Record<string, unknown>>(
   const formatted: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(record)) {
-    if (key === "password_hash" || key === EntityKey.PASSWORD_HASH) {
+    if (key === "password_hash") {
       continue;
     }
     formatted[key] = value;

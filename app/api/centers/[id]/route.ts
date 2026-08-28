@@ -8,7 +8,7 @@ import {
   StatusCodes,
   formatEntityResponse,
 } from "@/db/helpers";
-import { ProjectSlug, PermissionKey, TableName, EntityKey } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey, TableName } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { editCenterSchema } from "@/lib/validation";
 
@@ -27,12 +27,12 @@ export const PATCH = withAuth(
     const query = client
       .from(TableName.CENTERS)
       .update({
-        ...(name ? { [EntityKey.NAME]: name } : {}),
-        [EntityKey.UPDATED_AT]: new Date().toISOString(),
+        ...(name ? { name } : {}),
+        updated_at: new Date().toISOString(),
       })
-      .eq(EntityKey.ID, entityId)
-      .is(EntityKey.DELETED_AT, null)
-      .eq(EntityKey.FACTORY_ID, factoryId);
+      .eq("id", entityId)
+      .is("deleted_at", null)
+      .eq("factory_id", factoryId);
 
     const { data: updated, error } = await query.select().maybeSingle();
     if (error || !updated) return apiError(ApiErrorMessage.CENTER_NOT_FOUND, StatusCodes.NOT_FOUND);
@@ -48,9 +48,9 @@ export const DELETE = withAuth(
     // Check if any active entries are linked to this center
     const { data: linkedEntry } = await client
       .from(TableName.ENTRIES)
-      .select(EntityKey.ID)
-      .eq(EntityKey.CENTER_ID, entityId)
-      .is(EntityKey.DELETED_AT, null)
+      .select("id")
+      .eq("center_id", entityId)
+      .is("deleted_at", null)
       .limit(1)
       .maybeSingle();
 
@@ -61,14 +61,14 @@ export const DELETE = withAuth(
     const query = client
       .from(TableName.CENTERS)
       .update({
-        [EntityKey.DELETED_AT]: new Date().toISOString(),
-        [EntityKey.UPDATED_AT]: new Date().toISOString(),
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
-      .eq(EntityKey.ID, entityId)
-      .is(EntityKey.DELETED_AT, null)
-      .eq(EntityKey.FACTORY_ID, factoryId);
+      .eq("id", entityId)
+      .is("deleted_at", null)
+      .eq("factory_id", factoryId);
 
-    const { data, error } = await query.select(EntityKey.ID);
+    const { data, error } = await query.select("id");
     if (error) {
       return apiError(
         error.message || ApiErrorMessage.CANNOT_DELETE_CENTER(entityId),

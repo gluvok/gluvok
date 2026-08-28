@@ -4,7 +4,7 @@
  */
 
 import { db } from "@/db";
-import { TableName, EntityKey, Role } from "@/lib/constants/enums";
+import { TableName, Role } from "@/lib/constants/enums";
 import { AuthErrorMessage } from "@/lib/constants/messages";
 import { verifyPassword } from "@/lib/auth/password";
 import { signJWT, signRefreshToken, getTokenExpiresIn } from "@/lib/auth/jwt";
@@ -32,13 +32,43 @@ export interface UserSessionPayload {
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
-  expiresIn: number;
+  accessExpiresIn: number;
   refreshExpiresIn: number;
+  expiresIn: number;
 }
 
 export interface CredentialsVerificationResult {
   user: AuthenticatedUserRecord;
   userPayload: UserSessionPayload;
+}
+
+export function toUserSessionPayload(user: AuthenticatedUserRecord): UserSessionPayload {
+  return {
+    id: user.id,
+    username: user.username,
+    name: user.name,
+    aadhar_number: user.aadhar_number ?? null,
+    role: user.role,
+    factory_id: user.factory_id,
+  };
+}
+
+/**
+ * Fetches an active (non-deleted) user record by primary key ID.
+ */
+export async function fetchActiveUserById(userId: number): Promise<AuthenticatedUserRecord | null> {
+  const { data: user, error } = await db
+    .from(TableName.USERS)
+    .select("*")
+    .eq("id", userId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error || !user) {
+    return null;
+  }
+
+  return user;
 }
 
 /**
@@ -55,8 +85,8 @@ export async function verifyUserCredentials(
   const { data: user, error: userError } = await db
     .from(TableName.USERS)
     .select("*")
-    .eq(EntityKey.USERNAME, username)
-    .is(EntityKey.DELETED_AT, null)
+    .eq("username", username)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (userError || !user) {
@@ -68,19 +98,10 @@ export async function verifyUserCredentials(
     return { error: AuthErrorMessage.INVALID_CREDENTIALS, status: 401 };
   }
 
-  const userPayload: UserSessionPayload = {
-    id: user.id,
-    username: user.username,
-    name: user.name,
-    aadhar_number: user.aadhar_number ?? null,
-    role: user.role,
-    factory_id: user.factory_id,
-  };
-
   return {
     result: {
       user,
-      userPayload,
+      userPayload: toUserSessionPayload(user),
     },
   };
 }
@@ -99,7 +120,7 @@ export async function generateAuthTokens(user: AuthenticatedUserRecord): Promise
     role: user.role,
     factory_id: factoryId,
   });
-  const expiresIn = getTokenExpiresIn(accessToken);
+  const accessExpiresIn = getTokenExpiresIn(accessToken);
 
   const refreshToken = await signRefreshToken({
     sub: String(user.id),
@@ -110,7 +131,8 @@ export async function generateAuthTokens(user: AuthenticatedUserRecord): Promise
   return {
     accessToken,
     refreshToken,
-    expiresIn,
+    accessExpiresIn,
     refreshExpiresIn,
+    expiresIn: accessExpiresIn,
   };
 }

@@ -16,7 +16,6 @@ import {
   ProjectSlug,
   PermissionKey,
   QueryParam,
-  EntityKey,
   FilterValue,
   FieldRequirementMode,
   TableName,
@@ -30,11 +29,11 @@ export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.USERS, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT;
+  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at";
   const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
     ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
     : true;
-  const roleParam = req.nextUrl.searchParams.get(EntityKey.ROLE);
+  const roleParam = req.nextUrl.searchParams.get("role");
 
   const factoryId = user.factory_id;
   const factory = await getFactory(client, factoryId);
@@ -42,16 +41,15 @@ export const GET = withAuth(async (req, user, client) => {
 
   let query = client
     .from(TableName.USERS)
-    .select(
-      `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
-      { count: "exact" },
-    )
+    .select("id, username, name, aadhar_number, role, factory_id, created_at, updated_at", {
+      count: "exact",
+    })
     .order(sortColumn, { ascending: !sortDesc })
-    .eq(EntityKey.FACTORY_ID, factoryId)
-    .is(EntityKey.DELETED_AT, null);
+    .eq("factory_id", factoryId)
+    .is("deleted_at", null);
 
   if (roleParam && roleParam !== FilterValue.ALL) {
-    query = query.eq(EntityKey.ROLE, roleParam);
+    query = query.eq("role", roleParam);
   }
 
   if (search) {
@@ -59,22 +57,18 @@ export const GET = withAuth(async (req, user, client) => {
     if (!isNaN(searchNum)) {
       if (!isAadharNotRequired) {
         query = query.or(
-          `${EntityKey.NAME}.ilike.%${search}%,${EntityKey.AADHAR_NUMBER}.ilike.%${search}%,${EntityKey.USERNAME}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`,
+          `name.ilike.%${search}%,aadhar_number.ilike.%${search}%,username.ilike.%${search}%,id.eq.${searchNum}`,
         );
       } else {
-        query = query.or(
-          `${EntityKey.NAME}.ilike.%${search}%,${EntityKey.USERNAME}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`,
-        );
+        query = query.or(`name.ilike.%${search}%,username.ilike.%${search}%,id.eq.${searchNum}`);
       }
     } else {
       if (!isAadharNotRequired) {
         query = query.or(
-          `${EntityKey.NAME}.ilike.%${search}%,${EntityKey.AADHAR_NUMBER}.ilike.%${search}%,${EntityKey.USERNAME}.ilike.%${search}%`,
+          `name.ilike.%${search}%,aadhar_number.ilike.%${search}%,username.ilike.%${search}%`,
         );
       } else {
-        query = query.or(
-          `${EntityKey.NAME}.ilike.%${search}%,${EntityKey.USERNAME}.ilike.%${search}%`,
-        );
+        query = query.or(`name.ilike.%${search}%,username.ilike.%${search}%`);
       }
     }
   }
@@ -106,9 +100,9 @@ export const POST = withAuth(async (req, user, client) => {
 
   const { data: existingUser } = await client
     .from(TableName.USERS)
-    .select(EntityKey.ID)
-    .eq(EntityKey.USERNAME, username)
-    .is(EntityKey.DELETED_AT, null)
+    .select("id")
+    .eq("username", username)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (existingUser) return apiError(ApiErrorMessage.USERNAME_TAKEN, StatusCodes.BAD_REQUEST);
@@ -116,10 +110,10 @@ export const POST = withAuth(async (req, user, client) => {
   if (aadhar_number) {
     const aadharQuery = client
       .from(TableName.USERS)
-      .select(EntityKey.ID)
-      .eq(EntityKey.AADHAR_NUMBER, aadhar_number)
-      .eq(EntityKey.FACTORY_ID, factoryId)
-      .is(EntityKey.DELETED_AT, null);
+      .select("id")
+      .eq("aadhar_number", aadhar_number)
+      .eq("factory_id", factoryId)
+      .is("deleted_at", null);
 
     const { data: existingAadhar } = await aadharQuery.maybeSingle();
     if (existingAadhar)
@@ -131,16 +125,14 @@ export const POST = withAuth(async (req, user, client) => {
   const { data: newUser, error } = await client
     .from(TableName.USERS)
     .insert({
-      [EntityKey.USERNAME]: username,
+      username,
       password_hash: passwordHash,
-      [EntityKey.NAME]: name,
-      [EntityKey.AADHAR_NUMBER]: aadhar_number || null,
-      [EntityKey.ROLE]: role || Role.OPERATOR,
-      [EntityKey.FACTORY_ID]: factoryId,
+      name,
+      aadhar_number: aadhar_number || null,
+      role: role || Role.OPERATOR,
+      factory_id: factoryId,
     })
-    .select(
-      `${EntityKey.ID}, ${EntityKey.USERNAME}, ${EntityKey.NAME}, ${EntityKey.AADHAR_NUMBER}, ${EntityKey.ROLE}, ${EntityKey.FACTORY_ID}, ${EntityKey.CREATED_AT}, ${EntityKey.UPDATED_AT}`,
-    )
+    .select("id, username, name, aadhar_number, role, factory_id, created_at, updated_at")
     .single();
 
   if (error || !newUser) {
@@ -162,9 +154,9 @@ export const DELETE = withAuth(async (req, user, client) => {
   // Check if any active entries are linked to any of the selected users
   const { data: linkedEntries } = await client
     .from(TableName.ENTRIES)
-    .select(EntityKey.ID)
-    .in(EntityKey.USER_ID, ids)
-    .is(EntityKey.DELETED_AT, null)
+    .select("id")
+    .in("user_id", ids)
+    .is("deleted_at", null)
     .limit(1);
 
   if (linkedEntries && linkedEntries.length > 0) {
@@ -174,9 +166,9 @@ export const DELETE = withAuth(async (req, user, client) => {
   // Check if any active customers are linked to any of the selected users
   const { data: linkedCustomers } = await client
     .from(TableName.CUSTOMERS)
-    .select(EntityKey.ID)
-    .in(EntityKey.USER_ID, ids)
-    .is(EntityKey.DELETED_AT, null)
+    .select("id")
+    .in("user_id", ids)
+    .is("deleted_at", null)
     .limit(1);
 
   if (linkedCustomers && linkedCustomers.length > 0) {
@@ -186,13 +178,13 @@ export const DELETE = withAuth(async (req, user, client) => {
   const { data: deletedUsers, error } = await client
     .from(TableName.USERS)
     .update({
-      [EntityKey.DELETED_AT]: new Date().toISOString(),
-      [EntityKey.UPDATED_AT]: new Date().toISOString(),
+      deleted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    .in(EntityKey.ID, ids)
-    .is(EntityKey.DELETED_AT, null)
-    .eq(EntityKey.FACTORY_ID, user.factory_id)
-    .select(EntityKey.ID);
+    .in("id", ids)
+    .is("deleted_at", null)
+    .eq("factory_id", user.factory_id)
+    .select("id");
 
   if (error) {
     return apiError(

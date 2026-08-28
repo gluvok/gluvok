@@ -4,7 +4,7 @@
  */
 
 import * as z from "zod";
-import { EntityKey, ColumnLabel, FieldRequirementMode, Role } from "@/lib/constants/enums";
+import { ColumnLabel, FieldRequirementMode, Role } from "@/lib/constants/enums";
 import { ValidationMessage } from "@/lib/constants/messages";
 import { type Factory } from "@/types";
 import { integerIdSchema, nameSchema } from "./helpers";
@@ -65,18 +65,18 @@ function buildAadharSchema(factory: Factory | null): z.ZodTypeAny {
  */
 export function validatePasswordRefinement(
   data: {
-    [EntityKey.USERNAME]?: string;
-    [EntityKey.PASSWORD]?: string;
-    [EntityKey.CONFIRM_PASSWORD]?: string;
+    username?: string;
+    password?: string;
+    confirmPassword?: string;
     confirm_password?: string;
   },
   ctx: z.RefinementCtx,
   isEdit: boolean,
   requireUsername = true,
 ) {
-  const rawUsername = data[EntityKey.USERNAME];
-  const rawPassword = data[EntityKey.PASSWORD];
-  const rawConfirm = data[EntityKey.CONFIRM_PASSWORD] ?? data.confirm_password;
+  const rawUsername = data.username;
+  const rawPassword = data.password;
+  const rawConfirm = data.confirmPassword ?? data.confirm_password;
 
   const hasUsername = Boolean(rawUsername && rawUsername.trim().length > 0);
   const hasPassword = Boolean(rawPassword && rawPassword.trim().length > 0);
@@ -90,14 +90,14 @@ export function validatePasswordRefinement(
         message: hasPassword
           ? ValidationMessage.USERNAME_REQUIRED_WITH_PASSWORD(ColumnLabel.USERNAME)
           : ValidationMessage.REQUIRED(ColumnLabel.USERNAME),
-        path: [EntityKey.USERNAME],
+        path: ["username"],
       });
     }
   } else if (rawUsername!.trim().length < 3) {
     ctx.addIssue({
       code: "custom",
       message: ValidationMessage.MIN_LENGTH(ColumnLabel.USERNAME, 3),
-      path: [EntityKey.USERNAME],
+      path: ["username"],
     });
   }
 
@@ -107,7 +107,7 @@ export function validatePasswordRefinement(
     ctx.addIssue({
       code: "custom",
       message: ValidationMessage.REQUIRED(ColumnLabel.PASSWORD),
-      path: [EntityKey.PASSWORD],
+      path: ["password"],
     });
   }
 
@@ -116,7 +116,7 @@ export function validatePasswordRefinement(
     ctx.addIssue({
       code: "custom",
       message: ValidationMessage.MIN_LENGTH(ColumnLabel.PASSWORD, 6),
-      path: [EntityKey.PASSWORD],
+      path: ["password"],
     });
   }
 
@@ -126,13 +126,13 @@ export function validatePasswordRefinement(
     ctx.addIssue({
       code: "custom",
       message: ValidationMessage.CONFIRM_PASSWORD_REQUIRED,
-      path: [EntityKey.CONFIRM_PASSWORD],
+      path: ["confirmPassword"],
     });
   } else if (hasPassword && rawPassword !== rawConfirm) {
     ctx.addIssue({
       code: "custom",
       message: ValidationMessage.PASSWORDS_DO_NOT_MATCH,
-      path: [EntityKey.CONFIRM_PASSWORD],
+      path: ["confirmPassword"],
     });
   }
 }
@@ -157,13 +157,13 @@ export function getDynamicCustomerSchema(factory: Factory | null, isEdit = false
 
   return z
     .object({
-      [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
-      [EntityKey.FATHER_NAME]: nameSchema(ColumnLabel.FATHER_NAME),
-      [EntityKey.GOVT_ID]: govtIdSchema,
-      [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
-      [EntityKey.USERNAME]: z.string().optional().or(z.literal("")),
-      [EntityKey.PASSWORD]: z.string().optional().or(z.literal("")),
-      [EntityKey.CONFIRM_PASSWORD]: z.string().optional().or(z.literal("")),
+      name: nameSchema(ColumnLabel.NAME),
+      father_name: nameSchema(ColumnLabel.FATHER_NAME),
+      govt_id: govtIdSchema,
+      factory_id: z.coerce.number().optional().nullable(),
+      username: z.string().optional().or(z.literal("")),
+      password: z.string().optional().or(z.literal("")),
+      confirmPassword: z.string().optional().or(z.literal("")),
     })
     .superRefine((data, ctx) => {
       validatePasswordRefinement(data, ctx, isEdit, false);
@@ -175,15 +175,15 @@ export function getDynamicUserSchema(factory: Factory | null, isEdit = false) {
 
   return z
     .object({
-      [EntityKey.USERNAME]: z.string().optional().or(z.literal("")),
-      [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
-      [EntityKey.ROLE]: z.enum(Role, {
+      username: z.string().optional().or(z.literal("")),
+      name: nameSchema(ColumnLabel.NAME),
+      role: z.enum(Role, {
         message: ValidationMessage.VALID_ROLE_REQUIRED,
       }),
-      [EntityKey.AADHAR_NUMBER]: aadharSchema,
-      [EntityKey.PASSWORD]: z.string().optional().or(z.literal("")),
-      [EntityKey.CONFIRM_PASSWORD]: z.string().optional().or(z.literal("")),
-      [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
+      aadhar_number: aadharSchema,
+      password: z.string().optional().or(z.literal("")),
+      confirmPassword: z.string().optional().or(z.literal("")),
+      factory_id: z.coerce.number().optional().nullable(),
     })
     .superRefine((data, ctx) => validatePasswordRefinement(data, ctx, isEdit, true));
 }

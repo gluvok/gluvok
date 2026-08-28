@@ -16,7 +16,7 @@ import {
 import { useTable } from "@/lib/utils";
 import { projectTableFeatures, type ProjectTableFeatures } from "@/components/data-table/features";
 import { getProjectColumns } from "@/components/projects/columns";
-import { ProjectSlug, EntityKey } from "@/lib/constants/enums";
+import { ProjectSlug } from "@/lib/constants/enums";
 import {
   useProjectDialogStates,
   parseColumnFilters,
@@ -76,7 +76,7 @@ export function useProjectTable({ projectSlug, primaryIdKey, projectName }: UseP
 
   // Local table controls state
   const [sorting, setSorting] = React.useState<SortingState>(() => [
-    { id: EntityKey.CREATED_AT, desc: true },
+    { id: "created_at", desc: true },
   ]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(() =>
     Object.entries(savedFilters).map(([id, value]) => ({ id, value })),
@@ -170,7 +170,7 @@ export function useProjectTable({ projectSlug, primaryIdKey, projectName }: UseP
         setLocalError(null);
         const filtersObj = parseColumnFilters(columnFilters);
 
-        const effectiveSortColumn = sorting[0]?.id || EntityKey.CREATED_AT;
+        const effectiveSortColumn = sorting[0]?.id || "created_at";
         const effectiveSortDesc = sorting[0] !== undefined ? sorting[0].desc : true;
 
         const result = await fetchEntityListPaginated(projectSlug as ProjectSlug, {

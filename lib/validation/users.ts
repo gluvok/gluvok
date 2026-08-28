@@ -4,18 +4,18 @@
  */
 
 import * as z from "zod";
-import { EntityKey, Role, ColumnLabel } from "@/lib/constants/enums";
+import { Role, ColumnLabel } from "@/lib/constants/enums";
 import { ValidationMessage } from "@/lib/constants/messages";
 import { nameSchema } from "./helpers";
 
 export const addUserSchema = z
   .object({
-    [EntityKey.USERNAME]: z.string().min(3, ValidationMessage.MIN_LENGTH(ColumnLabel.USERNAME, 3)),
-    [EntityKey.PASSWORD]: z.string().min(6, ValidationMessage.MIN_LENGTH(ColumnLabel.PASSWORD, 6)),
-    [EntityKey.CONFIRM_PASSWORD]: z
+    username: z.string().min(3, ValidationMessage.MIN_LENGTH(ColumnLabel.USERNAME, 3)),
+    password: z.string().min(6, ValidationMessage.MIN_LENGTH(ColumnLabel.PASSWORD, 6)),
+    confirmPassword: z
       .string({ message: ValidationMessage.CONFIRM_PASSWORD_REQUIRED })
       .min(1, ValidationMessage.CONFIRM_PASSWORD_REQUIRED),
-    [EntityKey.AADHAR_NUMBER]: z
+    aadhar_number: z
       .preprocess(
         (val) => (typeof val === "string" ? val.replace(/\s/g, "") : val),
         z
@@ -27,23 +27,23 @@ export const addUserSchema = z
           .or(z.literal("")),
       )
       .transform((v) => (v === "" || v === undefined ? null : v)),
-    [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
-    [EntityKey.ROLE]: z.enum(Role, {
+    name: nameSchema(ColumnLabel.NAME),
+    role: z.enum(Role, {
       message: ValidationMessage.VALID_ROLE_REQUIRED,
     }),
-    [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
+    factory_id: z.coerce.number().optional().nullable(),
   })
-  .refine((data) => data[EntityKey.PASSWORD] === data[EntityKey.CONFIRM_PASSWORD], {
+  .refine((data) => data.password === data.confirmPassword, {
     message: ValidationMessage.PASSWORDS_DO_NOT_MATCH,
-    path: [EntityKey.CONFIRM_PASSWORD],
+    path: ["confirmPassword"],
   });
 
 export const createUserSchema = addUserSchema;
 
 export const editUserSchema = z
   .object({
-    [EntityKey.USERNAME]: z.string().min(3, ValidationMessage.MIN_LENGTH(ColumnLabel.USERNAME, 3)),
-    [EntityKey.AADHAR_NUMBER]: z
+    username: z.string().min(3, ValidationMessage.MIN_LENGTH(ColumnLabel.USERNAME, 3)),
+    aadhar_number: z
       .preprocess(
         (val) => (typeof val === "string" ? val.replace(/\s/g, "") : val),
         z
@@ -55,25 +55,25 @@ export const editUserSchema = z
           .or(z.literal("")),
       )
       .transform((v) => (v === "" || v === undefined ? null : v)),
-    [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
-    [EntityKey.ROLE]: z.enum(Role, {
+    name: nameSchema(ColumnLabel.NAME),
+    role: z.enum(Role, {
       message: ValidationMessage.VALID_ROLE_REQUIRED,
     }),
-    [EntityKey.PASSWORD]: z
+    password: z
       .string()
       .optional()
       .or(z.literal(""))
       .transform((v) => (v === "" ? undefined : v)),
-    [EntityKey.CONFIRM_PASSWORD]: z
+    confirmPassword: z
       .string()
       .optional()
       .or(z.literal(""))
       .transform((v) => (v === "" ? undefined : v)),
-    [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
+    factory_id: z.coerce.number().optional().nullable(),
   })
   .superRefine((data, ctx) => {
-    const rawPassword = data[EntityKey.PASSWORD];
-    const rawConfirm = data[EntityKey.CONFIRM_PASSWORD];
+    const rawPassword = data.password;
+    const rawConfirm = data.confirmPassword;
     const hasPassword = Boolean(rawPassword && rawPassword.trim().length > 0);
     const hasConfirm = Boolean(rawConfirm && rawConfirm.trim().length > 0);
 
@@ -81,7 +81,7 @@ export const editUserSchema = z
       ctx.addIssue({
         code: "custom",
         message: ValidationMessage.MIN_LENGTH(ColumnLabel.PASSWORD, 6),
-        path: [EntityKey.PASSWORD],
+        path: ["password"],
       });
     }
 
@@ -89,13 +89,13 @@ export const editUserSchema = z
       ctx.addIssue({
         code: "custom",
         message: ValidationMessage.CONFIRM_PASSWORD_REQUIRED,
-        path: [EntityKey.CONFIRM_PASSWORD],
+        path: ["confirmPassword"],
       });
     } else if (hasPassword && rawPassword !== rawConfirm) {
       ctx.addIssue({
         code: "custom",
         message: ValidationMessage.PASSWORDS_DO_NOT_MATCH,
-        path: [EntityKey.CONFIRM_PASSWORD],
+        path: ["confirmPassword"],
       });
     }
   });

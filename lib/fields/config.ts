@@ -5,7 +5,6 @@
 
 import {
   ProjectSlug,
-  EntityKey,
   ColumnLabel,
   FieldType,
   InputMode,
@@ -34,7 +33,7 @@ import {
 export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   [ProjectSlug.CENTERS]: [
     {
-      key: EntityKey.NAME,
+      key: "name",
       label: ColumnLabel.NAME,
       placeholder: "e.g. Center F",
       type: FieldType.TEXT,
@@ -45,7 +44,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   ],
   [ProjectSlug.COMMODITIES]: [
     {
-      key: EntityKey.NAME,
+      key: "name",
       label: ColumnLabel.NAME,
       placeholder: "e.g. Barley",
       type: FieldType.TEXT,
@@ -56,7 +55,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   ],
   [ProjectSlug.RATES]: [
     {
-      key: EntityKey.COMMODITY_ID,
+      key: "commodity_id",
       label: ColumnLabel.COMMODITY,
       placeholder: getSelectPlaceholder(SingularEntityName.COMMODITY),
       type: FieldType.TEXT,
@@ -65,7 +64,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.THIRD,
     },
     {
-      key: EntityKey.UNIT_PRICE,
+      key: "unit_price",
       label: ColumnLabel.UNIT_PRICE,
       placeholder: "e.g. 15000",
       type: FieldType.NUMBER,
@@ -74,7 +73,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.THIRD,
     },
     {
-      key: EntityKey.UNIT,
+      key: "unit",
       label: ColumnLabel.UNIT,
       placeholder: "Select unit...",
       type: FieldType.UNIT,
@@ -85,7 +84,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   ],
   [ProjectSlug.CUSTOMERS]: [
     {
-      key: EntityKey.GOVT_ID,
+      key: "govt_id",
       label: ColumnLabel.GOVT_ID,
       placeholder: "e.g. 1001",
       type: FieldType.NUMBER,
@@ -94,7 +93,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
     {
-      key: EntityKey.NAME,
+      key: "name",
       label: ColumnLabel.NAME,
       placeholder: "e.g. Ajay Kumar",
       type: FieldType.TEXT,
@@ -103,7 +102,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
     {
-      key: EntityKey.FATHER_NAME,
+      key: "father_name",
       label: ColumnLabel.FATHER_NAME,
       placeholder: "e.g. Vijay Kumar",
       type: FieldType.TEXT,
@@ -112,7 +111,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
     {
-      key: EntityKey.USERNAME,
+      key: "username",
       label: ColumnLabel.USERNAME,
       placeholder: "e.g. ajay123 (optional)",
       type: FieldType.TEXT,
@@ -120,7 +119,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
     {
-      key: EntityKey.PASSWORD,
+      key: "password",
       label: ColumnLabel.PASSWORD,
       placeholder: "Optional login password",
       type: FieldType.PASSWORD,
@@ -129,7 +128,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       newRow: true,
     },
     {
-      key: EntityKey.CONFIRM_PASSWORD,
+      key: "confirmPassword",
       label: ColumnLabel.CONFIRM_PASSWORD,
       placeholder: "Repeat password",
       type: FieldType.PASSWORD,
@@ -139,7 +138,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   ],
   [ProjectSlug.ENTRIES]: [
     {
-      key: EntityKey.VEHICLE_NUMBER,
+      key: "vehicle_number",
       label: ColumnLabel.VEHICLE_NUMBER,
       placeholder: "e.g. MH12AB1234",
       type: FieldType.TEXT,
@@ -150,7 +149,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
     {
-      key: EntityKey.WEIGHT,
+      key: "weight",
       label: ColumnLabel.WEIGHT,
       placeholder: "e.g. 15000",
       type: FieldType.TEXT,
@@ -160,7 +159,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
     {
-      key: EntityKey.CENTER_ID,
+      key: "center_id",
       label: SingularEntityName.CENTER,
       placeholder: getSelectPlaceholder(SingularEntityName.CENTER),
       type: FieldType.TEXT,
@@ -169,7 +168,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
     {
-      key: EntityKey.CUSTOMER_ID,
+      key: "customer_id",
       label: SingularEntityName.CUSTOMER,
       placeholder: getSelectPlaceholder(SingularEntityName.CUSTOMER),
       type: FieldType.TEXT,
@@ -177,7 +176,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
     {
-      key: EntityKey.IMAGES,
+      key: "images",
       label: ColumnLabel.IMAGES,
       placeholder: "Upload entry images...",
       type: FieldType.IMAGES,
@@ -188,7 +187,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   ],
   [ProjectSlug.WEIGHMENTS]: [
     {
-      key: EntityKey.TYPE,
+      key: "type",
       label: ColumnLabel.TYPE,
       placeholder: "Select type...",
       type: FieldType.TYPE,
@@ -199,7 +198,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   ],
   [ProjectSlug.USERS]: [
     {
-      key: EntityKey.AADHAR_NUMBER,
+      key: "aadhar_number",
       label: ColumnLabel.AADHAR_NUMBER,
       placeholder: "e.g. 1234 5678 9012",
       type: FieldType.TEXT,
@@ -214,7 +213,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
     {
-      key: EntityKey.NAME,
+      key: "name",
       label: ColumnLabel.NAME,
       placeholder: "e.g. Amit Sharma",
       type: FieldType.TEXT,
@@ -223,7 +222,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
     {
-      key: EntityKey.USERNAME,
+      key: "username",
       label: ColumnLabel.USERNAME,
       placeholder: "e.g. amits123",
       type: FieldType.TEXT,
@@ -232,7 +231,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
     {
-      key: EntityKey.ROLE,
+      key: "role",
       label: ColumnLabel.ROLE,
       placeholder: "Select role...",
       type: FieldType.ROLE,
@@ -241,7 +240,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
     {
-      key: EntityKey.PASSWORD,
+      key: "password",
       label: ColumnLabel.PASSWORD,
       placeholder: "Account password",
       type: FieldType.PASSWORD,
@@ -251,7 +250,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       newRow: true,
     },
     {
-      key: EntityKey.CONFIRM_PASSWORD,
+      key: "confirmPassword",
       label: ColumnLabel.CONFIRM_PASSWORD,
       placeholder: "Repeat password",
       type: FieldType.PASSWORD,
@@ -262,7 +261,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   ],
   [ProjectSlug.SETTINGS]: [
     {
-      key: EntityKey.NAME,
+      key: "name",
       label: ColumnLabel.FACTORY_NAME,
       placeholder: "Factory Name...",
       type: FieldType.TEXT,
@@ -271,7 +270,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.FULL,
     },
     {
-      key: EntityKey.AADHAR_NUMBER_MODE,
+      key: "aadhar_number_mode",
       label: ColumnLabel.AADHAR_NUMBER_MODE,
       placeholder: "Select Aadhaar Mode...",
       type: FieldType.FIELD_REQUIREMENT_MODE,
@@ -280,7 +279,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
     {
-      key: EntityKey.GOVT_ID_MODE,
+      key: "govt_id_mode",
       label: ColumnLabel.GOVT_ID_MODE,
       placeholder: "Select Govt ID Mode...",
       type: FieldType.FIELD_REQUIREMENT_MODE,
@@ -291,26 +290,13 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   ],
 };
 
-export const REQUIRED_CREATE_FIELDS: Record<string, EntityKey[]> = {
-  [ProjectSlug.CENTERS]: [EntityKey.NAME],
-  [ProjectSlug.COMMODITIES]: [EntityKey.NAME],
-  [ProjectSlug.RATES]: [EntityKey.COMMODITY_ID, EntityKey.UNIT_PRICE, EntityKey.UNIT],
-  [ProjectSlug.CUSTOMERS]: [EntityKey.GOVT_ID, EntityKey.NAME, EntityKey.FATHER_NAME],
-  [ProjectSlug.ENTRIES]: [EntityKey.VEHICLE_NUMBER, EntityKey.WEIGHT, EntityKey.CENTER_ID],
-  [ProjectSlug.WEIGHMENTS]: [
-    EntityKey.VEHICLE_NUMBER,
-    EntityKey.CENTER_ID,
-    EntityKey.WEIGHT,
-    EntityKey.UNIT,
-    EntityKey.TYPE,
-  ],
-  [ProjectSlug.USERS]: [
-    EntityKey.AADHAR_NUMBER,
-    EntityKey.NAME,
-    EntityKey.USERNAME,
-    EntityKey.ROLE,
-    EntityKey.PASSWORD,
-    EntityKey.CONFIRM_PASSWORD,
-  ],
-  [ProjectSlug.SETTINGS]: [EntityKey.NAME, EntityKey.AADHAR_NUMBER_MODE, EntityKey.GOVT_ID_MODE],
+export const REQUIRED_CREATE_FIELDS: Record<string, string[]> = {
+  [ProjectSlug.CENTERS]: ["name"],
+  [ProjectSlug.COMMODITIES]: ["name"],
+  [ProjectSlug.RATES]: ["commodity_id", "unit_price", "unit"],
+  [ProjectSlug.CUSTOMERS]: ["govt_id", "name", "father_name"],
+  [ProjectSlug.ENTRIES]: ["vehicle_number", "weight", "center_id"],
+  [ProjectSlug.WEIGHMENTS]: ["vehicle_number", "center_id", "weight", "unit", "type"],
+  [ProjectSlug.USERS]: ["aadhar_number", "name", "username", "role", "password", "confirmPassword"],
+  [ProjectSlug.SETTINGS]: ["name", "aadhar_number_mode", "govt_id_mode"],
 };

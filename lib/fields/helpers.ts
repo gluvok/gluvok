@@ -5,7 +5,6 @@
 
 import {
   ProjectSlug,
-  EntityKey,
   CommodityName,
   ProjectName,
   SingularEntityName,
@@ -44,22 +43,22 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export function getPrimaryIdKey(_slug?: string | ProjectSlug): EntityKey {
-  return EntityKey.ID;
+export function getPrimaryIdKey(_slug?: string | ProjectSlug): string {
+  return "id";
 }
 
-export function getReferencedEntitySlug(key: string | EntityKey): string | null {
+export function getReferencedEntitySlug(key: string): string | null {
   switch (key) {
-    case EntityKey.COMMODITY_ID:
-    case EntityKey.COMMODITY_NAME:
+    case "commodity_id":
+    case "commodity_name":
       return ProjectSlug.COMMODITIES;
-    case EntityKey.RATE_ID:
+    case "rate_id":
       return ProjectSlug.RATES;
-    case EntityKey.CENTER_ID:
+    case "center_id":
       return ProjectSlug.CENTERS;
-    case EntityKey.CUSTOMER_ID:
+    case "customer_id":
       return ProjectSlug.CUSTOMERS;
-    case EntityKey.USER_ID:
+    case "user_id":
       return ProjectSlug.USERS;
     default:
       return null;

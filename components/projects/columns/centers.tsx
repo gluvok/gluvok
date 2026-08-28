@@ -6,9 +6,9 @@
 import { type ColumnDef, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Tag } from "lucide-react";
-import { EntityKey, ColumnLabel } from "@/lib/constants/enums";
+import { ColumnLabel } from "@/lib/constants/enums";
 import { createTextColumn } from "./helpers";
 
 export function getCentersColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
-  return [createTextColumn(EntityKey.NAME, ColumnLabel.NAME, Tag)];
+  return [createTextColumn("name", ColumnLabel.NAME, Tag)];
 }

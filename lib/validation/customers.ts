@@ -4,41 +4,41 @@
  */
 
 import * as z from "zod";
-import { EntityKey, ColumnLabel } from "@/lib/constants/enums";
+import { ColumnLabel } from "@/lib/constants/enums";
 import { ValidationMessage } from "@/lib/constants/messages";
 import { nameSchema } from "./helpers";
 
 const baseCustomerSchema = z
   .object({
-    [EntityKey.GOVT_ID]: z
+    govt_id: z
       .preprocess(
         (v) => (v === "" || v === null || v === undefined ? null : Number(v)),
         z.number().int().positive().nullable().optional(),
       )
       .transform((v) => (v === undefined || Number.isNaN(v) ? null : v)),
-    [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
-    [EntityKey.FATHER_NAME]: nameSchema(ColumnLabel.FATHER_NAME),
-    [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
-    [EntityKey.USERNAME]: z
+    name: nameSchema(ColumnLabel.NAME),
+    father_name: nameSchema(ColumnLabel.FATHER_NAME),
+    factory_id: z.coerce.number().optional().nullable(),
+    username: z
       .string()
       .optional()
       .or(z.literal(""))
       .transform((v) => (v === "" ? undefined : v)),
-    [EntityKey.PASSWORD]: z
+    password: z
       .string()
       .optional()
       .or(z.literal(""))
       .transform((v) => (v === "" ? undefined : v)),
-    [EntityKey.CONFIRM_PASSWORD]: z
+    confirmPassword: z
       .string()
       .optional()
       .or(z.literal(""))
       .transform((v) => (v === "" ? undefined : v)),
   })
   .superRefine((data, ctx) => {
-    const rawUsername = data[EntityKey.USERNAME];
-    const rawPassword = data[EntityKey.PASSWORD];
-    const rawConfirm = data[EntityKey.CONFIRM_PASSWORD];
+    const rawUsername = data.username;
+    const rawPassword = data.password;
+    const rawConfirm = data.confirmPassword;
 
     const hasUsername = Boolean(rawUsername && rawUsername.trim().length > 0);
     const hasPassword = Boolean(rawPassword && rawPassword.trim().length > 0);
@@ -47,7 +47,7 @@ const baseCustomerSchema = z
       ctx.addIssue({
         code: "custom",
         message: ValidationMessage.USERNAME_REQUIRED_WITH_PASSWORD(ColumnLabel.USERNAME),
-        path: [EntityKey.USERNAME],
+        path: ["username"],
       });
     }
 
@@ -55,7 +55,7 @@ const baseCustomerSchema = z
       ctx.addIssue({
         code: "custom",
         message: ValidationMessage.PASSWORD_REQUIRED_WITH_USERNAME(ColumnLabel.PASSWORD),
-        path: [EntityKey.PASSWORD],
+        path: ["password"],
       });
     }
 
@@ -63,7 +63,7 @@ const baseCustomerSchema = z
       ctx.addIssue({
         code: "custom",
         message: ValidationMessage.MIN_LENGTH(ColumnLabel.USERNAME, 3),
-        path: [EntityKey.USERNAME],
+        path: ["username"],
       });
     }
 
@@ -71,7 +71,7 @@ const baseCustomerSchema = z
       ctx.addIssue({
         code: "custom",
         message: ValidationMessage.MIN_LENGTH(ColumnLabel.PASSWORD, 6),
-        path: [EntityKey.PASSWORD],
+        path: ["password"],
       });
     }
 
@@ -79,7 +79,7 @@ const baseCustomerSchema = z
       ctx.addIssue({
         code: "custom",
         message: ValidationMessage.PASSWORDS_DO_NOT_MATCH,
-        path: [EntityKey.CONFIRM_PASSWORD],
+        path: ["confirmPassword"],
       });
     }
   });

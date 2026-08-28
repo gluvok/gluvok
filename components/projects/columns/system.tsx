@@ -14,7 +14,6 @@ import {
   Tag,
   type LucideIcon,
 } from "lucide-react";
-import { EntityKey } from "@/lib/constants/enums";
 import { ColumnLabel } from "@/lib/constants/enums";
 import { formatDateTime } from "@/lib/utils";
 import { createCustomColumn } from "./helpers";
@@ -31,17 +30,17 @@ const renderTextCell = (val: string) => (
 );
 
 const PRIMARY_KEY_CONFIGS: Record<string, PrimaryKeyConfig> = {
-  [EntityKey.GOVT_ID]: {
+  govt_id: {
     label: ColumnLabel.GOVT_ID,
     icon: ShieldCheck,
     renderCell: (val) => renderTextCell(val),
   },
-  [EntityKey.AADHAR_NUMBER]: {
+  aadhar_number: {
     label: ColumnLabel.AADHAR_NUMBER,
     icon: Fingerprint,
     renderCell: (val) => renderTextCell(val),
   },
-  [EntityKey.NAME]: {
+  name: {
     label: ColumnLabel.NAME,
     icon: Tag,
     renderCell: (val) => {
@@ -54,7 +53,7 @@ const PRIMARY_KEY_CONFIGS: Record<string, PrimaryKeyConfig> = {
       );
     },
   },
-  [EntityKey.ID]: {
+  id: {
     label: ColumnLabel.ID,
     icon: Hash,
     renderCell: (val) => renderTextCell(val),
@@ -64,25 +63,20 @@ const PRIMARY_KEY_CONFIGS: Record<string, PrimaryKeyConfig> = {
 export function getSystemColumns<T extends RowData>(
   primaryIdKey: string,
 ): ColumnDef<ProjectTableFeatures, T>[] {
-  const config = PRIMARY_KEY_CONFIGS[primaryIdKey] || PRIMARY_KEY_CONFIGS[EntityKey.ID];
+  const config = PRIMARY_KEY_CONFIGS[primaryIdKey] || PRIMARY_KEY_CONFIGS.id;
 
   return [
-    createCustomColumn<T>(primaryIdKey as EntityKey, config.label, config.icon, config.renderCell),
+    createCustomColumn<T>(primaryIdKey, config.label, config.icon, config.renderCell),
     {
-      ...createCustomColumn<T>(EntityKey.CREATED_AT, ColumnLabel.CREATED_AT, Calendar, (val) => (
+      ...createCustomColumn<T>("created_at", ColumnLabel.CREATED_AT, Calendar, (val) => (
         <span className="text-muted-foreground text-xs font-medium">{formatDateTime(val)}</span>
       )),
       enableGlobalFilter: false,
     },
     {
-      ...createCustomColumn<T>(
-        EntityKey.UPDATED_AT,
-        ColumnLabel.UPDATED_AT,
-        CalendarClock,
-        (val) => (
-          <span className="text-muted-foreground text-xs font-medium">{formatDateTime(val)}</span>
-        ),
-      ),
+      ...createCustomColumn<T>("updated_at", ColumnLabel.UPDATED_AT, CalendarClock, (val) => (
+        <span className="text-muted-foreground text-xs font-medium">{formatDateTime(val)}</span>
+      )),
       enableGlobalFilter: false,
     },
   ];

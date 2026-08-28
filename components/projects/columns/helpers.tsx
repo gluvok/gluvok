@@ -8,17 +8,16 @@ import * as React from "react";
 import { type ColumnDef, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { DataTableColumnHeader } from "@/components/data-table";
-import { EntityKey } from "@/lib/constants/enums";
 import { ColumnLabel } from "@/lib/constants/enums";
 
 export function createBaseColumn<T extends RowData>(
-  key: EntityKey | string,
+  key: string,
   label: ColumnLabel | string,
   Icon: React.ComponentType<{ className?: string }>,
   cell: ColumnDef<ProjectTableFeatures, T, any>["cell"],
   id?: string,
 ): ColumnDef<ProjectTableFeatures, T, any> {
-  const colId = id || (key as string);
+  const colId = id || key;
   return {
     id: colId,
     accessorKey: key as any,
@@ -39,19 +38,19 @@ export function createBaseColumn<T extends RowData>(
 }
 
 export function createCustomColumn<T extends RowData>(
-  key: EntityKey | string,
+  key: string,
   label: ColumnLabel | string,
   Icon: React.ComponentType<{ className?: string }>,
   renderCell: (value: string, row: T) => React.ReactNode,
   id?: string,
 ): ColumnDef<ProjectTableFeatures, T, any> {
-  const colId = id || (key as string);
+  const colId = id || key;
   return createBaseColumn(
     key,
     label,
     Icon,
     ({ row }) => {
-      const val = (row.original as Record<string, unknown>)[key as string];
+      const val = (row.original as Record<string, unknown>)[key];
       return renderCell(String(val ?? ""), row.original as T);
     },
     colId,
@@ -59,19 +58,19 @@ export function createCustomColumn<T extends RowData>(
 }
 
 export function createTextColumn<T extends RowData>(
-  key: EntityKey | string,
+  key: string,
   label: ColumnLabel | string,
   Icon: React.ComponentType<{ className?: string }>,
   className = "font-semibold text-foreground text-xs",
   id?: string,
 ): ColumnDef<ProjectTableFeatures, T, any> {
-  const colId = id || (key as string);
+  const colId = id || key;
   return createBaseColumn(
     key,
     label,
     Icon,
     ({ row }) => {
-      const val = (row.original as Record<string, unknown>)[key as string];
+      const val = (row.original as Record<string, unknown>)[key];
       return <div className={className}>{String(val ?? "")}</div>;
     },
     colId,
@@ -79,17 +78,17 @@ export function createTextColumn<T extends RowData>(
 }
 
 export function createIdColumn<T extends RowData>(
-  key: EntityKey | string,
+  key: string,
   label: ColumnLabel | string,
   Icon: React.ComponentType<{ className?: string }>,
   id?: string,
 ): ColumnDef<ProjectTableFeatures, T, any> {
-  const colId = id || (key as string);
+  const colId = id || key;
   return {
     id: colId,
     accessorFn: (row: T) => {
       const record = row as Record<string, unknown>;
-      const val = record[key as string];
+      const val = record[key];
       return val ? String(val) : "";
     },
     header: ({ column }) => (

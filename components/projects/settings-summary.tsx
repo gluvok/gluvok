@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Spinner } from "@/components/kibo-ui/spinner";
 import { getFieldRequirementModeLabel, getModeColorClass, getModeIcon } from "@/lib/fields";
-import { EntityKey, FieldRequirementMode } from "@/lib/constants/enums";
+import { FieldRequirementMode } from "@/lib/constants/enums";
 import { type Settings, type EntityRecord } from "@/types";
 
 interface SettingsSummaryProps {
@@ -105,8 +105,8 @@ export function SettingsSummary({
   }
 
   const factoryName = String(settings.name || settings.factory_name || "Factory");
-  const aadharNumberMode = settings[EntityKey.AADHAR_NUMBER_MODE] ?? FieldRequirementMode.MANDATORY;
-  const govtIdMode = settings[EntityKey.GOVT_ID_MODE] ?? FieldRequirementMode.MANDATORY;
+  const aadharNumberMode = settings.aadhar_number_mode ?? FieldRequirementMode.MANDATORY;
+  const govtIdMode = settings.govt_id_mode ?? FieldRequirementMode.MANDATORY;
 
   return (
     <Card className="w-full max-w-2xl">

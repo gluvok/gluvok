@@ -1,45 +1,43 @@
 import { NextResponse } from "next/server";
 import { withAuth, StatusCodes } from "@/db/helpers";
-import { TableName, EntityKey } from "@/lib/constants/enums";
+import { TableName } from "@/lib/constants/enums";
 
 export const GET = withAuth(async (_req, user, client) => {
   const factoryId = user.factory_id;
 
   const centersQuery = client
     .from(TableName.CENTERS)
-    .select(`${EntityKey.ID}, ${EntityKey.NAME}`)
-    .eq(EntityKey.FACTORY_ID, factoryId)
-    .is(EntityKey.DELETED_AT, null)
-    .order(EntityKey.NAME, { ascending: true });
+    .select("id, name")
+    .eq("factory_id", factoryId)
+    .is("deleted_at", null)
+    .order("name", { ascending: true });
 
   const usersQuery = client
     .from(TableName.USERS)
-    .select(`${EntityKey.ID}, ${EntityKey.NAME}`)
-    .eq(EntityKey.FACTORY_ID, factoryId)
-    .is(EntityKey.DELETED_AT, null)
-    .order(EntityKey.NAME, { ascending: true });
+    .select("id, name")
+    .eq("factory_id", factoryId)
+    .is("deleted_at", null)
+    .order("name", { ascending: true });
 
   const customersQuery = client
     .from(TableName.CUSTOMERS)
-    .select(`${EntityKey.ID}, ${EntityKey.NAME}`)
-    .eq(EntityKey.FACTORY_ID, factoryId)
-    .is(EntityKey.DELETED_AT, null)
-    .order(EntityKey.NAME, { ascending: true });
+    .select("id, name")
+    .eq("factory_id", factoryId)
+    .is("deleted_at", null)
+    .order("name", { ascending: true });
 
   const ratesQuery = client
     .from(TableName.RATES)
-    .select(
-      `${EntityKey.ID}, ${EntityKey.UNIT_PRICE}, ${EntityKey.UNIT}, ${TableName.COMMODITIES}!left(${EntityKey.NAME})`,
-    )
-    .eq(EntityKey.FACTORY_ID, factoryId)
-    .is(EntityKey.DELETED_AT, null)
-    .order(EntityKey.ID, { ascending: true });
+    .select(`id, unit_price, unit, ${TableName.COMMODITIES}!left(name)`)
+    .eq("factory_id", factoryId)
+    .is("deleted_at", null)
+    .order("id", { ascending: true });
 
   const commoditiesQuery = client
     .from(TableName.COMMODITIES)
-    .select(`${EntityKey.ID}, ${EntityKey.NAME}`)
-    .is(EntityKey.DELETED_AT, null)
-    .order(EntityKey.NAME, { ascending: true });
+    .select("id, name")
+    .is("deleted_at", null)
+    .order("name", { ascending: true });
 
   const [
     { data: commodityRows },
@@ -55,10 +53,10 @@ export const GET = withAuth(async (_req, user, client) => {
       ? (rawCommodity[0] as { name?: string })?.name
       : (rawCommodity as { name?: string } | null)?.name;
     return {
-      [EntityKey.ID]: r.id,
-      [EntityKey.UNIT_PRICE]: r.unit_price,
-      [EntityKey.UNIT]: r.unit,
-      [EntityKey.COMMODITY_NAME]: commodity_name || null,
+      id: r.id,
+      unit_price: r.unit_price,
+      unit: r.unit,
+      commodity_name: commodity_name || null,
     };
   });
 

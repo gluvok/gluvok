@@ -9,7 +9,6 @@ import {
 } from "@/db/helpers";
 import {
   TableName,
-  EntityKey,
   RelationAlias,
   WeighmentType,
   Unit,
@@ -26,11 +25,11 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
   const { data: row, error } = await client
     .from(TableName.WEIGHMENTS)
     .select(
-      `*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.USERS}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME})), ${RelationAlias.OUT_ENTRY}:${TableName.ENTRIES}!out_entry_id(*, ${TableName.CENTERS}(${EntityKey.NAME}), ${TableName.USERS}(${EntityKey.NAME}), ${TableName.CUSTOMERS}(${EntityKey.NAME}))`,
+      `*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(*, ${TableName.CENTERS}(name), ${TableName.USERS}(name), ${TableName.CUSTOMERS}(name)), ${RelationAlias.OUT_ENTRY}:${TableName.ENTRIES}!out_entry_id(*, ${TableName.CENTERS}(name), ${TableName.USERS}(name), ${TableName.CUSTOMERS}(name))`,
     )
-    .eq(EntityKey.ID, weighmentId)
-    .eq(`${RelationAlias.IN_ENTRY}.${EntityKey.FACTORY_ID}`, user.factory_id!)
-    .is(EntityKey.DELETED_AT, null)
+    .eq("id", weighmentId)
+    .eq(`${RelationAlias.IN_ENTRY}.factory_id`, user.factory_id!)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (error || !row) {
@@ -57,34 +56,33 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
   const outCustomers = outEntry.customers as Record<string, unknown> | undefined;
 
   const formatted = {
-    [EntityKey.ID]: row.id,
-    [EntityKey.UNIT]: row.unit || Unit.KG,
-    [EntityKey.TYPE]: row.type || WeighmentType.UNASSIGNED,
-    [EntityKey.GROSS_WEIGHT]: grossWeight,
-    [EntityKey.TARE_WEIGHT]: tareWeight,
-    [EntityKey.NET_WEIGHT]: netWeight,
-    [EntityKey.IMAGES]: combinedImages,
-    [EntityKey.IN_ENTRY_ID]: row.in_entry_id,
-    [EntityKey.IN_ENTRY_CREATED_AT]: inEntry.created_at,
-    [EntityKey.OUT_ENTRY_ID]: row.out_entry_id,
-    [EntityKey.OUT_ENTRY_CREATED_AT]: outEntry.created_at,
-    [EntityKey.IN_CENTER_ID]: inEntry.center_id,
-    [EntityKey.IN_CENTER_NAME]: inCenters?.name || "",
-    [EntityKey.OUT_CENTER_ID]: outEntry.center_id,
-    [EntityKey.OUT_CENTER_NAME]: outCenters?.name || "",
-    [EntityKey.IN_USER_ID]: inEntry.user_id,
-    [EntityKey.IN_USER_NAME]: inUsers?.name || "",
-    [EntityKey.OUT_USER_ID]: outEntry.user_id,
-    [EntityKey.OUT_USER_NAME]: outUsers?.name || "",
-    [EntityKey.IN_CUSTOMER_ID]: inEntry.customer_id,
-    [EntityKey.IN_CUSTOMER_NAME]: inCustomers?.name || "",
-    [EntityKey.OUT_CUSTOMER_ID]: outEntry.customer_id,
-    [EntityKey.OUT_CUSTOMER_NAME]: outCustomers?.name || "",
-    [EntityKey.VEHICLE_NUMBER]:
-      (inEntry.vehicle_number as string) || (outEntry.vehicle_number as string) || "",
-    [EntityKey.RATE_ID]: row.rate_id,
-    [EntityKey.CREATED_AT]: row.created_at,
-    [EntityKey.UPDATED_AT]: row.updated_at,
+    id: row.id,
+    unit: row.unit || Unit.KG,
+    type: row.type || WeighmentType.UNASSIGNED,
+    gross_weight: grossWeight,
+    tare_weight: tareWeight,
+    net_weight: netWeight,
+    images: combinedImages,
+    in_entry_id: row.in_entry_id,
+    in_entry_created_at: inEntry.created_at,
+    out_entry_id: row.out_entry_id,
+    out_entry_created_at: outEntry.created_at,
+    in_center_id: inEntry.center_id,
+    in_center_name: inCenters?.name || "",
+    out_center_id: outEntry.center_id,
+    out_center_name: outCenters?.name || "",
+    in_user_id: inEntry.user_id,
+    in_user_name: inUsers?.name || "",
+    out_user_id: outEntry.user_id,
+    out_user_name: outUsers?.name || "",
+    in_customer_id: inEntry.customer_id,
+    in_customer_name: inCustomers?.name || "",
+    out_customer_id: outEntry.customer_id,
+    out_customer_name: outCustomers?.name || "",
+    vehicle_number: (inEntry.vehicle_number as string) || (outEntry.vehicle_number as string) || "",
+    rate_id: row.rate_id,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
   };
 
   return NextResponse.json({ data: formatted });
@@ -104,17 +102,17 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   // 1. Fetch existing weighment
   const { data: existing, error: fetchErr } = await client
     .from(TableName.WEIGHMENTS)
-    .select(`${EntityKey.ID}, ${EntityKey.RATE_ID}, ${EntityKey.TYPE}`)
-    .eq(EntityKey.ID, weighmentId)
-    .is(EntityKey.DELETED_AT, null)
+    .select("id, rate_id, type")
+    .eq("id", weighmentId)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (fetchErr || !existing) {
     return apiError("Weighment not found", StatusCodes.NOT_FOUND);
   }
 
-  const allowedKeys = [EntityKey.TYPE];
-  const forbiddenKeys = Object.keys(body).filter((key) => !allowedKeys.includes(key as EntityKey));
+  const allowedKeys = ["type"];
+  const forbiddenKeys = Object.keys(body).filter((key) => !allowedKeys.includes(key));
   if (forbiddenKeys.length > 0) {
     return apiError(
       "Only the 'type' field can be edited on a weighment record.",
@@ -136,20 +134,20 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
         StatusCodes.BAD_REQUEST,
       );
     }
-    updates[EntityKey.TYPE] = body.type;
+    updates["type"] = body.type;
   }
 
   if (Object.keys(updates).length === 0) {
     return apiError("No valid fields provided for update.", StatusCodes.BAD_REQUEST);
   }
 
-  updates[EntityKey.UPDATED_AT] = new Date().toISOString();
+  updates["updated_at"] = new Date().toISOString();
 
   const { data: updated, error } = await client
     .from(TableName.WEIGHMENTS)
     .update(updates)
-    .eq(EntityKey.ID, weighmentId)
-    .is(EntityKey.DELETED_AT, null)
+    .eq("id", weighmentId)
+    .is("deleted_at", null)
     .select("*")
     .single();
 
@@ -168,12 +166,10 @@ export const DELETE = withAuth(
     // 1. Fetch weighment with factory verification
     const { data: weighment, error: fetchErr } = await client
       .from(TableName.WEIGHMENTS)
-      .select(
-        `*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(${EntityKey.FACTORY_ID})`,
-      )
-      .eq(EntityKey.ID, entityId)
-      .eq(`${RelationAlias.IN_ENTRY}.${EntityKey.FACTORY_ID}`, factoryId)
-      .is(EntityKey.DELETED_AT, null)
+      .select(`*, ${RelationAlias.IN_ENTRY}:${TableName.ENTRIES}!in_entry_id(factory_id)`)
+      .eq("id", entityId)
+      .eq(`${RelationAlias.IN_ENTRY}.factory_id`, factoryId)
+      .is("deleted_at", null)
       .maybeSingle();
 
     if (fetchErr || !weighment) {
@@ -186,11 +182,11 @@ export const DELETE = withAuth(
     const { error: deleteErr } = await client
       .from(TableName.WEIGHMENTS)
       .update({
-        [EntityKey.DELETED_AT]: now,
-        [EntityKey.UPDATED_AT]: now,
+        deleted_at: now,
+        updated_at: now,
       })
-      .eq(EntityKey.ID, entityId)
-      .is(EntityKey.DELETED_AT, null);
+      .eq("id", entityId)
+      .is("deleted_at", null);
 
     if (deleteErr) {
       console.error("Failed to soft delete weighment:", deleteErr);
@@ -206,12 +202,12 @@ export const DELETE = withAuth(
       const { error: cascadeErr } = await client
         .from(TableName.ENTRIES)
         .update({
-          [EntityKey.DELETED_AT]: now,
-          [EntityKey.UPDATED_AT]: now,
+          deleted_at: now,
+          updated_at: now,
         })
-        .in(EntityKey.ID, entryIds)
-        .eq(EntityKey.FACTORY_ID, factoryId)
-        .is(EntityKey.DELETED_AT, null);
+        .in("id", entryIds)
+        .eq("factory_id", factoryId)
+        .is("deleted_at", null);
 
       if (cascadeErr) {
         console.error("Failed to cascade soft delete to linked entries:", cascadeErr);

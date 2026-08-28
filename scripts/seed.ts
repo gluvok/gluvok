@@ -5,7 +5,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { Role, TableName, EntityKey } from "../lib/constants/enums";
+import { Role, TableName } from "../lib/constants/enums";
 import { hashPassword } from "../lib/auth/password";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -62,13 +62,13 @@ async function main() {
     .from(TableName.CENTERS)
     .select("id")
     .eq("name", centerName)
-    .eq(EntityKey.FACTORY_ID, factoryId)
+    .eq("factory_id", factoryId)
     .maybeSingle();
 
   if (!existingCenter) {
     await supabase.from(TableName.CENTERS).insert({
       name: centerName,
-      [EntityKey.FACTORY_ID]: factoryId,
+      factory_id: factoryId,
     });
     console.log(`Created center '${centerName}' for factory id=${factoryId}`);
   }
@@ -93,7 +93,7 @@ async function main() {
         name: "Admin User",
         aadhar_number: null,
         role: Role.ADMIN,
-        [EntityKey.FACTORY_ID]: factoryId,
+        factory_id: factoryId,
       })
       .select("id")
       .single();

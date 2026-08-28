@@ -10,13 +10,7 @@ import {
   formatEntityResponse,
   parseBulkIds,
 } from "@/db/helpers";
-import {
-  ProjectSlug,
-  QueryParam,
-  PermissionKey,
-  TableName,
-  EntityKey,
-} from "@/lib/constants/enums";
+import { ProjectSlug, QueryParam, PermissionKey, TableName } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { addCenterSchema } from "@/lib/validation";
 
@@ -24,7 +18,7 @@ export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
   const search = req.nextUrl.searchParams.get(QueryParam.SEARCH);
-  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || EntityKey.CREATED_AT;
+  const sortColumn = req.nextUrl.searchParams.get(QueryParam.SORT_COLUMN) || "created_at";
   const sortDesc = req.nextUrl.searchParams.has(QueryParam.SORT_DESC)
     ? req.nextUrl.searchParams.get(QueryParam.SORT_DESC) === "true"
     : true;
@@ -33,15 +27,15 @@ export const GET = withAuth(async (req, user, client) => {
     .from(TableName.CENTERS)
     .select("*", { count: "exact" })
     .order(sortColumn, { ascending: !sortDesc })
-    .eq(EntityKey.FACTORY_ID, user.factory_id)
-    .is(EntityKey.DELETED_AT, null);
+    .eq("factory_id", user.factory_id)
+    .is("deleted_at", null);
 
   if (search) {
     const searchNum = parseInt(search, 10);
     if (!isNaN(searchNum)) {
-      query = query.or(`${EntityKey.NAME}.ilike.%${search}%,${EntityKey.ID}.eq.${searchNum}`);
+      query = query.or(`name.ilike.%${search}%,id.eq.${searchNum}`);
     } else {
-      query = query.ilike(EntityKey.NAME, `%${search}%`);
+      query = query.ilike("name", `%${search}%`);
     }
   }
 
@@ -58,8 +52,8 @@ export const POST = withAuth(async (req, user, client) => {
 
   const { name } = parsed.data;
   const insertValues: Record<string, unknown> = {
-    [EntityKey.NAME]: name,
-    [EntityKey.FACTORY_ID]: user.factory_id,
+    name,
+    factory_id: user.factory_id,
   };
 
   const { data: newCenter, error } = await client
@@ -84,9 +78,9 @@ export const DELETE = withAuth(async (req, user, client) => {
   // Check if any active entries are linked to any of the selected centers
   const { data: linkedEntries } = await client
     .from(TableName.ENTRIES)
-    .select(EntityKey.ID)
-    .in(EntityKey.CENTER_ID, ids)
-    .is(EntityKey.DELETED_AT, null)
+    .select("id")
+    .in("center_id", ids)
+    .is("deleted_at", null)
     .limit(1);
 
   if (linkedEntries && linkedEntries.length > 0) {
@@ -96,14 +90,14 @@ export const DELETE = withAuth(async (req, user, client) => {
   const query = client
     .from(TableName.CENTERS)
     .update({
-      [EntityKey.DELETED_AT]: new Date().toISOString(),
-      [EntityKey.UPDATED_AT]: new Date().toISOString(),
+      deleted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    .in(EntityKey.ID, ids)
-    .is(EntityKey.DELETED_AT, null)
-    .eq(EntityKey.FACTORY_ID, user.factory_id);
+    .in("id", ids)
+    .is("deleted_at", null)
+    .eq("factory_id", user.factory_id);
 
-  const { data, error } = await query.select(EntityKey.ID);
+  const { data, error } = await query.select("id");
   if (error) {
     return apiError(
       error.message || ApiErrorMessage.CANNOT_DELETE_SELECTED_CENTERS,

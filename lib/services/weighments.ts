@@ -4,7 +4,7 @@
  */
 
 import { supabase } from "@/db";
-import { TableName, EntryStatus, EntryType, EntityKey, Unit } from "@/lib/constants/enums";
+import { TableName, EntryStatus, EntryType, Unit } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
 export async function validateSequentialApproval(
@@ -17,20 +17,20 @@ export async function validateSequentialApproval(
 ): Promise<void> {
   let query = client
     .from(TableName.ENTRIES)
-    .select(`${EntityKey.ID}, ${EntityKey.CREATED_AT}, ${EntityKey.TYPE}`)
-    .eq(EntityKey.CENTER_ID, centerId)
-    .eq(EntityKey.VEHICLE_NUMBER, vehicleNumber)
-    .eq(EntityKey.STATUS, EntryStatus.PENDING)
-    .lt(EntityKey.CREATED_AT, targetCreatedAt)
-    .neq(EntityKey.ID, targetEntryId)
-    .is(EntityKey.DELETED_AT, null);
+    .select("id, created_at, type")
+    .eq("center_id", centerId)
+    .eq("vehicle_number", vehicleNumber)
+    .eq("status", EntryStatus.PENDING)
+    .lt("created_at", targetCreatedAt)
+    .neq("id", targetEntryId)
+    .is("deleted_at", null);
 
   if (entryType) {
-    query = query.eq(EntityKey.TYPE, entryType);
+    query = query.eq("type", entryType);
   }
 
   const { data: earlierPending, error } = await query
-    .order(EntityKey.CREATED_AT, { ascending: true })
+    .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
 
@@ -62,9 +62,9 @@ export async function tryMergeEntries(
   const { data: e2, error: fetchErr } = await client
     .from(TableName.ENTRIES)
     .select("*")
-    .eq(EntityKey.ID, entryId)
-    .eq(EntityKey.FACTORY_ID, factoryId)
-    .is(EntityKey.DELETED_AT, null)
+    .eq("id", entryId)
+    .eq("factory_id", factoryId)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (fetchErr || !e2 || e2.status !== EntryStatus.APPROVED) {
@@ -74,9 +74,9 @@ export async function tryMergeEntries(
   // 2. Check if E2 is already linked in active weighments
   const { data: existingW2 } = await client
     .from(TableName.WEIGHMENTS)
-    .select(EntityKey.ID)
-    .or(`${EntityKey.IN_ENTRY_ID}.eq.${entryId},${EntityKey.OUT_ENTRY_ID}.eq.${entryId}`)
-    .is(EntityKey.DELETED_AT, null)
+    .select("id")
+    .or(`in_entry_id.eq.${entryId},out_entry_id.eq.${entryId}`)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (existingW2) {
@@ -87,19 +87,19 @@ export async function tryMergeEntries(
   let e1Query = client
     .from(TableName.ENTRIES)
     .select("*")
-    .eq(EntityKey.FACTORY_ID, factoryId)
-    .eq(EntityKey.VEHICLE_NUMBER, e2.vehicle_number)
-    .eq(EntityKey.STATUS, EntryStatus.APPROVED)
-    .lt(EntityKey.CREATED_AT, e2.created_at)
-    .neq(EntityKey.ID, entryId)
-    .is(EntityKey.DELETED_AT, null);
+    .eq("factory_id", factoryId)
+    .eq("vehicle_number", e2.vehicle_number)
+    .eq("status", EntryStatus.APPROVED)
+    .lt("created_at", e2.created_at)
+    .neq("id", entryId)
+    .is("deleted_at", null);
 
   if (e2.type) {
-    e1Query = e1Query.eq(EntityKey.TYPE, e2.type);
+    e1Query = e1Query.eq("type", e2.type);
   }
 
   const { data: e1Candidates, error: e1Err } = await e1Query
-    .order(EntityKey.CREATED_AT, { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(1);
 
   if (e1Err || !e1Candidates || e1Candidates.length === 0) {
@@ -111,9 +111,9 @@ export async function tryMergeEntries(
   // 4. Check if E1 is already linked in active weighments
   const { data: existingW1 } = await client
     .from(TableName.WEIGHMENTS)
-    .select(EntityKey.ID)
-    .or(`${EntityKey.IN_ENTRY_ID}.eq.${e1.id},${EntityKey.OUT_ENTRY_ID}.eq.${e1.id}`)
-    .is(EntityKey.DELETED_AT, null)
+    .select("id")
+    .or(`in_entry_id.eq.${e1.id},out_entry_id.eq.${e1.id}`)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (existingW1) {
@@ -125,9 +125,9 @@ export async function tryMergeEntries(
   const { data: newWeighment, error: insertErr } = await client
     .from(TableName.WEIGHMENTS)
     .insert({
-      [EntityKey.IN_ENTRY_ID]: e1.id,
-      [EntityKey.OUT_ENTRY_ID]: e2.id,
-      [EntityKey.UNIT]: Unit.KG,
+      in_entry_id: e1.id,
+      out_entry_id: e2.id,
+      unit: Unit.KG,
     })
     .select("*")
     .single();

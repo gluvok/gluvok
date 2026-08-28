@@ -4,13 +4,12 @@
  */
 
 import * as z from "zod";
-import { EntityKey } from "@/lib/constants/enums";
 import { ColumnLabel } from "@/lib/constants/enums";
 import { nameSchema } from "./helpers";
 
 const baseCenterSchema = z.object({
-  [EntityKey.NAME]: nameSchema(ColumnLabel.NAME),
-  [EntityKey.FACTORY_ID]: z.coerce.number().optional().nullable(),
+  name: nameSchema(ColumnLabel.NAME),
+  factory_id: z.coerce.number().optional().nullable(),
 });
 
 export const addCenterSchema = baseCenterSchema;

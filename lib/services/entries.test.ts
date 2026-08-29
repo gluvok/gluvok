@@ -46,9 +46,7 @@ describe("Entries Service", () => {
         maybeSingle: vi.fn().mockResolvedValue({ data: { id: 1 }, error: null }),
       });
 
-      await expect(
-        validateCenterBelongsToFactory(mockClient, 1, 10),
-      ).resolves.toBeUndefined();
+      await expect(validateCenterBelongsToFactory(mockClient, 1, 10)).resolves.toBeUndefined();
     });
 
     it("throws SELECTED_CENTER_NOT_FOUND when center is missing", async () => {
@@ -59,9 +57,9 @@ describe("Entries Service", () => {
         maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
       });
 
-      await expect(
-        validateCenterBelongsToFactory(mockClient, 1, 10),
-      ).rejects.toThrow(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND);
+      await expect(validateCenterBelongsToFactory(mockClient, 1, 10)).rejects.toThrow(
+        ApiErrorMessage.SELECTED_CENTER_NOT_FOUND,
+      );
     });
   });
 
@@ -74,9 +72,7 @@ describe("Entries Service", () => {
         maybeSingle: vi.fn().mockResolvedValue({ data: { id: 2 }, error: null }),
       });
 
-      await expect(
-        validateCustomerBelongsToFactory(mockClient, 2, 10),
-      ).resolves.toBeUndefined();
+      await expect(validateCustomerBelongsToFactory(mockClient, 2, 10)).resolves.toBeUndefined();
     });
 
     it("throws CUSTOMER_NOT_FOUND when customer is missing", async () => {
@@ -87,9 +83,9 @@ describe("Entries Service", () => {
         maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
       });
 
-      await expect(
-        validateCustomerBelongsToFactory(mockClient, 2, 10),
-      ).rejects.toThrow(ApiErrorMessage.CUSTOMER_NOT_FOUND);
+      await expect(validateCustomerBelongsToFactory(mockClient, 2, 10)).rejects.toThrow(
+        ApiErrorMessage.CUSTOMER_NOT_FOUND,
+      );
     });
   });
 

@@ -58,10 +58,7 @@ export async function validateCustomerBelongsToFactory(
   }
 }
 
-export async function createEntry(
-  client: typeof supabase,
-  params: CreateEntryParams,
-) {
+export async function createEntry(client: typeof supabase, params: CreateEntryParams) {
   const {
     factoryId,
     userId,
@@ -90,14 +87,7 @@ export async function createEntry(
 
   // 4. Validate sequential approval if approved
   if (status === EntryStatus.APPROVED) {
-    await validateSequentialApproval(
-      client,
-      Number(centerId),
-      vehicleNumber,
-      nowStr,
-      0,
-      type,
-    );
+    await validateSequentialApproval(client, Number(centerId), vehicleNumber, nowStr, 0, type);
   }
 
   // 5. Insert new entry into database

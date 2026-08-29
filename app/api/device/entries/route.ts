@@ -29,14 +29,8 @@ export async function POST(req: NextRequest) {
       return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
     }
 
-    const {
-      detected_vehicle_number,
-      vehicle_number,
-      weight,
-      center_id,
-      status,
-      images,
-    } = parsed.data;
+    const { detected_vehicle_number, vehicle_number, weight, center_id, status, images } =
+      parsed.data;
 
     const factoryId = authUser.factory_id;
     const operatorUserId = parseInt(authUser.sub, 10);

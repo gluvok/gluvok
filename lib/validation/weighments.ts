@@ -82,6 +82,32 @@ export const addEntrySchema = z.object({
   images: z.array(z.string()).optional(),
 });
 
+export const addDeviceEntrySchema = z.object({
+  detected_vehicle_number: z.string().min(1, ValidationMessage.REQUIRED("Detected vehicle number")),
+  vehicle_number: z
+    .string()
+    .min(1, ValidationMessage.INDIAN_PLATE_REQUIRED("Vehicle Number"))
+    .max(15, ValidationMessage.INDIAN_PLATE_MAX("Vehicle Number", 15))
+    .regex(INDIAN_PLATE_REGEX, ValidationMessage.INDIAN_PLATE_FORMAT)
+    .refine(
+      (val) => {
+        if (/^\d{2}[\s.-]?BH/i.test(val)) return true;
+        return STATE_CODES.includes(val.substring(0, 2).toUpperCase());
+      },
+      {
+        message: ValidationMessage.INDIAN_PLATE_STATE,
+      },
+    ),
+  weight: z.coerce
+    .number({ message: ValidationMessage.MUST_BE_NUMBER("Weight") })
+    .positive(ValidationMessage.MUST_BE_POSITIVE_NUMBER("Weight")),
+  center_id: integerIdSchema("Center"),
+  status: z
+    .enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED])
+    .default(EntryStatus.PENDING),
+  images: z.array(z.string()).optional().default([]),
+});
+
 export const editEntrySchema = z.object({
   vehicle_number: z.string().optional(),
   customer_id: optionalIntegerIdSchema("Customer"),

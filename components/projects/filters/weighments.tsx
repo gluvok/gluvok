@@ -13,7 +13,6 @@ import { useEntitiesStore } from "@/lib/store";
 import { IndianRupee } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
 import { getTypeIcon } from "@/lib/fields/helpers";
-import { DateRangeFilter } from "./date-range-filter";
 import {
   CenterFilter,
   CustomerFilter,
@@ -54,9 +53,6 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {/* Date Range */}
-      <DateRangeFilter table={table} />
-
       {/* Type */}
       <BaseCombobox
         type={FieldType.TYPE}

@@ -8,7 +8,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProjectClient } from "./client";
 import { PROJECT_REGISTRY } from "@/lib/projects";
-import { ProjectHeader, ProjectTitle } from "@/components/projects";
+import { ProjectHeader } from "@/components/projects";
 
 type Props = {
   params: Promise<{ project: string }>;
@@ -52,14 +52,14 @@ export default async function ProjectPage({ params }: Props) {
 
       {/* Main dashboard content container */}
       <main className="p-6 w-full min-w-0">
-        <ProjectTitle
+        <ProjectClient
+          key={projectSlug}
           projectName={projectName}
           projectSlug={projectSlug}
           desc={desc}
-          Icon={IconComponent}
         />
-        <ProjectClient key={projectSlug} projectName={projectName} projectSlug={projectSlug} />
       </main>
     </>
   );
 }
+

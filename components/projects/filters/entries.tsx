@@ -11,7 +11,6 @@ import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { EntryStatus, EntryType, FieldType } from "@/lib/constants/enums";
 import { BaseCombobox } from "@/components/combobox/base";
 import { getTypeIcon, getStatusIcon, getAutoApproveIcon, getEditedIcon } from "@/lib/fields/helpers";
-import { DateRangeFilter } from "./date-range-filter";
 import { CenterFilter, CustomerFilter, UserFilter, setTableColumnFilter } from "./common";
 
 interface EntriesFiltersProps<TData extends RowData> {
@@ -56,9 +55,6 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {/* Date Range */}
-      <DateRangeFilter table={table} />
-
       {/* Status */}
       <BaseCombobox
         type={FieldType.ENTRY_STATUS}

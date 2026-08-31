@@ -21,6 +21,7 @@ interface DateRangeFilterProps<TData extends RowData> {
   startKey?: string;
   endKey?: string;
   className?: string;
+  align?: "start" | "center" | "end";
 }
 
 const DISPLAY_DATE_FORMAT = "LLL dd, y";
@@ -38,6 +39,7 @@ export function DateRangeFilter<TData extends RowData>({
   startKey = "start_date",
   endKey = "end_date",
   className = "w-auto",
+  align = "end",
 }: DateRangeFilterProps<TData>) {
   const columnFilters = table.state.columnFilters;
   const currentStartDateVal = columnFilters.find((f) => f.id === startKey)?.value as
@@ -132,7 +134,7 @@ export function DateRangeFilter<TData extends RowData>({
             </Button>
           )}
         </div>
-        <PopoverContent className="w-auto p-0 flex flex-col" align="start">
+        <PopoverContent className="w-auto p-0 flex flex-col" align={align}>
           {/* Quick Presets Bar */}
           <div className="flex items-center gap-1.5 p-2 border-b border-border bg-muted/20 flex-wrap">
             <span className="text-2xs font-medium text-muted-foreground mr-1 flex items-center gap-1">

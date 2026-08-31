@@ -61,7 +61,7 @@ export function ProjectTable<TData extends RowData>({
       className={cn(
         "rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden transition-all duration-300",
         hasFiltersExpanded
-          ? "**:data-[slot=table-container]:max-h-80"
+          ? "**:data-[slot=table-container]:max-h-92"
           : "**:data-[slot=table-container]:max-h-104",
       )}
     >

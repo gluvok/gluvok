@@ -12,7 +12,6 @@ import { ProjectSlug } from "@/lib/constants/enums";
 import { useEntitiesStore } from "@/lib/store";
 import { Package } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
-import { DateRangeFilter } from "./date-range-filter";
 import { UnitFilter, setTableColumnFilter } from "./common";
 
 interface RatesFiltersProps<TData extends RowData> {
@@ -37,9 +36,6 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {/* Date Range */}
-      <DateRangeFilter table={table} />
-
       {/* Commodity */}
       <BaseCombobox
         type={ProjectSlug.COMMODITIES}

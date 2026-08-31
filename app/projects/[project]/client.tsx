@@ -13,17 +13,23 @@ import {
   ProjectToolbar,
   ProjectDialogs,
   ProjectTable,
+  ProjectTitle,
   useProjectTable,
 } from "@/components/projects";
-import { hasProjectFilters } from "@/components/projects/filters";
+import { hasProjectFilters, DateRangeFilter } from "@/components/projects/filters";
 import { Spinner } from "@/components/kibo-ui/spinner";
 
 interface ProjectClientProps {
   projectName: string;
   projectSlug: string;
+  desc?: string;
 }
 
-export function ProjectClient({ projectName, projectSlug }: ProjectClientProps) {
+export function ProjectClient({
+  projectName,
+  projectSlug,
+  desc,
+}: ProjectClientProps) {
   const primaryIdKey = getPrimaryIdKey(projectSlug);
   const pt = useProjectTable({ projectSlug, primaryIdKey, projectName });
   const {
@@ -67,6 +73,14 @@ export function ProjectClient({ projectName, projectSlug }: ProjectClientProps) 
 
   return (
     <div className="space-y-4">
+      {/* Project Heading with Date Range Filter on the right */}
+      <ProjectTitle
+        projectName={projectName}
+        projectSlug={projectSlug}
+        desc={desc}
+        actions={<DateRangeFilter table={table} />}
+      />
+
       {/* Search, filters, reload and creation controls */}
       <ProjectToolbar
         table={table}

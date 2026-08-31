@@ -80,6 +80,32 @@ describe("downloadPDF, downloadCSV and getExportFileName", () => {
     expect(generatedHtml).toContain('src="https://example.com/scan2.jpg"');
   });
 
+  it("exports single row using rowsOverride in downloadPDF", () => {
+    const table = createMockTable([
+      {
+        id: 1,
+        vehicle_number: "PB10XY1234",
+        images: ["https://example.com/scan1.jpg"],
+        created_at: "2026-08-27T20:54:16.000Z",
+      },
+      {
+        id: 2,
+        vehicle_number: "MH12AB5678",
+        images: [],
+        created_at: "2026-08-27T20:54:16.000Z",
+      },
+    ]);
+
+    const singleRow = table.getFilteredSelectedRowModel().rows[1];
+    downloadPDF(table, "Entries", "Apex Industries", [singleRow]);
+
+    expect(printPdf).toHaveBeenCalledTimes(1);
+    const generatedHtml = vi.mocked(printPdf).mock.calls[0][0];
+
+    expect(generatedHtml).toContain("MH12AB5678");
+    expect(generatedHtml).not.toContain("PB10XY1234");
+  });
+
   it("exports semicolon-separated image URLs and IST formatted dates with standardized filename in CSV", () => {
     const table = createMockTable([
       {

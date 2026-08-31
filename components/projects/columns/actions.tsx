@@ -6,7 +6,7 @@
 "use client";
 
 import * as React from "react";
-import { type ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef, type Row, type Table } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { MoreHorizontal, Copy, Pencil, Trash2, CheckCircle2, XCircle, X } from "lucide-react";
+import {
+  MoreHorizontal,
+  Copy,
+  Pencil,
+  Trash2,
+  CheckCircle2,
+  XCircle,
+  X,
+  FileDown,
+} from "lucide-react";
 import { toast } from "sonner";
 import { getField, useEntitiesStore } from "@/lib/store";
 import { type EntityRecord } from "@/types";
@@ -34,6 +43,7 @@ import { type ColumnActionsCallbacks } from "./index";
 
 import { type Permission, useAuthStore, type AuthUser } from "@/lib/store";
 import { ProjectSlug, Role, WeighmentType, EntryStatus } from "@/lib/constants/enums";
+import { downloadPDF } from "@/lib/csv/exporter";
 
 /**
  * hasRowModifyPermission
@@ -70,8 +80,11 @@ function hasRowModifyPermission(
 
 interface ActionCellProps<T extends EntityRecord> {
   item: T;
+  row: Row<ProjectTableFeatures, T>;
+  table: Table<ProjectTableFeatures, T>;
   projectSlug: string;
   primaryIdKey: string;
+  projectName: string;
   callbacks: ColumnActionsCallbacks<T>;
   canWrite: boolean;
   canDelete: boolean;
@@ -79,8 +92,11 @@ interface ActionCellProps<T extends EntityRecord> {
 
 function ActionCell<T extends EntityRecord>({
   item,
+  row,
+  table,
   projectSlug,
   primaryIdKey,
+  projectName,
   callbacks,
   canWrite,
   canDelete,
@@ -188,6 +204,13 @@ function ActionCell<T extends EntityRecord>({
             }}
           >
             <Copy className="h-3.5 w-3.5 text-muted-foreground" /> Copy ID
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            id={`actions-download-pdf-${projectSlug}-${itemId}`}
+            className="text-xs cursor-pointer gap-2 py-2"
+            onClick={() => downloadPDF(table, projectName, undefined, [row])}
+          >
+            <FileDown className="h-3.5 w-3.5 text-muted-foreground" /> Download PDF
           </DropdownMenuItem>
           {canApproveEntry && (
             <>
@@ -341,7 +364,7 @@ function ActionCell<T extends EntityRecord>({
 export function getActionsColumn<T extends EntityRecord>(
   projectSlug: string,
   primaryIdKey: string,
-  _projectName: string,
+  projectName: string,
   callbacks: ColumnActionsCallbacks<T>,
   permissions?: Permission,
 ): ColumnDef<ProjectTableFeatures, T> {
@@ -350,11 +373,14 @@ export function getActionsColumn<T extends EntityRecord>(
 
   return {
     id: "actions",
-    cell: ({ row }) => (
+    cell: ({ row, table }) => (
       <ActionCell
         item={row.original}
+        row={row}
+        table={table as unknown as Table<ProjectTableFeatures, T>}
         projectSlug={projectSlug}
         primaryIdKey={primaryIdKey}
+        projectName={projectName}
         callbacks={callbacks}
         canWrite={canWrite}
         canDelete={canDelete}

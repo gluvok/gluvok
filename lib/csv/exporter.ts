@@ -3,7 +3,7 @@
  * @description CSV and PDF export utilities for table records with image rendering and IST date formatting.
  */
 
-import { type RowData, type Table } from "@tanstack/react-table";
+import { type RowData, type Table, type Row } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { useAuthStore } from "@/lib/store";
 import { formatDateTime } from "../utils";
@@ -70,11 +70,12 @@ export function downloadPDF<TData extends RowData>(
   table: Table<ProjectTableFeatures, TData>,
   projectName: string,
   companyName?: string,
+  rowsOverride?: Row<ProjectTableFeatures, TData>[],
 ) {
   const finalCompanyName = companyName || useAuthStore.getState().user?.factory_name || "Gluvok";
   const fileName = getExportFileName(projectName, "pdf", finalCompanyName);
 
-  const selectedRows = table.getFilteredSelectedRowModel().rows;
+  const selectedRows = rowsOverride ?? table.getFilteredSelectedRowModel().rows;
   const cols = table.getVisibleLeafColumns().filter((c) => c.id !== "select" && c.id !== "actions");
   const headersHtml = cols
     .map(

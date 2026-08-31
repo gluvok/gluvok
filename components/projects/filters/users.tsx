@@ -11,6 +11,7 @@ import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Role, FieldType } from "@/lib/constants/enums";
 import { Shield } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
+import { setTableColumnFilter } from "./common";
 
 interface UsersFiltersProps<TData extends RowData> {
   table: ReactTable<ProjectTableFeatures, TData>;
@@ -21,21 +22,12 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: Role.MANAGER, label: Role.MANAGER },
   { value: Role.OPERATOR, label: Role.OPERATOR },
   { value: Role.BASE, label: Role.BASE },
+  { value: Role.HARDWARE, label: Role.HARDWARE },
 ];
 
 export function UsersFilters<TData extends RowData>({ table }: UsersFiltersProps<TData>) {
   const columnFilters = table.state.columnFilters;
   const currentRole = columnFilters.find((f) => f.id === "role")?.value as string | undefined;
-
-  const setColumnFilter = (id: string, value: unknown) => {
-    table.setColumnFilters((prev) => {
-      const filtered = prev.filter((f) => f.id !== id);
-      if (value !== undefined && value !== null && value !== "") {
-        return [...filtered, { id, value }];
-      }
-      return filtered;
-    });
-  };
 
   const roleOptions = React.useMemo(() => {
     return [
@@ -52,7 +44,7 @@ export function UsersFilters<TData extends RowData>({ table }: UsersFiltersProps
       <BaseCombobox
         type={FieldType.ROLE}
         value={currentRole ?? "all"}
-        onChange={(val) => setColumnFilter("role", val === "all" ? undefined : val)}
+        onChange={(val) => setTableColumnFilter(table, "role", val === "all" ? undefined : val)}
         data={roleOptions}
         placeholder="All Roles"
         searchPlaceholder="Search role..."

@@ -8,11 +8,12 @@
 import * as React from "react";
 import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import { Unit, FieldType, ProjectSlug } from "@/lib/constants/enums";
+import { ProjectSlug } from "@/lib/constants/enums";
 import { useEntitiesStore } from "@/lib/store";
-import { Package, Ruler } from "lucide-react";
+import { Package } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
 import { DateRangeFilter } from "./date-range-filter";
+import { UnitFilter, setTableColumnFilter } from "./common";
 
 interface RatesFiltersProps<TData extends RowData> {
   table: ReactTable<ProjectTableFeatures, TData>;
@@ -23,17 +24,6 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
 
   const columnFilters = table.state.columnFilters;
   const currentCommodityId = columnFilters.find((f) => f.id === "commodity_id")?.value;
-  const currentUnit = columnFilters.find((f) => f.id === "unit")?.value;
-
-  const setColumnFilter = (id: string, value: unknown) => {
-    table.setColumnFilters((prev) => {
-      const filtered = prev.filter((f) => f.id !== id);
-      if (value !== undefined && value !== null && value !== "") {
-        return [...filtered, { id, value }];
-      }
-      return filtered;
-    });
-  };
 
   const commodityOptions = React.useMemo(() => {
     return [
@@ -45,16 +35,6 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
     ];
   }, [commodities]);
 
-  const unitOptions = React.useMemo(() => {
-    return [
-      { value: "all", label: "All Units" },
-      ...Object.values(Unit).map((u) => ({
-        value: u,
-        label: u,
-      })),
-    ];
-  }, []);
-
   return (
     <div className="flex items-center gap-2 flex-wrap">
       {/* Date Range */}
@@ -64,7 +44,9 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
       <BaseCombobox
         type={ProjectSlug.COMMODITIES}
         value={currentCommodityId ? String(currentCommodityId) : "all"}
-        onChange={(val) => setColumnFilter("commodity_id", val === "all" ? undefined : Number(val))}
+        onChange={(val) =>
+          setTableColumnFilter(table, "commodity_id", val === "all" ? undefined : Number(val))
+        }
         data={commodityOptions}
         placeholder="All Commodities"
         searchPlaceholder="Search commodity..."
@@ -74,17 +56,7 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
       />
 
       {/* Unit */}
-      <BaseCombobox
-        type={FieldType.UNIT}
-        value={currentUnit ? String(currentUnit) : "all"}
-        onChange={(val) => setColumnFilter("unit", val === "all" ? undefined : val)}
-        data={unitOptions}
-        placeholder="All Units"
-        searchPlaceholder="Search unit..."
-        icon={Ruler}
-        className="w-auto"
-        id="filter-unit-combobox"
-      />
+      <UnitFilter table={table} />
     </div>
   );
 }

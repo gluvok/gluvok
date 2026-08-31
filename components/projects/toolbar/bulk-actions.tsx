@@ -6,7 +6,7 @@
  */
 
 import * as React from "react";
-import { type RowData, type ReactTable } from "@tanstack/react-table";
+import { type ReactTable } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Button } from "@/components/ui/button";
 import { FileSpreadsheet, Trash2, X, ChevronDown, FileText } from "lucide-react";

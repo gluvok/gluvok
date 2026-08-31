@@ -37,7 +37,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       key: "auto_approve",
       label: "Auto Approve",
       placeholder: "",
-      type: FieldType.CHECKBOX,
+      type: FieldType.SWITCH,
       icon: ShieldCheck,
       span: FieldSpan.HALF,
     },

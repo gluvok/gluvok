@@ -45,28 +45,22 @@ export function EntityDialogContent({
 
     switch (field.type) {
       case FieldType.CHECKBOX:
+      case FieldType.SWITCH:
         return (
-          <div key={field.key} className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-2 h-9 px-1">
+          <div key={field.key} className="flex flex-col gap-1.5 justify-end">
+            <div className="flex items-center h-9 px-1">
               <FormFieldInput
                 field={field}
                 form={form}
                 idPrefix={`${mode}-entity`}
                 disabled={disabled}
               />
-              <label
-                htmlFor={`${mode}-entity-field-${field.key}`}
-                className="text-xs font-semibold text-muted-foreground cursor-pointer select-none flex items-center gap-1.5"
-              >
-                {field.icon && <field.icon className="h-3.5 w-3.5 text-muted-foreground/75" />}
-                {field.label}
-              </label>
-              {form.formState.errors[field.key] && (
-                <span className="text-destructive text-xs font-medium ml-2">
-                  {form.formState.errors[field.key]?.message as string}
-                </span>
-              )}
             </div>
+            {form.formState.errors[field.key] && (
+              <span className="text-destructive text-[11px] font-medium">
+                {form.formState.errors[field.key]?.message as string}
+              </span>
+            )}
           </div>
         );
       default: {

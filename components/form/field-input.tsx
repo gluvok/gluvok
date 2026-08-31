@@ -3,7 +3,7 @@
 /**
  * @file components/form/field-input.tsx
  * @description Dynamic form field input factory selector.
- * Instantiates the correct input component (standard input, combobox, image upload, checkbox)
+ * Instantiates the correct input component (standard input, combobox, image upload, checkbox, switch)
  * based on field configuration properties.
  */
 
@@ -12,6 +12,8 @@ import { EntityCombobox, RoleCombobox, UnitCombobox, TypeCombobox } from "@/comp
 import { FieldType } from "@/lib/constants/enums";
 import { type FieldConfig, getReferencedEntitySlug } from "@/lib/fields";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { StandardInput } from "./standard-input";
 import { ImageUpload } from "./image/upload";
 
@@ -48,9 +50,29 @@ export function FormFieldInput({ field, form, idPrefix, disabled }: FormFieldInp
     case FieldType.NUMBER:
     case FieldType.PASSWORD:
       return <StandardInput field={field} fieldId={fieldId} form={form} disabled={disabled} />;
+    case FieldType.SWITCH:
+      return (
+        <div className="flex items-center space-x-2">
+          <Switch
+            id={fieldId}
+            checked={Boolean(value)}
+            onCheckedChange={(checked) =>
+              form.setValue(field.key, checked, { shouldValidate: true, shouldDirty: true })
+            }
+            disabled={disabled}
+          />
+          <Label
+            htmlFor={fieldId}
+            className="text-xs font-semibold cursor-pointer select-none text-muted-foreground flex items-center gap-1.5"
+          >
+            {field.icon && <field.icon className="h-3.5 w-3.5 text-muted-foreground/75" />}
+            {field.label}
+          </Label>
+        </div>
+      );
     case FieldType.CHECKBOX:
       return (
-        <div className="flex items-center space-x-2 pt-2">
+        <div className="flex items-center space-x-2">
           <Checkbox
             id={fieldId}
             checked={Boolean(value)}
@@ -59,12 +81,13 @@ export function FormFieldInput({ field, form, idPrefix, disabled }: FormFieldInp
             }
             disabled={disabled}
           />
-          <label
+          <Label
             htmlFor={fieldId}
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            className="text-xs font-semibold cursor-pointer select-none text-muted-foreground flex items-center gap-1.5"
           >
+            {field.icon && <field.icon className="h-3.5 w-3.5 text-muted-foreground/75" />}
             {field.label}
-          </label>
+          </Label>
         </div>
       );
     case FieldType.ROLE:

@@ -35,11 +35,13 @@ export const GET = withAuth(async (req, user, client) => {
   if (user.role === Role.BASE) {
     const userId = parseInt(user.sub, 10);
     const customerIds = await getBaseUserCustomerIds(client, userId);
-    if (customerIds.length > 0) {
-      query = query.or(`customer_id.in.(${customerIds.join(",")}),user_id.eq.${userId}`);
-    } else {
-      query = query.eq("user_id", userId);
+    if (customerIds.length === 0) {
+      return NextResponse.json({
+        data: [],
+        pagination: { page: pagination.page, limit: pagination.limit, total: 0 },
+      });
     }
+    query = query.in("customer_id", customerIds);
   }
 
   const filterParams: Record<string, string | null> = {

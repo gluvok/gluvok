@@ -132,14 +132,14 @@ describe("Entries route handlers (/api/entries)", () => {
       expect(eqMock).toHaveBeenCalledWith("edited", false);
     });
 
-    it("scopes entries query by customer_id and user_id for Role.BASE users", async () => {
-      const orMock = vi.fn();
+    it("scopes entries query by customer_id for Role.BASE users", async () => {
+      const inMock = vi.fn();
       const mockQuery: Record<string, unknown> = {};
       mockQuery.select = vi.fn(() => mockQuery);
       mockQuery.eq = vi.fn(() => mockQuery);
       mockQuery.is = vi.fn(() => mockQuery);
       mockQuery.order = vi.fn(() => mockQuery);
-      mockQuery.or = orMock.mockImplementation(() => mockQuery);
+      mockQuery.in = inMock.mockImplementation(() => mockQuery);
       mockQuery.range = vi.fn().mockResolvedValue({
         data: [{ id: 5, vehicle_number: "BASE123" }],
         count: 1,
@@ -173,7 +173,7 @@ describe("Entries route handlers (/api/entries)", () => {
       const response = await handler(req, baseUser, mockDb, context);
 
       expect(response.status).toBe(200);
-      expect(orMock).toHaveBeenCalledWith("customer_id.in.(42),user_id.eq.10");
+      expect(inMock).toHaveBeenCalledWith("customer_id", [42]);
     });
   });
 

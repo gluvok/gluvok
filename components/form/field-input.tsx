@@ -34,6 +34,20 @@ export function FormFieldInput({ field, form, idPrefix, disabled }: FormFieldInp
   const value = useWatch({ control: form.control, name: field.key });
   const stringValue = value !== undefined && value !== null ? String(value) : "";
 
+  if (referencedSlug) {
+    return (
+      <EntityCombobox
+        id={fieldId}
+        entitySlug={referencedSlug}
+        value={stringValue}
+        onChange={(val) =>
+          form.setValue(field.key, val, { shouldValidate: true, shouldDirty: true })
+        }
+        disabled={disabled}
+      />
+    );
+  }
+
   switch (field.type) {
     case FieldType.IMAGES:
       return (
@@ -46,10 +60,6 @@ export function FormFieldInput({ field, form, idPrefix, disabled }: FormFieldInp
           disabled={disabled}
         />
       );
-    case FieldType.TEXT:
-    case FieldType.NUMBER:
-    case FieldType.PASSWORD:
-      return <StandardInput field={field} fieldId={fieldId} form={form} disabled={disabled} />;
     case FieldType.SWITCH:
       return (
         <div className="flex items-center justify-between w-full">
@@ -122,19 +132,6 @@ export function FormFieldInput({ field, form, idPrefix, disabled }: FormFieldInp
         />
       );
     default:
-      if (referencedSlug) {
-        return (
-          <EntityCombobox
-            id={fieldId}
-            entitySlug={referencedSlug}
-            value={stringValue}
-            onChange={(val) =>
-              form.setValue(field.key, val, { shouldValidate: true, shouldDirty: true })
-            }
-            disabled={disabled}
-          />
-        );
-      }
       return <StandardInput field={field} fieldId={fieldId} form={form} disabled={disabled} />;
   }
 }

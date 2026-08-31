@@ -244,6 +244,7 @@ export function useProjectTable({ projectSlug, primaryIdKey, projectName }: UseP
     manualPagination: true,
     manualSorting: true,
     manualFiltering: true,
+    rowCount: localCount,
     pageCount: Math.ceil(localCount / pagination.pageSize),
     state: {
       sorting,

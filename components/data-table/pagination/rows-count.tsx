@@ -16,12 +16,25 @@ export function DataTablePaginationRowsCount<TData extends RowData>({
 }: {
   table: Table<ProjectTableFeatures, TData>;
 }) {
+  const selectedCount = table.getFilteredSelectedRowModel().rows.length;
+  const totalCount = table.getRowCount?.() ?? table.getFilteredRowModel().rows.length;
+
   return (
     <div className="text-xs text-muted-foreground flex items-center gap-1.5 justify-center sm:justify-start">
-      <CheckSquare className="h-4 w-4 text-primary" />
+      <CheckSquare className="h-3.5 w-3.5 text-primary shrink-0" />
       <span>
-        {table.getFilteredSelectedRowModel().rows.length} of{" "}
-        {table.getFilteredRowModel().rows.length} row(s) selected.
+        {selectedCount > 0 ? (
+          <>
+            <strong className="font-semibold text-primary">{selectedCount}</strong> of{" "}
+            <strong className="font-medium text-foreground">{totalCount.toLocaleString()}</strong>{" "}
+            row{totalCount === 1 ? "" : "s"} selected
+          </>
+        ) : (
+          <>
+            <strong className="font-medium text-foreground">{totalCount.toLocaleString()}</strong>{" "}
+            total record{totalCount === 1 ? "" : "s"}
+          </>
+        )}
       </span>
     </div>
   );

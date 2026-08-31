@@ -8,7 +8,7 @@
 import * as React from "react";
 import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import { ShieldCheck } from "lucide-react";
+import { getAutoApproveIcon } from "@/lib/fields/helpers";
 import { BaseCombobox } from "@/components/combobox/base";
 import { setTableColumnFilter } from "./common";
 
@@ -39,7 +39,7 @@ export function CentersFilters<TData extends RowData>({ table }: CentersFiltersP
         data={AUTO_APPROVE_OPTIONS}
         placeholder="All Auto Approve"
         searchPlaceholder="Search auto approve..."
-        icon={ShieldCheck}
+        icon={getAutoApproveIcon(currentAutoApprove)}
         className="w-auto"
         id="filter-center-auto-approve-combobox"
       />

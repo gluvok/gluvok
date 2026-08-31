@@ -8,8 +8,9 @@ import {
   hasPermission,
   getBaseUserCustomerIds,
 } from "@/db/helpers";
-import { WeighmentType, Unit, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
+import { WeighmentType, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { editWeighmentSchema } from "@/lib/validation";
+import { formatWeighmentRecord } from "@/lib/services/weighments";
 
 export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
   if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.READ)) return forbiddenError();
@@ -36,9 +37,7 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
   if (user.role === Role.BASE) {
     const userId = parseInt(user.sub, 10);
     const customerIds = await getBaseUserCustomerIds(client, userId);
-    const isOwn =
-      inEntry.user_id === userId ||
-      outEntry.user_id === userId ||
+    const isOwnCustomer =
       (inEntry.customer_id !== null &&
         inEntry.customer_id !== undefined &&
         customerIds.includes(Number(inEntry.customer_id))) ||
@@ -46,55 +45,14 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
         outEntry.customer_id !== undefined &&
         customerIds.includes(Number(outEntry.customer_id)));
 
-    if (!isOwn) {
+    if (!isOwnCustomer) {
       return apiError("Weighment not found", StatusCodes.NOT_FOUND);
     }
   }
-  const inWeight = Number(inEntry.weight);
-  const outWeight = Number(outEntry.weight);
-  const grossWeight = Math.max(inWeight, outWeight);
-  const tareWeight = Math.min(inWeight, outWeight);
-  const netWeight = grossWeight - tareWeight;
-
-  const inImages = Array.isArray(inEntry.images) ? (inEntry.images as string[]) : [];
-  const outImages = Array.isArray(outEntry.images) ? (outEntry.images as string[]) : [];
-  const combinedImages = Array.from(new Set([...inImages, ...outImages]));
-
-  const inCenters = inEntry.centers as Record<string, unknown> | undefined;
-  const outCenters = outEntry.centers as Record<string, unknown> | undefined;
-  const inUsers = inEntry.users as Record<string, unknown> | undefined;
-  const outUsers = outEntry.users as Record<string, unknown> | undefined;
-  const inCustomers = inEntry.customers as Record<string, unknown> | undefined;
-  const outCustomers = outEntry.customers as Record<string, unknown> | undefined;
 
   const formatted = {
-    id: row.id,
-    unit: row.unit || Unit.KG,
-    type: row.type || WeighmentType.UNASSIGNED,
-    gross_weight: grossWeight,
-    tare_weight: tareWeight,
-    net_weight: netWeight,
-    images: combinedImages,
-    in_entry_id: row.in_entry_id,
-    in_entry_created_at: inEntry.created_at,
-    out_entry_id: row.out_entry_id,
-    out_entry_created_at: outEntry.created_at,
-    in_center_id: inEntry.center_id,
-    in_center_name: inCenters?.name || "",
-    out_center_id: outEntry.center_id,
-    out_center_name: outCenters?.name || "",
-    in_user_id: inEntry.user_id,
-    in_user_name: inUsers?.name || "",
-    out_user_id: outEntry.user_id,
-    out_user_name: outUsers?.name || "",
-    in_customer_id: inEntry.customer_id,
-    in_customer_name: inCustomers?.name || "",
-    out_customer_id: outEntry.customer_id,
-    out_customer_name: outCustomers?.name || "",
-    vehicle_number: (inEntry.vehicle_number as string) || (outEntry.vehicle_number as string) || "",
+    ...formatWeighmentRecord(row),
     rate_id: row.rate_id,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
   };
 
   return NextResponse.json({ data: formatted });

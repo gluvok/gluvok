@@ -4,7 +4,7 @@
  */
 
 import { supabase } from "@/db";
-import { EntryStatus, EntryType, Unit } from "@/lib/constants/enums";
+import { EntryStatus, EntryType, Unit, WeighmentType } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
 export async function validateSequentialApproval(
@@ -138,4 +138,56 @@ export async function tryMergeEntries(
   }
 
   return newWeighment;
+}
+
+export function formatWeighmentRecord(row: Record<string, unknown>): Record<string, unknown> {
+  const inEntry = (row["in_entry"] as Record<string, unknown>) || {};
+  const outEntry = (row["out_entry"] as Record<string, unknown>) || {};
+
+  const inWeight = Number(inEntry.weight || 0);
+  const outWeight = Number(outEntry.weight || 0);
+
+  const grossWeight = Math.max(inWeight, outWeight);
+  const tareWeight = Math.min(inWeight, outWeight);
+  const netWeight = grossWeight - tareWeight;
+
+  const inImages = Array.isArray(inEntry.images) ? (inEntry.images as string[]) : [];
+  const outImages = Array.isArray(outEntry.images) ? (outEntry.images as string[]) : [];
+  const combinedImages = Array.from(new Set([...inImages, ...outImages]));
+
+  const inCenters = inEntry.centers as Record<string, unknown> | undefined;
+  const outCenters = outEntry.centers as Record<string, unknown> | undefined;
+  const inUsers = inEntry.users as Record<string, unknown> | undefined;
+  const outUsers = outEntry.users as Record<string, unknown> | undefined;
+  const inCustomers = inEntry.customers as Record<string, unknown> | undefined;
+  const outCustomers = outEntry.customers as Record<string, unknown> | undefined;
+
+  return {
+    id: row.id,
+    unit: row.unit || Unit.KG,
+    type: row.type || WeighmentType.UNASSIGNED,
+    gross_weight: grossWeight,
+    tare_weight: tareWeight,
+    net_weight: netWeight,
+    images: combinedImages,
+    in_entry_id: row.in_entry_id,
+    in_entry_created_at: inEntry.created_at,
+    out_entry_id: row.out_entry_id,
+    out_entry_created_at: outEntry.created_at,
+    in_center_id: inEntry.center_id,
+    in_center_name: inCenters?.name || "",
+    out_center_id: outEntry.center_id,
+    out_center_name: outCenters?.name || "",
+    in_user_id: inEntry.user_id,
+    in_user_name: inUsers?.name || "",
+    out_user_id: outEntry.user_id,
+    out_user_name: outUsers?.name || "",
+    in_customer_id: inEntry.customer_id,
+    in_customer_name: inCustomers?.name || "",
+    out_customer_id: outEntry.customer_id,
+    out_customer_name: outCustomers?.name || "",
+    vehicle_number: inEntry.vehicle_number || outEntry.vehicle_number || "",
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
 }

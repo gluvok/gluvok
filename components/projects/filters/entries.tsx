@@ -10,8 +10,7 @@ import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { EntryStatus, EntryType, FieldType } from "@/lib/constants/enums";
 import { BaseCombobox } from "@/components/combobox/base";
-import { getTypeIcon, getStatusIcon } from "@/lib/fields/helpers";
-import { ShieldCheck, Pencil } from "lucide-react";
+import { getTypeIcon, getStatusIcon, getAutoApproveIcon, getEditedIcon } from "@/lib/fields/helpers";
 import { DateRangeFilter } from "./date-range-filter";
 import { CenterFilter, CustomerFilter, UserFilter, setTableColumnFilter } from "./common";
 
@@ -96,7 +95,7 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
         data={AUTO_APPROVED_OPTIONS}
         placeholder="All Auto Approve"
         searchPlaceholder="Search auto approve..."
-        icon={ShieldCheck}
+        icon={getAutoApproveIcon(currentAutoApproved as string)}
         className="w-auto"
         id="filter-entries-auto-approved-combobox"
       />
@@ -109,7 +108,7 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
         data={EDITED_OPTIONS}
         placeholder="All Edit Statuses"
         searchPlaceholder="Search edit status..."
-        icon={Pencil}
+        icon={getEditedIcon(currentEdited as string)}
         className="w-auto"
         id="filter-entries-edited-combobox"
       />

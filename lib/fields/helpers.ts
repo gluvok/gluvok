@@ -35,6 +35,7 @@ import {
   PenTool,
   Cpu,
   Bot,
+  Pencil,
   type LucideIcon,
 } from "lucide-react";
 
@@ -168,6 +169,30 @@ export function getStatusIcon(statusVal?: string): LucideIcon {
   }
 }
 
+export function getAutoApproveIcon(val?: string): LucideIcon {
+  if (!val || val === "all") return ShieldCheck;
+  const normalized = val.toLowerCase().trim();
+  if (normalized === "true" || normalized === "auto approved" || normalized === "enabled") {
+    return CheckCircle2;
+  }
+  if (normalized === "false" || normalized === "manual" || normalized === "disabled") {
+    return XCircle;
+  }
+  return ShieldCheck;
+}
+
+export function getEditedIcon(val?: string): LucideIcon {
+  if (!val || val === "all") return Pencil;
+  const normalized = val.toLowerCase().trim();
+  if (normalized === "true" || normalized === "edited") {
+    return CheckCircle2;
+  }
+  if (normalized === "false" || normalized === "original") {
+    return XCircle;
+  }
+  return Pencil;
+}
+
 export function getItemIcon(type: string | ProjectSlug, label: string): LucideIcon | null {
   switch (type) {
     case ProjectSlug.COMMODITIES:
@@ -183,6 +208,11 @@ export function getItemIcon(type: string | ProjectSlug, label: string): LucideIc
     case "entry_status":
     case FieldType.ENTRY_STATUS:
       return getStatusIcon(label);
+    case "auto_approved":
+    case "auto_approve":
+      return getAutoApproveIcon(label);
+    case "edited":
+      return getEditedIcon(label);
     default:
       return null;
   }

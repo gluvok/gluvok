@@ -8,7 +8,11 @@ import { ValidationMessage } from "@/lib/constants/messages";
 
 export const integerIdSchema = (fieldName: string) =>
   z.preprocess(
-    (val) => (val === "" || val === null || val === undefined ? NaN : Number(val)),
+    (val) => {
+      if (val === "" || val === null || val === undefined) return undefined;
+      const num = Number(val);
+      return Number.isNaN(num) ? val : num;
+    },
     z
       .number({ message: ValidationMessage.REQUIRED(fieldName) })
       .int(ValidationMessage.MUST_BE_INTEGER(fieldName))
@@ -17,7 +21,11 @@ export const integerIdSchema = (fieldName: string) =>
 
 export const optionalIntegerIdSchema = (fieldName: string) =>
   z.preprocess(
-    (val) => (val === "" || val === null || val === undefined ? null : Number(val)),
+    (val) => {
+      if (val === "" || val === null || val === undefined) return null;
+      const num = Number(val);
+      return Number.isNaN(num) ? val : num;
+    },
     z
       .number({ message: ValidationMessage.MUST_BE_INTEGER(fieldName) })
       .int(ValidationMessage.MUST_BE_INTEGER(fieldName))

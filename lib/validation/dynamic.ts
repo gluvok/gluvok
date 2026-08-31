@@ -7,7 +7,7 @@ import * as z from "zod";
 import { FieldRequirementMode, Role } from "@/lib/constants/enums";
 import { ValidationMessage } from "@/lib/constants/messages";
 import { type Factory } from "@/types";
-import { integerIdSchema, nameSchema } from "./helpers";
+import { integerIdSchema, optionalIntegerIdSchema, nameSchema } from "./helpers";
 
 /**
  * Dynamic Aadhaar schema generator based on active configuration mode.
@@ -144,12 +144,7 @@ export function getDynamicCustomerSchema(factory: Factory | null, isEdit = false
   if (govtIdMode === FieldRequirementMode.MANDATORY) {
     govtIdSchema = integerIdSchema("Govt ID");
   } else if (govtIdMode === FieldRequirementMode.OPTIONAL) {
-    govtIdSchema = z
-      .preprocess(
-        (v) => (v === "" || v === null || v === undefined ? null : Number(v)),
-        z.number().int().positive().nullable().optional(),
-      )
-      .transform((v) => (v === undefined || Number.isNaN(v) ? null : v));
+    govtIdSchema = optionalIntegerIdSchema("Govt ID");
   } else {
     // NOT_REQUIRED
     govtIdSchema = z.any().transform(() => null);
@@ -161,9 +156,21 @@ export function getDynamicCustomerSchema(factory: Factory | null, isEdit = false
       father_name: nameSchema("Father's Name"),
       govt_id: govtIdSchema,
       factory_id: z.coerce.number().optional().nullable(),
-      username: z.string().optional().or(z.literal("")),
-      password: z.string().optional().or(z.literal("")),
-      confirmPassword: z.string().optional().or(z.literal("")),
+      username: z
+        .string()
+        .optional()
+        .or(z.literal(""))
+        .transform((v) => (v === "" ? undefined : v)),
+      password: z
+        .string()
+        .optional()
+        .or(z.literal(""))
+        .transform((v) => (v === "" ? undefined : v)),
+      confirmPassword: z
+        .string()
+        .optional()
+        .or(z.literal(""))
+        .transform((v) => (v === "" ? undefined : v)),
     })
     .superRefine((data, ctx) => {
       validatePasswordRefinement(data, ctx, isEdit, false);

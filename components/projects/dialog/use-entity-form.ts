@@ -72,7 +72,7 @@ export function useEntityForm({
 
   const formSchema = React.useMemo(() => {
     if (projectSlug === ProjectSlug.CUSTOMERS) {
-      return getDynamicCustomerSchema(factory);
+      return getDynamicCustomerSchema(factory, isEdit);
     }
     if (projectSlug === ProjectSlug.USERS) {
       return getDynamicUserSchema(factory, isEdit);
@@ -116,9 +116,15 @@ export function useEntityForm({
     } else {
       const defaultVals: Record<string, unknown> = {};
 
-      if (userFactoryId && fields.some((f) => f.key === "factory_id")) {
-        defaultVals["factory_id"] = userFactoryId;
-      }
+      fields.forEach((field) => {
+        if (field.type === FieldType.CHECKBOX) {
+          defaultVals[field.key] = false;
+        } else if (field.key === "factory_id" && userFactoryId) {
+          defaultVals["factory_id"] = userFactoryId;
+        } else {
+          defaultVals[field.key] = "";
+        }
+      });
 
       form.reset(defaultVals);
     }

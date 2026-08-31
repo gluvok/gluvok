@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { EntryStatus, PermissionKey, ProjectSlug, Role } from "@/lib/constants/enums";
+import { EntryStatus, EntryType, PermissionKey, ProjectSlug, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
 const { mockHasPermission } = vi.hoisted(() => ({
@@ -330,6 +330,184 @@ describe("Entries [id] route handlers", () => {
     expect(response.status).toBe(200);
     const json = await response.json();
     expect(json).toEqual({ success: true, id: 10 });
+  });
+
+  it("allows updating vehicle_number on automatic pending entry without setting edited to true", async () => {
+    const patchRequest = new Request("http://localhost/api/entries/10", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ vehicle_number: "KA01AB7777" }),
+    });
+
+    const existingEntry = {
+      id: 10,
+      status: EntryStatus.PENDING,
+      type: EntryType.AUTOMATIC,
+      auto_approved: false,
+      edited: false,
+      vehicle_number: "KA01AB1111",
+      customer_id: null,
+      center_id: 1,
+      factory_id: 1,
+      created_at: "2026-08-31T00:00:00Z",
+    };
+
+    let fetchCount = 0;
+    const mockDb = {
+      from: vi.fn((table: string) => {
+        if (table === "entries") {
+          const query: Record<string, unknown> = {};
+          query.select = vi.fn(() => query);
+          query.eq = vi.fn(() => query);
+          query.is = vi.fn(() => query);
+          query.maybeSingle = vi.fn().mockImplementation(async () => {
+            fetchCount++;
+            if (fetchCount === 1) return { data: existingEntry, error: null };
+            return { data: null, error: null };
+          });
+          query.single = vi.fn().mockResolvedValue({
+            data: {
+              ...existingEntry,
+              vehicle_number: "KA01AB7777",
+              edited: false,
+            },
+            error: null,
+          });
+          query.update = vi.fn(() => query);
+          return query;
+        }
+        return {};
+      }),
+    };
+
+    const handler = PATCH as unknown as RawHandler;
+    const response = await handler(patchRequest, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.data.vehicle_number).toBe("KA01AB7777");
+    expect(json.data.edited).toBe(false);
+  });
+
+  it("rejects updating weight on automatic pending entry", async () => {
+    const patchRequest = new Request("http://localhost/api/entries/10", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ weight: 25000 }),
+    });
+
+    const existingEntry = {
+      id: 10,
+      status: EntryStatus.PENDING,
+      type: EntryType.AUTOMATIC,
+      auto_approved: false,
+      edited: false,
+      vehicle_number: "KA01AB1111",
+      weight: 20000,
+      customer_id: null,
+      center_id: 1,
+      factory_id: 1,
+      created_at: "2026-08-31T00:00:00Z",
+    };
+
+    const mockDb = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              is: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: existingEntry, error: null }),
+              })),
+            })),
+          })),
+        })),
+      })),
+    };
+
+    const handler = PATCH as unknown as RawHandler;
+    const response = await handler(patchRequest, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(400);
+    const json = await response.json();
+    expect(json.error).toBe("Cannot modify weight on an automatic entry.");
+  });
+
+  it("allows updating customer_id on manually approved entry when customer_id is null", async () => {
+    const patchRequest = new Request("http://localhost/api/entries/10", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customer_id: 3 }),
+    });
+
+    const existingEntry = {
+      id: 10,
+      status: EntryStatus.APPROVED,
+      type: EntryType.MANUAL,
+      auto_approved: false,
+      edited: false,
+      vehicle_number: "KA01AB1111",
+      customer_id: null,
+      center_id: 1,
+      factory_id: 1,
+      created_at: "2026-08-31T00:00:00Z",
+    };
+
+    let fetchCount = 0;
+    const mockDb = {
+      from: vi.fn((table: string) => {
+        if (table === "customers") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  is: vi.fn(() => ({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: { id: 3 }, error: null }),
+                  })),
+                })),
+              })),
+            })),
+          };
+        }
+        if (table === "entries") {
+          const query: Record<string, unknown> = {};
+          query.select = vi.fn(() => query);
+          query.eq = vi.fn(() => query);
+          query.is = vi.fn(() => query);
+          query.maybeSingle = vi.fn().mockImplementation(async () => {
+            fetchCount++;
+            if (fetchCount === 1) return { data: existingEntry, error: null };
+            return { data: null, error: null };
+          });
+          query.single = vi.fn().mockResolvedValue({
+            data: {
+              ...existingEntry,
+              customer_id: 3,
+              edited: false,
+            },
+            error: null,
+          });
+          query.update = vi.fn(() => query);
+          return query;
+        }
+        return {
+          select: vi.fn(() => ({
+            or: vi.fn(() => ({
+              is: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+              })),
+            })),
+          })),
+        };
+      }),
+    };
+
+    const handler = PATCH as unknown as RawHandler;
+    const response = await handler(patchRequest, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.data.customer_id).toBe(3);
+    expect(json.data.edited).toBe(false);
   });
 
   it("rejects DELETE when user lacks DELETE permission", async () => {

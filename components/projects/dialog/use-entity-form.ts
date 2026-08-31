@@ -49,14 +49,30 @@ export function useEntityForm({
     const baseFields = PROJECT_FIELDS[projectSlug] || [];
     if (isEdit && projectSlug === ProjectSlug.ENTRIES && item) {
       const status = getField(item, "status");
+      if (status === EntryStatus.REJECTED) {
+        return [];
+      }
+
       const isAutoApproved = Boolean(getField(item, "auto_approved"));
+      const isEdited = Boolean(getField(item, "edited"));
       const type = getField(item, "type");
       const customerId = getField(item, "customer_id");
       const isCustomerNull = customerId === null || customerId === undefined || customerId === "";
       const isApproved = status === EntryStatus.APPROVED || isAutoApproved;
 
       if (isApproved) {
-        if (isCustomerNull) {
+        const canEditVehicle = isAutoApproved && !isEdited;
+        const canEditCustomer = isCustomerNull;
+
+        if (canEditVehicle && canEditCustomer) {
+          return baseFields.filter((f) => f.key === "vehicle_number" || f.key === "customer_id");
+        }
+        if (canEditVehicle) {
+          return baseFields
+            .filter((f) => f.key === "vehicle_number")
+            .map((f) => ({ ...f, span: FieldSpan.FULL }));
+        }
+        if (canEditCustomer) {
           return baseFields
             .filter((f) => f.key === "customer_id")
             .map((f) => ({ ...f, span: FieldSpan.FULL }));
@@ -174,9 +190,15 @@ export function useEntityForm({
         const isApproved = status === EntryStatus.APPROVED || isAutoApproved;
 
         if (projectSlug === ProjectSlug.ENTRIES && isApproved) {
-          updateValues = {
-            customer_id: values["customer_id"],
-          };
+          updateValues = {};
+          if (values["customer_id"] !== undefined) {
+            updateValues["customer_id"] = values["customer_id"]
+              ? Number(values["customer_id"])
+              : null;
+          }
+          if (values["vehicle_number"] !== undefined) {
+            updateValues["vehicle_number"] = values["vehicle_number"];
+          }
         } else {
           updateValues = { ...values };
           fields.forEach((field) => {

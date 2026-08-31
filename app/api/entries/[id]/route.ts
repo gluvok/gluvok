@@ -147,6 +147,15 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
       }
     } else {
       // Automatic Pending (not auto-approved): allow vehicle_number, status
+      const lockedAutoFields = ["weight", "center_id", "images", "customer_id"] as const;
+      for (const field of lockedAutoFields) {
+        if (body[field] !== undefined && body[field] !== existing[field]) {
+          return apiError(
+            `Cannot modify ${field === "center_id" ? "center" : field} on an automatic entry.`,
+            StatusCodes.BAD_REQUEST,
+          );
+        }
+      }
       if (body.vehicle_number !== undefined) updates["vehicle_number"] = body.vehicle_number;
       if (body.status !== undefined) updates["status"] = body.status;
     }

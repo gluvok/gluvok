@@ -17,6 +17,7 @@ import {
   PermissionKey,
   ProjectSlug,
   EntryStatus,
+  EntryType,
 } from "@/lib/constants/enums";
 import { type FieldConfig, getSingularName } from "@/lib/fields";
 import {
@@ -55,6 +56,7 @@ export function EntityDialogContent({
       const entryStatus = getField(item, "status") as EntryStatus | string;
       const isAutoApproved = Boolean(getField(item, "auto_approved"));
       const isEdited = Boolean(getField(item, "edited"));
+      const entryType = getField(item, "type") as EntryType | string;
       const customerId = getField(item, "customer_id");
       const isApproved = entryStatus === EntryStatus.APPROVED || isAutoApproved;
       const hasCustomer = customerId !== null && customerId !== undefined && customerId !== "";
@@ -68,6 +70,10 @@ export function EntityDialogContent({
           entryFieldDisabled = hasCustomer;
         } else {
           entryFieldDisabled = true;
+        }
+      } else if (entryStatus === EntryStatus.PENDING) {
+        if (entryType === EntryType.AUTOMATIC) {
+          entryFieldDisabled = field.key !== "vehicle_number";
         }
       }
     }

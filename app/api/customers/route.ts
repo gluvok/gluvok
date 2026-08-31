@@ -123,7 +123,7 @@ export const POST = withAuth(async (req, user, client) => {
     );
   }
 
-  return formatEntityResponse(newCustomer, StatusCodes.CREATED);
+  return formatEntityResponse(newCustomer, StatusCodes.CREATED, { factory });
 });
 
 export const DELETE = withAuth(async (req, user, client) => {

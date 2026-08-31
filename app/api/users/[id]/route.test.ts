@@ -74,6 +74,71 @@ describe("User mutation guards", () => {
     },
   );
 
+  it("successfully updates user and returns factory metadata", async () => {
+    mockHasPermission.mockReturnValue(true);
+    const updateRequest = new Request("http://localhost/api/users/1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Updated Name",
+        role: Role.OPERATOR,
+        aadhar_number: "123456789012",
+      }),
+    });
+
+    const existingUser = {
+      id: 1,
+      name: "Self User",
+      aadhar_number: "123456789012",
+      role: Role.OPERATOR,
+      factory_id: 1,
+    };
+    const updatedUser = {
+      id: 1,
+      name: "Updated Name",
+      aadhar_number: "123456789012",
+      role: Role.OPERATOR,
+      factory_id: 1,
+    };
+    const factoryData = {
+      id: 1,
+      name: "Factory A",
+      aadhar_number_mode: "mandatory",
+      govt_id_mode: "mandatory",
+    };
+
+    const updateMockDb = {
+      from: vi.fn((table: string) => {
+        if (table === "factories") {
+          const factoryChain: Record<string, unknown> = {};
+          factoryChain.select = vi.fn(() => factoryChain);
+          factoryChain.eq = vi.fn(() => factoryChain);
+          factoryChain.maybeSingle = vi.fn().mockResolvedValue({ data: factoryData });
+          return factoryChain;
+        }
+
+        const userChain: Record<string, unknown> = {};
+        userChain.select = vi.fn(() => userChain);
+        userChain.eq = vi.fn(() => userChain);
+        userChain.neq = vi.fn(() => userChain);
+        userChain.is = vi.fn(() => userChain);
+        userChain.maybeSingle = vi.fn().mockResolvedValue({ data: existingUser });
+        userChain.update = vi.fn(() => userChain);
+        userChain.single = vi.fn().mockResolvedValue({ data: updatedUser, error: null });
+        return userChain;
+      }),
+    };
+
+    const patchHandler = PATCH as unknown as RawUserHandler;
+    const response = await patchHandler(updateRequest, sampleUser, updateMockDb, context);
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.data.name).toBe("Updated Name");
+    expect(json.factory).toBeDefined();
+    expect(json.factory.id).toBe(1);
+  });
+
   it("allows self deletion and marks is_self_deleted while clearing cookies", async () => {
     const ownUser = {
       sub: "1",

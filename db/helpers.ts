@@ -306,8 +306,9 @@ export async function fetchPaginatedResult<T = Record<string, unknown>>(
 export function formatEntityResponse<T extends Record<string, unknown>>(
   record: T,
   status: number = StatusCodes.OK,
+  extra?: Record<string, unknown>,
 ) {
-  if (!record) return NextResponse.json({ data: null }, { status });
+  if (!record) return NextResponse.json({ data: null, ...extra }, { status });
   const formatted: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(record)) {
@@ -317,5 +318,5 @@ export function formatEntityResponse<T extends Record<string, unknown>>(
     formatted[key] = value;
   }
 
-  return NextResponse.json({ data: formatted }, { status });
+  return NextResponse.json({ data: formatted, ...extra }, { status });
 }

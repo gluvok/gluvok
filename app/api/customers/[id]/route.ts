@@ -78,7 +78,7 @@ export const PATCH = withAuth(
       return apiError(error?.message || ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND);
     }
 
-    return formatEntityResponse(updated);
+    return formatEntityResponse(updated, StatusCodes.OK, { factory });
   }),
 );
 

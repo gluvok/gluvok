@@ -5,9 +5,10 @@
 
 import axios from "axios";
 import { ProjectSlug } from "@/lib/constants/enums";
-import { type EntityRecord } from "@/types";
+import { type EntityRecord, type Factory } from "@/types";
 import { type PaginatedParams } from "./scoping";
 import { ApiErrorMessage } from "@/lib/constants/messages";
+import { useFactoryStore } from "@/lib/store/factory";
 
 export function getEndpoint(slug: ProjectSlug | string): string {
   return `/api/${slug}`;
@@ -87,7 +88,10 @@ export async function insertRow(
 ): Promise<EntityRecord> {
   const endpoint = getEndpoint(slug);
   return apiRequest(async () => {
-    const res = await axios.post<{ data: EntityRecord }>(endpoint, record);
+    const res = await axios.post<{ data: EntityRecord; factory?: Factory }>(endpoint, record);
+    if (res.data?.factory) {
+      useFactoryStore.getState().setFactory(res.data.factory);
+    }
     return res.data.data;
   });
 }
@@ -101,7 +105,10 @@ export async function updateRow(
   return apiRequest(async () => {
     // Settings has no meaningful [id] segment — the factory is scoped server-side via user.factory_id
     const url = slug === ProjectSlug.SETTINGS ? endpoint : `${endpoint}/${id}`;
-    const res = await axios.patch<{ data: EntityRecord }>(url, record);
+    const res = await axios.patch<{ data: EntityRecord; factory?: Factory }>(url, record);
+    if (res.data?.factory) {
+      useFactoryStore.getState().setFactory(res.data.factory);
+    }
     return res.data.data;
   });
 }

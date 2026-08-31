@@ -135,7 +135,7 @@ export const POST = withAuth(async (req, user, client) => {
     );
   }
 
-  return formatEntityResponse(newUser, StatusCodes.CREATED);
+  return formatEntityResponse(newUser, StatusCodes.CREATED, { factory });
 });
 
 export const DELETE = withAuth(async (req, user, client) => {

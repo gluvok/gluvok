@@ -43,7 +43,7 @@ import { type ColumnActionsCallbacks } from "./index";
 
 import { type Permission, useAuthStore, type AuthUser } from "@/lib/store";
 import { ProjectSlug, Role, WeighmentType, EntryStatus } from "@/lib/constants/enums";
-import { downloadPDF } from "@/lib/csv/exporter";
+import { downloadPDF } from "@/lib/pdf";
 
 /**
  * hasRowModifyPermission

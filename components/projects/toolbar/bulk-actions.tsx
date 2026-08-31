@@ -11,7 +11,8 @@ import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Button } from "@/components/ui/button";
 import { FileSpreadsheet, Trash2, X, ChevronDown, FileText } from "lucide-react";
 import { DeleteEntityDialog } from "@/components/projects/dialog/delete";
-import { downloadPDF, downloadCSV } from "@/lib/csv/exporter";
+import { downloadCSV } from "@/lib/csv";
+import { downloadPDF } from "@/lib/pdf";
 import {
   DropdownMenu,
   DropdownMenuTrigger,

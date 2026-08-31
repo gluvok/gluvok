@@ -1,14 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { downloadPDF, downloadCSV, getExportFileName } from "./exporter";
-import { printPdf } from "../pdf/exporter";
+import { downloadCSV, getExportFileName } from "./exporter";
 import { type Table } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 
-vi.mock("../pdf/exporter", () => ({
-  printPdf: vi.fn(),
-}));
-
-describe("downloadPDF, downloadCSV and getExportFileName", () => {
+describe("CSV Exporter (downloadCSV & getExportFileName)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -33,77 +28,9 @@ describe("downloadPDF, downloadCSV and getExportFileName", () => {
     } as unknown as Table<ProjectTableFeatures, Record<string, unknown>>;
   };
 
-  it("generates standardized export file names", () => {
-    const fileName = getExportFileName("Weighments", "pdf", "Punjab Sugar Mill");
-    expect(fileName).toMatch(/^punjab_sugar_mill_weighments_export_\d{8}_\d{6}\.pdf$/);
-
+  it("generates standardized CSV export file names", () => {
     const csvName = getExportFileName("Entries", "csv", "Lathey Weigh Trix");
     expect(csvName).toMatch(/^lathey_weigh_trix_entries_export_\d{8}_\d{6}\.csv$/);
-  });
-
-  it("renders company name, image count in table cell, IST dates, and scans in generated PDF HTML", () => {
-    const table = createMockTable([
-      {
-        id: 1,
-        vehicle_number: "PB10XY1234",
-        images: ["https://example.com/scan1.jpg", "https://example.com/scan2.jpg"],
-        created_at: "2026-08-27T20:54:16.000Z",
-      },
-    ]);
-
-    downloadPDF(table, "Entries", "Apex Industries");
-
-    expect(printPdf).toHaveBeenCalledTimes(1);
-    expect(printPdf).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.stringMatching(/^apex_industries_entries_export_\d{8}_\d{6}\.pdf$/),
-    );
-    const generatedHtml = vi.mocked(printPdf).mock.calls[0][0];
-
-    // Tailwind CDN and Title
-    expect(generatedHtml).toContain('<script src="https://cdn.tailwindcss.com"></script>');
-
-    // Company name in meta and title
-    expect(generatedHtml).toContain("Apex Industries");
-    expect(generatedHtml).toContain("Entries Export");
-
-    // Single record grammar
-    expect(generatedHtml).toContain("1 Record");
-
-    // IST date formatting with seconds
-    expect(generatedHtml).toContain("28 Aug 2026, 02:24:16 AM");
-
-    // Attached scan gallery section with images
-    expect(generatedHtml).toContain("Attached Scans & Images");
-    expect(generatedHtml).toContain("PB10XY1234");
-    expect(generatedHtml).toContain('src="https://example.com/scan1.jpg"');
-    expect(generatedHtml).toContain('src="https://example.com/scan2.jpg"');
-  });
-
-  it("exports single row using rowsOverride in downloadPDF", () => {
-    const table = createMockTable([
-      {
-        id: 1,
-        vehicle_number: "PB10XY1234",
-        images: ["https://example.com/scan1.jpg"],
-        created_at: "2026-08-27T20:54:16.000Z",
-      },
-      {
-        id: 2,
-        vehicle_number: "MH12AB5678",
-        images: [],
-        created_at: "2026-08-27T20:54:16.000Z",
-      },
-    ]);
-
-    const singleRow = table.getFilteredSelectedRowModel().rows[1];
-    downloadPDF(table, "Entries", "Apex Industries", [singleRow]);
-
-    expect(printPdf).toHaveBeenCalledTimes(1);
-    const generatedHtml = vi.mocked(printPdf).mock.calls[0][0];
-
-    expect(generatedHtml).toContain("MH12AB5678");
-    expect(generatedHtml).not.toContain("PB10XY1234");
   });
 
   it("exports semicolon-separated image URLs and IST formatted dates with standardized filename in CSV", () => {

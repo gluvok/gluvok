@@ -128,13 +128,13 @@ export function downloadPDF<TData extends RowData>(
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
             ${group.images
-            .map(
-              (url) => `
+              .map(
+                (url) => `
               <div class="aspect-video bg-white rounded-lg overflow-hidden border border-slate-200 shadow-2xs flex items-center justify-center">
                 <img src="${url}" alt="Attachment for Record #${group.id}" class="w-full h-full object-cover" />
               </div>`,
-            )
-            .join("")}
+              )
+              .join("")}
           </div>
         </div>
       `,

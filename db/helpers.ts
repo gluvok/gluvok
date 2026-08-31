@@ -301,4 +301,3 @@ export function formatEntityResponse<T extends Record<string, unknown>>(
 
   return NextResponse.json({ data: formatted, ...extra }, { status });
 }
-

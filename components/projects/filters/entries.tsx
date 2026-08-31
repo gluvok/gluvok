@@ -10,7 +10,12 @@ import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { EntryStatus, EntryType, FieldType } from "@/lib/constants/enums";
 import { BaseCombobox } from "@/components/combobox/base";
-import { getTypeIcon, getStatusIcon, getAutoApproveIcon, getEditedIcon } from "@/lib/fields/helpers";
+import {
+  getTypeIcon,
+  getStatusIcon,
+  getAutoApproveIcon,
+  getEditedIcon,
+} from "@/lib/fields/helpers";
 import { CenterFilter, CustomerFilter, UserFilter, setTableColumnFilter } from "./common";
 
 interface EntriesFiltersProps<TData extends RowData> {

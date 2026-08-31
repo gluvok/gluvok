@@ -221,7 +221,7 @@ describe("useProjectTable Hook", () => {
     expect(result.current.error).toBe("Network unavailable");
   });
 
-  it("should apply column preferences that hydrate after the initial render", () => {
+  it("should apply column preferences that hydrate after the initial render", async () => {
     vi.mocked(getProjectColumns).mockReturnValue([{ id: "id" }, { id: "name" }, { id: "actions" }]);
 
     const { result, rerender } = renderHook(() =>
@@ -234,7 +234,7 @@ describe("useProjectTable Hook", () => {
 
     expect(result.current.table.state.columnVisibility).toEqual({});
 
-    act(() => {
+    await act(async () => {
       mockPreferencesState.columns = { centers: ["id"] };
       rerender();
     });

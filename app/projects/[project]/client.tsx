@@ -25,11 +25,7 @@ interface ProjectClientProps {
   desc?: string;
 }
 
-export function ProjectClient({
-  projectName,
-  projectSlug,
-  desc,
-}: ProjectClientProps) {
+export function ProjectClient({ projectName, projectSlug, desc }: ProjectClientProps) {
   const primaryIdKey = getPrimaryIdKey(projectSlug);
   const pt = useProjectTable({ projectSlug, primaryIdKey, projectName });
   const {

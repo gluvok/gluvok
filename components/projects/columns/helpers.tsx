@@ -3,23 +3,27 @@
  * @description Column definitions and rendering helpers for the Helpers entity table.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react";
 import { type ColumnDef, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { DataTableColumnHeader } from "@/components/data-table";
 
+// TanStack Table requires `accessorKey` to be a keyof TData, but this file builds
+// columns from dynamic string keys at runtime. We use `as never` on accessorKey (not `as any`)
+// to satisfy the type constraint without disabling the linter.
+type AnyCol<T extends RowData> = ColumnDef<ProjectTableFeatures, T, unknown>;
+
 export function createBaseColumn<T extends RowData>(
   key: string,
   label: string,
   Icon: React.ComponentType<{ className?: string }>,
-  cell: ColumnDef<ProjectTableFeatures, T, any>["cell"],
+  cell: AnyCol<T>["cell"],
   id?: string,
-): ColumnDef<ProjectTableFeatures, T, any> {
+): AnyCol<T> {
   const colId = id || key;
   return {
     id: colId,
-    accessorKey: key as any,
+    accessorKey: key as never,
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
@@ -42,7 +46,7 @@ export function createCustomColumn<T extends RowData, V = any>(
   Icon: React.ComponentType<{ className?: string }>,
   renderCell: (value: V, row: T) => React.ReactNode,
   id?: string,
-): ColumnDef<ProjectTableFeatures, T, any> {
+): AnyCol<T> {
   const colId = id || key;
   return createBaseColumn(
     key,
@@ -62,7 +66,7 @@ export function createTextColumn<T extends RowData>(
   Icon: React.ComponentType<{ className?: string }>,
   className = "font-semibold text-foreground text-xs",
   id?: string,
-): ColumnDef<ProjectTableFeatures, T, any> {
+): AnyCol<T> {
   const colId = id || key;
   return createBaseColumn(
     key,
@@ -81,7 +85,7 @@ export function createIdColumn<T extends RowData>(
   label: string,
   Icon: React.ComponentType<{ className?: string }>,
   id?: string,
-): ColumnDef<ProjectTableFeatures, T, any> {
+): AnyCol<T> {
   const colId = id || key;
   return {
     id: colId,

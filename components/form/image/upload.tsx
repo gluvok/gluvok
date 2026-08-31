@@ -3,21 +3,16 @@
 /**
  * @file components/form/image/upload.tsx
  * @description Upload component for handling drag-and-drop local image selection,
- * Supabase storage uploading/deletions, and caching.
+ * secure server-side storage uploading/deletions, and caching.
  */
 
 import { useState, useEffect, useRef } from "react";
+import axios from "axios";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Dropzone, DropzoneEmptyState } from "@/components/kibo-ui/dropzone";
 import { ImagePreviewCarousel } from "@/components/form/image/preview-carousel";
-import { supabase } from "@/lib/supabase";
-import { useAuthStore } from "@/lib/store/auth";
 
-const BUCKET_NAME = "gluvok";
-const CACHE_CONTROL = "3600";
-const UPLOAD_PATH_FOLDER = "weighments";
-const PUBLIC_URL_INDICATOR = "/public/gluvok/";
 const MAX_IMAGE_FILES = 10;
 const MAX_IMAGE_SIZE = 1024 * 1024 * 10; // 10MB
 
@@ -37,67 +32,61 @@ export const pendingImageUploads = new Map<string, File>();
 
 /**
  * processImageUploadsAndDeletions utility
- * Resolves local file blob uploads and removes deleted items from the remote Supabase Storage bucket.
+ * Resolves local file blob uploads and removes deleted items via authenticated server storage API.
  * Returns the final public URL arrays.
  */
 export async function processImageUploadsAndDeletions(
   submittedImages: string[],
   originalImages: string[] = [],
 ): Promise<string[]> {
-  const currentUser = useAuthStore.getState().user;
-  const factoryId = currentUser?.factory_id;
-  const factoryPrefix = String(factoryId ?? "default");
-
   // 1. Identify which images to delete (present in original, but not in submitted)
   const imagesToDelete = originalImages.filter((img) => !submittedImages.includes(img));
   if (imagesToDelete.length > 0) {
-    const filePathsToDelete = imagesToDelete
-      .filter((img) => img.includes(PUBLIC_URL_INDICATOR))
-      .map((img) => img.split(PUBLIC_URL_INDICATOR)[1]);
-
-    if (filePathsToDelete.length > 0) {
-      const { error } = await supabase.storage.from(BUCKET_NAME).remove(filePathsToDelete);
-      if (error) {
-        console.error("Failed to delete removed files from Supabase storage:", error.message);
-      }
+    try {
+      await axios.delete("/api/storage/upload", {
+        data: { urls: imagesToDelete },
+      });
+    } catch (err: unknown) {
+      console.error("Failed to delete removed files from storage API:", err);
     }
   }
 
   // 2. Upload any new blob images
-  const finalImages = await Promise.all(
-    submittedImages.map(async (img) => {
+  const blobImages = submittedImages.filter((img) => img.startsWith("blob:"));
+  if (blobImages.length > 0) {
+    const formData = new FormData();
+    for (const blobUrl of blobImages) {
+      const file = pendingImageUploads.get(blobUrl);
+      if (file) {
+        formData.append("files", file);
+      }
+    }
+
+    const response = await axios.post<{ data: { urls: string[] } }>(
+      "/api/storage/upload",
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
+
+    const uploadedUrls = response.data?.data?.urls || [];
+    let uploadIdx = 0;
+
+    const finalImages = submittedImages.map((img) => {
       if (img.startsWith("blob:")) {
-        const file = pendingImageUploads.get(img);
-        if (!file) {
-          throw new Error("Local file not found in memory");
-        }
-
-        const fileExt = file.name.split(".").pop();
-        const uniqueId = Math.random().toString(36).substring(2, 15) + "-" + Date.now();
-        const filePath = `f_${factoryPrefix}/${UPLOAD_PATH_FOLDER}/${uniqueId}.${fileExt}`;
-
-        const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, file, {
-          cacheControl: CACHE_CONTROL,
-          upsert: false,
-        });
-
-        if (error) {
-          throw error;
-        }
-
-        const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
-
-        // Clear the file from memory
+        const finalUrl = uploadedUrls[uploadIdx++];
         pendingImageUploads.delete(img);
         URL.revokeObjectURL(img);
-
-        return data.publicUrl;
+        return finalUrl || img;
       }
       return img;
-    }),
-  );
+    });
 
-  return finalImages;
+    return finalImages;
+  }
+
+  return submittedImages;
 }
 
 /**

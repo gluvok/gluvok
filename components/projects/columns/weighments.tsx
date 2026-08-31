@@ -9,7 +9,7 @@ import {
   Tag,
   Weight,
   Truck,
-  Calculator,
+  PackageCheck,
   Ruler,
   Image,
   Building,
@@ -74,7 +74,7 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
         </div>
       );
     }),
-    createBaseColumn("net_weight", "Net Weight", Calculator, ({ row }) => {
+    createBaseColumn("net_weight", "Net Weight", PackageCheck, ({ row }) => {
       const val = row.getValue("net_weight") as number;
       return (
         <div className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{val}</div>

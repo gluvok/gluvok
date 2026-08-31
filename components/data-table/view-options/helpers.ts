@@ -18,7 +18,7 @@ import {
   Ruler,
   Weight,
   Truck,
-  Calculator,
+  PackageCheck,
 } from "lucide-react";
 
 /**
@@ -44,7 +44,7 @@ export const COLUMN_ICONS: Record<string, React.ComponentType<{ className?: stri
   weight: Weight,
   gross_weight: Weight,
   tare_weight: Truck,
-  net_weight: Calculator,
+  net_weight: PackageCheck,
 };
 
 const COLUMN_LABEL_MAP: Record<string, string> = {

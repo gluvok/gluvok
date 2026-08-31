@@ -18,6 +18,7 @@ import {
   UserCheck,
   Clock,
   Pencil,
+  PenLine,
   CheckCircle2,
   XCircle,
   Activity,
@@ -153,7 +154,7 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
             "inline-flex items-center gap-1.5 bg-muted text-muted-foreground border border-border",
           )}
         >
-          <User className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <PenLine className="h-3 w-3 shrink-0 text-muted-foreground" />
           User Entry
         </span>
       );

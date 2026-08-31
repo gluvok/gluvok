@@ -5,6 +5,7 @@ import {
   getSourceIcon,
   getTypeIcon,
   getAutoApproveIcon,
+  getRoleIcon,
   getItemIcon,
 } from "./helpers";
 import {
@@ -28,6 +29,12 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   HelpCircle,
+  Crown,
+  UserCircle,
+  Briefcase,
+  HardHat,
+  Bot,
+  Shield,
 } from "lucide-react";
 import {
   EntrySource,
@@ -35,6 +42,7 @@ import {
   FieldType,
   ProjectSlug,
   WeighmentType,
+  Role,
 } from "@/lib/constants/enums";
 
 describe("Field Helpers & Icon Mapping", () => {
@@ -112,6 +120,17 @@ describe("Field Helpers & Icon Mapping", () => {
       expect(getTypeIcon(WeighmentType.IN)).toBe(ArrowDownLeft);
       expect(getTypeIcon(WeighmentType.OUT)).toBe(ArrowUpRight);
       expect(getTypeIcon(WeighmentType.UNASSIGNED)).toBe(HelpCircle);
+    });
+  });
+
+  describe("getRoleIcon", () => {
+    it("returns distinct icons for roles without colliding with verification", () => {
+      expect(getRoleIcon(Role.ADMIN)).toBe(Crown);
+      expect(getRoleIcon(Role.BASE)).toBe(UserCircle);
+      expect(getRoleIcon(Role.MANAGER)).toBe(Briefcase);
+      expect(getRoleIcon(Role.OPERATOR)).toBe(HardHat);
+      expect(getRoleIcon(Role.HARDWARE)).toBe(Bot);
+      expect(getRoleIcon()).toBe(Shield);
     });
   });
 

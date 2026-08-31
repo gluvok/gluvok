@@ -10,7 +10,7 @@ import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Unit, FieldType, ProjectSlug } from "@/lib/constants/enums";
 import { useEntitiesStore } from "@/lib/store";
-import { Building, Ruler, User as UserIcon, Users } from "lucide-react";
+import { Building, Ruler, UserCog, Users } from "lucide-react";
 import { BaseCombobox } from "@/components/combobox/base";
 
 export interface FilterComponentProps<TData extends RowData> {
@@ -86,7 +86,7 @@ export function UserFilter<TData extends RowData>({ table }: FilterComponentProp
       data={userOptions}
       placeholder="All Users"
       searchPlaceholder="Search user..."
-      icon={UserIcon}
+      icon={UserCog}
       className="w-auto"
       id="filter-user-combobox"
     />

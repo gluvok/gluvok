@@ -25,6 +25,8 @@ import {
   Bean,
   CandyCane,
   Sun,
+  Crown,
+  UserCircle,
   ShieldCheck,
   Briefcase,
   HardHat,
@@ -158,13 +160,13 @@ export function getRoleIndicatorVariant(role?: string): "success" | "warning" | 
 export function getRoleIcon(role?: string): LucideIcon {
   switch (role) {
     case Role.ADMIN:
-      return ShieldCheck;
+      return Crown;
     case Role.MANAGER:
       return Briefcase;
     case Role.OPERATOR:
       return HardHat;
     case Role.BASE:
-      return User;
+      return UserCircle;
     case Role.HARDWARE:
       return Bot;
     default:

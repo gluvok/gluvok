@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { Search, Plus, RotateCw, X, ListFilter } from "lucide-react";
+import { format } from "date-fns";
 import { DataTableViewOptions } from "@/components/data-table";
 import { BulkActions } from "./bulk-actions";
 import { ProjectFilters, hasProjectFilters } from "@/components/projects/filters";
@@ -31,16 +32,32 @@ interface ProjectToolbarProps<TData extends RowData> {
   setShowFilters?: (show: boolean | ((prev: boolean) => boolean)) => void;
 }
 
+function formatSafeDate(dateStr: string, dateFormat = "LLL dd, yyyy"): string {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return format(d, dateFormat);
+  } catch {
+    return dateStr;
+  }
+}
+
 function formatFilterChipLabel(id: string, value: unknown): string {
   const valStr = String(value);
-  if (id === "auto_approve" || id === "auto_approved") {
+  if (id === "auto_approved") {
+    return `Verification: ${valStr === "true" ? "System Approved" : "User Review"}`;
+  }
+  if (id === "auto_approve") {
     return `Auto Approve: ${valStr === "true" ? "Enabled" : "Disabled"}`;
   }
   if (id === "edited") {
     return `Edit: ${valStr === "true" ? "Edited" : "Original"}`;
   }
-  if (id === "start_date" || id === "end_date" || id === "created_at") {
-    return "Date Filter";
+  if (id === "created_at" || id === "updated_at") {
+    return `Date: ${formatSafeDate(valStr)}`;
+  }
+  if (id === "source" || id === "status" || id === "type") {
+    return `${id.charAt(0).toUpperCase() + id.slice(1)}: ${valStr.charAt(0).toUpperCase() + valStr.slice(1)}`;
   }
 
   const formattedId = id
@@ -193,41 +210,85 @@ export function ProjectToolbar<TData extends RowData>({
           </div>
 
           {/* Active Filter Chips / Pills (Shown whenever filters are active) */}
-          {activeFiltersCount > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap text-xs pt-0.5">
-              <span className="text-[11px] font-medium text-muted-foreground mr-1">Active:</span>
-              {columnFilters.map((filter) => {
-                const label = formatFilterChipLabel(filter.id, filter.value);
-                return (
+          {activeFiltersCount > 0 && (() => {
+            const hasStartDate = columnFilters.find((f) => f.id === "start_date");
+            const hasEndDate = columnFilters.find((f) => f.id === "end_date");
+            const chips: { id: string; label: string; onRemove: () => void }[] = [];
+
+            if (hasStartDate && hasEndDate) {
+              const fromStr = formatSafeDate(String(hasStartDate.value));
+              const toStr = formatSafeDate(String(hasEndDate.value));
+              chips.push({
+                id: "date_range",
+                label: `Date: ${fromStr} – ${toStr}`,
+                onRemove: () => {
+                  table.setColumnFilters((prev) =>
+                    prev.filter((f) => f.id !== "start_date" && f.id !== "end_date"),
+                  );
+                },
+              });
+            } else if (hasStartDate) {
+              chips.push({
+                id: "start_date",
+                label: `From: ${formatSafeDate(String(hasStartDate.value))}`,
+                onRemove: () => {
+                  table.setColumnFilters((prev) => prev.filter((f) => f.id !== "start_date"));
+                },
+              });
+            } else if (hasEndDate) {
+              chips.push({
+                id: "end_date",
+                label: `To: ${formatSafeDate(String(hasEndDate.value))}`,
+                onRemove: () => {
+                  table.setColumnFilters((prev) => prev.filter((f) => f.id !== "end_date"));
+                },
+              });
+            }
+
+            for (const filter of columnFilters) {
+              if (filter.id === "start_date" || filter.id === "end_date") {
+                continue;
+              }
+              chips.push({
+                id: filter.id,
+                label: formatFilterChipLabel(filter.id, filter.value),
+                onRemove: () => {
+                  table.setColumnFilters((prev) => prev.filter((f) => f.id !== filter.id));
+                },
+              });
+            }
+
+            return (
+              <div className="flex items-center gap-1.5 flex-wrap text-xs pt-0.5">
+                <span className="text-[11px] font-medium text-muted-foreground mr-1">Active:</span>
+                {chips.map((chip) => (
                   <Badge
-                    key={filter.id}
+                    key={chip.id}
                     variant="secondary"
                     className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-muted/80 hover:bg-muted text-foreground border border-border/60 transition-colors"
                   >
-                    <span>{label}</span>
+                    <span>{chip.label}</span>
                     <button
                       type="button"
-                      onClick={() => {
-                        table.setColumnFilters((prev) => prev.filter((f) => f.id !== filter.id));
-                      }}
+                      onClick={chip.onRemove}
                       className="h-3.5 w-3.5 rounded-full hover:bg-foreground/10 flex items-center justify-center transition-colors"
-                      title={`Remove ${filter.id} filter`}
+                      title={`Remove ${chip.id} filter`}
                     >
                       <X className="h-2.5 w-2.5 text-muted-foreground hover:text-foreground" />
                     </button>
                   </Badge>
-                );
-              })}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => table.setColumnFilters([])}
-                className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-transparent transition-colors underline underline-offset-2"
-              >
-                Reset
-              </Button>
-            </div>
-          )}
+                ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => table.setColumnFilters([])}
+                  className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-transparent transition-colors underline underline-offset-2"
+                >
+                  Reset
+                </Button>
+              </div>
+            );
+          })()}
 
           {/* Collapsible Filter Panel */}
           {hasFilters && (

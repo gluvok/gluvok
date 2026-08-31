@@ -13,7 +13,7 @@ import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, X, Zap, CalendarCheck } from "lucide-react";
+import { CalendarRange, X, Zap, CalendarCheck } from "lucide-react";
 import { DatePreset } from "@/lib/constants/enums";
 
 interface DateRangeFilterProps<TData extends RowData> {
@@ -105,7 +105,7 @@ export function DateRangeFilter<TData extends RowData>({
               className={`h-9 text-xs justify-between font-normal bg-background shadow-sm px-2.5 w-full ${dateRange?.from ? "pr-8" : ""}`}
             >
               <span className="flex items-center truncate">
-                <CalendarIcon className="mr-1 h-3.5 w-3.5 shrink-0 opacity-50" />
+                <CalendarRange className="mr-1.5 h-3.5 w-3.5 shrink-0 opacity-70" />
                 {dateRange?.from ? (
                   dateRange.to ? (
                     <>

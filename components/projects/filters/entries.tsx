@@ -60,19 +60,6 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {/* Status */}
-      <BaseCombobox
-        type={FieldType.ENTRY_STATUS}
-        value={currentStatus ? String(currentStatus) : "all"}
-        onChange={(val) => setTableColumnFilter(table, "status", val === "all" ? undefined : val)}
-        data={statusOptions}
-        placeholder="All Statuses"
-        searchPlaceholder="Search status..."
-        icon={getStatusIcon(currentStatus as string)}
-        className="w-auto"
-        id="filter-status-combobox"
-      />
-
       {/* Source */}
       <BaseCombobox
         type="source"
@@ -84,6 +71,19 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
         icon={getSourceIcon(currentSource as string)}
         className="w-auto"
         id="filter-source-combobox"
+      />
+
+      {/* Status */}
+      <BaseCombobox
+        type={FieldType.ENTRY_STATUS}
+        value={currentStatus ? String(currentStatus) : "all"}
+        onChange={(val) => setTableColumnFilter(table, "status", val === "all" ? undefined : val)}
+        data={statusOptions}
+        placeholder="All Statuses"
+        searchPlaceholder="Search status..."
+        icon={getStatusIcon(currentStatus as string)}
+        className="w-auto"
+        id="filter-status-combobox"
       />
 
       {/* Verification / Auto Approved */}

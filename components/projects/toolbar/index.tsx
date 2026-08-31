@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import { Search, Plus, RotateCw, X, SlidersHorizontal } from "lucide-react";
+import { Search, Plus, RotateCw, X, ListFilter } from "lucide-react";
 import { DataTableViewOptions } from "@/components/data-table";
 import { BulkActions } from "./bulk-actions";
 import { ProjectFilters, hasProjectFilters } from "@/components/projects/filters";
@@ -134,7 +134,7 @@ export function ProjectToolbar<TData extends RowData>({
                       className="h-9 gap-1.5 text-xs shadow-sm"
                       aria-label={showFilters ? "Hide Filter Controls" : "Show Filter Controls"}
                     >
-                      <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+                      <ListFilter className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="hidden xs:inline">Filters</span>
                       {activeFiltersCount > 0 && (
                         <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1">

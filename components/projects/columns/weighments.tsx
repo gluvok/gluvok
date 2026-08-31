@@ -8,6 +8,8 @@ import { type ProjectTableFeatures } from "@/components/data-table/features";
 import {
   Tag,
   Weight,
+  Truck,
+  Calculator,
   Ruler,
   Image,
   Building,
@@ -64,7 +66,7 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
         </div>
       );
     }),
-    createBaseColumn("tare_weight", "Tare Weight", Weight, ({ row }) => {
+    createBaseColumn("tare_weight", "Tare Weight", Truck, ({ row }) => {
       const val = row.getValue("tare_weight") as number;
       return (
         <div className="font-mono text-xs font-semibold text-amber-600 dark:text-amber-400">
@@ -72,7 +74,7 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
         </div>
       );
     }),
-    createBaseColumn("net_weight", "Net Weight", Weight, ({ row }) => {
+    createBaseColumn("net_weight", "Net Weight", Calculator, ({ row }) => {
       const val = row.getValue("net_weight") as number;
       return (
         <div className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{val}</div>

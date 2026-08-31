@@ -20,6 +20,11 @@ import {
   Leaf,
   Wine,
   Cable,
+  Flower2,
+  Cloud,
+  Bean,
+  CandyCane,
+  Sun,
   ShieldCheck,
   Briefcase,
   HardHat,
@@ -27,15 +32,17 @@ import {
   Shield,
   ArrowDownLeft,
   ArrowUpRight,
+  ArrowLeftRight,
   CheckCircle2,
   XCircle,
   Clock,
   HelpCircle,
-  SlidersHorizontal,
+  Sliders,
   PenTool,
   Cpu,
   Bot,
   Pencil,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 
@@ -73,11 +80,46 @@ const COMMODITY_ICON_MAP: Record<string, LucideIcon> = {
   Barley: Leaf,
   Wine: Wine,
   Cable: Cable,
+  Mustard: Flower2,
+  "Mustard Seeds": Flower2,
+  "Mustard Seed": Flower2,
+  Cotton: Cloud,
+  Soybeans: Bean,
+  Soyabeans: Bean,
+  Soybean: Bean,
+  Soya: Bean,
+  Sugarcane: CandyCane,
+  "Sugar Cane": CandyCane,
+  "Sunflower Seeds": Sun,
+  "Sunflower Seed": Sun,
+  Sunflower: Sun,
 };
 
 export function getCommodityIcon(name: string): LucideIcon {
   if (!name) return Package;
   const baseName = name.split(" (ID:")[0].trim();
+  const lower = baseName.toLowerCase();
+
+  for (const [key, icon] of Object.entries(COMMODITY_ICON_MAP)) {
+    if (key.toLowerCase() === lower) {
+      return icon;
+    }
+  }
+
+  if (lower.includes("mustard")) return Flower2;
+  if (lower.includes("cotton")) return Cloud;
+  if (lower.includes("soya") || lower.includes("soybean") || lower.includes("soy")) return Bean;
+  if (lower.includes("sugarcane") || lower.includes("sugar") || lower.includes("cane"))
+    return CandyCane;
+  if (lower.includes("sunflower")) return Sun;
+  if (lower.includes("wheat")) return Wheat;
+  if (lower.includes("corn")) return Sprout;
+  if (lower.includes("oil")) return Droplet;
+  if (lower.includes("copper") || lower.includes("scrap")) return Hammer;
+  if (lower.includes("barley")) return Leaf;
+  if (lower.includes("wine")) return Wine;
+  if (lower.includes("cable")) return Cable;
+
   return COMMODITY_ICON_MAP[baseName] ?? Package;
 }
 
@@ -131,7 +173,7 @@ export function getRoleIcon(role?: string): LucideIcon {
 }
 
 export function getSourceIcon(sourceVal?: string): LucideIcon {
-  if (!sourceVal || sourceVal === "all") return SlidersHorizontal;
+  if (!sourceVal || sourceVal === "all") return Sliders;
   const normalized = sourceVal.toLowerCase().trim();
   switch (normalized) {
     case EntrySource.DEVICE:
@@ -141,12 +183,12 @@ export function getSourceIcon(sourceVal?: string): LucideIcon {
     case "manual":
       return User;
     default:
-      return SlidersHorizontal;
+      return Sliders;
   }
 }
 
 export function getTypeIcon(typeVal?: string): LucideIcon {
-  if (!typeVal || typeVal === "all") return SlidersHorizontal;
+  if (!typeVal || typeVal === "all") return ArrowLeftRight;
   const normalized = typeVal.toLowerCase().trim();
   switch (normalized) {
     case WeighmentType.IN:
@@ -160,12 +202,12 @@ export function getTypeIcon(typeVal?: string): LucideIcon {
     case "device":
       return Cpu;
     default:
-      return SlidersHorizontal;
+      return ArrowLeftRight;
   }
 }
 
 export function getStatusIcon(statusVal?: string): LucideIcon {
-  if (!statusVal || statusVal === "all") return SlidersHorizontal;
+  if (!statusVal || statusVal === "all") return Activity;
   const normalized = statusVal.toLowerCase().trim();
   switch (normalized) {
     case EntryStatus.PENDING:
@@ -178,7 +220,7 @@ export function getStatusIcon(statusVal?: string): LucideIcon {
     case "rejected":
       return XCircle;
     default:
-      return SlidersHorizontal;
+      return Activity;
   }
 }
 

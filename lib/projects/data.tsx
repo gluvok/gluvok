@@ -3,7 +3,7 @@
  * @description Helper component or configuration for project dashboards (data).
  */
 
-import { Building, IndianRupee, Users, ClipboardList, UserCog, Tag } from "lucide-react";
+import { Building, IndianRupee, Users, ClipboardList, Scale, UserCog, Tag } from "lucide-react";
 import { ProjectSlug } from "@/lib/constants/enums";
 import { type ProjectMetadata } from "./types";
 
@@ -47,7 +47,7 @@ export const PROJECTS: ProjectMetadata[] = [
     slug: ProjectSlug.WEIGHMENTS,
     name: "Weighments",
     desc: "Merged double-entry weighment records",
-    icon: ClipboardList,
+    icon: Scale,
     color: "text-purple-500",
   },
   {

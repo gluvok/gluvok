@@ -16,6 +16,9 @@ import {
   AtSign,
   IndianRupee,
   Ruler,
+  Weight,
+  Truck,
+  Calculator,
 } from "lucide-react";
 
 /**
@@ -38,6 +41,10 @@ export const COLUMN_ICONS: Record<string, React.ComponentType<{ className?: stri
   user_id: User,
   unit_price: IndianRupee,
   unit: Ruler,
+  weight: Weight,
+  gross_weight: Weight,
+  tare_weight: Truck,
+  net_weight: Calculator,
 };
 
 const COLUMN_LABEL_MAP: Record<string, string> = {

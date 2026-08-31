@@ -20,6 +20,7 @@ import {
   Pencil,
   CheckCircle2,
   XCircle,
+  Activity,
 } from "lucide-react";
 import { EntryStatus, EntrySource } from "@/lib/constants/enums";
 import { getStatusIcon } from "@/lib/fields";
@@ -60,7 +61,7 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       const val = row.getValue("weight") as number;
       return <div className="font-mono text-xs font-semibold text-foreground">{val}</div>;
     }),
-    createCustomColumn("status", "Status", ShieldCheck, (val) => {
+    createCustomColumn("status", "Status", Activity, (val) => {
       const status = String(val).toLowerCase();
       let statusClass = "bg-muted text-muted-foreground border border-border";
       const Icon = getStatusIcon(status);

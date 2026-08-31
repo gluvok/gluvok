@@ -131,6 +131,50 @@ describe("Entries route handlers (/api/entries)", () => {
       expect(eqMock).toHaveBeenCalledWith("auto_approved", true);
       expect(eqMock).toHaveBeenCalledWith("edited", false);
     });
+
+    it("scopes entries query by customer_id and user_id for Role.BASE users", async () => {
+      const orMock = vi.fn();
+      const mockQuery: Record<string, unknown> = {};
+      mockQuery.select = vi.fn(() => mockQuery);
+      mockQuery.eq = vi.fn(() => mockQuery);
+      mockQuery.is = vi.fn(() => mockQuery);
+      mockQuery.order = vi.fn(() => mockQuery);
+      mockQuery.or = orMock.mockImplementation(() => mockQuery);
+      mockQuery.range = vi.fn().mockResolvedValue({
+        data: [{ id: 5, vehicle_number: "BASE123" }],
+        count: 1,
+        error: null,
+      });
+
+      const mockDb = {
+        from: vi.fn((table: string) => {
+          if (table === "customers") {
+            return {
+              select: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  is: vi.fn().mockResolvedValue({ data: [{ id: 42 }] }),
+                })),
+              })),
+            };
+          }
+          return mockQuery;
+        }),
+      };
+
+      const baseUser = {
+        sub: "10",
+        username: "cust_priya",
+        role: Role.BASE,
+        factory_id: 1,
+      };
+
+      const req = new NextRequest("http://localhost/api/entries?page=1&limit=10");
+      const handler = GET as unknown as RawHandler;
+      const response = await handler(req, baseUser, mockDb, context);
+
+      expect(response.status).toBe(200);
+      expect(orMock).toHaveBeenCalledWith("customer_id.in.(42),user_id.eq.10");
+    });
   });
 
   describe("POST /api/entries", () => {

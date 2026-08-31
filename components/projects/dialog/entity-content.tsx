@@ -87,6 +87,24 @@ export function EntityDialogContent({
         !hasPermission(currentUser?.role, projectSlug, PermissionKey.EDIT_FIELD, field.key));
 
     switch (field.type) {
+      case FieldType.SWITCH:
+        return (
+          <div key={field.key} className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between h-10 px-3 rounded-lg border border-border/80 bg-muted/20">
+              <FormFieldInput
+                field={field}
+                form={form}
+                idPrefix={`${mode}-entity`}
+                disabled={disabled}
+              />
+            </div>
+            {form.formState.errors[field.key] && (
+              <span className="text-destructive text-[11px] font-medium">
+                {form.formState.errors[field.key]?.message as string}
+              </span>
+            )}
+          </div>
+        );
       case FieldType.CHECKBOX:
         return (
           <div key={field.key} className="flex flex-col gap-1.5 justify-end">

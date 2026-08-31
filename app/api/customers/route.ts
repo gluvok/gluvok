@@ -10,7 +10,7 @@ import {
   formatEntityResponse,
   parseBulkIds,
 } from "@/db/helpers";
-import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { hashPassword } from "@/lib/auth/password";
 import { addCustomerSchema } from "@/lib/validation";
@@ -32,6 +32,10 @@ export const GET = withAuth(async (req, user, client) => {
     .order(sortColumn, { ascending: !sortDesc })
     .eq("factory_id", user.factory_id!)
     .is("deleted_at", null);
+
+  if (user.role === Role.BASE) {
+    query = query.eq("user_id", parseInt(user.sub, 10));
+  }
 
   if (search) {
     const searchNum = parseInt(search, 10);

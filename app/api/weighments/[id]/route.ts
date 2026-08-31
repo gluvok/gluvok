@@ -6,8 +6,9 @@ import {
   StatusCodes,
   forbiddenError,
   hasPermission,
+  getBaseUserCustomerIds,
 } from "@/db/helpers";
-import { WeighmentType, Unit, ProjectSlug, PermissionKey } from "@/lib/constants/enums";
+import { WeighmentType, Unit, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { editWeighmentSchema } from "@/lib/validation";
 
 export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
@@ -31,6 +32,24 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
 
   const inEntry = (row["in_entry"] as Record<string, unknown>) || {};
   const outEntry = (row["out_entry"] as Record<string, unknown>) || {};
+
+  if (user.role === Role.BASE) {
+    const userId = parseInt(user.sub, 10);
+    const customerIds = await getBaseUserCustomerIds(client, userId);
+    const isOwn =
+      inEntry.user_id === userId ||
+      outEntry.user_id === userId ||
+      (inEntry.customer_id !== null &&
+        inEntry.customer_id !== undefined &&
+        customerIds.includes(Number(inEntry.customer_id))) ||
+      (outEntry.customer_id !== null &&
+        outEntry.customer_id !== undefined &&
+        customerIds.includes(Number(outEntry.customer_id)));
+
+    if (!isOwn) {
+      return apiError("Weighment not found", StatusCodes.NOT_FOUND);
+    }
+  }
   const inWeight = Number(inEntry.weight);
   const outWeight = Number(outEntry.weight);
   const grossWeight = Math.max(inWeight, outWeight);

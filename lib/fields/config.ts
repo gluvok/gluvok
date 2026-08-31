@@ -31,15 +31,15 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       type: FieldType.TEXT,
       required: true,
       icon: Tag,
-      span: FieldSpan.HALF,
+      span: FieldSpan.FULL,
     },
     {
       key: "auto_approve",
       label: "Auto Approve",
       placeholder: "",
-      type: FieldType.CHECKBOX,
+      type: FieldType.SWITCH,
       icon: ShieldCheck,
-      span: FieldSpan.HALF,
+      span: FieldSpan.FULL,
     },
   ],
   [ProjectSlug.COMMODITIES]: [

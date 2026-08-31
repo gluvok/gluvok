@@ -7,6 +7,7 @@ import {
   forbiddenError,
   hasPermission,
   parseBulkIds,
+  getBaseUserCustomerIds,
 } from "@/db/helpers";
 import { EntryStatus, EntryType, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
@@ -30,6 +31,16 @@ export const GET = withAuth(async (req, user, client) => {
     .eq("factory_id", user.factory_id)
     .is("deleted_at", null)
     .order(sortColumn, { ascending: !sortDesc });
+
+  if (user.role === Role.BASE) {
+    const userId = parseInt(user.sub, 10);
+    const customerIds = await getBaseUserCustomerIds(client, userId);
+    if (customerIds.length > 0) {
+      query = query.or(`customer_id.in.(${customerIds.join(",")}),user_id.eq.${userId}`);
+    } else {
+      query = query.eq("user_id", userId);
+    }
+  }
 
   const filterParams: Record<string, string | null> = {
     status: req.nextUrl.searchParams.get("status"),

@@ -7,8 +7,9 @@ import {
   forbiddenError,
   hasPermission,
   parseBulkIds,
+  getBaseUserCustomerIds,
 } from "@/db/helpers";
-import { WeighmentType, Unit, ProjectSlug, PermissionKey } from "@/lib/constants/enums";
+import { WeighmentType, Unit, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.READ)) return forbiddenError();
@@ -42,6 +43,18 @@ export const GET = withAuth(async (req, user, client) => {
     )
     .eq("in_entry.factory_id", user.factory_id!)
     .is("deleted_at", null);
+
+  if (user.role === Role.BASE) {
+    const userId = parseInt(user.sub, 10);
+    const customerIds = await getBaseUserCustomerIds(client, userId);
+    if (customerIds.length > 0) {
+      query = query.or(
+        `in_entry.customer_id.in.(${customerIds.join(",")}),out_entry.customer_id.in.(${customerIds.join(",")}),in_entry.user_id.eq.${userId},out_entry.user_id.eq.${userId}`,
+      );
+    } else {
+      query = query.or(`in_entry.user_id.eq.${userId},out_entry.user_id.eq.${userId}`);
+    }
+  }
 
   if (typeParam && typeParam !== "all") {
     query = query.eq("type", typeParam);

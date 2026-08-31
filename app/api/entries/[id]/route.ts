@@ -6,8 +6,9 @@ import {
   forbiddenError,
   hasPermission,
   StatusCodes,
+  getBaseUserCustomerIds,
 } from "@/db/helpers";
-import { ProjectSlug, PermissionKey, EntryStatus, EntryType } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey, EntryStatus, EntryType, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
 import {
@@ -31,6 +32,16 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
 
   if (error || !data) {
     return apiError(ApiErrorMessage.ENTRY_NOT_FOUND, StatusCodes.NOT_FOUND);
+  }
+
+  if (user.role === Role.BASE) {
+    const userId = parseInt(user.sub, 10);
+    const customerIds = await getBaseUserCustomerIds(client, userId);
+    const isOwnUser = data.user_id === userId;
+    const isOwnCustomer = data.customer_id !== null && customerIds.includes(Number(data.customer_id));
+    if (!isOwnUser && !isOwnCustomer) {
+      return apiError(ApiErrorMessage.ENTRY_NOT_FOUND, StatusCodes.NOT_FOUND);
+    }
   }
 
   const centers = data.centers as Record<string, unknown> | undefined;

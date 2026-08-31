@@ -232,5 +232,5 @@ export function useEntityForm({
 
   const isUnchanged = isEdit && !form.formState.isDirty;
 
-  return { form, fields, onSubmit, isEdit, isUnchanged };
+  return { form, fields, onSubmit, isEdit, isUnchanged, item };
 }

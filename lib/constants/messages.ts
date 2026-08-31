@@ -108,6 +108,11 @@ export const ApiErrorMessage = {
   ENTRY_REJECTED_LOCKED: "Rejected entries cannot be modified or approved.",
   ENTRY_APPROVED_CUSTOMER_LOCKED:
     "Approved entries with an assigned customer are fully locked and cannot be edited.",
+  ENTRY_FULLY_LOCKED: "This entry is fully locked and cannot be edited.",
+  CANNOT_MODIFY_MANUALLY_APPROVED_VEHICLE:
+    "Vehicle number cannot be modified on manually approved entries.",
+  VEHICLE_ALREADY_EDITED_LOCKED:
+    "Vehicle number on this auto-approved entry has already been edited and is locked.",
   CANNOT_MODIFY_APPROVED_ENTRY: (field: string) => `Cannot modify ${field} on approved entries.`,
   FAILED_TO_UPDATE_ENTRY: "Failed to update entry",
   SEQUENTIAL_APPROVAL_FAILED: "Sequential approval validation failed.",

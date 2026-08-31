@@ -77,17 +77,48 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   }
 
   const isApproved = existing.status === EntryStatus.APPROVED || existing.auto_approved === true;
+  const isAutoApproved = existing.auto_approved === true;
+  const isEdited = existing.edited === true;
+  const hasCustomer = existing.customer_id !== null && existing.customer_id !== undefined;
 
-  if (isApproved && existing.customer_id !== null) {
-    return apiError(ApiErrorMessage.ENTRY_APPROVED_CUSTOMER_LOCKED, StatusCodes.FORBIDDEN);
+  // Fully locked if:
+  // - Approved (not auto-approved) AND already has customer
+  // - Auto-approved AND already edited AND already has customer
+  if (isApproved && hasCustomer && (!isAutoApproved || isEdited)) {
+    return apiError(ApiErrorMessage.ENTRY_FULLY_LOCKED, StatusCodes.FORBIDDEN);
   }
 
   const updates: Record<string, unknown> = {};
 
-  if (isApproved && existing.customer_id === null) {
-    // ONLY customer_id can be updated on approved entries without customer
-    const lockedFields = ["vehicle_number", "weight", "center_id", "images", "status"] as const;
+  if (isApproved) {
+    // 1. Vehicle number check: ONLY auto-approved entries that have NOT been edited can correct vehicle_number
+    if (body.vehicle_number !== undefined && body.vehicle_number !== existing.vehicle_number) {
+      if (!isAutoApproved) {
+        return apiError(
+          ApiErrorMessage.CANNOT_MODIFY_MANUALLY_APPROVED_VEHICLE,
+          StatusCodes.BAD_REQUEST,
+        );
+      }
+      if (isEdited) {
+        return apiError(ApiErrorMessage.VEHICLE_ALREADY_EDITED_LOCKED, StatusCodes.BAD_REQUEST);
+      }
+      updates["vehicle_number"] = body.vehicle_number;
+      updates["edited"] = true;
+    }
 
+    // 2. Customer ID check: only if customer is currently null
+    if (body.customer_id !== undefined && body.customer_id !== existing.customer_id) {
+      if (hasCustomer) {
+        return apiError(ApiErrorMessage.ENTRY_APPROVED_CUSTOMER_LOCKED, StatusCodes.BAD_REQUEST);
+      }
+      if (body.customer_id) {
+        await validateCustomerBelongsToFactory(client, Number(body.customer_id), user.factory_id);
+      }
+      updates["customer_id"] = body.customer_id ? Number(body.customer_id) : null;
+    }
+
+    // 3. Locked fields check (weight, center_id, images, status cannot be modified on approved)
+    const lockedFields = ["weight", "center_id", "images", "status"] as const;
     for (const field of lockedFields) {
       if (body[field] !== undefined && body[field] !== existing[field]) {
         return apiError(
@@ -95,12 +126,6 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
           StatusCodes.BAD_REQUEST,
         );
       }
-    }
-    if (body.customer_id !== undefined) {
-      if (body.customer_id) {
-        await validateCustomerBelongsToFactory(client, Number(body.customer_id), user.factory_id);
-      }
-      updates["customer_id"] = body.customer_id ? Number(body.customer_id) : null;
     }
   } else if (existing.status === EntryStatus.PENDING) {
     if (existing.type === EntryType.MANUAL) {
@@ -134,8 +159,15 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   const newStatus = (updates["status"] as string) || existing.status;
   const targetVehicle = (updates["vehicle_number"] as string) || existing.vehicle_number;
 
-  // 3. Sequential Approval Validation if transitioning to approved
-  if (newStatus === EntryStatus.APPROVED && existing.status !== EntryStatus.APPROVED) {
+  // 3. Sequential Approval Validation if transitioning to approved or changing vehicle plate on approved
+  const isTransitioningToApproved =
+    newStatus === EntryStatus.APPROVED && existing.status !== EntryStatus.APPROVED;
+  const isChangingVehicleOnApproved =
+    isApproved &&
+    updates["vehicle_number"] !== undefined &&
+    updates["vehicle_number"] !== existing.vehicle_number;
+
+  if (isTransitioningToApproved || isChangingVehicleOnApproved) {
     try {
       await validateSequentialApproval(
         client,

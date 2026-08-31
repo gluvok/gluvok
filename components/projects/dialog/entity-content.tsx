@@ -10,9 +10,22 @@ import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FormFieldInput } from "@/components/form";
 import { type EntityDialogContentProps } from "./types";
-import { FieldType, Role, FieldSpan, PermissionKey } from "@/lib/constants/enums";
+import {
+  FieldType,
+  Role,
+  FieldSpan,
+  PermissionKey,
+  ProjectSlug,
+  EntryStatus,
+} from "@/lib/constants/enums";
 import { type FieldConfig, getSingularName } from "@/lib/fields";
-import { useAuthStore, hasPermission, isFieldVisible, isFieldRequired } from "@/lib/store";
+import {
+  useAuthStore,
+  hasPermission,
+  isFieldVisible,
+  isFieldRequired,
+  getField,
+} from "@/lib/store";
 
 export function EntityDialogContent({
   mode,
@@ -25,6 +38,7 @@ export function EntityDialogContent({
   form,
   onSubmit,
   primaryIdKey,
+  item,
 }: EntityDialogContentProps) {
   const currentUser = useAuthStore((state) => state.user);
   const Icon = isEdit ? Pencil : Plus;
@@ -36,7 +50,30 @@ export function EntityDialogContent({
   const originalText = isEdit ? "Save" : "Save";
 
   const renderField = (field: FieldConfig) => {
+    let entryFieldDisabled = false;
+    if (isEdit && projectSlug === ProjectSlug.ENTRIES && item) {
+      const entryStatus = getField(item, "status") as EntryStatus | string;
+      const isAutoApproved = Boolean(getField(item, "auto_approved"));
+      const isEdited = Boolean(getField(item, "edited"));
+      const customerId = getField(item, "customer_id");
+      const isApproved = entryStatus === EntryStatus.APPROVED || isAutoApproved;
+      const hasCustomer = customerId !== null && customerId !== undefined && customerId !== "";
+
+      if (entryStatus === EntryStatus.REJECTED) {
+        entryFieldDisabled = true;
+      } else if (isApproved) {
+        if (field.key === "vehicle_number") {
+          entryFieldDisabled = !isAutoApproved || isEdited;
+        } else if (field.key === "customer_id") {
+          entryFieldDisabled = hasCustomer;
+        } else {
+          entryFieldDisabled = true;
+        }
+      }
+    }
+
     const disabled =
+      entryFieldDisabled ||
       (isEdit && field.key === primaryIdKey) ||
       (field.editableRoles && !field.editableRoles.includes(currentUser?.role as Role)) ||
       (isEdit &&
@@ -113,7 +150,7 @@ export function EntityDialogContent({
     }
   };
 
-  const visibleFields = fields.filter((field) => {
+  const visibleFields = fields.filter((field: FieldConfig) => {
     const role = currentUser?.role as Role;
     if (!isFieldVisible(role, projectSlug, field.key)) {
       return false;
@@ -144,7 +181,7 @@ export function EntityDialogContent({
     }
   };
 
-  visibleFields.forEach((field) => {
+  visibleFields.forEach((field: FieldConfig) => {
     const fieldSpan: FieldSpan = field.span || (field.halfWidth ? FieldSpan.HALF : FieldSpan.FULL);
     const maxInGroup = fieldSpan === FieldSpan.THIRD ? 3 : fieldSpan === FieldSpan.HALF ? 2 : 1;
 

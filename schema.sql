@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS entries (
     type entry_type NOT NULL DEFAULT 'automatic',
     status entry_status NOT NULL DEFAULT 'pending',
     auto_approved BOOLEAN NOT NULL DEFAULT FALSE,
+    edited BOOLEAN NOT NULL DEFAULT FALSE,
     center_id INT NOT NULL REFERENCES centers(id) ON DELETE RESTRICT,
     user_id INT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     customer_id INT REFERENCES customers(id) ON DELETE RESTRICT,

@@ -27,6 +27,7 @@ export interface EntityDialogContentProps {
   form: UseFormReturn<FieldValues>;
   onSubmit: (values: FieldValues) => void;
   primaryIdKey: string;
+  item?: EntityRecord | null;
 }
 
 export interface BaseDeleteDialogProps {

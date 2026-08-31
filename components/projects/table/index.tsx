@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { ProjectTableLoading } from "./loading";
 import { ProjectTableEmpty } from "./empty";
 
@@ -22,6 +23,7 @@ interface ProjectTableProps<TData extends RowData> {
   isLoading: boolean;
   error?: string | null;
   onRetry?: () => void;
+  hasFiltersExpanded?: boolean;
 }
 
 /**
@@ -33,6 +35,7 @@ export function ProjectTable<TData extends RowData>({
   isLoading,
   error,
   onRetry,
+  hasFiltersExpanded = false,
 }: ProjectTableProps<TData>) {
   if (isLoading) return <ProjectTableLoading />;
 
@@ -54,7 +57,14 @@ export function ProjectTable<TData extends RowData>({
   }
 
   return (
-    <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden transition-all duration-300 **:data-[slot=table-container]:max-h-80">
+    <div
+      className={cn(
+        "rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden transition-all duration-300",
+        hasFiltersExpanded
+          ? "**:data-[slot=table-container]:max-h-80"
+          : "**:data-[slot=table-container]:max-h-104",
+      )}
+    >
       <TableGrid>
         <TableHeader className="bg-card sticky top-0 z-10 border-b">
           {table.getHeaderGroups().map((headerGroup) => (

@@ -15,6 +15,7 @@ import {
   ProjectTable,
   useProjectTable,
 } from "@/components/projects";
+import { hasProjectFilters } from "@/components/projects/filters";
 import { Spinner } from "@/components/kibo-ui/spinner";
 
 interface ProjectClientProps {
@@ -40,6 +41,9 @@ export function ProjectClient({ projectName, projectSlug }: ProjectClientProps) 
   } = pt;
 
   const [hasLoadedOnce, setHasLoadedOnce] = React.useState(false);
+  const [showFilters, setShowFilters] = React.useState(true);
+  const hasFilters = hasProjectFilters(projectSlug);
+  const isFilterExpanded = hasFilters && showFilters;
 
   React.useEffect(() => {
     if (!isLoading && isReady) {
@@ -71,10 +75,18 @@ export function ProjectClient({ projectName, projectSlug }: ProjectClientProps) 
         primaryIdKey={primaryIdKey}
         setCreating={setCreating}
         onReload={handleReload}
+        showFilters={showFilters}
+        setShowFilters={setShowFilters}
       />
 
       {/* Main data representation grid/table */}
-      <ProjectTable table={table} isLoading={isLoading} error={error} onRetry={handleReload} />
+      <ProjectTable
+        table={table}
+        isLoading={isLoading}
+        error={error}
+        onRetry={handleReload}
+        hasFiltersExpanded={isFilterExpanded}
+      />
 
       {/* Pagination controls */}
       {table.getRowModel().rows?.length > 0 && (

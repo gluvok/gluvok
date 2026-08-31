@@ -22,6 +22,16 @@ export * from "./users";
 export * from "./weighments";
 export * from "./date-range-filter";
 
+export function hasProjectFilters(slug: string): boolean {
+  return (
+    slug === ProjectSlug.CENTERS ||
+    slug === ProjectSlug.ENTRIES ||
+    slug === ProjectSlug.RATES ||
+    slug === ProjectSlug.USERS ||
+    slug === ProjectSlug.WEIGHMENTS
+  );
+}
+
 interface ProjectFiltersProps<TData extends RowData> {
   projectSlug: string;
   table: ReactTable<ProjectTableFeatures, TData>;

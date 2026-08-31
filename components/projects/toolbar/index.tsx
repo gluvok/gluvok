@@ -15,18 +15,9 @@ import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { Search, Plus, RotateCw, X, SlidersHorizontal } from "lucide-react";
 import { DataTableViewOptions } from "@/components/data-table";
 import { BulkActions } from "./bulk-actions";
-import { ProjectFilters } from "@/components/projects/filters";
+import { ProjectFilters, hasProjectFilters } from "@/components/projects/filters";
 import { useAuthStore, getPermissions } from "@/lib/store";
-import { ProjectSlug } from "@/lib/constants/enums";
 import { type EntityRecord } from "@/types";
-
-const HAS_PROJECT_FILTERS: Record<string, boolean> = {
-  [ProjectSlug.CENTERS]: true,
-  [ProjectSlug.ENTRIES]: true,
-  [ProjectSlug.RATES]: true,
-  [ProjectSlug.USERS]: true,
-  [ProjectSlug.WEIGHMENTS]: true,
-};
 
 interface ProjectToolbarProps<TData extends RowData> {
   table: ReactTable<ProjectTableFeatures, TData>;
@@ -35,6 +26,8 @@ interface ProjectToolbarProps<TData extends RowData> {
   primaryIdKey: string;
   setCreating: (open: boolean) => void;
   onReload: () => void;
+  showFilters?: boolean;
+  setShowFilters?: (show: boolean | ((prev: boolean) => boolean)) => void;
 }
 
 function formatFilterChipLabel(id: string, value: unknown): string {
@@ -64,19 +57,23 @@ export function ProjectToolbar<TData extends RowData>({
   primaryIdKey,
   setCreating,
   onReload,
+  showFilters: controlledShowFilters,
+  setShowFilters: controlledSetShowFilters,
 }: ProjectToolbarProps<TData>) {
   const selectedRows = table.getFilteredSelectedRowModel().rows;
   const user = useAuthStore((state) => state.user);
   const permissions = getPermissions(user?.role, projectSlug);
   const canCreate = permissions.create;
-  const hasFilters = Boolean(permissions.filter && HAS_PROJECT_FILTERS[projectSlug]);
+  const hasFilters = Boolean(permissions.filter && hasProjectFilters(projectSlug));
 
   const columnFilters = table.state.columnFilters;
   const isFiltered = columnFilters.length > 0 || !!table.state.globalFilter;
   const activeFiltersCount = columnFilters.length;
   const totalCount = table.getRowCount?.() ?? table.getFilteredRowModel().rows.length;
 
-  const [showFilters, setShowFilters] = React.useState(true);
+  const [localShowFilters, setLocalShowFilters] = React.useState(true);
+  const showFilters = controlledShowFilters ?? localShowFilters;
+  const setShowFilters = controlledSetShowFilters ?? setLocalShowFilters;
 
   return (
     <div className="flex flex-col gap-2.5">

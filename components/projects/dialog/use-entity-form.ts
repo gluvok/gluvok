@@ -105,8 +105,8 @@ export function useEntityForm({
           if (field.transformOnChange && typeof rawVal === "string") {
             rawVal = field.transformOnChange(rawVal);
           }
-          if (field.type === FieldType.CHECKBOX) {
-            defaults[field.key] = String(rawVal) === "true";
+          if (field.type === FieldType.CHECKBOX || field.type === FieldType.SWITCH) {
+            defaults[field.key] = rawVal === true || String(rawVal) === "true";
           } else if (field.key === "password" || field.key === "confirmPassword") {
             defaults[field.key] = "";
           } else {
@@ -122,7 +122,7 @@ export function useEntityForm({
         const defaultVals: Record<string, unknown> = {};
 
         fields.forEach((field) => {
-          if (field.type === FieldType.CHECKBOX) {
+          if (field.type === FieldType.CHECKBOX || field.type === FieldType.SWITCH) {
             defaultVals[field.key] = false;
           } else if (field.key === "factory_id" && userFactoryId) {
             defaultVals["factory_id"] = userFactoryId;

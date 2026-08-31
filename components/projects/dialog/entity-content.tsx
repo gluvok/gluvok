@@ -45,7 +45,6 @@ export function EntityDialogContent({
 
     switch (field.type) {
       case FieldType.CHECKBOX:
-      case FieldType.SWITCH:
         return (
           <div key={field.key} className="flex flex-col gap-1.5 justify-end">
             <div className="flex items-center h-9 px-1">

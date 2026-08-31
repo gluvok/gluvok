@@ -63,7 +63,6 @@ export enum FieldType {
   UNIT = "unit",
   TYPE = "type",
   CHECKBOX = "checkbox",
-  SWITCH = "switch",
   ENTRY_STATUS = "entry_status",
 }
 

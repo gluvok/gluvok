@@ -18,6 +18,7 @@ export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.READ)) return forbiddenError();
   const pagination = getPaginationParams(req.nextUrl);
   const search = req.nextUrl.searchParams.get("search");
+  const autoApprove = req.nextUrl.searchParams.get("auto_approve");
   const sortColumn = req.nextUrl.searchParams.get("sort_column") || "created_at";
   const sortDesc = req.nextUrl.searchParams.has("sort_desc")
     ? req.nextUrl.searchParams.get("sort_desc") === "true"
@@ -29,6 +30,10 @@ export const GET = withAuth(async (req, user, client) => {
     .order(sortColumn, { ascending: !sortDesc })
     .eq("factory_id", user.factory_id)
     .is("deleted_at", null);
+
+  if (autoApprove === "true" || autoApprove === "false") {
+    query = query.eq("auto_approve", autoApprove === "true");
+  }
 
   if (search) {
     const searchNum = parseInt(search, 10);

@@ -8,12 +8,14 @@
 import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { ProjectSlug } from "@/lib/constants/enums";
+import { CentersFilters } from "./centers";
 import { EntriesFilters } from "./entries";
 import { RatesFilters } from "./rates";
 import { UsersFilters } from "./users";
 import { WeighmentsFilters } from "./weighments";
 
 export * from "./common";
+export * from "./centers";
 export * from "./entries";
 export * from "./rates";
 export * from "./users";
@@ -30,6 +32,8 @@ export function ProjectFilters<TData extends RowData>({
   table,
 }: ProjectFiltersProps<TData>) {
   switch (projectSlug) {
+    case ProjectSlug.CENTERS:
+      return <CentersFilters table={table} />;
     case ProjectSlug.ENTRIES:
       return <EntriesFilters table={table} />;
     case ProjectSlug.RATES:

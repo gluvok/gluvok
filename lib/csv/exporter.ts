@@ -108,7 +108,7 @@ export function downloadPDF<TData extends RowData>(
   const imagesList: { id: string; vehicleNumber?: string; images: string[] }[] = [];
   selectedRows.forEach((row) => {
     const rowOrig = (row.original as Record<string, unknown>) || {};
-    const rawImages = (row.getValue("images") || rowOrig["images"]) as string[] | undefined;
+    const rawImages = rowOrig["images"] as string[] | undefined;
     if (Array.isArray(rawImages) && rawImages.length > 0) {
       const id = String(rowOrig["id"] ?? row.id);
       const vehicleNumber = (rowOrig["vehicle_number"] as string) || undefined;

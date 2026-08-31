@@ -6,14 +6,13 @@ import {
   forbiddenError,
   hasPermission,
   StatusCodes,
-  getFactory,
   fetchPaginatedResult,
   formatEntityResponse,
   parseBulkIds,
 } from "@/db/helpers";
-import { Role, ProjectSlug, PermissionKey, FieldRequirementMode } from "@/lib/constants/enums";
+import { Role, ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
-import { getDynamicUserSchema } from "@/lib/validation";
+import { addUserSchema } from "@/lib/validation";
 import { hashPassword } from "@/lib/auth/password";
 import { clearAuthCookies } from "@/lib/auth/cookies";
 
@@ -28,12 +27,10 @@ export const GET = withAuth(async (req, user, client) => {
   const roleParam = req.nextUrl.searchParams.get("role");
 
   const factoryId = user.factory_id;
-  const factory = await getFactory(client, factoryId);
-  const isAadharNotRequired = factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED;
 
   let query = client
     .from("users")
-    .select("id, username, name, aadhar_number, role, factory_id, created_at, updated_at", {
+    .select("id, username, name, role, factory_id, created_at, updated_at", {
       count: "exact",
     })
     .order(sortColumn, { ascending: !sortDesc })
@@ -47,21 +44,9 @@ export const GET = withAuth(async (req, user, client) => {
   if (search) {
     const searchNum = parseInt(search, 10);
     if (!isNaN(searchNum)) {
-      if (!isAadharNotRequired) {
-        query = query.or(
-          `name.ilike.%${search}%,aadhar_number.ilike.%${search}%,username.ilike.%${search}%,id.eq.${searchNum}`,
-        );
-      } else {
-        query = query.or(`name.ilike.%${search}%,username.ilike.%${search}%,id.eq.${searchNum}`);
-      }
+      query = query.or(`name.ilike.%${search}%,username.ilike.%${search}%,id.eq.${searchNum}`);
     } else {
-      if (!isAadharNotRequired) {
-        query = query.or(
-          `name.ilike.%${search}%,aadhar_number.ilike.%${search}%,username.ilike.%${search}%`,
-        );
-      } else {
-        query = query.or(`name.ilike.%${search}%,username.ilike.%${search}%`);
-      }
+      query = query.or(`name.ilike.%${search}%,username.ilike.%${search}%`);
     }
   }
 
@@ -72,23 +57,15 @@ export const POST = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.USERS, PermissionKey.CREATE)) return forbiddenError();
   const body = await req.json();
   const factoryId = user.factory_id;
-  const factory = await getFactory(client, factoryId);
 
-  const dynamicSchema = getDynamicUserSchema(factory);
-  const parsed = dynamicSchema.safeParse(body);
+  const parsed = addUserSchema.safeParse(body);
 
   if (!parsed.success) {
     const firstIssue = parsed.error.issues[0];
     return apiError(firstIssue.message, StatusCodes.BAD_REQUEST);
   }
 
-  const { name, aadhar_number, username, password, role } = parsed.data as {
-    name: string;
-    aadhar_number?: string | null;
-    username: string;
-    password: string;
-    role: Role;
-  };
+  const { name, username, password, role } = parsed.data;
 
   const { data: existingUser } = await client
     .from("users")
@@ -99,43 +76,39 @@ export const POST = withAuth(async (req, user, client) => {
 
   if (existingUser) return apiError(ApiErrorMessage.USERNAME_TAKEN, StatusCodes.BAD_REQUEST);
 
-  if (aadhar_number) {
-    const aadharQuery = client
-      .from("users")
-      .select("id")
-      .eq("aadhar_number", aadhar_number)
-      .eq("factory_id", factoryId)
-      .is("deleted_at", null);
-
-    const { data: existingAadhar } = await aadharQuery.maybeSingle();
-    if (existingAadhar)
-      return apiError(ApiErrorMessage.AADHAR_NUMBER_EXISTS, StatusCodes.BAD_REQUEST);
+  // RBAC Hierarchy Verification
+  if (user.role === Role.MANAGER && ![Role.OPERATOR, Role.BASE, Role.HARDWARE].includes(role)) {
+    return forbiddenError();
   }
 
-  const passwordHash = await hashPassword(password);
+  const password_hash = await hashPassword(password);
+  const now = new Date().toISOString();
 
-  const { data: newUser, error } = await client
+  const insertValues: Record<string, unknown> = {
+    username,
+    password_hash,
+    name,
+    role,
+    factory_id: factoryId,
+    created_at: now,
+    updated_at: now,
+  };
+
+  const { data: newUser, error: insertError } = await client
     .from("users")
-    .insert({
-      username,
-      password_hash: passwordHash,
-      name,
-      aadhar_number: aadhar_number || null,
-      role: role || Role.OPERATOR,
-      factory_id: factoryId,
-    })
-    .select("id, username, name, aadhar_number, role, factory_id, created_at, updated_at")
+    .insert(insertValues)
+    .select()
     .single();
 
-  if (error || !newUser) {
-    console.error("POST user error:", error);
+  if (insertError) {
+    console.error("POST user error:", insertError);
     return apiError(
-      error?.message || ApiErrorMessage.CREATE_USER_RECORD_FAILED,
+      insertError.message || ApiErrorMessage.CREATE_USER_FAILED,
       StatusCodes.BAD_REQUEST,
     );
   }
 
-  return formatEntityResponse(newUser, StatusCodes.CREATED, { factory });
+  return formatEntityResponse(newUser, StatusCodes.CREATED);
 });
 
 export const DELETE = withAuth(async (req, user, client) => {
@@ -143,16 +116,18 @@ export const DELETE = withAuth(async (req, user, client) => {
   const ids = parseBulkIds(await req.json());
   if (!ids) return apiError(ApiErrorMessage.PROVIDE_VALID_IDS, StatusCodes.BAD_REQUEST);
 
-  // Check if any active entries are linked to any of the selected users
-  const { data: linkedEntries } = await client
-    .from("entries")
-    .select("id")
-    .in("user_id", ids)
-    .is("deleted_at", null)
-    .limit(1);
+  if (user.role === Role.MANAGER) {
+    const { data: targetUsers } = await client
+      .from("users")
+      .select("id, role")
+      .in("id", ids)
+      .eq("factory_id", user.factory_id)
+      .is("deleted_at", null);
 
-  if (linkedEntries && linkedEntries.length > 0) {
-    return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_USERS, StatusCodes.BAD_REQUEST);
+    const hasUnauthorized = targetUsers?.some((u) =>
+      [Role.ADMIN, Role.MANAGER].includes(u.role as Role),
+    );
+    if (hasUnauthorized) return forbiddenError();
   }
 
   // Check if any active customers are linked to any of the selected users
@@ -167,7 +142,10 @@ export const DELETE = withAuth(async (req, user, client) => {
     return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_USERS, StatusCodes.BAD_REQUEST);
   }
 
-  const { data: deletedUsers, error } = await client
+  const currentUserId = parseInt(user.sub, 10);
+  const isDeletingSelf = ids.includes(currentUserId);
+
+  const query = client
     .from("users")
     .update({
       deleted_at: new Date().toISOString(),
@@ -175,9 +153,9 @@ export const DELETE = withAuth(async (req, user, client) => {
     })
     .in("id", ids)
     .is("deleted_at", null)
-    .eq("factory_id", user.factory_id)
-    .select("id");
+    .eq("factory_id", user.factory_id);
 
+  const { data, error } = await query.select("id");
   if (error) {
     return apiError(
       error.message || ApiErrorMessage.CANNOT_DELETE_SELECTED_USERS,
@@ -185,19 +163,12 @@ export const DELETE = withAuth(async (req, user, client) => {
     );
   }
 
-  const deletedCount = deletedUsers?.length || 0;
-  if (deletedCount !== ids.length) {
+  if (!data || data.length !== ids.length) {
     return apiError(ApiErrorMessage.ONE_OR_MORE_USERS_NOT_FOUND, StatusCodes.NOT_FOUND);
   }
 
-  const isSelfDeleted = ids.includes(Number(user.sub));
-  const response = NextResponse.json({
-    success: true,
-    deleted_count: deletedCount,
-    is_self_deleted: isSelfDeleted,
-  });
-
-  if (isSelfDeleted) {
+  const response = NextResponse.json({ success: true, deleted_count: data.length });
+  if (isDeletingSelf) {
     clearAuthCookies(response);
   }
 

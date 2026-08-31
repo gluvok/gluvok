@@ -1,88 +1,109 @@
 /**
  * @file lib/validation/customers.ts
- * @description Zod schema and validation rules for Customers entities.
+ * @description Zod validation schemas for Customers CRUD operations.
  */
 
-import * as z from "zod";
-import { ValidationMessage } from "@/lib/constants/messages";
-import { nameSchema } from "./helpers";
+import { z } from "zod";
 
-const baseCustomerSchema = z
+export const addCustomerSchema = z
   .object({
-    govt_id: z
-      .preprocess(
-        (v) => (v === "" || v === null || v === undefined ? null : Number(v)),
-        z.number().int().positive().nullable().optional(),
-      )
-      .transform((v) => (v === undefined || Number.isNaN(v) ? null : v)),
-    name: nameSchema("Name"),
-    father_name: nameSchema("Father's Name"),
-    factory_id: z.coerce.number().optional().nullable(),
+    name: z.string().min(1, "Name is required"),
+    father_name: z.string().min(1, "Father's name is required"),
     username: z
       .string()
+      .regex(/^[a-zA-Z0-9_]*$/, "Username can only contain alphanumeric characters and underscores")
       .optional()
-      .or(z.literal(""))
-      .transform((v) => (v === "" ? undefined : v)),
-    password: z
-      .string()
-      .optional()
-      .or(z.literal(""))
-      .transform((v) => (v === "" ? undefined : v)),
-    confirmPassword: z
-      .string()
-      .optional()
-      .or(z.literal(""))
-      .transform((v) => (v === "" ? undefined : v)),
+      .or(z.literal("")),
+    password: z.string().optional().or(z.literal("")),
+    confirmPassword: z.string().optional().or(z.literal("")),
   })
-  .superRefine((data, ctx) => {
-    const rawUsername = data.username;
-    const rawPassword = data.password;
-    const rawConfirm = data.confirmPassword;
+  .refine(
+    (data) => {
+      const hasUsername = Boolean(data.username && data.username.trim().length > 0);
+      const hasPassword = Boolean(data.password && data.password.trim().length > 0);
+      if (hasUsername && !hasPassword) return false;
+      return true;
+    },
+    {
+      message: "Password is required when providing a username",
+      path: ["password"],
+    },
+  )
+  .refine(
+    (data) => {
+      const hasUsername = Boolean(data.username && data.username.trim().length > 0);
+      const hasPassword = Boolean(data.password && data.password.trim().length > 0);
+      if (hasPassword && !hasUsername) return false;
+      return true;
+    },
+    {
+      message: "Username is required when providing a password",
+      path: ["username"],
+    },
+  )
+  .refine(
+    (data) => {
+      const hasPassword = Boolean(data.password && data.password.trim().length > 0);
+      if (hasPassword) {
+        return (data.password?.length ?? 0) >= 6;
+      }
+      return true;
+    },
+    {
+      message: "Password must be at least 6 characters",
+      path: ["password"],
+    },
+  )
+  .refine(
+    (data) => {
+      const hasPassword = Boolean(data.password && data.password.trim().length > 0);
+      if (hasPassword) {
+        return data.password === data.confirmPassword;
+      }
+      return true;
+    },
+    {
+      message: "Passwords do not match",
+      path: ["confirmPassword"],
+    },
+  );
 
-    const hasUsername = Boolean(rawUsername && rawUsername.trim().length > 0);
-    const hasPassword = Boolean(rawPassword && rawPassword.trim().length > 0);
+export const editCustomerSchema = z
+  .object({
+    name: z.string().min(1, "Name is required").optional(),
+    father_name: z.string().min(1, "Father's name is required").optional(),
+    username: z
+      .string()
+      .regex(/^[a-zA-Z0-9_]*$/, "Username can only contain alphanumeric characters and underscores")
+      .optional()
+      .or(z.literal("")),
+    password: z.string().optional().or(z.literal("")),
+    confirmPassword: z.string().optional().or(z.literal("")),
+  })
+  .refine(
+    (data) => {
+      if (data.password && data.password.length > 0) {
+        return data.password.length >= 6;
+      }
+      return true;
+    },
+    {
+      message: "Password must be at least 6 characters",
+      path: ["password"],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.password && data.password.length > 0) {
+        return data.password === data.confirmPassword;
+      }
+      return true;
+    },
+    {
+      message: "Passwords do not match",
+      path: ["confirmPassword"],
+    },
+  );
 
-    if (hasPassword && !hasUsername) {
-      ctx.addIssue({
-        code: "custom",
-        message: ValidationMessage.USERNAME_REQUIRED_WITH_PASSWORD("Username"),
-        path: ["username"],
-      });
-    }
-
-    if (hasUsername && !hasPassword) {
-      ctx.addIssue({
-        code: "custom",
-        message: ValidationMessage.PASSWORD_REQUIRED_WITH_USERNAME("Password"),
-        path: ["password"],
-      });
-    }
-
-    if (hasUsername && rawUsername!.trim().length < 3) {
-      ctx.addIssue({
-        code: "custom",
-        message: ValidationMessage.MIN_LENGTH("Username", 3),
-        path: ["username"],
-      });
-    }
-
-    if (hasPassword && rawPassword!.trim().length < 6) {
-      ctx.addIssue({
-        code: "custom",
-        message: ValidationMessage.MIN_LENGTH("Password", 6),
-        path: ["password"],
-      });
-    }
-
-    if (hasPassword && rawPassword !== rawConfirm) {
-      ctx.addIssue({
-        code: "custom",
-        message: ValidationMessage.PASSWORDS_DO_NOT_MATCH,
-        path: ["confirmPassword"],
-      });
-    }
-  });
-
-export const addCustomerSchema = baseCustomerSchema;
-
-export const editCustomerSchema = baseCustomerSchema;
+export type AddCustomerInput = z.infer<typeof addCustomerSchema>;
+export type EditCustomerInput = z.infer<typeof editCustomerSchema>;

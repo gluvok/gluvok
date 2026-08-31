@@ -6,7 +6,7 @@ import { fetchActiveUserById, generateAuthTokens } from "@/lib/auth/common";
 import { Role, ProjectSlug } from "@/lib/constants/enums";
 export { hasPermission } from "@/lib/store/access";
 import { REQUIRED_CREATE_FIELDS } from "@/lib/fields/config";
-import { db, supabase } from "@/db";
+import { supabase } from "@/db";
 
 export interface PaginationParams {
   page: number;
@@ -45,12 +45,6 @@ export function validateRequiredFields(
 
 export function forbiddenError(message = ReasonPhrases.FORBIDDEN): NextResponse {
   return apiError(message, StatusCodes.FORBIDDEN);
-}
-
-export function validateDeviceSecret(req: NextRequest | Request): boolean {
-  const secret = req.headers.get("x-microcontroller-secret");
-  const expectedSecret = process.env.MICROCONTROLLER_SECRET || "default-pi-secret-key";
-  return Boolean(secret && secret === expectedSecret);
 }
 
 export function getPaginationParams(url: URL): PaginationParams {
@@ -99,116 +93,112 @@ export async function getAuthUser(
       user: {
         sub: userId,
         username,
-        name: rawName,
+        name: decodeURIComponent(rawName),
         role: role as Role,
-        factory_id: factoryIdStr ? parseInt(factoryIdStr, 10) : 0,
+        factory_id: factoryIdStr ? parseInt(factoryIdStr, 10) : 1,
+        token_version: 1,
       },
     };
   }
 
-  let token: string | undefined;
-
-  if ("cookies" in req && typeof (req as NextRequest).cookies?.get === "function") {
-    token = (req as NextRequest).cookies.get("token")?.value;
-  }
-
-  if (!token) {
-    const authHeader = req.headers.get("authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-      token = authHeader.substring(7);
-    }
-  }
-
-  if (token) {
+  const authHeader = req.headers.get("authorization");
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.substring(7);
     const payload = await verifyJWT(token);
     if (payload) {
       return { user: payload };
     }
   }
 
-  // Fallback: Check refresh token to automatically re-authenticate and mint fresh tokens
-  let refreshToken: string | undefined;
+  let cookieAccessToken: string | undefined;
+  let cookieRefreshToken: string | undefined;
+
   if ("cookies" in req && typeof (req as NextRequest).cookies?.get === "function") {
-    refreshToken = (req as NextRequest).cookies.get("refresh_token")?.value;
+    const nextReq = req as NextRequest;
+    cookieAccessToken =
+      nextReq.cookies.get("token")?.value || nextReq.cookies.get("accessToken")?.value;
+    cookieRefreshToken =
+      nextReq.cookies.get("refresh_token")?.value || nextReq.cookies.get("refreshToken")?.value;
+  } else {
+    const cookieHeader = req.headers.get("cookie") || "";
+    const parsedCookies: Record<string, string> = {};
+    cookieHeader.split(";").forEach((cookie) => {
+      const parts = cookie.trim().split("=");
+      if (parts[0]) {
+        parsedCookies[parts[0]] = parts.slice(1).join("=");
+      }
+    });
+    cookieAccessToken = parsedCookies["token"] || parsedCookies["accessToken"];
+    cookieRefreshToken = parsedCookies["refresh_token"] || parsedCookies["refreshToken"];
   }
 
-  if (!refreshToken) {
-    const authHeader = req.headers.get("authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-      refreshToken = authHeader.substring(7);
+  if (cookieAccessToken) {
+    const payload = await verifyJWT(cookieAccessToken);
+    if (payload) {
+      return { user: payload };
     }
   }
 
-  if (!refreshToken) return null;
+  if (cookieRefreshToken) {
+    const refreshPayload = await verifyRefreshToken(cookieRefreshToken);
+    if (refreshPayload) {
+      const user = await fetchActiveUserById(Number(refreshPayload.sub));
+      if (user && user.token_version === refreshPayload.token_version) {
+        const tokens = await generateAuthTokens(user);
+        const newPayload: JWTPayload = {
+          sub: String(user.id),
+          username: user.username,
+          name: user.name,
+          role: user.role,
+          factory_id: user.factory_id,
+          factory_name: user.factories?.name,
+          token_version: user.token_version,
+        };
 
-  const refreshPayload = await verifyRefreshToken(refreshToken);
-  if (!refreshPayload) return null;
-
-  const idNumber = parseInt(refreshPayload.sub, 10);
-  if (isNaN(idNumber)) return null;
-
-  const dbUser = await fetchActiveUserById(idNumber);
-  if (!dbUser || dbUser.token_version !== refreshPayload.token_version) {
-    return null;
+        return {
+          user: newPayload,
+          refreshedTokens: {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            accessExpiresIn: tokens.accessExpiresIn,
+            refreshExpiresIn: tokens.refreshExpiresIn,
+          },
+        };
+      }
+    }
   }
 
-  const tokens = await generateAuthTokens(dbUser);
-
-  const userPayload: JWTPayload = {
-    sub: String(dbUser.id),
-    username: dbUser.username,
-    name: dbUser.name,
-    role: dbUser.role,
-    factory_id: dbUser.factory_id,
-  };
-
-  return {
-    user: userPayload,
-    refreshedTokens: tokens,
-  };
+  return null;
 }
 
-export async function requireAuth(
-  req: NextRequest | Request,
-  requiredRole?: Role,
-): Promise<{
-  user: JWTPayload;
-  refreshedTokens?: RefreshedTokens;
-  errorResponse?: NextResponse;
-}> {
-  const auth = await getAuthUser(req);
-  if (!auth) {
-    return {
-      user: null as never,
-      errorResponse: apiError(ReasonPhrases.UNAUTHORIZED, StatusCodes.UNAUTHORIZED),
-    };
-  }
-  if (requiredRole && auth.user.role !== requiredRole) {
-    return {
-      user: auth.user,
-      refreshedTokens: auth.refreshedTokens,
-      errorResponse: apiError(ReasonPhrases.FORBIDDEN, StatusCodes.FORBIDDEN),
-    };
-  }
-  return { user: auth.user, refreshedTokens: auth.refreshedTokens };
-}
-
-type AuthedHandler<P extends Record<string, string> = Record<string, string>> = (
+export type AuthedHandler<P extends Record<string, string> = Record<string, string>> = (
   req: NextRequest,
   user: JWTPayload,
   client: typeof supabase,
   ctx: RouteContext<P>,
 ) => Promise<NextResponse>;
 
-type EntityIdHandler<P extends Record<string, string>> = (
-  req: NextRequest,
-  user: JWTPayload,
-  client: typeof supabase,
-  ctx: RouteContext<P>,
-  entityId: number,
-) => Promise<NextResponse>;
+export function withAuth<P extends Record<string, string> = Record<string, string>>(
+  handler: AuthedHandler<P>,
+) {
+  return async (req: NextRequest, ctx: RouteContext<P>) => {
+    const authResult = await getAuthUser(req);
+    if (!authResult) {
+      return apiError(ReasonPhrases.UNAUTHORIZED, StatusCodes.UNAUTHORIZED);
+    }
 
-type ScopedEntityHandler<P extends Record<string, string>> = (
+    const { user, refreshedTokens } = authResult;
+    const response = await handler(req, user, supabase, ctx);
+
+    if (refreshedTokens) {
+      setAuthCookies(response, refreshedTokens);
+    }
+
+    return response;
+  };
+}
+
+export type ScopedEntityHandler<P extends Record<string, string> = Record<string, string>> = (
   req: NextRequest,
   user: JWTPayload,
   client: typeof supabase,
@@ -216,27 +206,20 @@ type ScopedEntityHandler<P extends Record<string, string>> = (
   scope: { entityId: number; factoryId: number },
 ) => Promise<NextResponse>;
 
-export function withAuth<P extends Record<string, string> = Record<string, string>>(
-  handler: AuthedHandler<P>,
-  requiredRole?: Role,
-) {
-  return async (req: NextRequest, ctx: RouteContext<P>): Promise<NextResponse> => {
-    const { user, refreshedTokens, errorResponse } = await requireAuth(req, requiredRole);
-    if (errorResponse) return errorResponse;
-    const response = await handler(req, user, db, ctx);
-    if (refreshedTokens) {
-      setAuthCookies(response, refreshedTokens);
-    }
-    return response;
-  };
-}
-
 export function withEntityId<P extends Record<string, string> = Record<string, string>>(
-  handler: EntityIdHandler<P>,
+  handler: (
+    req: NextRequest,
+    user: JWTPayload,
+    client: typeof supabase,
+    ctx: RouteContext<P>,
+    entityId: number,
+  ) => Promise<NextResponse>,
 ): AuthedHandler<P> {
   return async (req, user, client, ctx) => {
-    const { id } = await ctx.params;
-    const entityId = Number(id);
+    const resolvedParams = await ctx.params;
+    const rawId = (resolvedParams as Record<string, string | undefined>)["id"];
+    const entityId = Number(rawId);
+
     if (!Number.isSafeInteger(entityId) || entityId <= 0) {
       return apiError("Invalid entity ID", StatusCodes.BAD_REQUEST);
     }
@@ -258,15 +241,13 @@ export async function getFactory(client: typeof supabase, factoryId: number | nu
   try {
     const { data } = await client
       .from("factories")
-      .select("id, name, aadhar_number_mode, govt_id_mode, created_at, updated_at")
+      .select("id, name, created_at, updated_at")
       .eq("id", factoryId)
       .maybeSingle();
     if (!data) return null;
     return {
       id: data.id,
       name: data.name,
-      aadhar_number_mode: data.aadhar_number_mode,
-      govt_id_mode: data.govt_id_mode,
       created_at: data.created_at,
       updated_at: data.updated_at,
     };

@@ -3,7 +3,7 @@
  * @description Helper component or configuration for project dashboards (data).
  */
 
-import { Building, IndianRupee, Users, ClipboardList, UserCog, Tag, Settings } from "lucide-react";
+import { Building, IndianRupee, Users, ClipboardList, UserCog, Tag } from "lucide-react";
 import { ProjectSlug } from "@/lib/constants/enums";
 import { type ProjectMetadata } from "./types";
 
@@ -56,12 +56,5 @@ export const PROJECTS: ProjectMetadata[] = [
     desc: "Manage users and account credentials",
     icon: UserCog,
     color: "text-pink-500",
-  },
-  {
-    slug: ProjectSlug.SETTINGS,
-    name: "Settings",
-    desc: "Manage factory identity and requirements",
-    icon: Settings,
-    color: "text-slate-500",
   },
 ];

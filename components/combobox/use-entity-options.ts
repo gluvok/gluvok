@@ -9,11 +9,6 @@ import { fetchEntityList } from "@/lib/services";
 import { ProjectSlug } from "@/lib/constants/enums";
 import { useEntitiesStore } from "@/lib/store";
 
-/**
- * useEntityOptions Hook
- * Returns options directly from the preloaded Zustand entities store when available,
- * or performs an API fallback request for dynamic entities.
- */
 export function useEntityOptions(
   entitySlug: string,
   contextSlug?: string,
@@ -25,73 +20,59 @@ export function useEntityOptions(
   const storeUsers = useEntitiesStore((state) => state.users);
   const storeCustomers = useEntitiesStore((state) => state.customers);
   const storeRates = useEntitiesStore((state) => state.rates);
-  const filtersInitialized = useEntitiesStore((state) => state.filtersInitialized);
-  const weighmentFiltersData = useEntitiesStore((state) => state.weighmentFiltersData);
 
-  const preloadedOptions = React.useMemo(() => {
-    const isReady =
-      filtersInitialized ||
-      Boolean(weighmentFiltersData) ||
-      (storeCustomers && storeCustomers.length > 0) ||
-      (storeCenters && storeCenters.length > 0);
-
-    if (!isReady) return null;
-
+  const cachedOptions = React.useMemo(() => {
     switch (entitySlug) {
       case ProjectSlug.COMMODITIES:
-        return (storeCommodities || []).map((c) => ({
-          value: String(c.id),
-          label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
-        }));
-      case ProjectSlug.CENTERS: {
-        const list = storeCenters?.length ? storeCenters : weighmentFiltersData?.centers || [];
-        return list.map((c) => ({
-          value: String(c.id),
-          label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
-        }));
-      }
-      case ProjectSlug.USERS: {
-        const list = storeUsers?.length ? storeUsers : weighmentFiltersData?.users || [];
-        return list.map((p) => ({
-          value: String(p.id),
-          label: p.name ? `${p.name} (ID: ${p.id})` : String(p.id),
-        }));
-      }
-      case ProjectSlug.CUSTOMERS: {
-        const list = storeCustomers?.length
-          ? storeCustomers
-          : weighmentFiltersData?.customers || [];
-        return list.map((c) => ({
-          value: String(c.id),
-          label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
-        }));
-      }
-      case ProjectSlug.RATES: {
-        const list = storeRates?.length ? storeRates : weighmentFiltersData?.rates || [];
-        return list.map((r) => ({
-          value: String(r.id),
-          label: r.label,
-        }));
-      }
+        if (storeCommodities && storeCommodities.length > 0) {
+          return storeCommodities.map((c) => ({
+            value: String(c.id),
+            label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
+          }));
+        }
+        return null;
+      case ProjectSlug.CENTERS:
+        if (storeCenters && storeCenters.length > 0) {
+          return storeCenters.map((c) => ({
+            value: String(c.id),
+            label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
+          }));
+        }
+        return null;
+      case ProjectSlug.USERS:
+        if (storeUsers && storeUsers.length > 0) {
+          return storeUsers.map((p) => ({
+            value: String(p.id),
+            label: p.name ? `${p.name} (ID: ${p.id})` : String(p.id),
+          }));
+        }
+        return null;
+      case ProjectSlug.CUSTOMERS:
+        if (storeCustomers && storeCustomers.length > 0) {
+          return storeCustomers.map((c) => ({
+            value: String(c.id),
+            label: c.name ? `${c.name} (ID: ${c.id})` : String(c.id),
+          }));
+        }
+        return null;
+      case ProjectSlug.RATES:
+        if (storeRates && storeRates.length > 0) {
+          return storeRates.map((r) => ({
+            value: String(r.id),
+            label: r.label,
+          }));
+        }
+        return null;
       default:
         return null;
     }
-  }, [
-    entitySlug,
-    filtersInitialized,
-    storeCommodities,
-    storeCenters,
-    storeUsers,
-    storeCustomers,
-    storeRates,
-    weighmentFiltersData,
-  ]);
+  }, [entitySlug, storeCommodities, storeCenters, storeUsers, storeCustomers, storeRates]);
 
   const [apiOptions, setApiOptions] = React.useState<{ value: string; label: string }[]>([]);
   const [apiLoading, setApiLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (preloadedOptions) return;
+    if (cachedOptions) return;
 
     let active = true;
     async function load() {
@@ -126,10 +107,10 @@ export function useEntityOptions(
     return () => {
       active = false;
     };
-  }, [entitySlug, contextSlug, fieldKey, currentValue, preloadedOptions]);
+  }, [entitySlug, contextSlug, fieldKey, currentValue, cachedOptions]);
 
-  const options = preloadedOptions || apiOptions;
-  const loading = !preloadedOptions && apiLoading;
+  const options = cachedOptions || apiOptions;
+  const loading = !cachedOptions && apiLoading;
 
   return { options, loading };
 }

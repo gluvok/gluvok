@@ -6,12 +6,11 @@ import {
   forbiddenError,
   hasPermission,
   StatusCodes,
-  getFactory,
   formatEntityResponse,
 } from "@/db/helpers";
 import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
-import { getDynamicCustomerSchema } from "@/lib/validation";
+import { editCustomerSchema } from "@/lib/validation";
 import { hashPassword } from "@/lib/auth/password";
 
 export const PATCH = withAuth(
@@ -33,15 +32,13 @@ export const PATCH = withAuth(
     }
 
     const body = await req.json();
-    const factory = await getFactory(client, user.factory_id);
-    const dynamicSchema = getDynamicCustomerSchema(factory, true);
-    const parsed = dynamicSchema.safeParse(body);
+    const parsed = editCustomerSchema.safeParse(body);
 
     if (!parsed.success) {
       return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
     }
 
-    const { name, father_name, govt_id, username, password } = body;
+    const { name, father_name, username, password } = parsed.data;
 
     if (username && typeof username === "string" && username.trim().length > 0) {
       const cleanUsername = username.trim();
@@ -69,7 +66,6 @@ export const PATCH = withAuth(
       p_factory_id: factoryId,
       p_name: name ? String(name).trim() : null,
       p_father_name: father_name ? String(father_name).trim() : null,
-      p_govt_id: govt_id != null ? Number(govt_id) : null,
       p_username: username && typeof username === "string" ? username.trim() : null,
       p_password_hash: passwordHash,
     });
@@ -78,7 +74,7 @@ export const PATCH = withAuth(
       return apiError(error?.message || ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND);
     }
 
-    return formatEntityResponse(updated, StatusCodes.OK, { factory });
+    return formatEntityResponse(updated, StatusCodes.OK);
   }),
 );
 

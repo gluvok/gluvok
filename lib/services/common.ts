@@ -5,10 +5,9 @@
 
 import axios from "axios";
 import { ProjectSlug } from "@/lib/constants/enums";
-import { type EntityRecord, type Factory } from "@/types";
+import { type EntityRecord } from "@/types";
 import { type PaginatedParams } from "./scoping";
 import { ApiErrorMessage } from "@/lib/constants/messages";
-import { useFactoryStore } from "@/lib/store/factory";
 
 export function getEndpoint(slug: ProjectSlug | string): string {
   return `/api/${slug}`;
@@ -49,11 +48,6 @@ export async function fetchEntityPaginatedFromApi<T = EntityRecord>(
   slug: ProjectSlug,
   params: PaginatedParams,
 ): Promise<{ data: T[]; count: number }> {
-  if (slug === ProjectSlug.SETTINGS) {
-    throw new Error(
-      `fetchEntityPaginatedFromApi should not be called for settings. Use the factory store instead.`,
-    );
-  }
   const endpoint = getEndpoint(slug);
   const { page, pageSize, search, filters, sortColumn, sortDesc } = params;
   return apiRequest(async () => {
@@ -88,10 +82,7 @@ export async function insertRow(
 ): Promise<EntityRecord> {
   const endpoint = getEndpoint(slug);
   return apiRequest(async () => {
-    const res = await axios.post<{ data: EntityRecord; factory?: Factory }>(endpoint, record);
-    if (res.data?.factory) {
-      useFactoryStore.getState().setFactory(res.data.factory);
-    }
+    const res = await axios.post<{ data: EntityRecord }>(endpoint, record);
     return res.data.data;
   });
 }
@@ -103,12 +94,8 @@ export async function updateRow(
 ): Promise<EntityRecord> {
   const endpoint = getEndpoint(slug);
   return apiRequest(async () => {
-    // Settings has no meaningful [id] segment — the factory is scoped server-side via user.factory_id
-    const url = slug === ProjectSlug.SETTINGS ? endpoint : `${endpoint}/${id}`;
-    const res = await axios.patch<{ data: EntityRecord; factory?: Factory }>(url, record);
-    if (res.data?.factory) {
-      useFactoryStore.getState().setFactory(res.data.factory);
-    }
+    const url = `${endpoint}/${id}`;
+    const res = await axios.patch<{ data: EntityRecord }>(url, record);
     return res.data.data;
   });
 }

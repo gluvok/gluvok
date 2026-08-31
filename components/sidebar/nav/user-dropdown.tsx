@@ -2,17 +2,10 @@
 
 /**
  * @file components/sidebar/nav/user-dropdown.tsx
- * @description Dropdown panel content showing account details, sync status, and log out options.
+ * @description Dropdown panel content showing account details and log out options.
  */
 
-import {
-  BadgeCheckIcon,
-  CreditCardIcon,
-  BellIcon,
-  LogOutIcon,
-  RefreshCw,
-  Loader2,
-} from "lucide-react";
+import { BadgeCheckIcon, CreditCardIcon, BellIcon, LogOutIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   DropdownMenuContent,
@@ -22,7 +15,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { UserAvatarInfo, type UserInfo } from "./user-info";
-import { useAuthStore, useEntitiesStore } from "@/lib/store";
+import { useAuthStore } from "@/lib/store";
 import { AppRoutes } from "@/lib/constants";
 
 interface NavUserDropdownProps {
@@ -43,16 +36,10 @@ const MENU_ITEMS = [
 export function NavUserDropdown({ user, isMobile }: NavUserDropdownProps) {
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
-  const filtersLoading = useEntitiesStore((state) => state.filtersLoading);
-  const preloadAllFilters = useEntitiesStore((state) => state.preloadAllFilters);
 
   const handleLogout = async () => {
     await logout();
     router.push(AppRoutes.LOGIN);
-  };
-
-  const handleSyncData = () => {
-    preloadAllFilters();
   };
 
   return (
@@ -67,22 +54,6 @@ export function NavUserDropdown({ user, isMobile }: NavUserDropdownProps) {
           <UserAvatarInfo user={user} />
         </div>
       </DropdownMenuLabel>
-      <DropdownMenuSeparator />
-      <DropdownMenuGroup>
-        <DropdownMenuItem
-          id="user-menu-sync"
-          onClick={handleSyncData}
-          disabled={filtersLoading}
-          className="cursor-pointer"
-        >
-          {filtersLoading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="mr-2 h-4 w-4" />
-          )}
-          {filtersLoading ? "Syncing..." : "Sync Data"}
-        </DropdownMenuItem>
-      </DropdownMenuGroup>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
         {MENU_ITEMS.map((item) => {

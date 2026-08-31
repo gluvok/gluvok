@@ -15,7 +15,6 @@ import {
   editWeighmentSchema,
 } from "./weighments";
 import { addUserSchema, editUserSchema } from "./users";
-import { addSettingsSchema, editSettingsSchema } from "./settings";
 
 export type EntityAddSchema =
   | typeof addCenterSchema
@@ -24,8 +23,7 @@ export type EntityAddSchema =
   | typeof addCustomerSchema
   | typeof addEntrySchema
   | typeof addWeighmentSchema
-  | typeof addUserSchema
-  | typeof addSettingsSchema;
+  | typeof addUserSchema;
 
 export type EntityEditSchema =
   | typeof editCenterSchema
@@ -34,8 +32,7 @@ export type EntityEditSchema =
   | typeof editCustomerSchema
   | typeof editEntrySchema
   | typeof editWeighmentSchema
-  | typeof editUserSchema
-  | typeof editSettingsSchema;
+  | typeof editUserSchema;
 
 export const ENTITY_ADD_SCHEMAS: Record<ProjectSlug, EntityAddSchema> = {
   [ProjectSlug.CENTERS]: addCenterSchema,
@@ -45,7 +42,6 @@ export const ENTITY_ADD_SCHEMAS: Record<ProjectSlug, EntityAddSchema> = {
   [ProjectSlug.ENTRIES]: addEntrySchema,
   [ProjectSlug.WEIGHMENTS]: addWeighmentSchema,
   [ProjectSlug.USERS]: addUserSchema,
-  [ProjectSlug.SETTINGS]: addSettingsSchema,
 };
 
 export const ENTITY_EDIT_SCHEMAS: Record<ProjectSlug, EntityEditSchema> = {
@@ -56,5 +52,4 @@ export const ENTITY_EDIT_SCHEMAS: Record<ProjectSlug, EntityEditSchema> = {
   [ProjectSlug.ENTRIES]: editEntrySchema,
   [ProjectSlug.WEIGHMENTS]: editWeighmentSchema,
   [ProjectSlug.USERS]: editUserSchema,
-  [ProjectSlug.SETTINGS]: editSettingsSchema,
 };

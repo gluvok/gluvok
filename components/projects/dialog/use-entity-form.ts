@@ -1,6 +1,6 @@
 /**
  * @file components/projects/dialog/use-entity-form.ts
- * @description Dialog component or hook for managing use entity form actions.
+ * @description Dialog component hook for managing entity form actions, validation schemas, and auto-selection.
  */
 
 "use client";
@@ -16,23 +16,12 @@ import {
   FieldType,
   PermissionKey,
   EntryStatus,
+  EntryType,
   FieldSpan,
 } from "@/lib/constants/enums";
 import { PROJECT_FIELDS, getSingularName } from "@/lib/fields";
-import {
-  ENTITY_ADD_SCHEMAS,
-  ENTITY_EDIT_SCHEMAS,
-  checkEditUniqueness,
-  getDynamicCustomerSchema,
-  getDynamicUserSchema,
-} from "@/lib/validation";
-import {
-  useEntitiesStore,
-  useAuthStore,
-  useFactoryStore,
-  getField,
-  hasPermission,
-} from "@/lib/store";
+import { ENTITY_ADD_SCHEMAS, ENTITY_EDIT_SCHEMAS, checkEditUniqueness } from "@/lib/validation";
+import { useEntitiesStore, useAuthStore, getField, hasPermission } from "@/lib/store";
 import { type EntityFormProps } from "./types";
 import { processImageUploadsAndDeletions } from "@/components/form/image/upload";
 
@@ -55,15 +44,34 @@ export function useEntityForm({
   const addEntity = useEntitiesStore((state) => state.addEntity);
   const updateEntity = useEntitiesStore((state) => state.updateEntity);
   const currentUser = useAuthStore((state) => state.user);
-  const factory = useFactoryStore((state) => state.factory);
 
   const fields = React.useMemo(() => {
     const baseFields = PROJECT_FIELDS[projectSlug] || [];
     if (isEdit && projectSlug === ProjectSlug.ENTRIES && item) {
       const status = getField(item, "status");
-      if (status === EntryStatus.APPROVED) {
+      const isAutoApproved = Boolean(getField(item, "auto_approved"));
+      const type = getField(item, "type");
+      const customerId = getField(item, "customer_id");
+      const isCustomerNull = customerId === null || customerId === undefined || customerId === "";
+      const isApproved = status === EntryStatus.APPROVED || isAutoApproved;
+
+      if (isApproved) {
+        if (isCustomerNull) {
+          return baseFields
+            .filter((f) => f.key === "customer_id")
+            .map((f) => ({ ...f, span: FieldSpan.FULL }));
+        }
+        return [];
+      }
+
+      if (status === EntryStatus.PENDING) {
+        if (type === EntryType.MANUAL) {
+          return baseFields.filter((f) =>
+            ["vehicle_number", "weight", "images", "center_id", "customer_id"].includes(f.key),
+          );
+        }
         return baseFields
-          .filter((f) => f.key === "customer_id")
+          .filter((f) => f.key === "vehicle_number")
           .map((f) => ({ ...f, span: FieldSpan.FULL }));
       }
     }
@@ -71,16 +79,10 @@ export function useEntityForm({
   }, [projectSlug, isEdit, item]);
 
   const formSchema = React.useMemo(() => {
-    if (projectSlug === ProjectSlug.CUSTOMERS) {
-      return getDynamicCustomerSchema(factory, isEdit);
-    }
-    if (projectSlug === ProjectSlug.USERS) {
-      return getDynamicUserSchema(factory, isEdit);
-    }
     return isEdit
       ? ENTITY_EDIT_SCHEMAS[projectSlug as ProjectSlug]
       : ENTITY_ADD_SCHEMAS[projectSlug as ProjectSlug];
-  }, [isEdit, projectSlug, factory]);
+  }, [isEdit, projectSlug]);
 
   const form = useForm<FieldValues>({
     resolver: standardSchemaResolver(formSchema as never) as unknown as Resolver<FieldValues>,
@@ -92,42 +94,72 @@ export function useEntityForm({
   React.useEffect(() => {
     if (!open) return;
 
-    if (isEdit) {
-      if (!item) return;
-      const defaults: Record<string, unknown> = {};
-      fields.forEach((field) => {
-        let rawVal = getField(item, field.key);
-        if (field.transformOnChange && typeof rawVal === "string") {
-          rawVal = field.transformOnChange(rawVal);
-        }
-        if (field.type === FieldType.CHECKBOX) {
-          defaults[field.key] = String(rawVal) === "true";
-        } else if (field.key === "password" || field.key === "confirmPassword") {
-          defaults[field.key] = "";
-        } else {
-          defaults[field.key] = Array.isArray(rawVal)
-            ? rawVal
-            : rawVal !== undefined && rawVal !== null
-              ? String(rawVal)
-              : "";
-        }
-      });
-      form.reset(defaults);
-    } else {
-      const defaultVals: Record<string, unknown> = {};
+    let active = true;
 
-      fields.forEach((field) => {
-        if (field.type === FieldType.CHECKBOX) {
-          defaultVals[field.key] = false;
-        } else if (field.key === "factory_id" && userFactoryId) {
-          defaultVals["factory_id"] = userFactoryId;
-        } else {
-          defaultVals[field.key] = "";
-        }
-      });
+    async function initializeForm() {
+      if (isEdit) {
+        if (!item) return;
+        const defaults: Record<string, unknown> = {};
+        fields.forEach((field) => {
+          let rawVal = getField(item, field.key);
+          if (field.transformOnChange && typeof rawVal === "string") {
+            rawVal = field.transformOnChange(rawVal);
+          }
+          if (field.type === FieldType.CHECKBOX) {
+            defaults[field.key] = String(rawVal) === "true";
+          } else if (field.key === "password" || field.key === "confirmPassword") {
+            defaults[field.key] = "";
+          } else {
+            defaults[field.key] = Array.isArray(rawVal)
+              ? rawVal
+              : rawVal !== undefined && rawVal !== null
+                ? String(rawVal)
+                : "";
+          }
+        });
+        if (active) form.reset(defaults);
+      } else {
+        const defaultVals: Record<string, unknown> = {};
 
-      form.reset(defaultVals);
+        fields.forEach((field) => {
+          if (field.type === FieldType.CHECKBOX) {
+            defaultVals[field.key] = false;
+          } else if (field.key === "factory_id" && userFactoryId) {
+            defaultVals["factory_id"] = userFactoryId;
+          } else {
+            defaultVals[field.key] = "";
+          }
+        });
+
+        // Parallel fetch reference options & apply single item auto-selection
+        if (projectSlug === ProjectSlug.ENTRIES) {
+          const [fetchedCenters, fetchedCustomers] = await Promise.all([
+            useEntitiesStore.getState().fetchCenters(),
+            useEntitiesStore.getState().fetchCustomers(),
+          ]);
+
+          if (fetchedCenters.length === 1) {
+            defaultVals["center_id"] = String(fetchedCenters[0].id);
+          }
+          if (fetchedCustomers.length === 1) {
+            defaultVals["customer_id"] = String(fetchedCustomers[0].id);
+          }
+        } else if (projectSlug === ProjectSlug.RATES) {
+          const fetchedCommodities = await useEntitiesStore.getState().fetchCommodities();
+          if (fetchedCommodities.length === 1) {
+            defaultVals["commodity_id"] = String(fetchedCommodities[0].id);
+          }
+        }
+
+        if (active) form.reset(defaultVals);
+      }
     }
+
+    initializeForm();
+
+    return () => {
+      active = false;
+    };
   }, [open, isEdit, item, fields, form, projectSlug, userFactoryId, currentUser]);
 
   const onSubmit = async (values: FieldValues) => {
@@ -137,10 +169,11 @@ export function useEntityForm({
         if (!item) return;
         let updateValues: Record<string, unknown> = {};
 
-        if (
-          projectSlug === ProjectSlug.ENTRIES &&
-          getField(item, "status") === EntryStatus.APPROVED
-        ) {
+        const status = getField(item, "status");
+        const isAutoApproved = Boolean(getField(item, "auto_approved"));
+        const isApproved = status === EntryStatus.APPROVED || isAutoApproved;
+
+        if (projectSlug === ProjectSlug.ENTRIES && isApproved) {
           updateValues = {
             customer_id: values["customer_id"],
           };

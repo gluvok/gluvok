@@ -16,6 +16,7 @@ vi.mock("next/headers", () => ({
 
 vi.mock("@/db", () => ({
   db: mockDb,
+  supabase: mockDb,
 }));
 
 describe("GET /api/auth/me", () => {
@@ -25,7 +26,7 @@ describe("GET /api/auth/me", () => {
   });
 
   it("returns user when valid access token is provided", async () => {
-    const accessToken = await signJWT({
+    const token = await signJWT({
       sub: "10",
       username: "operator_01",
       name: "Operator One",
@@ -35,7 +36,7 @@ describe("GET /api/auth/me", () => {
 
     mockCookies.mockResolvedValue({
       get: vi.fn().mockImplementation((name: string) => {
-        if (name === "token") return { value: accessToken };
+        if (name === "token") return { value: token };
         return undefined;
       }),
     });
@@ -49,7 +50,6 @@ describe("GET /api/auth/me", () => {
                 id: 10,
                 username: "operator_01",
                 name: "Operator One",
-                aadhar_number: "123456789012",
                 role: Role.OPERATOR,
                 factory_id: 1,
               },
@@ -68,7 +68,6 @@ describe("GET /api/auth/me", () => {
       id: 10,
       username: "operator_01",
       name: "Operator One",
-      aadhar_number: "123456789012",
       role: Role.OPERATOR,
       factory_id: 1,
     });
@@ -97,7 +96,6 @@ describe("GET /api/auth/me", () => {
                 id: 10,
                 username: "operator_01",
                 name: "Operator One",
-                aadhar_number: null,
                 role: Role.OPERATOR,
                 factory_id: 1,
                 token_version: 1,
@@ -117,9 +115,9 @@ describe("GET /api/auth/me", () => {
       id: 10,
       username: "operator_01",
       name: "Operator One",
-      aadhar_number: null,
       role: Role.OPERATOR,
       factory_id: 1,
+      factory_name: undefined,
     });
   });
 

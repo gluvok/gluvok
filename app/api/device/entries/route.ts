@@ -1,26 +1,26 @@
 /**
  * @file app/api/device/entries/route.ts
- * @description Dedicated API route for microcontroller/hardware automatic entry ingestion.
+ * @description Dedicated API route for hardware automatic entry ingestion using hardware user authentication.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { apiError, StatusCodes, getAuthUser, validateDeviceSecret } from "@/db/helpers";
-import { EntryType } from "@/lib/constants/enums";
+import { apiError, StatusCodes, getAuthUser } from "@/db/helpers";
+import { EntryType, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { createEntry } from "@/lib/services/entries";
 import { addDeviceEntrySchema } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   try {
-    if (!validateDeviceSecret(req)) {
-      return apiError(ApiErrorMessage.INVALID_DEVICE_SECRET, StatusCodes.FORBIDDEN);
-    }
-
     const authResult = await getAuthUser(req);
     const authUser = authResult?.user;
     if (!authUser) {
-      return apiError(ApiErrorMessage.UNAUTHORIZED, StatusCodes.UNAUTHORIZED);
+      return apiError(ApiErrorMessage.FORBIDDEN, StatusCodes.UNAUTHORIZED);
+    }
+
+    if (![Role.HARDWARE, Role.OPERATOR, Role.ADMIN].includes(authUser.role as Role)) {
+      return apiError(ApiErrorMessage.FORBIDDEN, StatusCodes.FORBIDDEN);
     }
 
     const body = await req.json();
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ data: newEntry }, { status: StatusCodes.CREATED });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : ApiErrorMessage.PROCESS_DEVICE_ENTRY_FAILED;
+    const msg = err instanceof Error ? err.message : "Failed to process device entry";
     return apiError(msg, StatusCodes.BAD_REQUEST);
   }
 }

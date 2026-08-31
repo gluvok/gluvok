@@ -8,7 +8,7 @@
 
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useAuthStore, useFactoryStore, useEntitiesStore, hasPageAccess } from "@/lib/store";
+import { useAuthStore, hasPageAccess } from "@/lib/store";
 import { AppRoutes, AUTH_ROUTES, PUBLIC_ROUTES } from "@/lib/constants";
 import NotFound from "@/app/not-found";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -39,9 +39,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const initialized = useAuthStore((state) => state.initialized);
   const userLoading = useAuthStore((state) => state.userLoading);
 
-  const factoryInitialized = useFactoryStore((state) => state.factoryInitialized);
-  const filtersInitialized = useEntitiesStore((state) => state.filtersInitialized);
-
   const router = useRouter();
   const pathname = usePathname();
 
@@ -53,7 +50,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const isAuthorized =
     !user || isPublicPage || !projectSlug || hasPageAccess(user.role, projectSlug);
 
-  // Mark auth store as hydrated after mount (avoids React 19 state-update-before-mount warning)
+  // Mark auth store as hydrated after mount
   useEffect(() => {
     useAuthStore.getState().setHydrated(true);
     const unsubscribe = useAuthStore.getState().initAuth();
@@ -61,18 +58,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       unsubscribe();
     };
   }, []);
-
-  // Fetch the active factory and preload filters whenever user is authenticated.
-  useEffect(() => {
-    if (user) {
-      if (!factoryInitialized) {
-        useFactoryStore.getState().fetchFactory();
-      }
-      if (!filtersInitialized) {
-        useEntitiesStore.getState().preloadAllFilters({ silent: true });
-      }
-    }
-  }, [user, factoryInitialized, filtersInitialized]);
 
   useEffect(() => {
     if (!authHydrated || !initialized || userLoading) return;
@@ -112,7 +97,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Show loading only during initial rehydration or while user check is in-flight.
-  // Factory and filter preloads happen in the background — components handle their own loading states.
   if (!authHydrated || !initialized || (userLoading && !user)) {
     return <FullScreenStatus message="Booting up..." />;
   }

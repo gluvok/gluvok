@@ -8,4 +8,3 @@ export * from "./role";
 export * from "./unit";
 export * from "./type";
 export * from "./base";
-export * from "./mode";

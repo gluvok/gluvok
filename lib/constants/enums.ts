@@ -8,6 +8,7 @@ export enum Role {
   MANAGER = "manager",
   OPERATOR = "operator",
   BASE = "base",
+  HARDWARE = "hardware",
 }
 
 export enum Unit {
@@ -33,12 +34,6 @@ export enum WeighmentType {
   OUT = "out",
 }
 
-export enum FieldRequirementMode {
-  MANDATORY = "mandatory",
-  OPTIONAL = "optional",
-  NOT_REQUIRED = "not_required",
-}
-
 export enum ProjectSlug {
   CENTERS = "centers",
   COMMODITIES = "commodities",
@@ -47,7 +42,6 @@ export enum ProjectSlug {
   ENTRIES = "entries",
   WEIGHMENTS = "weighments",
   USERS = "users",
-  SETTINGS = "settings",
 }
 
 export enum PermissionKey {
@@ -69,7 +63,6 @@ export enum FieldType {
   UNIT = "unit",
   TYPE = "type",
   CHECKBOX = "checkbox",
-  FIELD_REQUIREMENT_MODE = "field_requirement_mode",
   ENTRY_STATUS = "entry_status",
 }
 

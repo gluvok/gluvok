@@ -24,7 +24,7 @@ DROP TYPE IF EXISTS role_enum CASCADE;
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'role_enum') THEN
-        CREATE TYPE role_enum AS ENUM ('admin', 'manager', 'operator', 'base');
+        CREATE TYPE role_enum AS ENUM ('admin', 'manager', 'operator', 'base', 'hardware');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'unit_enum') THEN
         CREATE TYPE unit_enum AS ENUM ('kg', 'q', 'gal');
@@ -35,9 +35,6 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'weighment_type') THEN
         CREATE TYPE weighment_type AS ENUM ('unassigned', 'in', 'out');
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'field_requirement_mode') THEN
-        CREATE TYPE field_requirement_mode AS ENUM ('mandatory', 'optional', 'not_required');
-    END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'entry_status') THEN
         CREATE TYPE entry_status AS ENUM ('pending', 'approved', 'rejected');
     END IF;
@@ -45,12 +42,10 @@ END $$;
 
 -- 2. CREATE TABLES
 
--- FACTORIES TABLE (Contains factory details & requirement mode settings)
+-- FACTORIES TABLE (Contains factory details)
 CREATE TABLE IF NOT EXISTS factories (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    aadhar_number_mode field_requirement_mode NOT NULL DEFAULT 'mandatory',
-    govt_id_mode field_requirement_mode NOT NULL DEFAULT 'mandatory',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
@@ -62,7 +57,6 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     name TEXT NOT NULL,
-    aadhar_number TEXT,
     role role_enum NOT NULL DEFAULT 'base',
     token_version INT NOT NULL DEFAULT 1,
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
@@ -75,14 +69,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_active
 ON users (username) 
 WHERE deleted_at IS NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_users_factory_aadhar 
-ON users (factory_id, aadhar_number) 
-WHERE aadhar_number IS NOT NULL AND deleted_at IS NULL;
-
 -- CUSTOMERS TABLE
 CREATE TABLE IF NOT EXISTS customers (
     id SERIAL PRIMARY KEY,
-    govt_id INT,
     name TEXT NOT NULL,
     father_name TEXT NOT NULL,
     user_id INT REFERENCES users(id) ON DELETE RESTRICT,
@@ -96,6 +85,7 @@ CREATE TABLE IF NOT EXISTS customers (
 CREATE TABLE IF NOT EXISTS centers (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
+    auto_approve BOOLEAN NOT NULL DEFAULT FALSE,
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -130,11 +120,12 @@ CREATE TABLE IF NOT EXISTS entries (
     vehicle_number TEXT NOT NULL,
     weight NUMERIC(10, 2) NOT NULL,
     type entry_type NOT NULL DEFAULT 'automatic',
+    status entry_status NOT NULL DEFAULT 'pending',
+    auto_approved BOOLEAN NOT NULL DEFAULT FALSE,
     center_id INT NOT NULL REFERENCES centers(id) ON DELETE RESTRICT,
     user_id INT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     customer_id INT REFERENCES customers(id) ON DELETE RESTRICT,
-    factory_id INT REFERENCES factories(id) ON DELETE RESTRICT,
-    status entry_status NOT NULL DEFAULT 'pending',
+    factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     images TEXT[] DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -157,7 +148,7 @@ CREATE TABLE IF NOT EXISTS weighments (
     deleted_at TIMESTAMPTZ
 );
 
--- COMPUTED COLUMNS FOR WEIGHMENTS DERIVED WEIGHTS (Enables PostgREST DB-level ORDER BY for gross_weight, tare_weight, net_weight)
+-- COMPUTED COLUMNS FOR WEIGHMENTS DERIVED WEIGHTS
 DROP FUNCTION IF EXISTS public.gross_weight(weighments);
 CREATE OR REPLACE FUNCTION gross_weight(w weighments) 
 RETURNS numeric 
@@ -216,20 +207,7 @@ ALTER TABLE IF EXISTS rates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS weighments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS entries ENABLE ROW LEVEL SECURITY;
 
--- 4. THIN RLS POLICIES (Access control & tenant isolation managed in backend Next.js API)
-DROP POLICY IF EXISTS "Allow Read Users" ON users;
-DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Users Write" ON users;
-DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Factories" ON factories;
-DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Customers" ON customers;
-DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Centers" ON centers;
-DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Commodities" ON commodities;
-DROP POLICY IF EXISTS "Allow Read Commodities" ON commodities;
-DROP POLICY IF EXISTS "Allow Write Commodities" ON commodities;
-DROP POLICY IF EXISTS "Allow Commodities Access" ON commodities;
-DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Rates" ON rates;
-DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Weighments" ON weighments;
-DROP POLICY IF EXISTS "Strict Factory Multi-Tenancy Entries" ON entries;
-
+-- 4. THIN RLS POLICIES
 DROP POLICY IF EXISTS "Allow access factories" ON factories;
 DROP POLICY IF EXISTS "Allow access users" ON users;
 DROP POLICY IF EXISTS "Allow access customers" ON customers;
@@ -293,12 +271,12 @@ $$;
 
 DROP FUNCTION IF EXISTS public.create_customer_with_user(TEXT, TEXT, INT, TEXT, TEXT, INT);
 DROP FUNCTION IF EXISTS public.create_customer_with_user(INT, TEXT, TEXT, INT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.create_customer_with_user(INT, TEXT, TEXT, TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION create_customer_with_user(
     p_factory_id INT,
     p_name TEXT,
     p_father_name TEXT,
-    p_govt_id INT DEFAULT NULL,
     p_username TEXT DEFAULT NULL,
     p_password_hash TEXT DEFAULT NULL
 ) RETURNS JSON
@@ -316,8 +294,8 @@ BEGIN
         RETURNING id INTO v_user_id;
     END IF;
 
-    INSERT INTO customers (name, father_name, govt_id, user_id, factory_id)
-    VALUES (p_name, p_father_name, p_govt_id, v_user_id, p_factory_id)
+    INSERT INTO customers (name, father_name, user_id, factory_id)
+    VALUES (p_name, p_father_name, v_user_id, p_factory_id)
     RETURNING id INTO v_customer_id;
 
     SELECT row_to_json(c) INTO v_result
@@ -338,13 +316,13 @@ $$;
 
 DROP FUNCTION IF EXISTS public.update_customer_with_user(INT, INT, TEXT, TEXT, INT, TEXT, TEXT, BOOLEAN);
 DROP FUNCTION IF EXISTS public.update_customer_with_user(INT, INT, TEXT, TEXT, INT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.update_customer_with_user(INT, INT, TEXT, TEXT, TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION update_customer_with_user(
     p_customer_id INT,
     p_factory_id INT,
     p_name TEXT DEFAULT NULL,
     p_father_name TEXT DEFAULT NULL,
-    p_govt_id INT DEFAULT NULL,
     p_username TEXT DEFAULT NULL,
     p_password_hash TEXT DEFAULT NULL
 ) RETURNS JSON
@@ -367,7 +345,6 @@ BEGIN
     SET 
         name = COALESCE(p_name, name),
         father_name = COALESCE(p_father_name, father_name),
-        govt_id = CASE WHEN p_govt_id IS NOT NULL THEN p_govt_id ELSE govt_id END,
         updated_at = NOW()
     WHERE id = p_customer_id AND factory_id = p_factory_id AND deleted_at IS NULL;
 
@@ -441,4 +418,3 @@ $$;
 
 -- 7. NOTIFY SUPABASE POSTGREST TO RELOAD SCHEMA CACHE IMMEDIATELY
 NOTIFY pgrst, 'reload schema';
-

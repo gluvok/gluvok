@@ -10,12 +10,14 @@ export const AuthErrorMessage = {
   INTERNAL_SERVER_ERROR: "Internal server error",
   TOKEN_REFRESH_FAILED: "Token refresh failed",
   INVALID_DEVICE_SECRET: "Access denied: Invalid or missing microcontroller device secret.",
+  FORBIDDEN: "You do not have permission to perform this action.",
 } as const;
 
 export const ApiErrorMessage = {
   // HTTP Protocol & Client Errors
   METHOD_NOT_ALLOWED: "This action is not supported or not allowed for this record.",
   FORBIDDEN: "You do not have permission to perform this action.",
+  CREATE_USER_FAILED: "Failed to create user",
   RECORD_NOT_FOUND: "The requested record was not found.",
 
   // Entity Not Found

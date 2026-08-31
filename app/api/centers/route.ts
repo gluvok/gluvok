@@ -50,9 +50,10 @@ export const POST = withAuth(async (req, user, client) => {
     return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
   }
 
-  const { name } = parsed.data;
+  const { name, auto_approve } = parsed.data;
   const insertValues: Record<string, unknown> = {
     name,
+    auto_approve: Boolean(auto_approve),
     factory_id: user.factory_id,
   };
 

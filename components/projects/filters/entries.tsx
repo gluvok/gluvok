@@ -20,12 +20,14 @@ interface EntriesFiltersProps<TData extends RowData> {
 }
 
 function useEntriesFilterData() {
-  const weighmentFiltersData = useEntitiesStore((state) => state.weighmentFiltersData);
+  const centers = useEntitiesStore((state) => state.centers);
+  const users = useEntitiesStore((state) => state.users);
+  const customers = useEntitiesStore((state) => state.customers);
 
   return {
-    centers: weighmentFiltersData?.centers || [],
-    users: weighmentFiltersData?.users || [],
-    customers: weighmentFiltersData?.customers || [],
+    centers,
+    users,
+    customers,
   };
 }
 

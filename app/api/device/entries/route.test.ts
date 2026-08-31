@@ -3,8 +3,7 @@ import { NextRequest } from "next/server";
 import { EntryStatus, EntryType, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
-const { mockValidateSecret, mockGetAuthUser, mockCreateEntry } = vi.hoisted(() => ({
-  mockValidateSecret: vi.fn(),
+const { mockGetAuthUser, mockCreateEntry } = vi.hoisted(() => ({
   mockGetAuthUser: vi.fn(),
   mockCreateEntry: vi.fn(),
 }));
@@ -13,7 +12,6 @@ vi.mock("@/db/helpers", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/db/helpers")>();
   return {
     ...actual,
-    validateDeviceSecret: mockValidateSecret,
     getAuthUser: mockGetAuthUser,
   };
 });
@@ -27,31 +25,15 @@ import { POST } from "./route";
 describe("Device Entries Route (POST /api/device/entries)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockValidateSecret.mockReturnValue(true);
     mockGetAuthUser.mockResolvedValue({
       user: {
         sub: "5",
-        username: "operator1",
-        name: "Operator One",
-        role: Role.OPERATOR,
+        username: "hardware_01",
+        name: "Hardware Unit",
+        role: Role.HARDWARE,
         factory_id: 1,
       },
     });
-  });
-
-  it("returns 403 when microcontroller secret is missing or invalid", async () => {
-    mockValidateSecret.mockReturnValue(false);
-
-    const req = new NextRequest("http://localhost/api/device/entries", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-
-    const res = await POST(req);
-    expect(res.status).toBe(403);
-    const json = await res.json();
-    expect(json.error).toBe(ApiErrorMessage.INVALID_DEVICE_SECRET);
   });
 
   it("returns 401 when device auth user is not found", async () => {
@@ -66,7 +48,30 @@ describe("Device Entries Route (POST /api/device/entries)", () => {
     const res = await POST(req);
     expect(res.status).toBe(401);
     const json = await res.json();
-    expect(json.error).toBe(ApiErrorMessage.UNAUTHORIZED);
+    expect(json.error).toBe(ApiErrorMessage.FORBIDDEN);
+  });
+
+  it("returns 403 when user role is not authorized for hardware entry ingestion", async () => {
+    mockGetAuthUser.mockResolvedValue({
+      user: {
+        sub: "5",
+        username: "baseuser",
+        name: "Base User",
+        role: Role.BASE,
+        factory_id: 1,
+      },
+    });
+
+    const req = new NextRequest("http://localhost/api/device/entries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(403);
+    const json = await res.json();
+    expect(json.error).toBe(ApiErrorMessage.FORBIDDEN);
   });
 
   it("returns 400 when required fields are missing", async () => {
@@ -75,7 +80,6 @@ describe("Device Entries Route (POST /api/device/entries)", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         vehicle_number: "MH12AB1234",
-        // missing detected_vehicle_number, weight, center_id
       }),
     });
 

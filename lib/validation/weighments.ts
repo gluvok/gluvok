@@ -74,8 +74,8 @@ export const addEntrySchema = z.object({
     .positive(ValidationMessage.MUST_BE_POSITIVE_NUMBER("Weight")),
   type: z.enum([EntryType.MANUAL, EntryType.AUTOMATIC]).optional(),
   center_id: integerIdSchema("Center"),
-  user_id: optionalIntegerIdSchema("User"),
-  customer_id: optionalIntegerIdSchema("Customer"),
+  user_id: optionalIntegerIdSchema("User").default(null),
+  customer_id: optionalIntegerIdSchema("Customer").default(null),
   status: z
     .enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED])
     .default(EntryStatus.PENDING),
@@ -110,6 +110,8 @@ export const addDeviceEntrySchema = z.object({
 
 export const editEntrySchema = z.object({
   vehicle_number: z.string().optional(),
+  weight: z.coerce.number().positive().optional(),
+  center_id: optionalIntegerIdSchema("Center"),
   customer_id: optionalIntegerIdSchema("Customer"),
   status: z.enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED]).optional(),
   images: z.array(z.string()).optional(),

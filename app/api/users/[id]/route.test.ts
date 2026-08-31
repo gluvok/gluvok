@@ -22,7 +22,7 @@ type RawUserHandler = (
     sub: string;
     username: string;
     role: Role;
-    factory_id: number | null;
+    factory_id: number;
   },
   db: unknown,
   context: { params: Promise<{ id: string }> },
@@ -74,7 +74,7 @@ describe("User mutation guards", () => {
     },
   );
 
-  it("successfully updates user and returns factory metadata", async () => {
+  it("successfully updates user", async () => {
     mockHasPermission.mockReturnValue(true);
     const updateRequest = new Request("http://localhost/api/users/1", {
       method: "PATCH",
@@ -82,41 +82,24 @@ describe("User mutation guards", () => {
       body: JSON.stringify({
         name: "Updated Name",
         role: Role.OPERATOR,
-        aadhar_number: "123456789012",
       }),
     });
 
     const existingUser = {
       id: 1,
       name: "Self User",
-      aadhar_number: "123456789012",
       role: Role.OPERATOR,
       factory_id: 1,
     };
     const updatedUser = {
       id: 1,
       name: "Updated Name",
-      aadhar_number: "123456789012",
       role: Role.OPERATOR,
       factory_id: 1,
     };
-    const factoryData = {
-      id: 1,
-      name: "Factory A",
-      aadhar_number_mode: "mandatory",
-      govt_id_mode: "mandatory",
-    };
 
     const updateMockDb = {
-      from: vi.fn((table: string) => {
-        if (table === "factories") {
-          const factoryChain: Record<string, unknown> = {};
-          factoryChain.select = vi.fn(() => factoryChain);
-          factoryChain.eq = vi.fn(() => factoryChain);
-          factoryChain.maybeSingle = vi.fn().mockResolvedValue({ data: factoryData });
-          return factoryChain;
-        }
-
+      from: vi.fn((_table: string) => {
         const userChain: Record<string, unknown> = {};
         userChain.select = vi.fn(() => userChain);
         userChain.eq = vi.fn(() => userChain);
@@ -135,8 +118,6 @@ describe("User mutation guards", () => {
     expect(response.status).toBe(200);
     const json = await response.json();
     expect(json.data.name).toBe("Updated Name");
-    expect(json.factory).toBeDefined();
-    expect(json.factory.id).toBe(1);
   });
 
   it("allows self deletion and marks is_self_deleted while clearing cookies", async () => {
@@ -148,31 +129,25 @@ describe("User mutation guards", () => {
     };
 
     const selfMockDb = {
-      from: vi.fn(() => ({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              is: vi.fn(() => ({
-                maybeSingle: vi.fn().mockResolvedValue({
-                  data: { id: 1, name: "Self User" },
-                }),
-              })),
-            })),
-            is: vi.fn(() => ({
-              limit: vi.fn(() => ({
-                maybeSingle: vi.fn().mockResolvedValue({ data: null }),
-              })),
-            })),
-          })),
-        })),
-        update: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            is: vi.fn(() => ({
-              eq: vi.fn().mockResolvedValue({ error: null }),
-            })),
-          })),
-        })),
-      })),
+      from: vi.fn((table: string) => {
+        if (table === "entries" || table === "customers") {
+          const checkChain: Record<string, unknown> = {};
+          checkChain.select = vi.fn(() => checkChain);
+          checkChain.eq = vi.fn(() => checkChain);
+          checkChain.is = vi.fn(() => checkChain);
+          checkChain.limit = vi.fn(() => checkChain);
+          checkChain.maybeSingle = vi.fn().mockResolvedValue({ data: null });
+          return checkChain;
+        }
+
+        const userChain: Record<string, unknown> = {};
+        userChain.select = vi.fn(() => userChain);
+        userChain.eq = vi.fn(() => userChain);
+        userChain.is = vi.fn(() => userChain);
+        userChain.maybeSingle = vi.fn().mockResolvedValue({ data: { id: 1, name: "Self User" } });
+        userChain.update = vi.fn(() => userChain);
+        return userChain;
+      }),
     };
 
     const deleteHandler = DELETE as unknown as RawUserHandler;
@@ -180,7 +155,8 @@ describe("User mutation guards", () => {
 
     expect(response.status).toBe(200);
     const json = await response.json();
-    expect(json).toEqual({ success: true, id: 1, is_self_deleted: true });
-    expect(response.headers.get("set-cookie")).toBeDefined();
+    expect(json.success).toBe(true);
+    expect(json.is_self_deleted).toBe(true);
+    expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
   });
 });

@@ -111,11 +111,13 @@ function ActionCell<T extends EntityRecord>({
 
   if (projectSlug === ProjectSlug.ENTRIES) {
     const entryStatus = getField(item, "status") as EntryStatus | string;
+    const isAutoApproved = Boolean(getField(item, "auto_approved"));
     const customerId = getField(item, "customer_id");
+    const isApproved = entryStatus === EntryStatus.APPROVED || isAutoApproved;
 
     if (entryStatus === EntryStatus.REJECTED) {
       hasRowWrite = false;
-    } else if (entryStatus === EntryStatus.APPROVED) {
+    } else if (isApproved) {
       if (customerId !== null && customerId !== undefined && customerId !== "") {
         hasRowWrite = false;
       }

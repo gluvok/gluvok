@@ -6,15 +6,14 @@ import {
   forbiddenError,
   hasPermission,
   StatusCodes,
-  getFactory,
   fetchPaginatedResult,
   formatEntityResponse,
   parseBulkIds,
 } from "@/db/helpers";
-import { ProjectSlug, PermissionKey, FieldRequirementMode } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { hashPassword } from "@/lib/auth/password";
-import { getDynamicCustomerSchema } from "@/lib/validation";
+import { addCustomerSchema } from "@/lib/validation";
 
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.CUSTOMERS, PermissionKey.READ)) return forbiddenError();
@@ -24,9 +23,6 @@ export const GET = withAuth(async (req, user, client) => {
   const sortDesc = req.nextUrl.searchParams.has("sort_desc")
     ? req.nextUrl.searchParams.get("sort_desc") === "true"
     : true;
-
-  const factory = await getFactory(client, user.factory_id);
-  const isGovtIdNotRequired = factory?.govt_id_mode === FieldRequirementMode.NOT_REQUIRED;
 
   let query = client
     .from("customers")
@@ -40,13 +36,7 @@ export const GET = withAuth(async (req, user, client) => {
   if (search) {
     const searchNum = parseInt(search, 10);
     if (!isNaN(searchNum)) {
-      if (!isGovtIdNotRequired) {
-        query = query.or(
-          `name.ilike.%${search}%,father_name.ilike.%${search}%,id.eq.${searchNum},govt_id.eq.${searchNum}`,
-        );
-      } else {
-        query = query.or(`name.ilike.%${search}%,father_name.ilike.%${search}%,id.eq.${searchNum}`);
-      }
+      query = query.or(`name.ilike.%${search}%,father_name.ilike.%${search}%,id.eq.${searchNum}`);
     } else {
       query = query.or(`name.ilike.%${search}%,father_name.ilike.%${search}%`);
     }
@@ -60,35 +50,13 @@ export const POST = withAuth(async (req, user, client) => {
   const body = await req.json();
 
   const factoryId = user.factory_id;
-  const factory = await getFactory(client, factoryId);
 
-  const dynamicSchema = getDynamicCustomerSchema(factory);
-  const parsed = dynamicSchema.safeParse(body);
+  const parsed = addCustomerSchema.safeParse(body);
   if (!parsed.success) {
     return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
   }
 
-  const { govt_id, name, father_name, username, password } = parsed.data as {
-    govt_id?: number | null;
-    name: string;
-    father_name: string;
-    username?: string;
-    password?: string;
-  };
-
-  if (govt_id != null) {
-    const existingQuery = client
-      .from("customers")
-      .select("id")
-      .eq("govt_id", Number(govt_id))
-      .eq("factory_id", factoryId)
-      .is("deleted_at", null);
-
-    const { data: existingCustomer } = await existingQuery.maybeSingle();
-    if (existingCustomer) {
-      return apiError(ApiErrorMessage.GOVT_ID_EXISTS, StatusCodes.BAD_REQUEST);
-    }
-  }
+  const { name, father_name, username, password } = parsed.data;
 
   let passwordHash: string | null = null;
   if (username && password) {
@@ -110,7 +78,6 @@ export const POST = withAuth(async (req, user, client) => {
     p_factory_id: factoryId,
     p_name: name,
     p_father_name: father_name,
-    p_govt_id: govt_id != null ? Number(govt_id) : null,
     p_username: username || null,
     p_password_hash: passwordHash || null,
   });
@@ -123,7 +90,7 @@ export const POST = withAuth(async (req, user, client) => {
     );
   }
 
-  return formatEntityResponse(newCustomer, StatusCodes.CREATED, { factory });
+  return formatEntityResponse(newCustomer, StatusCodes.CREATED);
 });
 
 export const DELETE = withAuth(async (req, user, client) => {

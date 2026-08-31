@@ -5,7 +5,7 @@
 
 import { type RowData, type Table } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import { useFactoryStore } from "@/lib/store/factory";
+import { useAuthStore } from "@/lib/store";
 import { formatDateTime } from "../utils";
 import { printPdf } from "../pdf/exporter";
 import { generatePdfHtml } from "../pdf/template";
@@ -71,7 +71,7 @@ export function downloadPDF<TData extends RowData>(
   projectName: string,
   companyName?: string,
 ) {
-  const finalCompanyName = companyName || useFactoryStore.getState().factory?.name || "Gluvok";
+  const finalCompanyName = companyName || useAuthStore.getState().user?.factory_name || "Gluvok";
   const fileName = getExportFileName(projectName, "pdf", finalCompanyName);
 
   const selectedRows = table.getFilteredSelectedRowModel().rows;
@@ -119,35 +119,24 @@ export function downloadPDF<TData extends RowData>(
   if (imagesList.length > 0) {
     imagesHtml = imagesList
       .map(
-        (item) => `
-      <div class="pdf-scan-wrapper pt-6 first:pt-0">
-        <div class="pdf-scan-card border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/40 p-5 shadow-sm">
-          <div class="pdf-scan-card-header pb-3 mb-4 border-b border-slate-200 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="inline-flex items-center px-2.5 py-0.5 font-bold text-xs bg-slate-900 text-white font-mono shadow-2xs">Record #${item.id}</span>
-              ${item.vehicleNumber ? `<span class="inline-flex items-center px-2.5 py-0.5 font-mono text-2xs font-semibold bg-white border border-slate-200 text-slate-800 shadow-2xs">Vehicle: ${item.vehicleNumber}</span>` : ""}
-            </div>
-            <span class="inline-flex items-center px-2.5 py-0.5 text-2xs font-medium font-mono bg-slate-100 text-slate-600 border border-slate-200">${item.images.length} photo${item.images.length === 1 ? "" : "s"} attached</span>
+        (group) => `
+        <div class="mb-6 p-4 rounded-xl border border-slate-200 bg-slate-50/50 break-inside-avoid">
+          <div class="font-semibold text-xs text-slate-700 mb-3 flex items-center justify-between">
+            <span>Record #${group.id}${group.vehicleNumber ? ` &bull; Vehicle: ${group.vehicleNumber}` : ""}</span>
+            <span class="text-slate-500 font-normal">${group.images.length} attachment${group.images.length === 1 ? "" : "s"}</span>
           </div>
-          <div class="pdf-scan-card-images flex flex-wrap gap-4">
-            ${item.images
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            ${group.images
               .map(
-                (img, idx) => `
-              <div class="pdf-scan-img-container border border-slate-200 bg-white shadow-xs overflow-hidden flex flex-col items-center">
-                <div class="flex items-center justify-center p-2 bg-slate-50/40 min-w-[160px] min-h-[140px]">
-                  <img src="${img}" alt="Scan ${idx + 1}" class="pdf-scan-full-img max-w-[280px] max-h-[220px] w-auto h-auto object-contain" />
-                </div>
-                <div class="pdf-scan-caption w-full text-2xs font-mono font-semibold text-slate-600 text-center py-1.5 px-3 bg-slate-50 border-t border-slate-100">
-                  Image ${idx + 1}
-                </div>
-              </div>
-            `,
+                (url) => `
+              <div class="aspect-video bg-white rounded-lg overflow-hidden border border-slate-200 shadow-2xs flex items-center justify-center">
+                <img src="${url}" alt="Attachment for Record #${group.id}" class="w-full h-full object-cover" />
+              </div>`,
               )
               .join("")}
           </div>
         </div>
-      </div>
-    `,
+      `,
       )
       .join("");
   }
@@ -174,7 +163,7 @@ export function downloadCSV<TData extends RowData>(
   projectName: string,
   companyName?: string,
 ) {
-  const finalCompanyName = companyName || useFactoryStore.getState().factory?.name || "Gluvok";
+  const finalCompanyName = companyName || useAuthStore.getState().user?.factory_name || "Gluvok";
   const fileName = getExportFileName(projectName, "csv", finalCompanyName);
 
   const selectedRows = table.getFilteredSelectedRowModel().rows;

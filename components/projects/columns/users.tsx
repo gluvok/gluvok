@@ -5,19 +5,13 @@
 
 import { type ColumnDef, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import { Fingerprint, Tag, Shield, AtSign } from "lucide-react";
+import { Tag, Shield, AtSign } from "lucide-react";
 import { getRoleIcon } from "@/lib/fields/helpers";
 import { RenderRoleIcon } from "@/components/sidebar/nav/user-info";
 import { createTextColumn, createCustomColumn } from "./helpers";
 
 export function getUsersColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
-    createTextColumn(
-      "aadhar_number",
-      "Aadhar Number",
-      Fingerprint,
-      "font-mono text-muted-foreground text-xs",
-    ),
     createTextColumn("name", "Name", Tag),
     createCustomColumn("username", "Username", AtSign, (val) => {
       const u = String(val || "");

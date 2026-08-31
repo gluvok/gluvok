@@ -9,17 +9,14 @@ import { toast } from "sonner";
 import { Role } from "@/lib/constants/enums";
 import { DEFAULT_AVATAR, AuthErrorMessage } from "@/lib/constants";
 
-import { useFactoryStore } from "./factory";
-import { useEntitiesStore } from "./entities";
-
 export interface AuthUser {
   id: string;
   username: string;
   name: string;
   avatar?: string;
-  aadhar_number?: string | null;
   role: Role;
   factory_id: number;
+  factory_name?: string;
 }
 
 interface AuthStore {
@@ -63,8 +60,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             initialized: true,
             userLoading: false,
           });
-          useFactoryStore.getState().fetchFactory();
-          useEntitiesStore.getState().preloadAllFilters({ silent: true });
         } else {
           set({ user: null, initialized: true, userLoading: false });
         }
@@ -105,9 +100,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         },
         initialized: true,
       });
-
-      useFactoryStore.getState().fetchFactory();
-      useEntitiesStore.getState().preloadAllFilters({ silent: true });
 
       const displayName = data.user.name || data.user.username;
       toast.success(`Welcome back, ${displayName}! 🎉`);

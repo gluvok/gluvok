@@ -1,7 +1,7 @@
 /**
  * @file scripts/seed.ts
  * @description Master database seed script using Supabase JS client.
- * Seeds initial factory, admin user, main center, and default commodities catalog.
+ * Seeds initial factory, admin user, hardware user, main center, and default commodities catalog.
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -68,41 +68,64 @@ async function main() {
   if (!existingCenter) {
     await supabase.from("centers").insert({
       name: centerName,
+      auto_approve: false,
       factory_id: factoryId,
     });
     console.log(`Created center '${centerName}' for factory id=${factoryId}`);
   }
 
-  console.log("Hashing password for admin user...");
-  const passwordHash = await hashPassword("admin123");
+  console.log("Hashing passwords for users...");
+  const adminPasswordHash = await hashPassword("admin123");
+  const hardwarePasswordHash = await hashPassword("hardware123");
 
   console.log("Inserting admin user ('admin')...");
-  const { data: existingUser } = await supabase
+  const { data: existingAdmin } = await supabase
     .from("users")
     .select("id")
     .eq("username", "admin")
     .maybeSingle();
 
-  let adminUserId: number;
-  if (!existingUser) {
-    const { data: newUser, error: userErr } = await supabase
+  if (!existingAdmin) {
+    const { data: newAdmin, error: adminErr } = await supabase
       .from("users")
       .insert({
         username: "admin",
-        password_hash: passwordHash,
+        password_hash: adminPasswordHash,
         name: "Admin User",
-        aadhar_number: null,
         role: Role.ADMIN,
         factory_id: factoryId,
       })
       .select("id")
       .single();
-    if (userErr || !newUser) throw userErr || new Error("Failed to create admin user");
-    adminUserId = newUser.id;
-    console.log(`Admin user inserted with id=${adminUserId}`);
+    if (adminErr || !newAdmin) throw adminErr || new Error("Failed to create admin user");
+    console.log(`Admin user inserted with id=${newAdmin.id}`);
   } else {
-    adminUserId = existingUser.id;
     console.log("Admin user already exists.");
+  }
+
+  console.log("Inserting hardware device user ('hardware_device_1')...");
+  const { data: existingHardware } = await supabase
+    .from("users")
+    .select("id")
+    .eq("username", "hardware_device_1")
+    .maybeSingle();
+
+  if (!existingHardware) {
+    const { data: newHardware, error: hwErr } = await supabase
+      .from("users")
+      .insert({
+        username: "hardware_device_1",
+        password_hash: hardwarePasswordHash,
+        name: "Scale Hardware Unit 1",
+        role: Role.HARDWARE,
+        factory_id: factoryId,
+      })
+      .select("id")
+      .single();
+    if (hwErr || !newHardware) throw hwErr || new Error("Failed to create hardware user");
+    console.log(`Hardware user inserted with id=${newHardware.id}`);
+  } else {
+    console.log("Hardware user already exists.");
   }
 
   console.log("Seeding default commodities catalog...");

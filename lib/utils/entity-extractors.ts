@@ -29,13 +29,6 @@ export const ENTITY_EXTRACTORS: Record<string, (item: Entity) => { id: string; n
   [ProjectSlug.USERS]: (item) => extractByIdAndName(item as { id: number; name: string }),
   [ProjectSlug.CENTERS]: (item) => extractByIdAndName(item as { id: number; name: string }),
   [ProjectSlug.COMMODITIES]: (item) => extractByIdAndName(item as { id: number; name: string }),
-  [ProjectSlug.SETTINGS]: (item) => {
-    const c = item as unknown as { id: number; name: string };
-    return {
-      id: String(c.id),
-      name: `Setting (${c.name})`,
-    };
-  },
   [ProjectSlug.RATES]: (item) => {
     const p = item as Rate;
     const priceInfo = ` (₹${parseFloat(p.unit_price)})`;

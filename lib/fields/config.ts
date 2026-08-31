@@ -15,7 +15,6 @@ import {
   Weight,
   IndianRupee,
   Car,
-  Fingerprint,
   AtSign,
   KeyRound,
   ShieldCheck,
@@ -32,7 +31,15 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       type: FieldType.TEXT,
       required: true,
       icon: Tag,
-      span: FieldSpan.FULL,
+      span: FieldSpan.HALF,
+    },
+    {
+      key: "auto_approve",
+      label: "Auto Approve",
+      placeholder: "",
+      type: FieldType.CHECKBOX,
+      icon: ShieldCheck,
+      span: FieldSpan.HALF,
     },
   ],
   [ProjectSlug.COMMODITIES]: [
@@ -76,15 +83,6 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     },
   ],
   [ProjectSlug.CUSTOMERS]: [
-    {
-      key: "govt_id",
-      label: "Govt ID",
-      placeholder: "e.g. 1001",
-      type: FieldType.NUMBER,
-      required: true,
-      icon: ShieldCheck,
-      span: FieldSpan.HALF,
-    },
     {
       key: "name",
       label: "Name",
@@ -191,21 +189,6 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
   ],
   [ProjectSlug.USERS]: [
     {
-      key: "aadhar_number",
-      label: "Aadhar Number",
-      placeholder: "e.g. 1234 5678 9012",
-      type: FieldType.TEXT,
-      required: true,
-      inputMode: "numeric",
-      transformOnChange: (v: string) => {
-        const digits = v.replace(/\D/g, "").slice(0, 12);
-        const match = digits.match(/(\d{1,4})/g);
-        return match ? match.join(" ") : digits;
-      },
-      icon: Fingerprint,
-      span: FieldSpan.HALF,
-    },
-    {
       key: "name",
       label: "Name",
       placeholder: "e.g. Amit Sharma",
@@ -252,44 +235,14 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.HALF,
     },
   ],
-  [ProjectSlug.SETTINGS]: [
-    {
-      key: "name",
-      label: "Factory Name",
-      placeholder: "Factory Name...",
-      type: FieldType.TEXT,
-      required: true,
-      icon: Building,
-      span: FieldSpan.FULL,
-    },
-    {
-      key: "aadhar_number_mode",
-      label: "Aadhaar Number Mode",
-      placeholder: "Select Aadhaar Mode...",
-      type: FieldType.FIELD_REQUIREMENT_MODE,
-      required: true,
-      icon: Fingerprint,
-      span: FieldSpan.HALF,
-    },
-    {
-      key: "govt_id_mode",
-      label: "Govt ID Mode",
-      placeholder: "Select Govt ID Mode...",
-      type: FieldType.FIELD_REQUIREMENT_MODE,
-      required: true,
-      icon: ShieldCheck,
-      span: FieldSpan.HALF,
-    },
-  ],
 };
 
 export const REQUIRED_CREATE_FIELDS: Record<string, string[]> = {
   [ProjectSlug.CENTERS]: ["name"],
   [ProjectSlug.COMMODITIES]: ["name"],
   [ProjectSlug.RATES]: ["commodity_id", "unit_price", "unit"],
-  [ProjectSlug.CUSTOMERS]: ["govt_id", "name", "father_name"],
+  [ProjectSlug.CUSTOMERS]: ["name", "father_name"],
   [ProjectSlug.ENTRIES]: ["vehicle_number", "weight", "center_id"],
   [ProjectSlug.WEIGHMENTS]: ["vehicle_number", "center_id", "weight", "unit", "type"],
-  [ProjectSlug.USERS]: ["aadhar_number", "name", "username", "role", "password", "confirmPassword"],
-  [ProjectSlug.SETTINGS]: ["name", "aadhar_number_mode", "govt_id_mode"],
+  [ProjectSlug.USERS]: ["name", "username", "role", "password", "confirmPassword"],
 };

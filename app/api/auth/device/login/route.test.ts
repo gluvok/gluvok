@@ -13,18 +13,55 @@ const { mockDb } = vi.hoisted(() => ({
 
 vi.mock("@/db", () => ({
   db: mockDb,
+  supabase: mockDb,
 }));
 
 describe("POST /api/auth/device/login", () => {
-  const defaultSecret = "default-pi-secret-key";
-
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.JWT_SECRET = "test-secret-key-12345";
-    process.env.MICROCONTROLLER_SECRET = defaultSecret;
   });
 
-  it("rejects login with 401 when x-microcontroller-secret is missing", async () => {
+  it("rejects login with 400 when credentials are missing", async () => {
+    const req = new NextRequest("http://localhost/api/auth/device/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "" }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe(AuthErrorMessage.REQUIRED_FIELDS);
+  });
+
+  it("rejects login with 401 when user does not exist", async () => {
+    mockDb.from.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          is: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: null,
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    });
+
+    const req = new NextRequest("http://localhost/api/auth/device/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "unknown_hw", password: "password123" }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(401);
+    const json = await res.json();
+    expect(json.error).toBe(AuthErrorMessage.INVALID_CREDENTIALS);
+  });
+
+  it("rejects login with 403 when user role is not HARDWARE", async () => {
     const passwordHash = await hashPassword("password123");
     mockDb.from.mockReturnValue({
       select: vi.fn().mockReturnValue({
@@ -53,98 +90,24 @@ describe("POST /api/auth/device/login", () => {
     });
 
     const res = await POST(req);
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
     const json = await res.json();
-    expect(json.error).toBe(AuthErrorMessage.INVALID_DEVICE_SECRET);
+    expect(json.error).toBe(AuthErrorMessage.FORBIDDEN);
   });
 
-  it("rejects login with 401 when x-microcontroller-secret is invalid", async () => {
-    const passwordHash = await hashPassword("password123");
+  it("successfully returns access_token when hardware credentials are valid", async () => {
+    const passwordHash = await hashPassword("hardwarepass123");
     mockDb.from.mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
           is: vi.fn().mockReturnValue({
             maybeSingle: vi.fn().mockResolvedValue({
               data: {
-                id: 1,
-                username: "operator1",
-                name: "Operator One",
+                id: 5,
+                username: "hardware_unit_1",
+                name: "Hardware Unit 1",
                 password_hash: passwordHash,
-                role: Role.OPERATOR,
-                factory_id: 1,
-              },
-              error: null,
-            }),
-          }),
-        }),
-      }),
-    });
-
-    const req = new NextRequest("http://localhost/api/auth/device/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-microcontroller-secret": "wrong-secret",
-      },
-      body: JSON.stringify({ username: "operator1", password: "password123" }),
-    });
-
-    const res = await POST(req);
-    expect(res.status).toBe(401);
-    const json = await res.json();
-    expect(json.error).toBe(AuthErrorMessage.INVALID_DEVICE_SECRET);
-  });
-
-  it("rejects login with 401 when user role is BASE", async () => {
-    const passwordHash = await hashPassword("password123");
-    mockDb.from.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          is: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({
-              data: {
-                id: 1,
-                username: "baseuser",
-                name: "Base User",
-                password_hash: passwordHash,
-                role: Role.BASE,
-                factory_id: 1,
-              },
-              error: null,
-            }),
-          }),
-        }),
-      }),
-    });
-
-    const req = new NextRequest("http://localhost/api/auth/device/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-microcontroller-secret": defaultSecret,
-      },
-      body: JSON.stringify({ username: "baseuser", password: "password123" }),
-    });
-
-    const res = await POST(req);
-    expect(res.status).toBe(401);
-    const json = await res.json();
-    expect(json.error).toBe(AuthErrorMessage.INVALID_CREDENTIALS);
-  });
-
-  it("successfully returns access_token when device secret and credentials are valid", async () => {
-    const passwordHash = await hashPassword("adminpass123");
-    mockDb.from.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          is: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({
-              data: {
-                id: 1,
-                username: "admin",
-                name: "Admin User",
-                password_hash: passwordHash,
-                role: Role.ADMIN,
+                role: Role.HARDWARE,
                 factory_id: 1,
                 token_version: 1,
               },
@@ -157,11 +120,8 @@ describe("POST /api/auth/device/login", () => {
 
     const req = new NextRequest("http://localhost/api/auth/device/login", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-microcontroller-secret": defaultSecret,
-      },
-      body: JSON.stringify({ username: "admin", password: "adminpass123" }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "hardware_unit_1", password: "hardwarepass123" }),
     });
 
     const res = await POST(req);
@@ -169,6 +129,6 @@ describe("POST /api/auth/device/login", () => {
     const json = await res.json();
     expect(json.success).toBe(true);
     expect(json.access_token).toBeDefined();
-    expect(json.user.role).toBe(Role.ADMIN);
+    expect(json.user.role).toBe(Role.HARDWARE);
   });
 });

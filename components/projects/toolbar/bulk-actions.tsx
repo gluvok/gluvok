@@ -9,7 +9,7 @@ import * as React from "react";
 import { type RowData, type ReactTable } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Button } from "@/components/ui/button";
-import { FileDown, FileSpreadsheet, Trash2, X, ChevronDown, FileText } from "lucide-react";
+import { FileSpreadsheet, Trash2, X, ChevronDown, FileText } from "lucide-react";
 import { DeleteEntityDialog } from "@/components/projects/dialog/delete";
 import { downloadPDF, downloadCSV } from "@/lib/csv/exporter";
 import {
@@ -19,9 +19,10 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-import { useAuthStore, useFactoryStore, getPermissions } from "@/lib/store";
+import { useAuthStore, getPermissions } from "@/lib/store";
+import { type EntityRecord } from "@/types";
 
-interface BulkActionsProps<TData extends RowData> {
+interface BulkActionsProps<TData extends EntityRecord = EntityRecord> {
   table: ReactTable<ProjectTableFeatures, TData>;
   projectSlug: string;
   projectName: string;
@@ -32,7 +33,7 @@ interface BulkActionsProps<TData extends RowData> {
  * BulkActions Component
  * Renders actions like download PDF/CSV and bulk delete when rows are selected in the table.
  */
-export function BulkActions<TData extends RowData>({
+export function BulkActions<TData extends EntityRecord = EntityRecord>({
   table,
   projectSlug,
   projectName,
@@ -41,8 +42,7 @@ export function BulkActions<TData extends RowData>({
   const [open, setOpen] = React.useState(false);
   const selectedRows = table.getFilteredSelectedRowModel().rows;
   const user = useAuthStore((state) => state.user);
-  const factory = useFactoryStore((state) => state.factory);
-  const companyName = factory?.name;
+  const companyName = user?.factory_name;
   const permissions = getPermissions(user?.role, projectSlug);
   const canDelete = permissions.delete;
 
@@ -60,68 +60,81 @@ export function BulkActions<TData extends RowData>({
         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary animate-pulse">
           {selectedRows.length}
         </span>
-        <span>selected</span>
+        <span>
+          {selectedRows.length} {selectedRows.length === 1 ? "row" : "rows"} selected
+        </span>
       </div>
+
       <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => table.resetRowSelection()}
-          className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <X className="h-3.5 w-3.5" />
-          Clear
-        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
+              id="export-options-trigger"
               variant="outline"
               size="sm"
-              className="h-8 gap-1.5 text-xs bg-background shadow-xs hover:bg-muted"
+              className="h-8 text-xs gap-1.5 font-medium border-border shadow-2xs hover:bg-muted"
             >
-              <FileDown className="h-3.5 w-3.5" />
-              Download
-              <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+              <FileSpreadsheet className="h-3.5 w-3.5 text-primary" />
+              <span>Export</span>
+              <ChevronDown className="h-3 w-3 text-muted-foreground ml-0.5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent>
+          <DropdownMenuContent align="end" className="w-44">
             <DropdownMenuItem
+              id="export-csv-btn"
               onClick={handleDownloadCSV}
-              className="text-xs cursor-pointer gap-2 py-2"
+              className="gap-2 text-xs cursor-pointer"
             >
-              <FileSpreadsheet className="h-3.5 w-3.5 text-muted-foreground" />
-              CSV
+              <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Export CSV</span>
             </DropdownMenuItem>
             <DropdownMenuItem
+              id="export-pdf-btn"
               onClick={handleDownloadPDF}
-              className="text-xs cursor-pointer gap-2 py-2"
+              className="gap-2 text-xs cursor-pointer"
             >
-              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-              PDF
+              <FileText className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+              <span>Export PDF Report</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
         {canDelete && (
           <Button
+            id="bulk-delete-open-btn"
             variant="destructive"
             size="sm"
             onClick={() => setOpen(true)}
-            className="h-8 gap-1.5 text-xs shadow-xs"
+            className="h-8 text-xs gap-1.5 shadow-2xs"
           >
             <Trash2 className="h-3.5 w-3.5" />
             Delete Selected
           </Button>
         )}
+
+        <Button
+          id="clear-selection-btn"
+          variant="ghost"
+          size="sm"
+          onClick={() => table.toggleAllRowsSelected(false)}
+          className="h-8 text-xs text-muted-foreground hover:text-foreground px-2"
+        >
+          <X className="h-3.5 w-3.5" />
+          <span className="sr-only">Clear selection</span>
+        </Button>
+      </div>
+
+      {open && (
         <DeleteEntityDialog
           open={open}
           onOpenChange={setOpen}
           projectSlug={projectSlug}
           projectName={projectName}
           primaryIdKey={primaryIdKey}
-          items={selectedRows.map((r) => r.original as import("@/types").EntityRecord)}
-          onSuccess={() => table.resetRowSelection()}
+          items={selectedRows.map((r) => r.original)}
+          onSuccess={() => table.toggleAllRowsSelected(false)}
         />
-      </div>
+      )}
     </div>
   );
 }

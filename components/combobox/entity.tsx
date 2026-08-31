@@ -17,6 +17,7 @@ interface EntityComboboxProps {
   id?: string;
   contextSlug?: string;
   fieldKey?: string;
+  disabled?: boolean;
 }
 
 /**
@@ -32,6 +33,7 @@ export function EntityCombobox({
   id,
   contextSlug,
   fieldKey,
+  disabled,
 }: EntityComboboxProps) {
   const { options, loading } = useEntityOptions(entitySlug, contextSlug, fieldKey, value);
 
@@ -41,8 +43,11 @@ export function EntityCombobox({
       onChange={onChange}
       data={options}
       type={entitySlug}
-      placeholder={loading ? "Loading..." : placeholder}
+      placeholder={loading ? `Loading ${entitySlug}...` : placeholder}
+      searchPlaceholder={`Search ${entitySlug}...`}
+      emptyText={loading ? "Loading..." : `No ${entitySlug} found`}
       id={id}
+      disabled={disabled}
     />
   );
 }

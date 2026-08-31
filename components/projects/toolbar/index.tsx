@@ -11,8 +11,8 @@ import { Search, Plus, RotateCw, X } from "lucide-react";
 import { DataTableViewOptions } from "@/components/data-table";
 import { BulkActions } from "./bulk-actions";
 import { ProjectFilters } from "@/components/projects/filters";
-import { ProjectSlug } from "@/lib/constants/enums";
 import { useAuthStore, getPermissions } from "@/lib/store";
+import { type EntityRecord } from "@/types";
 
 interface ProjectToolbarProps<TData extends RowData> {
   table: ReactTable<ProjectTableFeatures, TData>;
@@ -38,9 +38,7 @@ export function ProjectToolbar<TData extends RowData>({
   const selectedRows = table.getFilteredSelectedRowModel().rows;
   const user = useAuthStore((state) => state.user);
   const permissions = getPermissions(user?.role, projectSlug);
-  const isSettingsTable = projectSlug === ProjectSlug.SETTINGS;
-  const hideAddForConfig = isSettingsTable && table.getPreFilteredRowModel().rows.length > 0;
-  const canCreate = permissions.create && !hideAddForConfig;
+  const canCreate = permissions.create;
 
   const isFiltered = table.state.columnFilters.length > 0 || !!table.state.globalFilter;
 
@@ -48,7 +46,7 @@ export function ProjectToolbar<TData extends RowData>({
     <div className="flex flex-col gap-3">
       {selectedRows.length > 0 ? (
         <BulkActions
-          table={table}
+          table={table as unknown as ReactTable<ProjectTableFeatures, EntityRecord>}
           projectSlug={projectSlug}
           projectName={projectName}
           primaryIdKey={primaryIdKey}
@@ -57,22 +55,18 @@ export function ProjectToolbar<TData extends RowData>({
         <>
           {/* Top Row: Search and Actions */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between w-full">
-            {!isSettingsTable && (
-              <div className="relative w-full sm:max-w-xs md:max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id={`search-input-${projectSlug}`}
-                  placeholder="Search..."
-                  value={(table.state.globalFilter as string) ?? ""}
-                  onChange={(event) => table.setGlobalFilter(event.target.value)}
-                  className="pl-9 pr-4 h-9 text-xs bg-background border border-input focus-visible:ring-1 focus-visible:ring-primary/50 transition-shadow"
-                />
-              </div>
-            )}
+            <div className="relative w-full sm:max-w-xs md:max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id={`search-input-${projectSlug}`}
+                placeholder="Search..."
+                value={(table.state.globalFilter as string) ?? ""}
+                onChange={(event) => table.setGlobalFilter(event.target.value)}
+                className="pl-9 pr-4 h-9 text-xs bg-background border border-input focus-visible:ring-1 focus-visible:ring-primary/50 transition-shadow"
+              />
+            </div>
 
-            <div
-              className={`flex items-center gap-2 justify-end${isSettingsTable ? " self-end sm:ml-auto" : ""}`}
-            >
+            <div className="flex items-center gap-2 justify-end">
               {isFiltered && (
                 <Button
                   variant="ghost"
@@ -111,9 +105,7 @@ export function ProjectToolbar<TData extends RowData>({
           </div>
 
           {/* Bottom Row: Filter Controls */}
-          {!isSettingsTable && permissions.filter && (
-            <ProjectFilters projectSlug={projectSlug} table={table} />
-          )}
+          {permissions.filter && <ProjectFilters projectSlug={projectSlug} table={table} />}
         </>
       )}
     </div>

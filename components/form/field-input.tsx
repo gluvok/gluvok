@@ -8,13 +8,7 @@
  */
 
 import { useWatch, type UseFormReturn, type FieldValues } from "react-hook-form";
-import {
-  EntityCombobox,
-  RoleCombobox,
-  UnitCombobox,
-  TypeCombobox,
-  ModeCombobox,
-} from "@/components/combobox";
+import { EntityCombobox, RoleCombobox, UnitCombobox, TypeCombobox } from "@/components/combobox";
 import { FieldType } from "@/lib/constants/enums";
 import { type FieldConfig, getReferencedEntitySlug } from "@/lib/fields";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -26,20 +20,13 @@ interface FormFieldInputProps {
   form: UseFormReturn<FieldValues>;
   idPrefix: string;
   disabled?: boolean;
-  projectSlug?: string;
 }
 
 /**
  * FormFieldInput Component
  * Evaluates field.type and returns the designated component. Integrates with react-hook-form control state.
  */
-export function FormFieldInput({
-  field,
-  form,
-  idPrefix,
-  disabled,
-  projectSlug,
-}: FormFieldInputProps) {
+export function FormFieldInput({ field, form, idPrefix, disabled }: FormFieldInputProps) {
   const referencedSlug = getReferencedEntitySlug(field.key);
   const fieldId = `${idPrefix}-field-${field.key}`;
   const value = useWatch({ control: form.control, name: field.key });
@@ -51,24 +38,35 @@ export function FormFieldInput({
         <ImageUpload
           id={fieldId}
           value={Array.isArray(value) ? value : []}
-          onChange={(newImages) => form.setValue(field.key, newImages, { shouldValidate: true })}
-          disabled={disabled}
-        />
-      );
-    case FieldType.CHECKBOX:
-      const { ref: checkboxRef } = form.register(field.key);
-      return (
-        <Checkbox
-          id={fieldId}
-          checked={value === true || value === "true"}
-          onCheckedChange={(checked) =>
-            form.setValue(field.key, !!checked, { shouldValidate: true })
+          onChange={(urls) =>
+            form.setValue(field.key, urls, { shouldValidate: true, shouldDirty: true })
           }
           disabled={disabled}
-          ref={checkboxRef}
         />
       );
-
+    case FieldType.TEXT:
+    case FieldType.NUMBER:
+    case FieldType.PASSWORD:
+      return <StandardInput field={field} fieldId={fieldId} form={form} disabled={disabled} />;
+    case FieldType.CHECKBOX:
+      return (
+        <div className="flex items-center space-x-2 pt-2">
+          <Checkbox
+            id={fieldId}
+            checked={Boolean(value)}
+            onCheckedChange={(checked) =>
+              form.setValue(field.key, checked, { shouldValidate: true, shouldDirty: true })
+            }
+            disabled={disabled}
+          />
+          <label
+            htmlFor={fieldId}
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+          >
+            {field.label}
+          </label>
+        </div>
+      );
     case FieldType.ROLE:
       return (
         <RoleCombobox
@@ -100,16 +98,6 @@ export function FormFieldInput({
           }
         />
       );
-    case FieldType.FIELD_REQUIREMENT_MODE:
-      return (
-        <ModeCombobox
-          id={`${idPrefix}-mode-trigger-${field.key}`}
-          value={stringValue}
-          onChange={(val) =>
-            form.setValue(field.key, val, { shouldValidate: true, shouldDirty: true })
-          }
-        />
-      );
     default:
       if (referencedSlug) {
         return (
@@ -120,12 +108,10 @@ export function FormFieldInput({
             onChange={(val) =>
               form.setValue(field.key, val, { shouldValidate: true, shouldDirty: true })
             }
-            placeholder={field.placeholder}
-            contextSlug={projectSlug}
-            fieldKey={field.key}
+            disabled={disabled}
           />
         );
       }
-      return <StandardInput field={field} form={form} fieldId={fieldId} disabled={disabled} />;
+      return <StandardInput field={field} fieldId={fieldId} form={form} disabled={disabled} />;
   }
 }

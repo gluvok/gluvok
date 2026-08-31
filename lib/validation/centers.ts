@@ -1,16 +1,19 @@
 /**
  * @file lib/validation/centers.ts
- * @description Zod schema and validation rules for Centers entities.
+ * @description Zod validation schemas for Centers CRUD operations.
  */
 
-import * as z from "zod";
-import { nameSchema } from "./helpers";
+import { z } from "zod";
 
-const baseCenterSchema = z.object({
-  name: nameSchema("Name"),
-  factory_id: z.coerce.number().optional().nullable(),
+export const addCenterSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  auto_approve: z.boolean().optional().default(false),
 });
 
-export const addCenterSchema = baseCenterSchema;
+export const editCenterSchema = z.object({
+  name: z.string().min(1, "Name is required").optional(),
+  auto_approve: z.boolean().optional(),
+});
 
-export const editCenterSchema = baseCenterSchema;
+export type AddCenterInput = z.infer<typeof addCenterSchema>;
+export type EditCenterInput = z.infer<typeof editCenterSchema>;

@@ -13,6 +13,7 @@ const { mockDb } = vi.hoisted(() => ({
 
 vi.mock("@/db", () => ({
   db: mockDb,
+  supabase: mockDb,
 }));
 
 describe("POST /api/auth/login (Browser Authentication)", () => {
@@ -35,7 +36,6 @@ describe("POST /api/auth/login (Browser Authentication)", () => {
                 password_hash: passwordHash,
                 role: Role.ADMIN,
                 factory_id: 1,
-                aadhar_number: "123456789012",
               },
               error: null,
             }),
@@ -58,9 +58,9 @@ describe("POST /api/auth/login (Browser Authentication)", () => {
       id: 1,
       username: "admin1",
       name: "Admin User",
-      aadhar_number: "123456789012",
       role: Role.ADMIN,
       factory_id: 1,
+      factory_name: undefined,
     });
 
     // Verify tokens are not leaked in body
@@ -103,7 +103,7 @@ describe("POST /api/auth/login (Browser Authentication)", () => {
     const req = new NextRequest("http://localhost/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "nonexistent", password: "password123" }),
+      body: JSON.stringify({ username: "unknown_user", password: "password123" }),
     });
 
     const res = await POST(req);
@@ -113,7 +113,7 @@ describe("POST /api/auth/login (Browser Authentication)", () => {
   });
 
   it("rejects login with 401 when password is invalid", async () => {
-    const passwordHash = await hashPassword("correctpassword");
+    const passwordHash = await hashPassword("correct_password");
     mockDb.from.mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -137,7 +137,7 @@ describe("POST /api/auth/login (Browser Authentication)", () => {
     const req = new NextRequest("http://localhost/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "admin1", password: "wrongpassword" }),
+      body: JSON.stringify({ username: "admin1", password: "wrong_password" }),
     });
 
     const res = await POST(req);

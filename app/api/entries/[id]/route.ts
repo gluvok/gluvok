@@ -7,9 +7,13 @@ import {
   hasPermission,
   StatusCodes,
 } from "@/db/helpers";
-import { ProjectSlug, PermissionKey, EntryStatus } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey, EntryStatus, EntryType } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
+import {
+  validateCenterBelongsToFactory,
+  validateCustomerBelongsToFactory,
+} from "@/lib/services/entries";
 import { editEntrySchema } from "@/lib/validation";
 
 export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
@@ -72,13 +76,15 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     return apiError(ApiErrorMessage.ENTRY_REJECTED_LOCKED, StatusCodes.FORBIDDEN);
   }
 
-  if (existing.status === EntryStatus.APPROVED && existing.customer_id !== null) {
+  const isApproved = existing.status === EntryStatus.APPROVED || existing.auto_approved === true;
+
+  if (isApproved && existing.customer_id !== null) {
     return apiError(ApiErrorMessage.ENTRY_APPROVED_CUSTOMER_LOCKED, StatusCodes.FORBIDDEN);
   }
 
   const updates: Record<string, unknown> = {};
 
-  if (existing.status === EntryStatus.APPROVED && existing.customer_id === null) {
+  if (isApproved && existing.customer_id === null) {
     // ONLY customer_id can be updated on approved entries without customer
     const lockedFields = ["vehicle_number", "weight", "center_id", "images", "status"] as const;
 
@@ -91,15 +97,33 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
       }
     }
     if (body.customer_id !== undefined) {
+      if (body.customer_id) {
+        await validateCustomerBelongsToFactory(client, Number(body.customer_id), user.factory_id);
+      }
       updates["customer_id"] = body.customer_id ? Number(body.customer_id) : null;
     }
-  } else {
-    // Status is pending: vehicle_number, customer_id, images, status can be edited
-    for (const key of ["vehicle_number", "images", "status"] as const) {
-      if (body[key] !== undefined) updates[key] = body[key];
-    }
-    if (body.customer_id !== undefined) {
-      updates["customer_id"] = body.customer_id ? Number(body.customer_id) : null;
+  } else if (existing.status === EntryStatus.PENDING) {
+    if (existing.type === EntryType.MANUAL) {
+      // Manual Pending: allow vehicle_number, weight, center_id, customer_id, images, status
+      if (body.vehicle_number !== undefined) updates["vehicle_number"] = body.vehicle_number;
+      if (body.weight !== undefined) updates["weight"] = Number(body.weight);
+      if (body.images !== undefined) updates["images"] = body.images;
+      if (body.status !== undefined) updates["status"] = body.status;
+
+      if (body.center_id !== undefined) {
+        await validateCenterBelongsToFactory(client, Number(body.center_id), user.factory_id);
+        updates["center_id"] = Number(body.center_id);
+      }
+      if (body.customer_id !== undefined) {
+        if (body.customer_id) {
+          await validateCustomerBelongsToFactory(client, Number(body.customer_id), user.factory_id);
+        }
+        updates["customer_id"] = body.customer_id ? Number(body.customer_id) : null;
+      }
+    } else {
+      // Automatic Pending (not auto-approved): allow vehicle_number, status
+      if (body.vehicle_number !== undefined) updates["vehicle_number"] = body.vehicle_number;
+      if (body.status !== undefined) updates["status"] = body.status;
     }
   }
 
@@ -110,12 +134,12 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   const newStatus = (updates["status"] as string) || existing.status;
   const targetVehicle = (updates["vehicle_number"] as string) || existing.vehicle_number;
 
-  // 3. Sequential Approval Validation if transitioning/staying as approved
+  // 3. Sequential Approval Validation if transitioning to approved
   if (newStatus === EntryStatus.APPROVED && existing.status !== EntryStatus.APPROVED) {
     try {
       await validateSequentialApproval(
         client,
-        existing.center_id,
+        (updates["center_id"] as number) || existing.center_id,
         targetVehicle,
         existing.created_at,
         entryId,

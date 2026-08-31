@@ -1,20 +1,16 @@
 /**
  * @file lib/auth/device.ts
- * @description Dedicated hardware microcontroller authentication lifecycle (secret verification, Bearer tokens, zero cookies).
+ * @description Authentication service for hardware scale devices.
+ * Uses username and password credentials verifying the user has the 'hardware' role.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { validateDeviceSecret } from "@/db/helpers";
 import { Role } from "@/lib/constants/enums";
 import { AuthErrorMessage } from "@/lib/constants/messages";
 import { verifyUserCredentials, generateAuthTokens } from "./common";
 
 export async function authenticateDeviceUser(request: NextRequest): Promise<NextResponse> {
   try {
-    if (!validateDeviceSecret(request)) {
-      return NextResponse.json({ error: AuthErrorMessage.INVALID_DEVICE_SECRET }, { status: 401 });
-    }
-
     const body = await request.json();
     const { username, password } = body || {};
 
@@ -25,20 +21,19 @@ export async function authenticateDeviceUser(request: NextRequest): Promise<Next
 
     const { user, userPayload } = result;
 
-    if (user.role === Role.BASE) {
-      return NextResponse.json({ error: AuthErrorMessage.INVALID_CREDENTIALS }, { status: 401 });
+    if (user.role !== Role.HARDWARE) {
+      return NextResponse.json({ error: AuthErrorMessage.FORBIDDEN }, { status: 403 });
     }
 
     const tokens = await generateAuthTokens(user);
 
     return NextResponse.json({
       success: true,
+      user: userPayload,
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken,
       token_type: "Bearer",
-      expires_in: tokens.expiresIn,
-      user_id: user.id,
-      user: userPayload,
+      expires_in: tokens.accessExpiresIn,
     });
   } catch (error) {
     console.error("Device authentication error:", error);

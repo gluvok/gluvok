@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import axios from "axios";
 import { deleteRows, fetchEntityPaginatedFromApi, insertRow, updateRow } from "./common";
-import { FieldRequirementMode, ProjectSlug, Unit } from "@/lib/constants/enums";
-import { useFactoryStore } from "@/lib/store/factory";
+import { ProjectSlug, Unit } from "@/lib/constants/enums";
 
 vi.mock("axios", () => ({
   default: {
@@ -54,47 +53,31 @@ describe("fetchEntityPaginatedFromApi", () => {
   });
 });
 
-describe("insertRow & updateRow with factory synchronization", () => {
-  const sampleFactory = {
-    id: 1,
-    name: "Updated Factory",
-    aadhar_number_mode: FieldRequirementMode.OPTIONAL,
-    govt_id_mode: FieldRequirementMode.MANDATORY,
-    created_at: "",
-    updated_at: "",
-  };
-
+describe("insertRow & updateRow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useFactoryStore.getState().resetFactory();
   });
 
-  it("insertRow updates useFactoryStore when factory is returned", async () => {
+  it("insertRow returns inserted record", async () => {
     vi.mocked(axios.post).mockResolvedValue({
       data: {
         data: { id: 10, username: "newuser" },
-        factory: sampleFactory,
       },
     });
 
     const result = await insertRow(ProjectSlug.USERS, { username: "newuser" });
-
     expect(result).toEqual({ id: 10, username: "newuser" });
-    expect(useFactoryStore.getState().factory).toEqual(sampleFactory);
   });
 
-  it("updateRow updates useFactoryStore when factory is returned", async () => {
+  it("updateRow returns updated record", async () => {
     vi.mocked(axios.patch).mockResolvedValue({
       data: {
         data: { id: 10, name: "Updated Name" },
-        factory: sampleFactory,
       },
     });
 
     const result = await updateRow(ProjectSlug.USERS, 10, { name: "Updated Name" });
-
     expect(result).toEqual({ id: 10, name: "Updated Name" });
-    expect(useFactoryStore.getState().factory).toEqual(sampleFactory);
   });
 });
 

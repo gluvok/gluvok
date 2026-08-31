@@ -5,12 +5,11 @@
 
 import { type ColumnDef, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import { User, ShieldCheck, Tag, AtSign } from "lucide-react";
+import { User, Tag, AtSign } from "lucide-react";
 import { createTextColumn, createCustomColumn } from "./helpers";
 
 export function getCustomersColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
-    createTextColumn("govt_id", "Govt ID", ShieldCheck, "font-mono text-muted-foreground text-xs"),
     createTextColumn("name", "Name", Tag),
     createTextColumn("father_name", "Father's Name", User, "text-muted-foreground text-xs"),
     createCustomColumn("username", "Username", AtSign, (_val, row) => {

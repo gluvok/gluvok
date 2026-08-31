@@ -9,7 +9,6 @@ import {
   WeighmentType,
   EntryType,
   EntryStatus,
-  FieldRequirementMode,
   FieldType,
 } from "@/lib/constants/enums";
 import {
@@ -32,10 +31,10 @@ import {
   XCircle,
   Clock,
   HelpCircle,
-  Ban,
   SlidersHorizontal,
   PenTool,
   Cpu,
+  Bot,
   type LucideIcon,
 } from "lucide-react";
 
@@ -91,6 +90,8 @@ export function getRoleBadgeClass(role?: string): string {
       return "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30";
     case Role.BASE:
       return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30";
+    case Role.HARDWARE:
+      return "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30";
     default:
       return "bg-muted/70 text-foreground border-border/40";
   }
@@ -104,6 +105,7 @@ export function getRoleIndicatorVariant(role?: string): "success" | "warning" | 
     case Role.OPERATOR:
       return "warning";
     case Role.BASE:
+    case Role.HARDWARE:
       return "success";
     default:
       return "info";
@@ -120,6 +122,8 @@ export function getRoleIcon(role?: string): LucideIcon {
       return HardHat;
     case Role.BASE:
       return User;
+    case Role.HARDWARE:
+      return Bot;
     default:
       return Shield;
   }
@@ -143,62 +147,6 @@ export function getTypeIcon(typeVal?: string): LucideIcon {
       return Cpu;
     default:
       return SlidersHorizontal;
-  }
-}
-
-export function getModeIcon(modeVal?: string): LucideIcon {
-  if (!modeVal) return SlidersHorizontal;
-  const normalized = modeVal.toLowerCase().trim();
-  switch (normalized) {
-    case FieldRequirementMode.MANDATORY:
-    case "mandatory":
-      return CheckCircle2;
-    case FieldRequirementMode.OPTIONAL:
-    case "optional":
-      return HelpCircle;
-    case FieldRequirementMode.NOT_REQUIRED:
-    case "not required":
-    case "not_required":
-      return Ban;
-    default:
-      return SlidersHorizontal;
-  }
-}
-
-export function getModeColorClass(modeVal?: string): string {
-  if (!modeVal) return "text-muted-foreground";
-  const normalized = modeVal.toLowerCase().trim();
-  switch (normalized) {
-    case FieldRequirementMode.MANDATORY:
-    case "mandatory":
-      return "text-emerald-600 dark:text-emerald-400";
-    case FieldRequirementMode.OPTIONAL:
-    case "optional":
-      return "text-amber-500 dark:text-amber-400";
-    case FieldRequirementMode.NOT_REQUIRED:
-    case "not required":
-    case "not_required":
-      return "text-rose-500 dark:text-rose-400";
-    default:
-      return "text-muted-foreground";
-  }
-}
-
-export function getFieldRequirementModeLabel(modeVal?: string): string {
-  if (!modeVal) return "Optional";
-  const normalized = modeVal.toLowerCase().trim();
-  switch (normalized) {
-    case FieldRequirementMode.MANDATORY:
-    case "mandatory":
-      return "Mandatory";
-    case FieldRequirementMode.NOT_REQUIRED:
-    case "not required":
-    case "not_required":
-      return "Not Required";
-    case FieldRequirementMode.OPTIONAL:
-    case "optional":
-    default:
-      return "Optional";
   }
 }
 
@@ -230,10 +178,6 @@ export function getItemIcon(type: string | ProjectSlug, label: string): LucideIc
     case "type":
     case "types":
       return getTypeIcon(label);
-    case "mode":
-    case "modes":
-    case "field_requirement_mode":
-      return getModeIcon(label);
     case "status":
     case "statuses":
     case "entry_status":
@@ -264,8 +208,6 @@ export function getSingularName(name: string): string {
       return "Factory";
     case "Users":
       return "User";
-    case "Settings":
-      return "Setting";
     case "Entries":
       return "Entry";
 

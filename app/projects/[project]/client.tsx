@@ -10,71 +10,19 @@ import * as React from "react";
 import { getPrimaryIdKey } from "@/lib/fields";
 import { DataTablePagination } from "@/components/data-table";
 import {
-  SettingsSummary,
   ProjectToolbar,
   ProjectDialogs,
   ProjectTable,
   useProjectTable,
 } from "@/components/projects";
 import { Spinner } from "@/components/kibo-ui/spinner";
-import { useEntitiesStore, useFactoryStore } from "@/lib/store";
-import { ProjectSlug } from "@/lib/constants/enums";
-import { type Settings } from "@/types";
-import { useProjectDialogStates } from "@/components/projects/table/use-helpers";
 
 interface ProjectClientProps {
   projectName: string;
   projectSlug: string;
 }
 
-/** Settings page reads the active factory directly from the Zustand store. */
-function SettingsClient({ projectName, projectSlug }: ProjectClientProps) {
-  const { factory, factoryLoading, fetchFactory } = useFactoryStore();
-  const { creating, setCreating, editingItem, setEditingItem, deletingItem, setDeletingItem } =
-    useProjectDialogStates();
-  const primaryIdKey = getPrimaryIdKey(projectSlug);
-
-  React.useEffect(() => {
-    fetchFactory();
-  }, [fetchFactory]);
-
-  const factoryAsRecord = factory
-    ? {
-        id: factory.id,
-        name: factory.name,
-        aadhar_number_mode: factory.aadhar_number_mode,
-        govt_id_mode: factory.govt_id_mode,
-      }
-    : undefined;
-
-  return (
-    <div className="flex min-h-[calc(100vh-14rem)] items-center justify-center">
-      <SettingsSummary
-        settings={factoryAsRecord as Settings | undefined}
-        isLoading={factoryLoading}
-        error={null}
-        canCreate={false}
-        canEdit={!!factory}
-        onCreate={() => setCreating(true)}
-        onEdit={setEditingItem}
-        onRetry={fetchFactory}
-      />
-      <ProjectDialogs
-        creating={creating}
-        setCreating={setCreating}
-        editingItem={editingItem}
-        setEditingItem={setEditingItem}
-        deletingItem={deletingItem}
-        setDeletingItem={setDeletingItem}
-        projectSlug={projectSlug}
-        projectName={projectName}
-        primaryIdKey={primaryIdKey}
-      />
-    </div>
-  );
-}
-
-function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps) {
+export function ProjectClient({ projectName, projectSlug }: ProjectClientProps) {
   const primaryIdKey = getPrimaryIdKey(projectSlug);
   const pt = useProjectTable({ projectSlug, primaryIdKey, projectName });
   const {
@@ -91,18 +39,16 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
     handleReload,
   } = pt;
 
-  const isFiltersLoading = useEntitiesStore((state) => state.filtersLoading);
-
   const [hasLoadedOnce, setHasLoadedOnce] = React.useState(false);
 
   React.useEffect(() => {
-    if (!isLoading && isReady && !isFiltersLoading) {
+    if (!isLoading && isReady) {
       const timer = setTimeout(() => {
         setHasLoadedOnce(true);
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, isReady, isFiltersLoading]);
+  }, [isLoading, isReady]);
 
   if (!isReady || !hasLoadedOnce) {
     return (
@@ -151,15 +97,4 @@ function StandardProjectClient({ projectName, projectSlug }: ProjectClientProps)
       />
     </div>
   );
-}
-
-/**
- * ProjectClient Component
- * Serves as the main orchestrator for a project's data management UI.
- */
-export function ProjectClient({ projectName, projectSlug }: ProjectClientProps) {
-  if (projectSlug === ProjectSlug.SETTINGS) {
-    return <SettingsClient projectName={projectName} projectSlug={projectSlug} />;
-  }
-  return <StandardProjectClient projectName={projectName} projectSlug={projectSlug} />;
 }

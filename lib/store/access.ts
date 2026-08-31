@@ -3,8 +3,7 @@
  * @description Role-based access control (RBAC) matrix and permission helper functions.
  */
 
-import { Role, ProjectSlug, FieldRequirementMode, PermissionKey } from "@/lib/constants/enums";
-import { useFactoryStore } from "./factory";
+import { Role, ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 
 export interface Permission {
   read: boolean;
@@ -85,14 +84,6 @@ export const RBAC_MATRIX: RbacMatrix = {
       filter: true,
       editableFields: ["weight"],
     },
-    [ProjectSlug.SETTINGS]: {
-      read: true,
-      write: true,
-      delete: true,
-      create: true,
-      show: true,
-      filter: true,
-    },
   },
   [Role.MANAGER]: {
     [ProjectSlug.USERS]: {
@@ -150,14 +141,6 @@ export const RBAC_MATRIX: RbacMatrix = {
       create: false,
       show: true,
       filter: true,
-    },
-    [ProjectSlug.SETTINGS]: {
-      read: true,
-      write: true,
-      delete: false,
-      create: false,
-      show: true,
-      filter: false,
     },
   },
   [Role.OPERATOR]: {
@@ -217,14 +200,6 @@ export const RBAC_MATRIX: RbacMatrix = {
       show: true,
       filter: true,
     },
-    [ProjectSlug.SETTINGS]: {
-      read: true,
-      write: true,
-      delete: false,
-      create: false,
-      show: true,
-      filter: false,
-    },
   },
   [Role.BASE]: {
     [ProjectSlug.USERS]: {
@@ -283,7 +258,57 @@ export const RBAC_MATRIX: RbacMatrix = {
       show: true,
       filter: true,
     },
-    [ProjectSlug.SETTINGS]: {
+  },
+  [Role.HARDWARE]: {
+    [ProjectSlug.USERS]: {
+      read: false,
+      write: false,
+      delete: false,
+      create: false,
+      show: false,
+      filter: false,
+    },
+    [ProjectSlug.CENTERS]: {
+      read: true,
+      write: false,
+      delete: false,
+      create: false,
+      show: false,
+      filter: false,
+    },
+    [ProjectSlug.COMMODITIES]: {
+      read: false,
+      write: false,
+      delete: false,
+      create: false,
+      show: false,
+      filter: false,
+    },
+    [ProjectSlug.RATES]: {
+      read: false,
+      write: false,
+      delete: false,
+      create: false,
+      show: false,
+      filter: false,
+    },
+    [ProjectSlug.CUSTOMERS]: {
+      read: false,
+      write: false,
+      delete: false,
+      create: false,
+      show: false,
+      filter: false,
+    },
+    [ProjectSlug.ENTRIES]: {
+      read: true,
+      write: true,
+      delete: false,
+      create: true,
+      show: false,
+      filter: false,
+    },
+    [ProjectSlug.WEIGHMENTS]: {
       read: false,
       write: false,
       delete: false,
@@ -356,14 +381,6 @@ export function isColumnVisible(
   const perms = getPermissions(role, projectSlug);
   if (perms.hiddenColumns && perms.hiddenColumns.includes(columnKey)) return false;
 
-  const factory = useFactoryStore.getState().factory;
-  if (projectSlug === ProjectSlug.CUSTOMERS && columnKey === "govt_id") {
-    if (factory?.govt_id_mode === FieldRequirementMode.NOT_REQUIRED) return false;
-  }
-  if (projectSlug === ProjectSlug.USERS && columnKey === "aadhar_number") {
-    if (factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED) return false;
-  }
-
   return true;
 }
 
@@ -379,38 +396,13 @@ export function isFieldVisible(
   const perms = getPermissions(role, projectSlug);
   if (perms.hiddenFields && perms.hiddenFields.includes(fieldKey)) return false;
 
-  const factory = useFactoryStore.getState().factory;
-  if (projectSlug === ProjectSlug.CUSTOMERS && fieldKey === "govt_id") {
-    if (factory?.govt_id_mode === FieldRequirementMode.NOT_REQUIRED) return false;
-  }
-  if (projectSlug === ProjectSlug.USERS && fieldKey === "aadhar_number") {
-    if (factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED) return false;
-  }
-
   return true;
 }
 
 export function isFieldRequired(
-  projectSlug: string,
-  fieldKey: string,
+  _projectSlug: string,
+  _fieldKey: string,
   defaultRequired?: boolean,
 ): boolean {
-  const factory = useFactoryStore.getState().factory;
-  if (projectSlug === ProjectSlug.CUSTOMERS && fieldKey === "govt_id") {
-    if (factory?.govt_id_mode === FieldRequirementMode.MANDATORY) return true;
-    if (
-      factory?.govt_id_mode === FieldRequirementMode.OPTIONAL ||
-      factory?.govt_id_mode === FieldRequirementMode.NOT_REQUIRED
-    )
-      return false;
-  }
-  if (projectSlug === ProjectSlug.USERS && fieldKey === "aadhar_number") {
-    if (factory?.aadhar_number_mode === FieldRequirementMode.MANDATORY) return true;
-    if (
-      factory?.aadhar_number_mode === FieldRequirementMode.OPTIONAL ||
-      factory?.aadhar_number_mode === FieldRequirementMode.NOT_REQUIRED
-    )
-      return false;
-  }
-  return !!defaultRequired;
+  return Boolean(defaultRequired);
 }

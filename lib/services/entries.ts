@@ -26,10 +26,10 @@ export async function validateCenterBelongsToFactory(
   client: typeof supabase,
   centerId: number,
   factoryId: number,
-): Promise<void> {
+): Promise<{ id: number; auto_approve: boolean }> {
   const { data: centerRecord } = await client
     .from("centers")
-    .select("id")
+    .select("id, auto_approve")
     .eq("id", centerId)
     .eq("factory_id", factoryId)
     .is("deleted_at", null)
@@ -38,6 +38,11 @@ export async function validateCenterBelongsToFactory(
   if (!centerRecord) {
     throw new Error(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND);
   }
+
+  return {
+    id: centerRecord.id,
+    auto_approve: Boolean(centerRecord.auto_approve),
+  };
 }
 
 export async function validateCustomerBelongsToFactory(
@@ -72,25 +77,39 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
     images = [],
   } = params;
 
-  // 1. Verify center exists and belongs to the active factory
-  await validateCenterBelongsToFactory(client, Number(centerId), factoryId);
+  // 1. Verify center exists, belongs to active factory, and check auto_approve
+  const centerRecord = await validateCenterBelongsToFactory(client, Number(centerId), factoryId);
 
   // 2. Verify customer exists (if provided) and belongs to the active factory
   if (customerId) {
     await validateCustomerBelongsToFactory(client, Number(customerId), factoryId);
   }
 
+  // 3. Determine auto_approved flag & final approval status
+  let finalStatus = status;
+  let isAutoApproved = false;
+
+  if (type === EntryType.AUTOMATIC) {
+    if (centerRecord.auto_approve) {
+      isAutoApproved = true;
+      finalStatus = EntryStatus.APPROVED;
+    }
+  } else {
+    // Manual entries are NEVER auto-approved
+    isAutoApproved = false;
+  }
+
   const nowStr = new Date().toISOString();
 
-  // 3. Upload base64 images to storage
+  // 4. Upload base64 images to storage
   const uploadedImageUrls = await uploadBase64ImagesToStorage(images, factoryId);
 
-  // 4. Validate sequential approval if approved
-  if (status === EntryStatus.APPROVED) {
+  // 5. Validate sequential approval if approved
+  if (finalStatus === EntryStatus.APPROVED) {
     await validateSequentialApproval(client, Number(centerId), vehicleNumber, nowStr, 0, type);
   }
 
-  // 5. Insert new entry into database
+  // 6. Insert new entry into database
   const { data: newEntry, error: insertErr } = await client
     .from("entries")
     .insert({
@@ -102,7 +121,8 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
       user_id: userId,
       customer_id: customerId ? Number(customerId) : null,
       factory_id: factoryId,
-      status,
+      status: finalStatus,
+      auto_approved: isAutoApproved,
       images: uploadedImageUrls,
       created_at: nowStr,
       updated_at: nowStr,
@@ -115,8 +135,8 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
     throw new Error(ApiErrorMessage.CREATE_ENTRY_FAILED);
   }
 
-  // 6. Attempt automatic weighment merging if approved
-  if (status === EntryStatus.APPROVED) {
+  // 7. Attempt automatic weighment merging if approved
+  if (newEntry.status === EntryStatus.APPROVED) {
     await tryMergeEntries(client, factoryId, newEntry.id);
   }
 

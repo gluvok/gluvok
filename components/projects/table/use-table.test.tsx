@@ -3,7 +3,6 @@ import { renderHook, act } from "@testing-library/react";
 import { useProjectTable } from "./use-table";
 import { fetchEntityListPaginated } from "@/lib/services";
 import { getProjectColumns } from "@/components/projects/columns";
-import { FieldRequirementMode } from "@/lib/constants/enums";
 
 const mockTriggerEntitiesUpdate = vi.fn();
 const mockPreferencesState = {
@@ -11,12 +10,6 @@ const mockPreferencesState = {
   filters: {} as Record<string, Record<string, unknown>>,
   setColumnPreferences: vi.fn(),
   setFilterPreferences: vi.fn(),
-};
-const mockFactoryState = {
-  factory: null as {
-    aadhar_number_mode: FieldRequirementMode;
-    govt_id_mode: FieldRequirementMode;
-  } | null,
 };
 
 interface MockAuthStoreState {
@@ -37,10 +30,6 @@ interface MockPreferencesStoreState {
   setFilterPreferences: () => void;
 }
 
-interface MockFactoryStoreState {
-  factory: typeof mockFactoryState.factory;
-}
-
 // Mock dependencies
 vi.mock("@/lib/store", () => {
   const mockAuthStore = {
@@ -56,9 +45,11 @@ vi.mock("@/lib/store", () => {
     getState: () => ({
       entitiesUpdatedTrigger: 0,
       triggerEntitiesUpdate: mockTriggerEntitiesUpdate,
-      loadWeighmentFiltersData: vi.fn(),
-      loadCommodities: vi.fn(),
-      loadFactories: vi.fn(),
+      fetchCenters: vi.fn().mockResolvedValue([]),
+      fetchUsers: vi.fn().mockResolvedValue([]),
+      fetchCustomers: vi.fn().mockResolvedValue([]),
+      fetchRates: vi.fn().mockResolvedValue([]),
+      fetchCommodities: vi.fn().mockResolvedValue([]),
     }),
     subscribe: () => () => {},
   };
@@ -85,21 +76,10 @@ vi.mock("@/lib/store", () => {
     mockPreferencesStore,
   );
 
-  const mockFactoryStore = {
-    getState: () => mockFactoryState,
-    subscribe: () => () => {},
-  };
-
-  const useFactoryStoreMock = Object.assign(
-    (selector: (state: MockFactoryStoreState) => unknown) => selector(mockFactoryStore.getState()),
-    mockFactoryStore,
-  );
-
   return {
     useAuthStore: useAuthStoreMock,
     useEntitiesStore: useEntitiesStoreMock,
     usePreferencesStore: usePreferencesStoreMock,
-    useFactoryStore: useFactoryStoreMock,
     getPermissions: () => ({
       read: true,
       write: true,
@@ -123,7 +103,6 @@ describe("useProjectTable Hook", () => {
     vi.clearAllMocks();
     mockPreferencesState.columns = {};
     mockPreferencesState.filters = {};
-    mockFactoryState.factory = null;
     vi.mocked(getProjectColumns).mockReturnValue([]);
     vi.mocked(fetchEntityListPaginated).mockResolvedValue({ data: [], count: 0 });
     vi.useFakeTimers();

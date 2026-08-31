@@ -53,7 +53,6 @@ export function EntityDialogContent({
                 form={form}
                 idPrefix={`${mode}-entity`}
                 disabled={disabled}
-                projectSlug={projectSlug}
               />
               <label
                 htmlFor={`${mode}-entity-field-${field.key}`}
@@ -109,7 +108,6 @@ export function EntityDialogContent({
               form={form}
               idPrefix={`${mode}-entity`}
               disabled={disabled}
-              projectSlug={projectSlug}
             />
             {form.formState.errors[field.key] && (
               <span className="text-destructive text-[11px] font-medium">

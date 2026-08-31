@@ -17,6 +17,7 @@ vi.mock("next/headers", () => ({
 
 vi.mock("@/db", () => ({
   db: mockDb,
+  supabase: mockDb,
 }));
 
 describe("POST /api/auth/refresh", () => {
@@ -74,9 +75,10 @@ describe("POST /api/auth/refresh", () => {
               data: {
                 id: 10,
                 username: "operator_01",
+                name: "Operator One",
                 role: Role.OPERATOR,
                 factory_id: 1,
-                token_version: 2, // Version incremented to 2 on password change!
+                token_version: 2,
               },
               error: null,
             }),
@@ -149,7 +151,6 @@ describe("POST /api/auth/refresh", () => {
                 id: 10,
                 username: "operator_01",
                 name: "Operator One",
-                aadhar_number: null,
                 role: Role.OPERATOR,
                 factory_id: 1,
                 token_version: 1,
@@ -174,9 +175,9 @@ describe("POST /api/auth/refresh", () => {
       id: 10,
       username: "operator_01",
       name: "Operator One",
-      aadhar_number: null,
       role: Role.OPERATOR,
       factory_id: 1,
+      factory_name: undefined,
     });
     expect(json.access_token).toBeDefined();
     expect(json.refresh_token).toBeDefined();

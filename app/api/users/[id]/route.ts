@@ -7,9 +7,8 @@ import {
   forbiddenError,
   hasPermission,
   StatusCodes,
-  getFactory,
 } from "@/db/helpers";
-import { getDynamicUserSchema } from "@/lib/validation";
+import { editUserSchema } from "@/lib/validation";
 import { hashPassword } from "@/lib/auth/password";
 import { clearAuthCookies } from "@/lib/auth/cookies";
 import { PermissionKey, ProjectSlug, Role } from "@/lib/constants/enums";
@@ -19,7 +18,7 @@ export const GET = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client
       .from("users")
-      .select("id, username, name, aadhar_number, role, factory_id, created_at, updated_at")
+      .select("id, username, name, role, factory_id, created_at, updated_at")
       .eq("id", entityId)
       .eq("factory_id", factoryId)
       .is("deleted_at", null);
@@ -40,7 +39,7 @@ export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client
       .from("users")
-      .select("id, username, name, aadhar_number, role, factory_id, token_version")
+      .select("id, username, name, role, factory_id, token_version")
       .eq("id", entityId)
       .eq("factory_id", factoryId)
       .is("deleted_at", null);
@@ -55,32 +54,15 @@ export const PATCH = withAuth(
     }
 
     const body = await req.json();
-    const factory = await getFactory(client, user.factory_id);
-    const dynamicSchema = getDynamicUserSchema(factory, true);
-    const parsed = dynamicSchema.safeParse(body);
+    const parsed = editUserSchema.safeParse(body);
 
     if (!parsed.success) {
       return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
     }
 
-    const { name, aadhar_number, password, role } = body;
+    const { name, password, role } = parsed.data;
     const validRole =
       role && Object.values(Role).includes(role as Role) ? (role as Role) : undefined;
-
-    if (aadhar_number && aadhar_number !== existing.aadhar_number) {
-      const { data: duplicateAadhar } = await client
-        .from("users")
-        .select("id")
-        .eq("aadhar_number", aadhar_number)
-        .eq("factory_id", factoryId)
-        .neq("id", entityId)
-        .is("deleted_at", null)
-        .maybeSingle();
-
-      if (duplicateAadhar) {
-        return apiError(ApiErrorMessage.AADHAR_NUMBER_EXISTS, StatusCodes.BAD_REQUEST);
-      }
-    }
 
     const updates: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -91,9 +73,6 @@ export const PATCH = withAuth(
     }
     if (validRole) {
       updates["role"] = validRole;
-    }
-    if (aadhar_number !== undefined) {
-      updates["aadhar_number"] = aadhar_number ? String(aadhar_number) : null;
     }
     if (password && typeof password === "string" && password.trim().length > 0) {
       updates.password_hash = await hashPassword(password.trim());
@@ -106,14 +85,14 @@ export const PATCH = withAuth(
       .eq("id", entityId)
       .eq("factory_id", factoryId)
       .is("deleted_at", null)
-      .select("id, username, name, aadhar_number, role, factory_id, created_at, updated_at")
+      .select("id, username, name, role, factory_id, created_at, updated_at")
       .single();
 
     if (error || !updated) {
       return apiError(error?.message || ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
     }
 
-    return formatEntityResponse(updated, StatusCodes.OK, { factory });
+    return formatEntityResponse(updated, StatusCodes.OK);
   }),
 );
 

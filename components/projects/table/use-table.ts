@@ -173,7 +173,7 @@ export function useProjectTable({ projectSlug, primaryIdKey, projectName }: UseP
         const effectiveSortColumn = sorting[0]?.id || "created_at";
         const effectiveSortDesc = sorting[0] !== undefined ? sorting[0].desc : true;
 
-        const result = await fetchEntityListPaginated(projectSlug as ProjectSlug, {
+        const tablePromise = fetchEntityListPaginated(projectSlug as ProjectSlug, {
           page: pagination.pageIndex,
           pageSize: pagination.pageSize,
           sortColumn: effectiveSortColumn,
@@ -181,6 +181,26 @@ export function useProjectTable({ projectSlug, primaryIdKey, projectName }: UseP
           search: debouncedFilter,
           filters: filtersObj,
         });
+
+        const filterPromises: Promise<unknown>[] = [];
+        if (projectSlug === ProjectSlug.RATES) {
+          filterPromises.push(useEntitiesStore.getState().fetchCommodities());
+        } else if (projectSlug === ProjectSlug.ENTRIES) {
+          filterPromises.push(
+            useEntitiesStore.getState().fetchCenters(),
+            useEntitiesStore.getState().fetchUsers(),
+            useEntitiesStore.getState().fetchCustomers(),
+          );
+        } else if (projectSlug === ProjectSlug.WEIGHMENTS) {
+          filterPromises.push(
+            useEntitiesStore.getState().fetchRates(),
+            useEntitiesStore.getState().fetchCenters(),
+            useEntitiesStore.getState().fetchUsers(),
+            useEntitiesStore.getState().fetchCustomers(),
+          );
+        }
+
+        const [result] = await Promise.all([tablePromise, ...filterPromises]);
         if (!cancelled) {
           setLocalData(result.data);
           setLocalCount(result.count);

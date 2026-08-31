@@ -18,7 +18,7 @@ import {
   ComboboxGroup,
   ComboboxItem,
 } from "@/components/kibo-ui/combobox";
-import { getItemIcon, getModeColorClass } from "@/lib/fields";
+import { getItemIcon } from "@/lib/fields";
 import { useCommodityIcon } from "@/hooks/use-commodity-icon";
 
 import { cn } from "@/lib/utils";
@@ -122,11 +122,7 @@ export function BaseCombobox({
           <ComboboxGroup>
             {data.map((item) => {
               const itemIcon = getItemIcon(type, item.label);
-              const isModeType =
-                type === "mode" || type === "modes" || type === "field_requirement_mode";
-              const itemIconColor = isModeType
-                ? getModeColorClass(item.value)
-                : "text-muted-foreground/80";
+              const itemIconColor = "text-muted-foreground/80";
 
               return (
                 <ComboboxItem

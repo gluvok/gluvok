@@ -56,8 +56,10 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       const val = row.getValue("weight") as number;
       return <div className="font-mono text-xs font-semibold text-foreground">{val}</div>;
     }),
-    createCustomColumn("status", "Status", ShieldCheck, (val) => {
+    createCustomColumn("status", "Status", ShieldCheck, (val, row) => {
+      const rec = row as Record<string, unknown>;
       const status = String(val).toLowerCase();
+      const isAutoApproved = Boolean(rec.auto_approved);
       let statusClass = "bg-muted text-muted-foreground border border-border";
       const Icon = getStatusIcon(status);
       if (status === EntryStatus.APPROVED) {
@@ -71,12 +73,23 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
           "bg-rose-50 text-rose-700 border border-rose-200/50 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/30";
       }
       return (
-        <span
-          className={cn(badgeBaseClass, "capitalize inline-flex items-center gap-1.5", statusClass)}
-        >
-          <Icon className="h-3 w-3 shrink-0" />
-          {status}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span
+            className={cn(
+              badgeBaseClass,
+              "capitalize inline-flex items-center gap-1.5",
+              statusClass,
+            )}
+          >
+            <Icon className="h-3 w-3 shrink-0" />
+            {status}
+          </span>
+          {isAutoApproved && (
+            <span className="text-3xs font-semibold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200/60 dark:bg-purple-950/30 dark:text-purple-300">
+              Auto
+            </span>
+          )}
+        </div>
       );
     }),
     createIdColumn("center_id", "Center ID", Building),

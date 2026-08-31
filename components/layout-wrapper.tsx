@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AuthGuard } from "@/components/auth/guard";
-import { AppRoutes, AUTH_ROUTES } from "@/lib/constants";
+import { AUTH_ROUTES } from "@/lib/constants";
 import { useAuthStore } from "@/lib/store";
 
 /**

@@ -1,6 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { PermissionKey, ProjectSlug, Role } from "@/lib/constants/enums";
-import { ApiErrorMessage } from "@/lib/constants/messages";
 import { NextRequest } from "next/server";
 
 const { mockHasPermission } = vi.hoisted(() => ({
@@ -62,18 +61,11 @@ describe("Customers route handlers (/api/customers)", () => {
   });
 
   describe("POST /api/customers", () => {
-    const factoryData = {
-      id: 1,
-      name: "Factory A",
-      aadhar_number_mode: "mandatory",
-      govt_id_mode: "mandatory",
-    };
-
     it("rejects when user lacks CREATE permission", async () => {
       mockHasPermission.mockReturnValue(false);
       const req = new NextRequest("http://localhost/api/customers", {
         method: "POST",
-        body: JSON.stringify({ name: "Ajay", father_name: "Vijay", govt_id: 101 }),
+        body: JSON.stringify({ name: "Ajay", father_name: "Vijay" }),
       });
       const handler = POST as unknown as RawHandler;
       const response = await handler(req, sampleUser, {}, context);
@@ -86,30 +78,12 @@ describe("Customers route handlers (/api/customers)", () => {
         id: 10,
         name: "Ajay Kumar",
         father_name: "Vijay Kumar",
-        govt_id: 101,
         user_id: null,
         factory_id: 1,
       };
 
       const mockDb = {
-        from: vi.fn((table: string) => {
-          if (table === "factories") {
-            const chain: Record<string, unknown> = {};
-            chain.select = vi.fn(() => chain);
-            chain.eq = vi.fn(() => chain);
-            chain.maybeSingle = vi.fn().mockResolvedValue({ data: factoryData });
-            return chain;
-          }
-          if (table === "customers") {
-            const chain: Record<string, unknown> = {};
-            chain.select = vi.fn(() => chain);
-            chain.eq = vi.fn(() => chain);
-            chain.is = vi.fn(() => chain);
-            chain.maybeSingle = vi.fn().mockResolvedValue({ data: null });
-            return chain;
-          }
-          return {};
-        }),
+        from: vi.fn(() => ({})),
         rpc: vi.fn().mockResolvedValue({ data: createdCustomer, error: null }),
       };
 
@@ -118,7 +92,6 @@ describe("Customers route handlers (/api/customers)", () => {
         body: JSON.stringify({
           name: "Ajay Kumar",
           father_name: "Vijay Kumar",
-          govt_id: 101,
         }),
       });
 
@@ -128,54 +101,13 @@ describe("Customers route handlers (/api/customers)", () => {
       expect(response.status).toBe(201);
       const json = await response.json();
       expect(json.data.name).toBe("Ajay Kumar");
-      expect(json.factory).toBeDefined();
       expect(mockDb.rpc).toHaveBeenCalledWith("create_customer_with_user", {
         p_factory_id: 1,
         p_name: "Ajay Kumar",
         p_father_name: "Vijay Kumar",
-        p_govt_id: 101,
         p_username: null,
         p_password_hash: null,
       });
-    });
-
-    it("rejects duplicate govt_id", async () => {
-      const mockDb = {
-        from: vi.fn((table: string) => {
-          if (table === "factories") {
-            const chain: Record<string, unknown> = {};
-            chain.select = vi.fn(() => chain);
-            chain.eq = vi.fn(() => chain);
-            chain.maybeSingle = vi.fn().mockResolvedValue({ data: factoryData });
-            return chain;
-          }
-          if (table === "customers") {
-            const chain: Record<string, unknown> = {};
-            chain.select = vi.fn(() => chain);
-            chain.eq = vi.fn(() => chain);
-            chain.is = vi.fn(() => chain);
-            chain.maybeSingle = vi.fn().mockResolvedValue({ data: { id: 5 } });
-            return chain;
-          }
-          return {};
-        }),
-      };
-
-      const req = new NextRequest("http://localhost/api/customers", {
-        method: "POST",
-        body: JSON.stringify({
-          name: "Ajay Kumar",
-          father_name: "Vijay Kumar",
-          govt_id: 101,
-        }),
-      });
-
-      const handler = POST as unknown as RawHandler;
-      const response = await handler(req, sampleUser, mockDb, context);
-
-      expect(response.status).toBe(400);
-      const json = await response.json();
-      expect(json.error).toBe(ApiErrorMessage.GOVT_ID_EXISTS);
     });
   });
 });

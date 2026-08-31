@@ -22,7 +22,8 @@ export const integerIdSchema = (fieldName: string) =>
 export const optionalIntegerIdSchema = (fieldName: string) =>
   z.preprocess(
     (val) => {
-      if (val === "" || val === null || val === undefined) return null;
+      if (val === undefined) return undefined;
+      if (val === "" || val === null) return null;
       const num = Number(val);
       return Number.isNaN(num) ? val : num;
     },
@@ -30,7 +31,8 @@ export const optionalIntegerIdSchema = (fieldName: string) =>
       .number({ message: ValidationMessage.MUST_BE_INTEGER(fieldName) })
       .int(ValidationMessage.MUST_BE_INTEGER(fieldName))
       .positive(ValidationMessage.MUST_BE_POSITIVE_INTEGER(fieldName))
-      .nullable(),
+      .nullable()
+      .optional(),
   );
 
 export const uuidSchema = (fieldName: string) => z.uuid(ValidationMessage.VALID_UUID(fieldName));

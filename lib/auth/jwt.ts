@@ -20,6 +20,7 @@ export interface JWTPayload {
   name: string;
   role: string;
   factory_id: number;
+  factory_name?: string;
   token_version?: number;
 }
 
@@ -40,6 +41,7 @@ export async function signJWT(
     name: payload.name,
     role: payload.role,
     factory_id: payload.factory_id,
+    ...(payload.factory_name ? { factory_name: payload.factory_name } : {}),
     ...(payload.token_version != null ? { token_version: payload.token_version } : {}),
   })
     .setProtectedHeader({ alg: "HS256" })
@@ -68,30 +70,30 @@ export async function signRefreshToken(
 
 export function getTokenExpiresIn(token: string): number {
   const { exp, iat } = decodeJwt(token);
-  if (typeof exp !== "number" || typeof iat !== "number") {
-    throw new Error("Signed JWT is missing an expiration time");
+  if (exp && iat) {
+    return exp - iat;
   }
-  return Math.max(0, exp - iat);
+  return 15 * 60;
 }
 
 /**
- * Verifies a JWT access token.
+ * Verifies a JWT access token and returns its payload if valid.
  */
 export async function verifyJWT(token: string): Promise<JWTPayload | null> {
-  const jwtSecret = getJwtSecret();
   try {
-    const { payload } = await jwtVerify(token, jwtSecret);
-    if (!payload.sub || typeof payload.username !== "string" || typeof payload.role !== "string") {
+    const { payload } = await jwtVerify(token, getJwtSecret());
+    if (!payload.sub || typeof payload.sub !== "string") {
       return null;
     }
 
     return {
       sub: payload.sub,
-      username: payload.username,
-      name: typeof payload.name === "string" ? payload.name : payload.username,
-      role: payload.role,
-      factory_id: Number(payload.factory_id),
-      token_version: typeof payload.token_version === "number" ? payload.token_version : undefined,
+      username: (payload.username as string) || "",
+      name: (payload.name as string) || "",
+      role: (payload.role as string) || "",
+      factory_id: (payload.factory_id as number) || 1,
+      factory_name: (payload.factory_name as string) || undefined,
+      token_version: payload.token_version as number | undefined,
     };
   } catch {
     return null;
@@ -99,19 +101,18 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
 }
 
 /**
- * Verifies a JWT refresh token.
+ * Verifies a JWT refresh token and returns its payload if valid.
  */
 export async function verifyRefreshToken(token: string): Promise<RefreshTokenPayload | null> {
-  const jwtSecret = getJwtSecret();
   try {
-    const { payload } = await jwtVerify(token, jwtSecret);
-    if (!payload.sub || typeof payload.token_version !== "number") {
+    const { payload } = await jwtVerify(token, getJwtSecret());
+    if (!payload.sub || typeof payload.sub !== "string" || payload.token_version === undefined) {
       return null;
     }
 
     return {
       sub: payload.sub,
-      token_version: payload.token_version,
+      token_version: payload.token_version as number,
     };
   } catch {
     return null;

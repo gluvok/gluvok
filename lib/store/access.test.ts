@@ -57,18 +57,9 @@ describe("RBAC Access Controls", () => {
         show: true,
         filter: true,
       });
-
-      const settingsPerms = getPermissions(Role.MANAGER, ProjectSlug.SETTINGS);
-      expect(settingsPerms).toMatchObject({
-        read: true,
-        write: true,
-        delete: false,
-        create: false,
-        show: true,
-      });
     });
 
-    it("should grant Operator correct permissions (CRUD centers, write settings & customers, read-only rates)", () => {
+    it("should grant Operator correct permissions (CRUD centers, write customers, read-only rates)", () => {
       const centerPerms = getPermissions(Role.OPERATOR, ProjectSlug.CENTERS);
       expect(centerPerms).toMatchObject({
         read: true,
@@ -79,13 +70,14 @@ describe("RBAC Access Controls", () => {
         filter: true,
       });
 
-      const settingsPerms = getPermissions(Role.OPERATOR, ProjectSlug.SETTINGS);
-      expect(settingsPerms).toMatchObject({
+      const customerPerms = getPermissions(Role.OPERATOR, ProjectSlug.CUSTOMERS);
+      expect(customerPerms).toMatchObject({
         read: true,
         write: true,
         delete: false,
-        create: false,
+        create: true,
         show: true,
+        filter: true,
       });
 
       const weighmentPerms = getPermissions(Role.OPERATOR, ProjectSlug.WEIGHMENTS);
@@ -120,6 +112,24 @@ describe("RBAC Access Controls", () => {
         filter: true,
       });
     });
+
+    it("should grant Hardware role create and write permission for entries and read for centers", () => {
+      const entryPerms = getPermissions(Role.HARDWARE, ProjectSlug.ENTRIES);
+      expect(entryPerms).toMatchObject({
+        read: true,
+        write: true,
+        create: true,
+        delete: false,
+        show: false,
+      });
+
+      const centerPerms = getPermissions(Role.HARDWARE, ProjectSlug.CENTERS);
+      expect(centerPerms).toMatchObject({
+        read: true,
+        create: false,
+        show: false,
+      });
+    });
   });
 
   describe("hasPageAccess", () => {
@@ -128,6 +138,7 @@ describe("RBAC Access Controls", () => {
       expect(hasPageAccess(Role.OPERATOR, ProjectSlug.CENTERS)).toBe(true);
       expect(hasPageAccess(Role.OPERATOR, ProjectSlug.RATES)).toBe(false);
       expect(hasPageAccess(Role.BASE, ProjectSlug.WEIGHMENTS)).toBe(true);
+      expect(hasPageAccess(Role.HARDWARE, ProjectSlug.ENTRIES)).toBe(false);
     });
   });
 
@@ -140,6 +151,7 @@ describe("RBAC Access Controls", () => {
       expect(hasCreateAccess(Role.MANAGER, ProjectSlug.USERS)).toBe(true);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.COMMODITIES)).toBe(false);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.CUSTOMERS)).toBe(true);
+      expect(hasCreateAccess(Role.HARDWARE, ProjectSlug.ENTRIES)).toBe(true);
     });
   });
 
@@ -169,7 +181,7 @@ describe("RBAC Access Controls", () => {
 
   describe("isColumnVisible & isFieldVisible", () => {
     it("should hide factory_id and factory_name columns and fields across all roles", () => {
-      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE];
+      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE, Role.HARDWARE];
       for (const role of roles) {
         expect(isColumnVisible(role, ProjectSlug.CENTERS, "factory_id")).toBe(false);
         expect(isColumnVisible(role, ProjectSlug.CENTERS, "factory_name")).toBe(false);

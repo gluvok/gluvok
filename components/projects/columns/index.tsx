@@ -20,7 +20,6 @@ import { getCustomersColumns } from "./customers";
 import { getEntriesColumns } from "./entries";
 import { getWeighmentsColumns } from "./weighments";
 import { getUsersColumns } from "./users";
-import { getSettingsColumns } from "./settings";
 
 export interface ColumnActionsCallbacks<T = EntityRecord> {
   onEdit: (item: T) => void;
@@ -45,8 +44,6 @@ function getSpecificColumns<T extends RowData>(
       return getWeighmentsColumns<T>();
     case ProjectSlug.USERS:
       return getUsersColumns<T>();
-    case ProjectSlug.SETTINGS:
-      return getSettingsColumns<T>();
 
     default:
       return [];
@@ -72,12 +69,8 @@ export function getProjectColumns<T extends EntityRecord = EntityRecord>(
     getActionsColumn<T>(projectSlug, primaryIdKey, projectName, callbacks, permissions),
   ];
 
-  return columns
-    .filter((col) => {
-      const colKey = (col.id || (col as { accessorKey?: string }).accessorKey) as string;
-      return isColumnVisible(userRole, projectSlug, colKey);
-    })
-    .map((column) =>
-      projectSlug === ProjectSlug.SETTINGS ? { ...column, enableSorting: false } : column,
-    );
+  return columns.filter((col) => {
+    const colKey = (col.id || (col as { accessorKey?: string }).accessorKey) as string;
+    return isColumnVisible(userRole, projectSlug, colKey);
+  });
 }

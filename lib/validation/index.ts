@@ -12,5 +12,3 @@ export * from "./weighments";
 export * from "./users";
 export * from "./registry";
 export * from "./uniqueness";
-export * from "./settings";
-export * from "./dynamic";

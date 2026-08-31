@@ -22,14 +22,17 @@ export const PATCH = withAuth(
       return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
     }
 
-    const { name } = parsed.data;
+    const { name, auto_approve } = parsed.data;
+
+    const updates: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (name !== undefined) updates.name = name;
+    if (auto_approve !== undefined) updates.auto_approve = auto_approve;
 
     const query = client
       .from("centers")
-      .update({
-        ...(name ? { name } : {}),
-        updated_at: new Date().toISOString(),
-      })
+      .update(updates)
       .eq("id", entityId)
       .is("deleted_at", null)
       .eq("factory_id", factoryId);

@@ -43,10 +43,13 @@ describe("Entries Service", () => {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         is: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: { id: 1 }, error: null }),
+        maybeSingle: vi
+          .fn()
+          .mockResolvedValue({ data: { id: 1, auto_approve: false }, error: null }),
       });
 
-      await expect(validateCenterBelongsToFactory(mockClient, 1, 10)).resolves.toBeUndefined();
+      const res = await validateCenterBelongsToFactory(mockClient, 1, 10);
+      expect(res).toEqual({ id: 1, auto_approve: false });
     });
 
     it("throws SELECTED_CENTER_NOT_FOUND when center is missing", async () => {
@@ -101,6 +104,7 @@ describe("Entries Service", () => {
         customer_id: 2,
         factory_id: 10,
         status: EntryStatus.PENDING,
+        auto_approved: false,
         images: ["http://img1.jpg"],
       };
 
@@ -110,7 +114,9 @@ describe("Entries Service", () => {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
             is: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: { id: 1 }, error: null }),
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: { id: 1, auto_approve: false }, error: null }),
           };
         }
         if (table === "customers") {
@@ -160,6 +166,7 @@ describe("Entries Service", () => {
         customer_id: null,
         factory_id: 10,
         status: EntryStatus.APPROVED,
+        auto_approved: true,
         images: ["http://img1.jpg"],
       };
 
@@ -169,7 +176,9 @@ describe("Entries Service", () => {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
             is: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: { id: 1 }, error: null }),
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: { id: 1, auto_approve: true }, error: null }),
           };
         }
         if (table === "entries") {
@@ -213,7 +222,9 @@ describe("Entries Service", () => {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
             is: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: { id: 1 }, error: null }),
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: { id: 1, auto_approve: false }, error: null }),
           };
         }
         if (table === "entries") {

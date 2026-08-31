@@ -16,17 +16,17 @@ export interface AuthenticatedUserRecord {
   password_hash: string;
   role: Role;
   factory_id: number;
-  aadhar_number?: string | null;
   token_version?: number;
+  factories?: { name?: string };
 }
 
 export interface UserSessionPayload {
   id: number;
   username: string;
   name: string;
-  aadhar_number: string | null;
   role: Role;
   factory_id: number;
+  factory_name?: string;
 }
 
 export interface AuthTokens {
@@ -42,14 +42,17 @@ export interface CredentialsVerificationResult {
   userPayload: UserSessionPayload;
 }
 
-export function toUserSessionPayload(user: AuthenticatedUserRecord): UserSessionPayload {
+export function toUserSessionPayload(
+  user: AuthenticatedUserRecord,
+  factoryName?: string,
+): UserSessionPayload {
   return {
     id: user.id,
     username: user.username,
     name: user.name,
-    aadhar_number: user.aadhar_number ?? null,
     role: user.role,
     factory_id: user.factory_id,
+    factory_name: factoryName || user.factories?.name,
   };
 }
 
@@ -59,7 +62,7 @@ export function toUserSessionPayload(user: AuthenticatedUserRecord): UserSession
 export async function fetchActiveUserById(userId: number): Promise<AuthenticatedUserRecord | null> {
   const { data: user, error } = await db
     .from("users")
-    .select("*")
+    .select("*, factories(name)")
     .eq("id", userId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -84,7 +87,7 @@ export async function verifyUserCredentials(
 
   const { data: user, error: userError } = await db
     .from("users")
-    .select("*")
+    .select("*, factories(name)")
     .eq("username", username)
     .is("deleted_at", null)
     .maybeSingle();
@@ -101,7 +104,7 @@ export async function verifyUserCredentials(
   return {
     result: {
       user,
-      userPayload: toUserSessionPayload(user),
+      userPayload: toUserSessionPayload(user, user.factories?.name),
     },
   };
 }
@@ -119,6 +122,7 @@ export async function generateAuthTokens(user: AuthenticatedUserRecord): Promise
     name: user.name,
     role: user.role,
     factory_id: factoryId,
+    factory_name: user.factories?.name,
   });
   const accessExpiresIn = getTokenExpiresIn(accessToken);
 

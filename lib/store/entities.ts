@@ -8,7 +8,7 @@
 import { create } from "zustand";
 import axios from "axios";
 import { ProjectSlug } from "@/lib/constants/enums";
-import { insertRow, updateRow, deleteRow, deleteRows } from "@/lib/services";
+import { insertRow, updateRow, deleteRow, deleteRows } from "@/lib/services/common";
 
 export interface IdNamePair {
   id: number;

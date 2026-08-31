@@ -59,10 +59,8 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       const val = row.getValue("weight") as number;
       return <div className="font-mono text-xs font-semibold text-foreground">{val}</div>;
     }),
-    createCustomColumn("status", "Status", ShieldCheck, (val, row) => {
-      const rec = row as Record<string, unknown>;
+    createCustomColumn("status", "Status", ShieldCheck, (val) => {
       const status = String(val).toLowerCase();
-      const isAutoApproved = Boolean(rec.auto_approved);
       let statusClass = "bg-muted text-muted-foreground border border-border";
       const Icon = getStatusIcon(status);
       if (status === EntryStatus.APPROVED) {
@@ -76,23 +74,38 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
           "bg-rose-50 text-rose-700 border border-rose-200/50 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/30";
       }
       return (
-        <div className="flex items-center gap-1.5">
-          <span
-            className={cn(
-              badgeBaseClass,
-              "capitalize inline-flex items-center gap-1.5",
-              statusClass,
-            )}
-          >
-            <Icon className="h-3 w-3 shrink-0" />
-            {status}
-          </span>
-          {isAutoApproved && (
-            <span className="text-2xs font-semibold px-1 rounded bg-purple-50 text-purple-700 border border-purple-200/60 dark:bg-purple-950/30 dark:text-purple-300">
-              Auto
-            </span>
+        <span
+          className={cn(badgeBaseClass, "capitalize inline-flex items-center gap-1.5", statusClass)}
+        >
+          <Icon className="h-3 w-3 shrink-0" />
+          {status}
+        </span>
+      );
+    }),
+    createCustomColumn("auto_approved", "Auto Approved", ShieldCheck, (val) => {
+      const isAuto = val === true || val === "true";
+      return (
+        <span
+          className={cn(
+            badgeBaseClass,
+            "inline-flex items-center gap-1.5",
+            isAuto
+              ? "bg-purple-50 text-purple-700 border border-purple-200/50 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800/30"
+              : "bg-muted text-muted-foreground border border-border",
           )}
-        </div>
+        >
+          {isAuto ? (
+            <>
+              <CheckCircle2 className="h-3 w-3 shrink-0 text-purple-600 dark:text-purple-400" />
+              Auto
+            </>
+          ) : (
+            <>
+              <XCircle className="h-3 w-3 shrink-0 text-muted-foreground" />
+              Manual
+            </>
+          )}
+        </span>
       );
     }),
     createCustomColumn("edited", "Edited", Pencil, (val) => {

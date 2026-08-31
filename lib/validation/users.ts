@@ -6,6 +6,12 @@
 import { z } from "zod";
 import { Role } from "@/lib/constants/enums";
 
+export const MANAGEABLE_ROLES = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE] as const;
+
+export const manageableRoleSchema = z.enum(MANAGEABLE_ROLES, {
+  message: "Invalid role selected. Hardware accounts cannot be created or modified manually.",
+});
+
 export const addUserSchema = z
   .object({
     name: z.string().min(1, "Name is required"),
@@ -18,7 +24,7 @@ export const addUserSchema = z
       ),
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string().min(1, "Confirm password is required"),
-    role: z.nativeEnum(Role, { message: "Invalid role selected" }),
+    role: manageableRoleSchema,
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -28,7 +34,7 @@ export const addUserSchema = z
 export const editUserSchema = z
   .object({
     name: z.string().min(1, "Name cannot be empty").optional(),
-    role: z.nativeEnum(Role).optional(),
+    role: manageableRoleSchema.optional(),
     password: z.string().optional(),
     confirmPassword: z.string().optional(),
   })

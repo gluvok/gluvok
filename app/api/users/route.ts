@@ -77,7 +77,7 @@ export const POST = withAuth(async (req, user, client) => {
   if (existingUser) return apiError(ApiErrorMessage.USERNAME_TAKEN, StatusCodes.BAD_REQUEST);
 
   // RBAC Hierarchy Verification
-  if (user.role === Role.MANAGER && ![Role.OPERATOR, Role.BASE, Role.HARDWARE].includes(role)) {
+  if (user.role === Role.MANAGER && ![Role.OPERATOR, Role.BASE].includes(role)) {
     return forbiddenError();
   }
 

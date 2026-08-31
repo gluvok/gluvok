@@ -103,6 +103,34 @@ describe("Entries route handlers (/api/entries)", () => {
       expect(json.data[0].customer_name).toBe("Customer A");
       expect(json.pagination.total).toBe(1);
     });
+
+    it("filters entries by auto_approved and edited boolean flags", async () => {
+      const eqMock = vi.fn();
+      const mockQuery: Record<string, unknown> = {};
+      mockQuery.select = vi.fn(() => mockQuery);
+      mockQuery.eq = eqMock.mockImplementation(() => mockQuery);
+      mockQuery.is = vi.fn(() => mockQuery);
+      mockQuery.order = vi.fn(() => mockQuery);
+      mockQuery.range = vi.fn().mockResolvedValue({
+        data: [],
+        count: 0,
+        error: null,
+      });
+
+      const mockDb = {
+        from: vi.fn(() => mockQuery),
+      };
+
+      const req = new NextRequest(
+        "http://localhost/api/entries?auto_approved=true&edited=false&page=1&limit=10",
+      );
+      const handler = GET as unknown as RawHandler;
+      const response = await handler(req, sampleUser, mockDb, context);
+
+      expect(response.status).toBe(200);
+      expect(eqMock).toHaveBeenCalledWith("auto_approved", true);
+      expect(eqMock).toHaveBeenCalledWith("edited", false);
+    });
   });
 
   describe("POST /api/entries", () => {
@@ -184,6 +212,58 @@ describe("Entries route handlers (/api/entries)", () => {
           weight: 12000,
           centerId: 1,
           status: EntryStatus.PENDING,
+        }),
+      );
+    });
+
+    it("creates AUTOMATIC entry when caller has Role.HARDWARE", async () => {
+      const hardwareUser = {
+        sub: "5",
+        username: "hardware_scale_1",
+        role: Role.HARDWARE,
+        factory_id: 1,
+      };
+
+      const createdEntry = {
+        id: 20,
+        detected_vehicle_number: "KA01AB1234",
+        vehicle_number: "KA01AB1234",
+        weight: 15000,
+        center_id: 1,
+        user_id: 5,
+        factory_id: 1,
+        type: EntryType.AUTOMATIC,
+        status: EntryStatus.PENDING,
+      };
+      mockCreateEntry.mockResolvedValue(createdEntry);
+
+      const req = new NextRequest("http://localhost/api/entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          detected_vehicle_number: "KA01AB1234",
+          vehicle_number: "KA01AB1234",
+          weight: 15000,
+          center_id: 1,
+        }),
+      });
+
+      const handler = POST as unknown as RawHandler;
+      const response = await handler(req, hardwareUser, {}, context);
+
+      expect(response.status).toBe(201);
+      const json = await response.json();
+      expect(json.data.type).toBe(EntryType.AUTOMATIC);
+      expect(mockCreateEntry).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          factoryId: 1,
+          userId: 5,
+          type: EntryType.AUTOMATIC,
+          detectedVehicleNumber: "KA01AB1234",
+          vehicleNumber: "KA01AB1234",
+          weight: 15000,
+          centerId: 1,
         }),
       );
     });

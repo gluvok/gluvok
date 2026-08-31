@@ -11,6 +11,7 @@ import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { EntryStatus, EntryType, FieldType } from "@/lib/constants/enums";
 import { BaseCombobox } from "@/components/combobox/base";
 import { getTypeIcon, getStatusIcon } from "@/lib/fields/helpers";
+import { ShieldCheck, Pencil } from "lucide-react";
 import { DateRangeFilter } from "./date-range-filter";
 import { CenterFilter, CustomerFilter, UserFilter, setTableColumnFilter } from "./common";
 
@@ -18,10 +19,24 @@ interface EntriesFiltersProps<TData extends RowData> {
   table: ReactTable<ProjectTableFeatures, TData>;
 }
 
+const AUTO_APPROVED_OPTIONS = [
+  { value: "all", label: "All Auto Approve" },
+  { value: "true", label: "Auto Approved" },
+  { value: "false", label: "Manual" },
+];
+
+const EDITED_OPTIONS = [
+  { value: "all", label: "All Edit Statuses" },
+  { value: "true", label: "Edited" },
+  { value: "false", label: "Original" },
+];
+
 export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersProps<TData>) {
   const columnFilters = table.state.columnFilters;
   const currentStatus = columnFilters.find((f) => f.id === "status")?.value;
   const currentType = columnFilters.find((f) => f.id === "type")?.value;
+  const currentAutoApproved = columnFilters.find((f) => f.id === "auto_approved")?.value;
+  const currentEdited = columnFilters.find((f) => f.id === "edited")?.value;
 
   const statusOptions = React.useMemo(() => {
     return [
@@ -69,6 +84,34 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
         icon={getTypeIcon(currentType as string)}
         className="w-auto"
         id="filter-type-combobox"
+      />
+
+      {/* Auto Approved */}
+      <BaseCombobox
+        type="auto_approved"
+        value={currentAutoApproved !== undefined ? String(currentAutoApproved) : "all"}
+        onChange={(val) =>
+          setTableColumnFilter(table, "auto_approved", val === "all" ? undefined : val)
+        }
+        data={AUTO_APPROVED_OPTIONS}
+        placeholder="All Auto Approve"
+        searchPlaceholder="Search auto approve..."
+        icon={ShieldCheck}
+        className="w-auto"
+        id="filter-entries-auto-approved-combobox"
+      />
+
+      {/* Edited */}
+      <BaseCombobox
+        type="edited"
+        value={currentEdited !== undefined ? String(currentEdited) : "all"}
+        onChange={(val) => setTableColumnFilter(table, "edited", val === "all" ? undefined : val)}
+        data={EDITED_OPTIONS}
+        placeholder="All Edit Statuses"
+        searchPlaceholder="Search edit status..."
+        icon={Pencil}
+        className="w-auto"
+        id="filter-entries-edited-combobox"
       />
 
       {/* Center */}

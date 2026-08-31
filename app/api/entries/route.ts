@@ -8,10 +8,10 @@ import {
   hasPermission,
   parseBulkIds,
 } from "@/db/helpers";
-import { EntryStatus, EntryType, ProjectSlug, PermissionKey } from "@/lib/constants/enums";
+import { EntryStatus, EntryType, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { createEntry } from "@/lib/services/entries";
-import { addEntrySchema } from "@/lib/validation";
+import { addEntrySchema, addDeviceEntrySchema } from "@/lib/validation";
 
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.READ)) return forbiddenError();
@@ -37,12 +37,18 @@ export const GET = withAuth(async (req, user, client) => {
     center_id: req.nextUrl.searchParams.get("center_id"),
     user_id: req.nextUrl.searchParams.get("user_id"),
     customer_id: req.nextUrl.searchParams.get("customer_id"),
+    auto_approved: req.nextUrl.searchParams.get("auto_approved"),
+    edited: req.nextUrl.searchParams.get("edited"),
   };
 
   for (const [key, val] of Object.entries(filterParams)) {
     if (val && val !== "all") {
-      const num = Number(val);
-      query = query.eq(key, isNaN(num) ? val : num);
+      if (val === "true" || val === "false") {
+        query = query.eq(key, val === "true");
+      } else {
+        const num = Number(val);
+        query = query.eq(key, isNaN(num) ? val : num);
+      }
     }
   }
 
@@ -89,9 +95,36 @@ export const GET = withAuth(async (req, user, client) => {
 });
 
 export const POST = withAuth(async (req, user, client) => {
-  if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.CREATE)) return forbiddenError();
   try {
+    const isHardware = user.role === Role.HARDWARE;
     const body = await req.json();
+
+    if (isHardware) {
+      const parsed = addDeviceEntrySchema.safeParse(body);
+      if (!parsed.success) {
+        return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
+      }
+
+      const { detected_vehicle_number, vehicle_number, weight, center_id, status, images } =
+        parsed.data;
+
+      const newEntry = await createEntry(client, {
+        factoryId: user.factory_id,
+        userId: parseInt(user.sub, 10),
+        type: EntryType.AUTOMATIC,
+        detectedVehicleNumber: detected_vehicle_number,
+        vehicleNumber: vehicle_number,
+        weight,
+        centerId: center_id,
+        status,
+        images,
+      });
+
+      return NextResponse.json({ data: newEntry }, { status: StatusCodes.CREATED });
+    }
+
+    if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.CREATE)) return forbiddenError();
+
     const parsed = addEntrySchema.safeParse(body);
     if (!parsed.success) {
       return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);

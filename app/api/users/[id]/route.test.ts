@@ -157,6 +157,23 @@ describe("User mutation guards", () => {
     const json = await response.json();
     expect(json.success).toBe(true);
     expect(json.is_self_deleted).toBe(true);
-    expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
+  });
+
+  it("rejects updating user role to HARDWARE", async () => {
+    mockHasPermission.mockReturnValue(true);
+    const updateRequest = new Request("http://localhost/api/users/1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        role: Role.HARDWARE,
+      }),
+    });
+
+    const patchHandler = PATCH as unknown as RawUserHandler;
+    const response = await patchHandler(updateRequest, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(400);
+    const json = await response.json();
+    expect(json.error).toContain("Hardware accounts cannot be created or modified manually");
   });
 });

@@ -11,30 +11,31 @@ import {
 } from "@/db/helpers";
 import { WeighmentType, Unit, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 
+const DIRECT_FILTERS: Record<string, string> = {
+  type: "type",
+  unit: "unit",
+  rate_id: "rate_id",
+  in_center_id: "in_entry.center_id",
+  out_center_id: "out_entry.center_id",
+  in_user_id: "in_entry.user_id",
+  out_user_id: "out_entry.user_id",
+  in_customer_id: "in_entry.customer_id",
+  out_customer_id: "out_entry.customer_id",
+};
+
+const DUAL_ENTRY_FILTERS = ["center_id", "user_id", "customer_id"] as const;
+
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.READ)) return forbiddenError();
-  const pagination = getPaginationParams(req.nextUrl);
-  const search = req.nextUrl.searchParams.get("search");
-  const typeParam = req.nextUrl.searchParams.get("type");
-  const unitParam = req.nextUrl.searchParams.get("unit");
-  const rateIdParam = req.nextUrl.searchParams.get("rate_id");
-  const centerIdParam = req.nextUrl.searchParams.get("center_id");
-  const userIdParam = req.nextUrl.searchParams.get("user_id");
-  const customerIdParam = req.nextUrl.searchParams.get("customer_id");
-  const inCenterIdParam = req.nextUrl.searchParams.get("in_center_id");
-  const outCenterIdParam = req.nextUrl.searchParams.get("out_center_id");
-  const inUserIdParam = req.nextUrl.searchParams.get("in_user_id");
-  const outUserIdParam = req.nextUrl.searchParams.get("out_user_id");
-  const inCustomerIdParam = req.nextUrl.searchParams.get("in_customer_id");
-  const outCustomerIdParam = req.nextUrl.searchParams.get("out_customer_id");
-  const sortColumn = req.nextUrl.searchParams.get("sort_column") || "created_at";
-  const sortDesc = req.nextUrl.searchParams.has("sort_desc")
-    ? req.nextUrl.searchParams.get("sort_desc") === "true"
-    : true;
-  const startDateParam = req.nextUrl.searchParams.get("start_date");
-  const endDateParam = req.nextUrl.searchParams.get("end_date");
 
-  // Query weighments joined with in_entry and out_entry and their related centers, users, customers
+  const pagination = getPaginationParams(req.nextUrl);
+  const searchParams = req.nextUrl.searchParams;
+  const search = searchParams.get("search");
+  const sortColumn = searchParams.get("sort_column") || "created_at";
+  const sortDesc = searchParams.get("sort_desc") !== "false";
+  const startDate = searchParams.get("start_date");
+  const endDate = searchParams.get("end_date");
+
   let query = client
     .from("weighments")
     .select(
@@ -44,112 +45,71 @@ export const GET = withAuth(async (req, user, client) => {
     .eq("in_entry.factory_id", user.factory_id!)
     .is("deleted_at", null);
 
+  // 1. Role.BASE scoping
   if (user.role === Role.BASE) {
     const userId = parseInt(user.sub, 10);
     const customerIds = await getBaseUserCustomerIds(client, userId);
-    if (customerIds.length > 0) {
-      query = query.or(
-        `in_entry.customer_id.in.(${customerIds.join(",")}),out_entry.customer_id.in.(${customerIds.join(",")}),in_entry.user_id.eq.${userId},out_entry.user_id.eq.${userId}`,
-      );
-    } else {
-      query = query.or(`in_entry.user_id.eq.${userId},out_entry.user_id.eq.${userId}`);
+    const orClauses = [
+      `in_entry.user_id.eq.${userId}`,
+      `out_entry.user_id.eq.${userId}`,
+      ...(customerIds.length > 0
+        ? [
+            `in_entry.customer_id.in.(${customerIds.join(",")})`,
+            `out_entry.customer_id.in.(${customerIds.join(",")})`,
+          ]
+        : []),
+    ];
+    query = query.or(orClauses.join(","));
+  }
+
+  // 2. Direct Column Filters (direct table column or nested entry column)
+  for (const [param, col] of Object.entries(DIRECT_FILTERS)) {
+    const val = searchParams.get(param);
+    if (val && val !== "all") {
+      const num = Number(val);
+      query = query.eq(col, isNaN(num) ? val : num);
     }
   }
 
-  if (typeParam && typeParam !== "all") {
-    query = query.eq("type", typeParam);
+  // 3. Dual in/out Entry Filters (matches either in_entry or out_entry)
+  for (const key of DUAL_ENTRY_FILTERS) {
+    const val = searchParams.get(key);
+    if (val && val !== "all") {
+      const id = Number(val);
+      if (!isNaN(id)) {
+        query = query.or(`in_entry.${key}.eq.${id},out_entry.${key}.eq.${id}`);
+      }
+    }
   }
 
-  if (unitParam && unitParam !== "all") {
-    query = query.eq("unit", unitParam);
-  }
+  // 4. Date range filters
+  if (startDate) query = query.gte("created_at", startDate);
+  if (endDate) query = query.lte("created_at", endDate);
 
-  if (rateIdParam && rateIdParam !== "all") {
-    query = query.eq("rate_id", Number(rateIdParam));
-  }
-
-  if (centerIdParam && centerIdParam !== "all") {
-    const cId = Number(centerIdParam);
-    query = query.or(`in_entry.center_id.eq.${cId},out_entry.center_id.eq.${cId}`);
-  }
-
-  if (userIdParam && userIdParam !== "all") {
-    const uId = Number(userIdParam);
-    query = query.or(`in_entry.user_id.eq.${uId},out_entry.user_id.eq.${uId}`);
-  }
-
-  if (customerIdParam && customerIdParam !== "all") {
-    const custId = Number(customerIdParam);
-    query = query.or(`in_entry.customer_id.eq.${custId},out_entry.customer_id.eq.${custId}`);
-  }
-
-  if (inCenterIdParam && inCenterIdParam !== "all") {
-    query = query.eq("in_entry.center_id", Number(inCenterIdParam));
-  }
-
-  if (outCenterIdParam && outCenterIdParam !== "all") {
-    query = query.eq("out_entry.center_id", Number(outCenterIdParam));
-  }
-
-  if (inUserIdParam && inUserIdParam !== "all") {
-    query = query.eq("in_entry.user_id", Number(inUserIdParam));
-  }
-
-  if (outUserIdParam && outUserIdParam !== "all") {
-    query = query.eq("out_entry.user_id", Number(outUserIdParam));
-  }
-
-  if (inCustomerIdParam && inCustomerIdParam !== "all") {
-    query = query.eq("in_entry.customer_id", Number(inCustomerIdParam));
-  }
-
-  if (outCustomerIdParam && outCustomerIdParam !== "all") {
-    query = query.eq("out_entry.customer_id", Number(outCustomerIdParam));
-  }
-
-  if (startDateParam) {
-    query = query.gte("created_at", startDateParam);
-  }
-
-  if (endDateParam) {
-    query = query.lte("created_at", endDateParam);
-  }
-
+  // 5. Search
   if (search) {
     const searchNum = parseInt(search, 10);
-    if (!isNaN(searchNum)) {
-      query = query.or(
-        `in_entry_id.eq.${searchNum},out_entry_id.eq.${searchNum},in_entry.vehicle_number.ilike.%${search}%`,
-      );
-    } else {
-      query = query.or(`in_entry.vehicle_number.ilike.%${search}%`);
-    }
+    query = !isNaN(searchNum)
+      ? query.or(
+          `in_entry_id.eq.${searchNum},out_entry_id.eq.${searchNum},in_entry.vehicle_number.ilike.%${search}%`,
+        )
+      : query.or(`in_entry.vehicle_number.ilike.%${search}%`);
   }
 
-  // Non-deprecated PostgreSQL ordering (including Computed Columns: gross_weight, tare_weight, net_weight)
-  if (
-    sortColumn === "created_at" ||
-    sortColumn === "id" ||
-    sortColumn === "unit" ||
-    sortColumn === "in_entry_id" ||
-    sortColumn === "out_entry_id" ||
-    sortColumn === "gross_weight" ||
-    sortColumn === "tare_weight" ||
-    sortColumn === "net_weight"
-  ) {
-    query = query.order(sortColumn, { ascending: !sortDesc });
-  } else if (sortColumn === "in_entry_created_at") {
-    query = query.order("in_entry.created_at", {
-      ascending: !sortDesc,
-    });
-  } else if (sortColumn === "out_entry_created_at") {
-    query = query.order("out_entry.created_at", {
-      ascending: !sortDesc,
-    });
-  } else {
-    query = query.order("created_at", { ascending: false });
-  }
+  // 6. Sorting
+  const entrySortPrefix = sortColumn.startsWith("in_entry_")
+    ? "in_entry."
+    : sortColumn.startsWith("out_entry_")
+      ? "out_entry."
+      : "";
 
+  const effectiveSortColumn = entrySortPrefix
+    ? `${entrySortPrefix}${sortColumn.replace(/^(in|out)_entry_/, "")}`
+    : sortColumn;
+
+  query = query.order(effectiveSortColumn, { ascending: !sortDesc });
+
+  // 7. Pagination & Execution
   const { page, limit, offset } = pagination;
   const { data, count, error } = await query.range(offset, offset + limit - 1);
 
@@ -158,7 +118,7 @@ export const GET = withAuth(async (req, user, client) => {
     return apiError(error.message || "Database query failed", StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
-  // Format response rows with computed derived fields
+  // 8. Format response rows with computed derived fields
   const formattedData = (data || []).map((row: Record<string, unknown>) => {
     const inEntry = (row["in_entry"] as Record<string, unknown>) || {};
     const outEntry = (row["out_entry"] as Record<string, unknown>) || {};
@@ -221,22 +181,15 @@ export const GET = withAuth(async (req, user, client) => {
 export const DELETE = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.DELETE)) return forbiddenError();
 
-  let body;
-  try {
-    body = await req.json();
-  } catch {
-    return apiError("Please provide valid IDs to delete.", StatusCodes.BAD_REQUEST);
-  }
-
-  const ids = parseBulkIds(body);
-  if (!ids || ids.length === 0) {
+  const ids = parseBulkIds(await req.json().catch(() => null));
+  if (!ids) {
     return apiError("Please provide valid IDs to delete.", StatusCodes.BAD_REQUEST);
   }
 
   // 1. Query target weighments with factory verification
   const { data: weighments, error: fetchErr } = await client
     .from("weighments")
-    .select(`*, in_entry:entries!in_entry_id(factory_id)`)
+    .select(`id, in_entry_id, out_entry_id, in_entry:entries!in_entry_id(factory_id)`)
     .in("id", ids)
     .is("deleted_at", null);
 
@@ -245,25 +198,22 @@ export const DELETE = withAuth(async (req, user, client) => {
     return apiError("Failed to delete weighments", StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
-  const validWeighments = (weighments || []).filter((w: Record<string, unknown>) => {
-    const inEntry = w["in_entry"] as Record<string, unknown> | undefined;
-    return inEntry?.factory_id === user.factory_id!;
-  });
+  const validWeighments = (weighments || []).filter(
+    (w: Record<string, unknown>) =>
+      (w["in_entry"] as { factory_id?: number } | undefined)?.factory_id === user.factory_id,
+  );
 
   if (validWeighments.length === 0) {
     return apiError("One or more weighments not found", StatusCodes.NOT_FOUND);
   }
 
   const now = new Date().toISOString();
-  const validIds = validWeighments.map((w: Record<string, unknown>) => w.id as number);
+  const validIds = validWeighments.map((w) => w.id as number);
 
   // 2. Soft delete weighment records
   const { error: deleteErr } = await client
     .from("weighments")
-    .update({
-      deleted_at: now,
-      updated_at: now,
-    })
+    .update({ deleted_at: now, updated_at: now })
     .in("id", validIds)
     .is("deleted_at", null);
 
@@ -273,22 +223,19 @@ export const DELETE = withAuth(async (req, user, client) => {
   }
 
   // 3. Cascade soft delete to all linked in/out entries
-  const linkedEntryIds = validWeighments
-    .flatMap((w: Record<string, unknown>) => [w.in_entry_id as number, w.out_entry_id as number])
-    .filter(
-      (id: number | null | undefined): id is number =>
-        id !== null && id !== undefined && Number(id) > 0,
-    );
+  const linkedEntryIds = [
+    ...new Set(
+      validWeighments
+        .flatMap((w) => [w.in_entry_id as number, w.out_entry_id as number])
+        .filter((id): id is number => typeof id === "number" && id > 0),
+    ),
+  ];
 
-  const uniqueEntryIds = [...new Set(linkedEntryIds)];
-  if (uniqueEntryIds.length > 0) {
+  if (linkedEntryIds.length > 0) {
     const { error: cascadeErr } = await client
       .from("entries")
-      .update({
-        deleted_at: now,
-        updated_at: now,
-      })
-      .in("id", uniqueEntryIds)
+      .update({ deleted_at: now, updated_at: now })
+      .in("id", linkedEntryIds)
       .eq("factory_id", user.factory_id)
       .is("deleted_at", null);
 

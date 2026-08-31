@@ -302,16 +302,3 @@ export function formatEntityResponse<T extends Record<string, unknown>>(
   return NextResponse.json({ data: formatted, ...extra }, { status });
 }
 
-export async function getBaseUserCustomerIds(
-  client: typeof supabase,
-  userId: number,
-): Promise<number[]> {
-  const { data } = await client
-    .from("customers")
-    .select("id")
-    .eq("user_id", userId)
-    .is("deleted_at", null);
-
-  return (data || []).map((c: { id: number }) => c.id);
-}
-

@@ -132,14 +132,14 @@ describe("Entries route handlers (/api/entries)", () => {
       expect(eqMock).toHaveBeenCalledWith("edited", false);
     });
 
-    it("scopes entries query by customer_id for Role.BASE users", async () => {
-      const inMock = vi.fn();
+    it("scopes entries query with customers!inner and customers.user_id for Role.BASE users", async () => {
+      const selectMock = vi.fn();
+      const eqMock = vi.fn();
       const mockQuery: Record<string, unknown> = {};
-      mockQuery.select = vi.fn(() => mockQuery);
-      mockQuery.eq = vi.fn(() => mockQuery);
+      mockQuery.select = selectMock.mockImplementation(() => mockQuery);
+      mockQuery.eq = eqMock.mockImplementation(() => mockQuery);
       mockQuery.is = vi.fn(() => mockQuery);
       mockQuery.order = vi.fn(() => mockQuery);
-      mockQuery.in = inMock.mockImplementation(() => mockQuery);
       mockQuery.range = vi.fn().mockResolvedValue({
         data: [{ id: 5, vehicle_number: "BASE123" }],
         count: 1,
@@ -147,18 +147,7 @@ describe("Entries route handlers (/api/entries)", () => {
       });
 
       const mockDb = {
-        from: vi.fn((table: string) => {
-          if (table === "customers") {
-            return {
-              select: vi.fn(() => ({
-                eq: vi.fn(() => ({
-                  is: vi.fn().mockResolvedValue({ data: [{ id: 42 }] }),
-                })),
-              })),
-            };
-          }
-          return mockQuery;
-        }),
+        from: vi.fn(() => mockQuery),
       };
 
       const baseUser = {
@@ -173,7 +162,11 @@ describe("Entries route handlers (/api/entries)", () => {
       const response = await handler(req, baseUser, mockDb, context);
 
       expect(response.status).toBe(200);
-      expect(inMock).toHaveBeenCalledWith("customer_id", [42]);
+      expect(selectMock).toHaveBeenCalledWith(
+        "*, centers(name), users(name), customers!inner(name, user_id)",
+        { count: "exact" },
+      );
+      expect(eqMock).toHaveBeenCalledWith("customers.user_id", 10);
     });
   });
 

@@ -7,7 +7,6 @@ import {
   forbiddenError,
   hasPermission,
   parseBulkIds,
-  getBaseUserCustomerIds,
 } from "@/db/helpers";
 import { ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { formatWeighmentRecord } from "@/lib/services/weighments";
@@ -49,22 +48,14 @@ export const GET = withAuth(async (req, user, client) => {
   if (startDate) query = query.gte("created_at", startDate);
   if (endDate) query = query.lte("created_at", endDate);
 
-  // 2. Role.BASE Scoping (resolved via customer entry IDs)
+  // 2. Role.BASE Scoping (resolved via entries.customers inner join)
   if (user.role === Role.BASE) {
     const userId = parseInt(user.sub, 10);
-    const customerIds = await getBaseUserCustomerIds(client, userId);
-    if (customerIds.length === 0) {
-      return NextResponse.json({
-        data: [],
-        pagination: { page: pagination.page, limit: pagination.limit, total: 0 },
-      });
-    }
-
     const { data: baseEntries } = await client
       .from("entries")
-      .select("id")
+      .select("id, customers!inner(user_id)")
       .eq("factory_id", user.factory_id!)
-      .in("customer_id", customerIds)
+      .eq("customers.user_id", userId)
       .is("deleted_at", null);
 
     const baseEntryIds = (baseEntries || []).map((e: { id: number }) => e.id);

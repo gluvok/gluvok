@@ -6,7 +6,6 @@ import {
   forbiddenError,
   hasPermission,
   StatusCodes,
-  getBaseUserCustomerIds,
 } from "@/db/helpers";
 import { ProjectSlug, PermissionKey, EntryStatus, EntryType, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
@@ -24,7 +23,7 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
 
   const { data, error } = await client
     .from("entries")
-    .select(`*, centers(name), users(name), customers(name)`)
+    .select(`*, centers(name), users(name), customers(name, user_id)`)
     .eq("id", entryId)
     .eq("factory_id", user.factory_id!)
     .is("deleted_at", null)
@@ -36,10 +35,8 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
 
   if (user.role === Role.BASE) {
     const userId = parseInt(user.sub, 10);
-    const customerIds = await getBaseUserCustomerIds(client, userId);
-    const isOwnCustomer =
-      data.customer_id !== null && customerIds.includes(Number(data.customer_id));
-    if (!isOwnCustomer) {
+    const customer = data.customers as { user_id?: number } | undefined;
+    if (customer?.user_id !== userId) {
       return apiError(ApiErrorMessage.ENTRY_NOT_FOUND, StatusCodes.NOT_FOUND);
     }
   }

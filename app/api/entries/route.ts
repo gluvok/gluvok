@@ -7,7 +7,6 @@ import {
   forbiddenError,
   hasPermission,
   parseBulkIds,
-  getBaseUserCustomerIds,
 } from "@/db/helpers";
 import { EntryStatus, EntryType, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
@@ -25,23 +24,20 @@ export const GET = withAuth(async (req, user, client) => {
     ? req.nextUrl.searchParams.get("sort_desc") === "true"
     : true;
 
+  const selectString =
+    user.role === Role.BASE
+      ? `*, centers(name), users(name), customers!inner(name, user_id)`
+      : `*, centers(name), users(name), customers(name)`;
+
   let query = client
     .from("entries")
-    .select(`*, centers(name), users(name), customers(name)`, { count: "exact" })
+    .select(selectString, { count: "exact" })
     .eq("factory_id", user.factory_id)
     .is("deleted_at", null)
     .order(sortColumn, { ascending: !sortDesc });
 
   if (user.role === Role.BASE) {
-    const userId = parseInt(user.sub, 10);
-    const customerIds = await getBaseUserCustomerIds(client, userId);
-    if (customerIds.length === 0) {
-      return NextResponse.json({
-        data: [],
-        pagination: { page: pagination.page, limit: pagination.limit, total: 0 },
-      });
-    }
-    query = query.in("customer_id", customerIds);
+    query = query.eq("customers.user_id", parseInt(user.sub, 10));
   }
 
   const filterParams: Record<string, string | null> = {

@@ -6,7 +6,6 @@ import {
   StatusCodes,
   forbiddenError,
   hasPermission,
-  getBaseUserCustomerIds,
 } from "@/db/helpers";
 import { WeighmentType, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { editWeighmentSchema } from "@/lib/validation";
@@ -20,7 +19,7 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
   const { data: row, error } = await client
     .from("weighments")
     .select(
-      `*, in_entry:entries!in_entry_id(*, centers(name), users(name), customers(name)), out_entry:entries!out_entry_id(*, centers(name), users(name), customers(name))`,
+      `*, in_entry:entries!in_entry_id(*, centers(name), users(name), customers(name, user_id)), out_entry:entries!out_entry_id(*, centers(name), users(name), customers(name, user_id))`,
     )
     .eq("id", weighmentId)
     .eq("in_entry.factory_id", user.factory_id!)
@@ -36,14 +35,9 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
 
   if (user.role === Role.BASE) {
     const userId = parseInt(user.sub, 10);
-    const customerIds = await getBaseUserCustomerIds(client, userId);
-    const isOwnCustomer =
-      (inEntry.customer_id !== null &&
-        inEntry.customer_id !== undefined &&
-        customerIds.includes(Number(inEntry.customer_id))) ||
-      (outEntry.customer_id !== null &&
-        outEntry.customer_id !== undefined &&
-        customerIds.includes(Number(outEntry.customer_id)));
+    const inCustomer = inEntry.customers as { user_id?: number } | undefined;
+    const outCustomer = outEntry.customers as { user_id?: number } | undefined;
+    const isOwnCustomer = inCustomer?.user_id === userId || outCustomer?.user_id === userId;
 
     if (!isOwnCustomer) {
       return apiError("Weighment not found", StatusCodes.NOT_FOUND);

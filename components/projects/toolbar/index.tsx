@@ -11,6 +11,7 @@ import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { Search, Plus, RotateCw, X, SlidersHorizontal } from "lucide-react";
 import { DataTableViewOptions } from "@/components/data-table";
@@ -32,21 +33,26 @@ interface ProjectToolbarProps<TData extends RowData> {
 
 function formatFilterChipLabel(id: string, value: unknown): string {
   const valStr = String(value);
-  const formattedId = id
-    .replace(/_/g, " ")
-    .replace(/\bid\b/gi, "")
-    .trim();
-  const capitalizedId = formattedId.charAt(0).toUpperCase() + formattedId.slice(1);
-
   if (id === "auto_approve" || id === "auto_approved") {
     return `Auto Approve: ${valStr === "true" ? "Enabled" : "Disabled"}`;
   }
   if (id === "edited") {
     return `Edit: ${valStr === "true" ? "Edited" : "Original"}`;
   }
-  if (id === "created_at" && typeof value === "object" && value !== null) {
-    return "Date: Custom Range";
+  if (id === "start_date" || id === "end_date" || id === "created_at") {
+    return "Date Filter";
   }
+
+  const formattedId = id
+    .replace(/_/g, " ")
+    .replace(/\bid\b/gi, "")
+    .trim();
+  const capitalizedId = formattedId
+    ? formattedId.charAt(0).toUpperCase() + formattedId.slice(1)
+    : id;
+
+  if (valStr === "true") return `${capitalizedId}: Yes`;
+  if (valStr === "false") return `${capitalizedId}: No`;
   return `${capitalizedId}: ${valStr}`;
 }
 
@@ -60,23 +66,29 @@ export function ProjectToolbar<TData extends RowData>({
   showFilters: controlledShowFilters,
   setShowFilters: controlledSetShowFilters,
 }: ProjectToolbarProps<TData>) {
-  const selectedRows = table.getFilteredSelectedRowModel().rows;
-  const user = useAuthStore((state) => state.user);
-  const permissions = getPermissions(user?.role, projectSlug);
+  const [internalShowFilters, setInternalShowFilters] = React.useState(true);
+  const isControlled = controlledShowFilters !== undefined;
+  const showFilters = isControlled ? controlledShowFilters : internalShowFilters;
+  const setShowFilters = isControlled
+    ? (val: boolean | ((prev: boolean) => boolean)) => {
+        if (controlledSetShowFilters) {
+          controlledSetShowFilters(val);
+        }
+      }
+    : setInternalShowFilters;
+
+  const permissions = useAuthStore((state) => getPermissions(state.user?.role, projectSlug));
   const canCreate = permissions.create;
-  const hasFilters = Boolean(permissions.filter && hasProjectFilters(projectSlug));
+  const hasFilters = hasProjectFilters(projectSlug);
 
+  const selectedRows = table.getSelectedRowModel().rows;
   const columnFilters = table.state.columnFilters;
-  const isFiltered = columnFilters.length > 0 || !!table.state.globalFilter;
+  const isFiltered = columnFilters.length > 0 || Boolean(table.state.globalFilter);
   const activeFiltersCount = columnFilters.length;
-  const totalCount = table.getRowCount?.() ?? table.getFilteredRowModel().rows.length;
-
-  const [localShowFilters, setLocalShowFilters] = React.useState(true);
-  const showFilters = controlledShowFilters ?? localShowFilters;
-  const setShowFilters = controlledSetShowFilters ?? setLocalShowFilters;
+  const totalCount = table.getRowCount();
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-3">
       {selectedRows.length > 0 ? (
         <BulkActions
           table={table as unknown as ReactTable<ProjectTableFeatures, EntityRecord>}
@@ -113,21 +125,28 @@ export function ProjectToolbar<TData extends RowData>({
 
             <div className="flex items-center gap-2 justify-end">
               {hasFilters && (
-                <Button
-                  variant={showFilters ? "secondary" : "outline"}
-                  size="sm"
-                  onClick={() => setShowFilters((prev) => !prev)}
-                  className="h-9 gap-1.5 text-xs shadow-sm"
-                  title={showFilters ? "Hide Filter Controls" : "Show Filter Controls"}
-                >
-                  <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="hidden xs:inline">Filters</span>
-                  {activeFiltersCount > 0 && (
-                    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1">
-                      {activeFiltersCount}
-                    </span>
-                  )}
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={showFilters ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => setShowFilters((prev) => !prev)}
+                      className="h-9 gap-1.5 text-xs shadow-sm"
+                      aria-label={showFilters ? "Hide Filter Controls" : "Show Filter Controls"}
+                    >
+                      <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="hidden xs:inline">Filters</span>
+                      {activeFiltersCount > 0 && (
+                        <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1">
+                          {activeFiltersCount}
+                        </span>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>{showFilters ? "Hide filters" : "Show filters"}</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
               {isFiltered && (
                 <Button
@@ -143,15 +162,22 @@ export function ProjectToolbar<TData extends RowData>({
                   <X className="h-3.5 w-3.5" />
                 </Button>
               )}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={onReload}
-                className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted/50 shadow-sm"
-                title="Reload and Reset Data"
-              >
-                <RotateCw className="h-4 w-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={onReload}
+                    className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted/50 shadow-sm"
+                    aria-label="Reload"
+                  >
+                    <RotateCw className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>Reload</p>
+                </TooltipContent>
+              </Tooltip>
               {canCreate && (
                 <Button
                   onClick={() => setCreating(true)}

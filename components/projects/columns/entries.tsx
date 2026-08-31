@@ -16,6 +16,9 @@ import {
   Sliders,
   Cpu,
   PenTool,
+  Pencil,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { EntryStatus, EntryType } from "@/lib/constants/enums";
 import { getStatusIcon } from "@/lib/fields";
@@ -85,11 +88,37 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
             {status}
           </span>
           {isAutoApproved && (
-            <span className="text-3xs font-semibold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200/60 dark:bg-purple-950/30 dark:text-purple-300">
+            <span className="text-2xs font-semibold px-1 rounded bg-purple-50 text-purple-700 border border-purple-200/60 dark:bg-purple-950/30 dark:text-purple-300">
               Auto
             </span>
           )}
         </div>
+      );
+    }),
+    createCustomColumn("edited", "Edited", Pencil, (val) => {
+      const isEdited = val === true || val === "true";
+      return (
+        <span
+          className={cn(
+            badgeBaseClass,
+            "inline-flex items-center gap-1.5",
+            isEdited
+              ? "bg-amber-50 text-amber-700 border border-amber-200/50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/30"
+              : "bg-muted text-muted-foreground border border-border",
+          )}
+        >
+          {isEdited ? (
+            <>
+              <CheckCircle2 className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
+              Edited
+            </>
+          ) : (
+            <>
+              <XCircle className="h-3 w-3 shrink-0 text-muted-foreground" />
+              Original
+            </>
+          )}
+        </span>
       );
     }),
     createIdColumn("center_id", "Center ID", Building),

@@ -57,6 +57,10 @@
   --spacing-104: 26rem;
   --spacing-108: 27rem;
   --spacing-112: 28rem;
+  --spacing-116: 29rem;
+  --spacing-120: 30rem;
+  --spacing-124: 31rem;
+  --spacing-128: 32rem;
   --text-2xs: 0.625rem;
   --text-2xs--line-height: calc(1 / 0.625);
 }

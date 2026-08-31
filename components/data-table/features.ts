@@ -14,9 +14,8 @@ import {
   createFilteredRowModel,
   createPaginatedRowModel,
   createSortedRowModel,
-  filterFn_includesString,
-  sortFn_alphanumeric,
-  sortFn_text,
+  filterFns,
+  sortFns,
   tableFeatures,
   metaHelper,
   type Column,
@@ -40,8 +39,8 @@ export const projectTableFeatures = tableFeatures({
   filteredRowModel: createFilteredRowModel(),
   paginatedRowModel: createPaginatedRowModel(),
   sortedRowModel: createSortedRowModel(),
-  filterFns: { includesString: filterFn_includesString },
-  sortFns: { alphanumeric: sortFn_alphanumeric, text: sortFn_text },
+  filterFns: { ...filterFns },
+  sortFns: { ...sortFns },
   columnMeta: metaHelper<CustomColumnMeta>(),
 });
 

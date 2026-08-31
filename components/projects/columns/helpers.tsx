@@ -36,11 +36,11 @@ export function createBaseColumn<T extends RowData>(
   };
 }
 
-export function createCustomColumn<T extends RowData>(
+export function createCustomColumn<T extends RowData, V = any>(
   key: string,
   label: string,
   Icon: React.ComponentType<{ className?: string }>,
-  renderCell: (value: string, row: T) => React.ReactNode,
+  renderCell: (value: V, row: T) => React.ReactNode,
   id?: string,
 ): ColumnDef<ProjectTableFeatures, T, any> {
   const colId = id || key;
@@ -50,7 +50,7 @@ export function createCustomColumn<T extends RowData>(
     Icon,
     ({ row }) => {
       const val = (row.original as Record<string, unknown>)[key];
-      return renderCell(String(val ?? ""), row.original as T);
+      return renderCell(val as V, row.original as T);
     },
     colId,
   );

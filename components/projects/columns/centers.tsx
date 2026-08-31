@@ -13,7 +13,7 @@ export function getCentersColumns<T extends RowData>(): ColumnDef<ProjectTableFe
   return [
     createTextColumn("name", "Name", Tag),
     createCustomColumn("auto_approve", "Auto Approve", ShieldCheck, (val) => {
-      const isAuto = Boolean(val);
+      const isAuto = val === true || val === "true";
       return (
         <span
           className={cn(

@@ -5,7 +5,7 @@ import {
   validateCenterBelongsToFactory,
   validateCustomerBelongsToFactory,
 } from "./entries";
-import { EntryStatus, EntryType } from "@/lib/constants/enums";
+import { EntryStatus, EntrySource } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
 const { mockUploadImages, mockValidateSeq, mockTryMerge } = vi.hoisted(() => ({
@@ -98,7 +98,7 @@ describe("Entries Service", () => {
         id: 100,
         vehicle_number: "MH12AB1234",
         weight: 12000,
-        type: EntryType.MANUAL,
+        source: EntrySource.MANUAL,
         center_id: 1,
         user_id: 5,
         customer_id: 2,
@@ -154,13 +154,13 @@ describe("Entries Service", () => {
       expect(mockTryMerge).not.toHaveBeenCalled();
     });
 
-    it("creates an automatic entry with approved status and runs sequential approval and merge", async () => {
+    it("creates a device entry with approved status and runs sequential approval and merge", async () => {
       const insertedEntry = {
         id: 101,
         detected_vehicle_number: "MH12AB1234",
         vehicle_number: "MH12AB1234",
         weight: 15000,
-        type: EntryType.AUTOMATIC,
+        source: EntrySource.DEVICE,
         center_id: 1,
         user_id: 5,
         customer_id: null,
@@ -199,7 +199,7 @@ describe("Entries Service", () => {
         detectedVehicleNumber: "MH12AB1234",
         weight: 15000,
         centerId: 1,
-        type: EntryType.AUTOMATIC,
+        source: EntrySource.DEVICE,
         status: EntryStatus.APPROVED,
       });
 
@@ -210,7 +210,7 @@ describe("Entries Service", () => {
         "MH12AB1234",
         expect.any(String),
         0,
-        EntryType.AUTOMATIC,
+        EntrySource.DEVICE,
       );
       expect(mockTryMerge).toHaveBeenCalledWith(mockClient, 10, 101);
     });

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { EntryStatus, EntryType, PermissionKey, ProjectSlug, Role } from "@/lib/constants/enums";
+import { EntryStatus, EntrySource, PermissionKey, ProjectSlug, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
 const { mockHasPermission } = vi.hoisted(() => ({
@@ -342,7 +342,7 @@ describe("Entries [id] route handlers", () => {
     const existingEntry = {
       id: 10,
       status: EntryStatus.PENDING,
-      type: EntryType.AUTOMATIC,
+      source: EntrySource.DEVICE,
       auto_approved: false,
       edited: false,
       vehicle_number: "KA01AB1111",
@@ -389,7 +389,7 @@ describe("Entries [id] route handlers", () => {
     expect(json.data.edited).toBe(false);
   });
 
-  it("rejects updating weight on automatic pending entry", async () => {
+  it("rejects updating weight on device pending entry", async () => {
     const patchRequest = new Request("http://localhost/api/entries/10", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -399,7 +399,7 @@ describe("Entries [id] route handlers", () => {
     const existingEntry = {
       id: 10,
       status: EntryStatus.PENDING,
-      type: EntryType.AUTOMATIC,
+      source: EntrySource.DEVICE,
       auto_approved: false,
       edited: false,
       vehicle_number: "KA01AB1111",
@@ -429,7 +429,7 @@ describe("Entries [id] route handlers", () => {
 
     expect(response.status).toBe(400);
     const json = await response.json();
-    expect(json.error).toBe("Cannot modify weight on an automatic entry.");
+    expect(json.error).toBe("Cannot modify weight on a device entry.");
   });
 
   it("allows updating customer_id on manually approved entry when customer_id is null", async () => {
@@ -442,7 +442,7 @@ describe("Entries [id] route handlers", () => {
     const existingEntry = {
       id: 10,
       status: EntryStatus.APPROVED,
-      type: EntryType.MANUAL,
+      source: EntrySource.MANUAL,
       auto_approved: false,
       edited: false,
       vehicle_number: "KA01AB1111",

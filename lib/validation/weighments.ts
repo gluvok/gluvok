@@ -4,7 +4,7 @@
  */
 
 import * as z from "zod";
-import { Unit, EntryStatus, EntryType, WeighmentType } from "@/lib/constants/enums";
+import { Unit, EntryStatus, EntrySource, WeighmentType } from "@/lib/constants/enums";
 import { ValidationMessage } from "@/lib/constants/messages";
 import { integerIdSchema, optionalIntegerIdSchema } from "./helpers";
 
@@ -72,7 +72,7 @@ export const addEntrySchema = z.object({
   weight: z.coerce
     .number({ message: ValidationMessage.MUST_BE_NUMBER("Weight") })
     .positive(ValidationMessage.MUST_BE_POSITIVE_NUMBER("Weight")),
-  type: z.enum([EntryType.MANUAL, EntryType.AUTOMATIC]).optional(),
+  source: z.enum([EntrySource.MANUAL, EntrySource.DEVICE]).optional(),
   center_id: integerIdSchema("Center"),
   user_id: optionalIntegerIdSchema("User").default(null),
   customer_id: optionalIntegerIdSchema("Customer").default(null),

@@ -23,9 +23,9 @@ export enum EntryStatus {
   REJECTED = "rejected",
 }
 
-export enum EntryType {
+export enum EntrySource {
+  DEVICE = "device",
   MANUAL = "manual",
-  AUTOMATIC = "automatic",
 }
 
 export enum WeighmentType {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { PermissionKey, ProjectSlug, Role, EntryStatus, EntryType } from "@/lib/constants/enums";
+import { PermissionKey, ProjectSlug, Role, EntryStatus, EntrySource } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
 const { mockHasPermission, mockCreateEntry } = vi.hoisted(() => ({
@@ -218,7 +218,7 @@ describe("Entries route handlers (/api/entries)", () => {
         center_id: 1,
         user_id: 1,
         factory_id: 1,
-        type: EntryType.MANUAL,
+        source: EntrySource.MANUAL,
         status: EntryStatus.PENDING,
       };
       mockCreateEntry.mockResolvedValue(createdEntry);
@@ -244,7 +244,7 @@ describe("Entries route handlers (/api/entries)", () => {
         expect.objectContaining({
           factoryId: 1,
           userId: 1,
-          type: EntryType.MANUAL,
+          source: EntrySource.MANUAL,
           vehicleNumber: "MH12AB1234",
           weight: 12000,
           centerId: 1,
@@ -253,7 +253,7 @@ describe("Entries route handlers (/api/entries)", () => {
       );
     });
 
-    it("creates AUTOMATIC entry when caller has Role.HARDWARE", async () => {
+    it("creates DEVICE entry when caller has Role.HARDWARE", async () => {
       const hardwareUser = {
         sub: "5",
         username: "hardware_scale_1",
@@ -269,7 +269,7 @@ describe("Entries route handlers (/api/entries)", () => {
         center_id: 1,
         user_id: 5,
         factory_id: 1,
-        type: EntryType.AUTOMATIC,
+        source: EntrySource.DEVICE,
         status: EntryStatus.PENDING,
       };
       mockCreateEntry.mockResolvedValue(createdEntry);
@@ -290,13 +290,13 @@ describe("Entries route handlers (/api/entries)", () => {
 
       expect(response.status).toBe(201);
       const json = await response.json();
-      expect(json.data.type).toBe(EntryType.AUTOMATIC);
+      expect(json.data.source).toBe(EntrySource.DEVICE);
       expect(mockCreateEntry).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
           factoryId: 1,
           userId: 5,
-          type: EntryType.AUTOMATIC,
+          source: EntrySource.DEVICE,
           detectedVehicleNumber: "KA01AB1234",
           vehicleNumber: "KA01AB1234",
           weight: 15000,

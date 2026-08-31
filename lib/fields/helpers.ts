@@ -7,7 +7,7 @@ import {
   ProjectSlug,
   Role,
   WeighmentType,
-  EntryType,
+  EntrySource,
   EntryStatus,
   FieldType,
 } from "@/lib/constants/enums";
@@ -130,6 +130,21 @@ export function getRoleIcon(role?: string): LucideIcon {
   }
 }
 
+export function getSourceIcon(sourceVal?: string): LucideIcon {
+  if (!sourceVal || sourceVal === "all") return SlidersHorizontal;
+  const normalized = sourceVal.toLowerCase().trim();
+  switch (normalized) {
+    case EntrySource.DEVICE:
+    case "device":
+      return Cpu;
+    case EntrySource.MANUAL:
+    case "manual":
+      return User;
+    default:
+      return SlidersHorizontal;
+  }
+}
+
 export function getTypeIcon(typeVal?: string): LucideIcon {
   if (!typeVal || typeVal === "all") return SlidersHorizontal;
   const normalized = typeVal.toLowerCase().trim();
@@ -140,11 +155,9 @@ export function getTypeIcon(typeVal?: string): LucideIcon {
       return ArrowUpRight;
     case WeighmentType.UNASSIGNED:
       return HelpCircle;
-    case EntryType.MANUAL:
     case "manual":
       return PenTool;
-    case EntryType.AUTOMATIC:
-    case "automatic":
+    case "device":
       return Cpu;
     default:
       return SlidersHorizontal;
@@ -172,10 +185,20 @@ export function getStatusIcon(statusVal?: string): LucideIcon {
 export function getAutoApproveIcon(val?: string): LucideIcon {
   if (!val || val === "all") return ShieldCheck;
   const normalized = val.toLowerCase().trim();
-  if (normalized === "true" || normalized === "auto approved" || normalized === "enabled") {
+  if (
+    normalized === "true" ||
+    normalized === "system approved" ||
+    normalized === "auto approved" ||
+    normalized === "enabled"
+  ) {
     return CheckCircle2;
   }
-  if (normalized === "false" || normalized === "manual" || normalized === "disabled") {
+  if (
+    normalized === "false" ||
+    normalized === "user review" ||
+    normalized === "manual" ||
+    normalized === "disabled"
+  ) {
     return XCircle;
   }
   return ShieldCheck;
@@ -200,6 +223,9 @@ export function getItemIcon(type: string | ProjectSlug, label: string): LucideIc
     case "role":
     case "roles":
       return getRoleIcon(label);
+    case "source":
+    case "sources":
+      return getSourceIcon(label);
     case "type":
     case "types":
       return getTypeIcon(label);
@@ -210,6 +236,7 @@ export function getItemIcon(type: string | ProjectSlug, label: string): LucideIc
       return getStatusIcon(label);
     case "auto_approved":
     case "auto_approve":
+    case "verification":
       return getAutoApproveIcon(label);
     case "edited":
       return getEditedIcon(label);

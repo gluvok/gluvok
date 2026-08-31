@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { validateSequentialApproval, tryMergeEntries } from "./weighments";
-import { EntryStatus, EntryType, Unit } from "@/lib/constants/enums";
+import { EntryStatus, EntrySource, Unit } from "@/lib/constants/enums";
 
 describe("Weighments Service", () => {
   let mockClient: any;
@@ -33,7 +33,7 @@ describe("Weighments Service", () => {
           "MH12AB1234",
           "2026-08-09T14:00:00Z",
           2,
-          EntryType.AUTOMATIC,
+          EntrySource.DEVICE,
         ),
       ).resolves.toBeUndefined();
 
@@ -41,7 +41,7 @@ describe("Weighments Service", () => {
       expect(eqMock).toHaveBeenCalledWith("center_id", 1);
       expect(eqMock).toHaveBeenCalledWith("vehicle_number", "MH12AB1234");
       expect(eqMock).toHaveBeenCalledWith("status", EntryStatus.PENDING);
-      expect(eqMock).toHaveBeenCalledWith("type", EntryType.AUTOMATIC);
+      expect(eqMock).toHaveBeenCalledWith("source", EntrySource.DEVICE);
     });
 
     it("should throw an error if an earlier pending entry exists for the vehicle in the same center", async () => {
@@ -57,7 +57,7 @@ describe("Weighments Service", () => {
           data: {
             id: 1,
             created_at: "2026-08-09T12:00:00Z",
-            type: EntryType.AUTOMATIC,
+            source: EntrySource.DEVICE,
           },
           error: null,
         }),
@@ -70,26 +70,26 @@ describe("Weighments Service", () => {
           "MH12AB1234",
           "2026-08-09T14:00:00Z",
           2,
-          EntryType.AUTOMATIC,
+          EntrySource.DEVICE,
         ),
-      ).rejects.toThrow(/Cannot approve entry #2 because earlier automatic entry #1/);
+      ).rejects.toThrow(/Cannot approve entry #2 because earlier device entry #1/);
     });
   });
 
   describe("tryMergeEntries", () => {
-    it("should merge two entries of the same type and vehicle into a weighment", async () => {
+    it("should merge two entries of the same source and vehicle into a weighment", async () => {
       const e2Data = {
         id: 2,
         vehicle_number: "MH12AB1234",
         status: EntryStatus.APPROVED,
-        type: EntryType.AUTOMATIC,
+        source: EntrySource.DEVICE,
         created_at: "2026-08-09T14:00:00Z",
       };
       const e1Data = {
         id: 1,
         vehicle_number: "MH12AB1234",
         status: EntryStatus.APPROVED,
-        type: EntryType.AUTOMATIC,
+        source: EntrySource.DEVICE,
         created_at: "2026-08-09T12:00:00Z",
       };
 
@@ -138,12 +138,12 @@ describe("Weighments Service", () => {
       expect(res).toEqual({ id: 100, in_entry_id: 1, out_entry_id: 2, unit: Unit.KG });
     });
 
-    it("should return null if no matching entry of the same type is found", async () => {
+    it("should return null if no matching entry of the same source is found", async () => {
       const e2Data = {
         id: 2,
         vehicle_number: "MH12AB1234",
         status: EntryStatus.APPROVED,
-        type: EntryType.MANUAL,
+        source: EntrySource.MANUAL,
         created_at: "2026-08-09T14:00:00Z",
       };
 

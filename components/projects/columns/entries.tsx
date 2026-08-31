@@ -15,12 +15,13 @@ import {
   ShieldCheck,
   Sliders,
   Cpu,
-  PenTool,
+  UserCheck,
+  Clock,
   Pencil,
   CheckCircle2,
   XCircle,
 } from "lucide-react";
-import { EntryStatus, EntryType } from "@/lib/constants/enums";
+import { EntryStatus, EntrySource } from "@/lib/constants/enums";
 import { getStatusIcon } from "@/lib/fields";
 import { cn } from "@/lib/utils";
 import {
@@ -34,23 +35,23 @@ import { WeighmentImagesCell } from "./weighments-cell";
 
 export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
-    createCustomColumn("type", "Type", Sliders, (val) => {
-      const type = String(val || EntryType.AUTOMATIC).toLowerCase();
-      let typeClass = "bg-muted text-muted-foreground border border-border";
-      const Icon = type === EntryType.AUTOMATIC ? Cpu : PenTool;
-      if (type === EntryType.AUTOMATIC) {
-        typeClass =
+    createCustomColumn("source", "Source", Sliders, (val) => {
+      const source = String(val || EntrySource.DEVICE).toLowerCase();
+      let sourceClass = "bg-muted text-muted-foreground border border-border";
+      const Icon = source === EntrySource.DEVICE ? Cpu : User;
+      if (source === EntrySource.DEVICE) {
+        sourceClass =
           "bg-purple-50 text-purple-700 border border-purple-200/50 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800/30";
-      } else if (type === EntryType.MANUAL) {
-        typeClass =
+      } else if (source === EntrySource.MANUAL) {
+        sourceClass =
           "bg-blue-50 text-blue-700 border border-blue-200/50 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/30";
       }
       return (
         <span
-          className={cn(badgeBaseClass, "capitalize inline-flex items-center gap-1.5", typeClass)}
+          className={cn(badgeBaseClass, "capitalize inline-flex items-center gap-1.5", sourceClass)}
         >
           <Icon className="h-3 w-3 shrink-0" />
-          {type}
+          {source}
         </span>
       );
     }),
@@ -82,29 +83,77 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         </span>
       );
     }),
-    createCustomColumn("auto_approved", "Auto Approved", ShieldCheck, (val) => {
+    createCustomColumn("auto_approved", "Verification", ShieldCheck, (val, row) => {
       const isAuto = val === true || val === "true";
+      const rec = row as Record<string, unknown>;
+      const source = String(rec.source || "").toLowerCase();
+      const status = String(rec.status || "").toLowerCase();
+
+      if (isAuto) {
+        return (
+          <span
+            className={cn(
+              badgeBaseClass,
+              "inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 border border-purple-200/50 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800/30",
+            )}
+          >
+            <CheckCircle2 className="h-3 w-3 shrink-0 text-purple-600 dark:text-purple-400" />
+            System Approved
+          </span>
+        );
+      }
+
+      if (source === EntrySource.DEVICE) {
+        if (status === EntryStatus.PENDING) {
+          return (
+            <span
+              className={cn(
+                badgeBaseClass,
+                "inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200/50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/30",
+              )}
+            >
+              <Clock className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
+              Review Required
+            </span>
+          );
+        }
+        if (status === EntryStatus.APPROVED) {
+          return (
+            <span
+              className={cn(
+                badgeBaseClass,
+                "inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/30",
+              )}
+            >
+              <UserCheck className="h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              User Approved
+            </span>
+          );
+        }
+        if (status === EntryStatus.REJECTED) {
+          return (
+            <span
+              className={cn(
+                badgeBaseClass,
+                "inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200/50 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/30",
+              )}
+            >
+              <XCircle className="h-3 w-3 shrink-0 text-rose-600 dark:text-rose-400" />
+              Rejected
+            </span>
+          );
+        }
+      }
+
       return (
         <span
           className={cn(
             badgeBaseClass,
-            "inline-flex items-center gap-1.5",
-            isAuto
-              ? "bg-purple-50 text-purple-700 border border-purple-200/50 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800/30"
-              : "bg-muted text-muted-foreground border border-border",
+            "inline-flex items-center gap-1.5 bg-muted text-muted-foreground border border-border",
           )}
         >
-          {isAuto ? (
-            <>
-              <CheckCircle2 className="h-3 w-3 shrink-0 text-purple-600 dark:text-purple-400" />
-              Auto
-            </>
-          ) : (
-            <>
-              <XCircle className="h-3 w-3 shrink-0 text-muted-foreground" />
-              Manual
-            </>
-          )}
+          <User className="h-3 w-3 shrink-0 text-muted-foreground" />
+          User Entry
         </span>
       );
     }),

@@ -4,7 +4,7 @@
  */
 
 import { supabase } from "@/db";
-import { EntryStatus, EntryType, Unit, WeighmentType } from "@/lib/constants/enums";
+import { EntryStatus, EntrySource, Unit, WeighmentType } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
 export async function validateSequentialApproval(
@@ -13,11 +13,11 @@ export async function validateSequentialApproval(
   vehicleNumber: string,
   targetCreatedAt: string,
   targetEntryId: number,
-  entryType?: EntryType,
+  entrySource?: EntrySource,
 ): Promise<void> {
   let query = client
     .from("entries")
-    .select("id, created_at, type")
+    .select("id, created_at, source")
     .eq("center_id", centerId)
     .eq("vehicle_number", vehicleNumber)
     .eq("status", EntryStatus.PENDING)
@@ -25,8 +25,8 @@ export async function validateSequentialApproval(
     .neq("id", targetEntryId)
     .is("deleted_at", null);
 
-  if (entryType) {
-    query = query.eq("type", entryType);
+  if (entrySource) {
+    query = query.eq("source", entrySource);
   }
 
   const { data: earlierPending, error } = await query
@@ -40,14 +40,14 @@ export async function validateSequentialApproval(
   }
 
   if (earlierPending) {
-    const typeLabel = earlierPending.type ? `${earlierPending.type} ` : "";
+    const sourceLabel = earlierPending.source ? `${earlierPending.source} ` : "";
     throw new Error(
       ApiErrorMessage.CANNOT_APPROVE_PENDING_EARLIER_ENTRY(
         targetEntryId,
         earlierPending.id,
         new Date(earlierPending.created_at).toLocaleString(),
         vehicleNumber,
-        typeLabel,
+        sourceLabel,
       ),
     );
   }
@@ -83,7 +83,7 @@ export async function tryMergeEntries(
     return null;
   }
 
-  // 3. Find latest preceding approved entry E1 for the same vehicle, factory, AND matching entry type
+  // 3. Find latest preceding approved entry E1 for the same vehicle, factory, AND matching entry source
   let e1Query = client
     .from("entries")
     .select("*")
@@ -94,8 +94,8 @@ export async function tryMergeEntries(
     .neq("id", entryId)
     .is("deleted_at", null);
 
-  if (e2.type) {
-    e1Query = e1Query.eq("type", e2.type);
+  if (e2.source) {
+    e1Query = e1Query.eq("source", e2.source);
   }
 
   const { data: e1Candidates, error: e1Err } = await e1Query

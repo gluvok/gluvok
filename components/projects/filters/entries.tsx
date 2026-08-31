@@ -8,10 +8,10 @@
 import * as React from "react";
 import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
-import { EntryStatus, EntryType, FieldType } from "@/lib/constants/enums";
+import { EntryStatus, EntrySource, FieldType } from "@/lib/constants/enums";
 import { BaseCombobox } from "@/components/combobox/base";
 import {
-  getTypeIcon,
+  getSourceIcon,
   getStatusIcon,
   getAutoApproveIcon,
   getEditedIcon,
@@ -22,10 +22,10 @@ interface EntriesFiltersProps<TData extends RowData> {
   table: ReactTable<ProjectTableFeatures, TData>;
 }
 
-const AUTO_APPROVED_OPTIONS = [
-  { value: "all", label: "All Auto Approve" },
-  { value: "true", label: "Auto Approved" },
-  { value: "false", label: "Manual" },
+const VERIFICATION_OPTIONS = [
+  { value: "all", label: "All Verifications" },
+  { value: "true", label: "System Approved" },
+  { value: "false", label: "User Review" },
 ];
 
 const EDITED_OPTIONS = [
@@ -37,7 +37,7 @@ const EDITED_OPTIONS = [
 export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersProps<TData>) {
   const columnFilters = table.state.columnFilters;
   const currentStatus = columnFilters.find((f) => f.id === "status")?.value;
-  const currentType = columnFilters.find((f) => f.id === "type")?.value;
+  const currentSource = columnFilters.find((f) => f.id === "source")?.value;
   const currentAutoApproved = columnFilters.find((f) => f.id === "auto_approved")?.value;
   const currentEdited = columnFilters.find((f) => f.id === "edited")?.value;
 
@@ -50,11 +50,11 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
     ];
   }, []);
 
-  const typeOptions = React.useMemo(() => {
+  const sourceOptions = React.useMemo(() => {
     return [
-      { value: "all", label: "All Types" },
-      { value: EntryType.MANUAL, label: "Manual" },
-      { value: EntryType.AUTOMATIC, label: "Automatic" },
+      { value: "all", label: "All Sources" },
+      { value: EntrySource.DEVICE, label: "Device" },
+      { value: EntrySource.MANUAL, label: "Manual" },
     ];
   }, []);
 
@@ -73,29 +73,29 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
         id="filter-status-combobox"
       />
 
-      {/* Type */}
+      {/* Source */}
       <BaseCombobox
-        type={FieldType.TYPE}
-        value={currentType ? String(currentType) : "all"}
-        onChange={(val) => setTableColumnFilter(table, "type", val === "all" ? undefined : val)}
-        data={typeOptions}
-        placeholder="All Types"
-        searchPlaceholder="Search type..."
-        icon={getTypeIcon(currentType as string)}
+        type="source"
+        value={currentSource ? String(currentSource) : "all"}
+        onChange={(val) => setTableColumnFilter(table, "source", val === "all" ? undefined : val)}
+        data={sourceOptions}
+        placeholder="All Sources"
+        searchPlaceholder="Search source..."
+        icon={getSourceIcon(currentSource as string)}
         className="w-auto"
-        id="filter-type-combobox"
+        id="filter-source-combobox"
       />
 
-      {/* Auto Approved */}
+      {/* Verification / Auto Approved */}
       <BaseCombobox
         type="auto_approved"
         value={currentAutoApproved !== undefined ? String(currentAutoApproved) : "all"}
         onChange={(val) =>
           setTableColumnFilter(table, "auto_approved", val === "all" ? undefined : val)
         }
-        data={AUTO_APPROVED_OPTIONS}
-        placeholder="All Auto Approve"
-        searchPlaceholder="Search auto approve..."
+        data={VERIFICATION_OPTIONS}
+        placeholder="All Verifications"
+        searchPlaceholder="Search verification..."
         icon={getAutoApproveIcon(currentAutoApproved as string)}
         className="w-auto"
         id="filter-entries-auto-approved-combobox"

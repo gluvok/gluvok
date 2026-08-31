@@ -8,7 +8,7 @@ import {
   hasPermission,
   parseBulkIds,
 } from "@/db/helpers";
-import { EntryStatus, EntryType, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
+import { EntryStatus, EntrySource, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { createEntry } from "@/lib/services/entries";
 import { addEntrySchema, addDeviceEntrySchema } from "@/lib/validation";
@@ -42,7 +42,7 @@ export const GET = withAuth(async (req, user, client) => {
 
   const filterParams: Record<string, string | null> = {
     status: req.nextUrl.searchParams.get("status"),
-    type: req.nextUrl.searchParams.get("type"),
+    source: req.nextUrl.searchParams.get("source"),
     center_id: req.nextUrl.searchParams.get("center_id"),
     user_id: req.nextUrl.searchParams.get("user_id"),
     customer_id: req.nextUrl.searchParams.get("customer_id"),
@@ -120,7 +120,7 @@ export const POST = withAuth(async (req, user, client) => {
       const newEntry = await createEntry(client, {
         factoryId: user.factory_id,
         userId: parseInt(user.sub, 10),
-        type: EntryType.AUTOMATIC,
+        source: EntrySource.DEVICE,
         detectedVehicleNumber: detected_vehicle_number,
         vehicleNumber: vehicle_number,
         weight,
@@ -151,7 +151,7 @@ export const POST = withAuth(async (req, user, client) => {
     const newEntry = await createEntry(client, {
       factoryId: user.factory_id,
       userId: parseInt(user.sub, 10),
-      type: EntryType.MANUAL,
+      source: EntrySource.MANUAL,
       vehicleNumber: vehicle_number,
       weight,
       centerId: center_id,

@@ -7,7 +7,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { Role, Unit, EntryStatus, EntryType, WeighmentType } from "../lib/constants/enums";
+import { Role, Unit, EntryStatus, EntrySource, WeighmentType } from "../lib/constants/enums";
 import { hashPassword } from "../lib/auth/password";
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -528,7 +528,7 @@ async function main() {
     customerName: string;
     centerId: number;
     userId: number;
-    type: EntryType;
+    source: EntrySource;
     autoApproved: boolean;
     edited: boolean;
     weighmentType: WeighmentType;
@@ -549,7 +549,7 @@ async function main() {
       customerName: "Ramesh Kumar",
       centerId: northAutoCenterId,
       userId: hardwareDevice1Id,
-      type: EntryType.AUTOMATIC,
+      source: EntrySource.DEVICE,
       autoApproved: true,
       edited: false,
       weighmentType: WeighmentType.IN,
@@ -568,7 +568,7 @@ async function main() {
       customerName: "Anita Patel",
       centerId: mainCenterId,
       userId: defaultOperatorId,
-      type: EntryType.MANUAL,
+      source: EntrySource.MANUAL,
       autoApproved: false,
       edited: true,
       weighmentType: WeighmentType.IN,
@@ -587,7 +587,7 @@ async function main() {
       customerName: "Vikram Singh",
       centerId: northAutoCenterId,
       userId: hardwareDevice1Id,
-      type: EntryType.AUTOMATIC,
+      source: EntrySource.DEVICE,
       autoApproved: true,
       edited: true,
       weighmentType: WeighmentType.IN,
@@ -606,7 +606,7 @@ async function main() {
       customerName: "Priya Sharma",
       centerId: southExpressCenterId,
       userId: defaultOperatorId,
-      type: EntryType.AUTOMATIC,
+      source: EntrySource.DEVICE,
       autoApproved: true,
       edited: false,
       weighmentType: WeighmentType.OUT,
@@ -625,7 +625,7 @@ async function main() {
       customerName: "Sunil Verma",
       centerId: eastTerminalCenterId,
       userId: charlieOperatorId,
-      type: EntryType.MANUAL,
+      source: EntrySource.MANUAL,
       autoApproved: false,
       edited: false,
       weighmentType: WeighmentType.IN,
@@ -644,7 +644,7 @@ async function main() {
       customerName: "Deepak Choudhary",
       centerId: mainCenterId,
       userId: defaultOperatorId,
-      type: EntryType.MANUAL,
+      source: EntrySource.MANUAL,
       autoApproved: false,
       edited: false,
       weighmentType: WeighmentType.IN,
@@ -663,7 +663,7 @@ async function main() {
       customerName: "Meena Devi",
       centerId: northAutoCenterId,
       userId: hardwareDevice1Id,
-      type: EntryType.AUTOMATIC,
+      source: EntrySource.DEVICE,
       autoApproved: true,
       edited: false,
       weighmentType: WeighmentType.IN,
@@ -682,7 +682,7 @@ async function main() {
       customerName: "Kavita Rao",
       centerId: eastTerminalCenterId,
       userId: charlieOperatorId,
-      type: EntryType.MANUAL,
+      source: EntrySource.MANUAL,
       autoApproved: false,
       edited: false,
       weighmentType: WeighmentType.IN,
@@ -701,7 +701,7 @@ async function main() {
       customerName: "Ramesh Kumar",
       centerId: mainCenterId,
       userId: defaultOperatorId,
-      type: EntryType.MANUAL,
+      source: EntrySource.MANUAL,
       autoApproved: false,
       edited: false,
       weighmentType: WeighmentType.IN,
@@ -727,7 +727,7 @@ async function main() {
         detected_vehicle_number: pair.detectedVehicle || pair.vehicleNumber,
         vehicle_number: pair.vehicleNumber,
         weight: pair.inWeight,
-        type: pair.type,
+        source: pair.source,
         status: EntryStatus.APPROVED,
         auto_approved: pair.autoApproved,
         edited: pair.edited,
@@ -754,7 +754,7 @@ async function main() {
         detected_vehicle_number: pair.vehicleNumber,
         vehicle_number: pair.vehicleNumber,
         weight: pair.outWeight,
-        type: pair.type,
+        source: pair.source,
         status: EntryStatus.APPROVED,
         auto_approved: pair.autoApproved,
         edited: false,
@@ -805,7 +805,7 @@ async function main() {
       vehicle_number: "TN-09-KK-4455",
       detected_vehicle_number: "TN-09-KK-4455",
       weight: 38200,
-      type: EntryType.MANUAL,
+      source: EntrySource.MANUAL,
       status: EntryStatus.PENDING,
       auto_approved: false,
       edited: false,
@@ -821,7 +821,7 @@ async function main() {
       vehicle_number: "TS-07-EE-9988",
       detected_vehicle_number: "TS07EE9988",
       weight: 44100,
-      type: EntryType.AUTOMATIC,
+      source: EntrySource.DEVICE,
       status: EntryStatus.PENDING,
       auto_approved: false,
       edited: false,
@@ -837,7 +837,7 @@ async function main() {
       vehicle_number: "AP-28-FF-6677",
       detected_vehicle_number: "AP-28-FF-6677",
       weight: 62500, // Gross overload
-      type: EntryType.AUTOMATIC,
+      source: EntrySource.DEVICE,
       status: EntryStatus.REJECTED,
       auto_approved: false,
       edited: true,
@@ -853,7 +853,7 @@ async function main() {
       vehicle_number: "KL-07-CD-3344",
       detected_vehicle_number: "KL-07-CD-3300",
       weight: 29800,
-      type: EntryType.MANUAL,
+      source: EntrySource.MANUAL,
       status: EntryStatus.REJECTED,
       auto_approved: false,
       edited: false,
@@ -869,7 +869,7 @@ async function main() {
       vehicle_number: "MH-04-AB-1212",
       detected_vehicle_number: "MH-04-AB-1212",
       weight: 41900,
-      type: EntryType.AUTOMATIC,
+      source: EntrySource.DEVICE,
       status: EntryStatus.APPROVED,
       auto_approved: true,
       edited: false,
@@ -885,7 +885,7 @@ async function main() {
       vehicle_number: "DL-01-XY-7890",
       detected_vehicle_number: "DL-01-XY-7890",
       weight: 13800,
-      type: EntryType.MANUAL,
+      source: EntrySource.MANUAL,
       status: EntryStatus.APPROVED,
       auto_approved: false,
       edited: false,
@@ -901,7 +901,7 @@ async function main() {
       vehicle_number: "GJ-01-AB-9900",
       detected_vehicle_number: "GJ-01-AB-9900",
       weight: 37600,
-      type: EntryType.AUTOMATIC,
+      source: EntrySource.DEVICE,
       status: EntryStatus.APPROVED,
       auto_approved: true,
       edited: false,

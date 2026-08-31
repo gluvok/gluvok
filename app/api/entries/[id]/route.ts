@@ -7,7 +7,7 @@ import {
   hasPermission,
   StatusCodes,
 } from "@/db/helpers";
-import { ProjectSlug, PermissionKey, EntryStatus, EntryType, Role } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey, EntryStatus, EntrySource, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
 import {
@@ -136,7 +136,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
       }
     }
   } else if (existing.status === EntryStatus.PENDING) {
-    if (existing.type === EntryType.MANUAL) {
+    if (existing.source === EntrySource.MANUAL) {
       // Manual Pending: allow vehicle_number, weight, center_id, customer_id, images, status
       if (body.vehicle_number !== undefined) updates["vehicle_number"] = body.vehicle_number;
       if (body.weight !== undefined) updates["weight"] = Number(body.weight);
@@ -154,12 +154,12 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
         updates["customer_id"] = body.customer_id ? Number(body.customer_id) : null;
       }
     } else {
-      // Automatic Pending (not auto-approved): allow vehicle_number, status
-      const lockedAutoFields = ["weight", "center_id", "images", "customer_id"] as const;
-      for (const field of lockedAutoFields) {
+      // Device Pending (not auto-approved): allow vehicle_number, status
+      const lockedDeviceFields = ["weight", "center_id", "images", "customer_id"] as const;
+      for (const field of lockedDeviceFields) {
         if (body[field] !== undefined && body[field] !== existing[field]) {
           return apiError(
-            `Cannot modify ${field === "center_id" ? "center" : field} on an automatic entry.`,
+            `Cannot modify ${field === "center_id" ? "center" : field} on a device entry.`,
             StatusCodes.BAD_REQUEST,
           );
         }

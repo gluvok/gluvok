@@ -16,7 +16,7 @@ import {
   FieldType,
   PermissionKey,
   EntryStatus,
-  EntryType,
+  EntrySource,
   FieldSpan,
 } from "@/lib/constants/enums";
 import { PROJECT_FIELDS, getSingularName } from "@/lib/fields";
@@ -55,7 +55,7 @@ export function useEntityForm({
 
       const isAutoApproved = Boolean(getField(item, "auto_approved"));
       const isEdited = Boolean(getField(item, "edited"));
-      const type = getField(item, "type");
+      const source = getField(item, "source");
       const customerId = getField(item, "customer_id");
       const isCustomerNull = customerId === null || customerId === undefined || customerId === "";
       const isApproved = status === EntryStatus.APPROVED || isAutoApproved;
@@ -81,7 +81,7 @@ export function useEntityForm({
       }
 
       if (status === EntryStatus.PENDING) {
-        if (type === EntryType.MANUAL) {
+        if (source === EntrySource.MANUAL) {
           return baseFields.filter((f) =>
             ["vehicle_number", "weight", "images", "center_id", "customer_id"].includes(f.key),
           );

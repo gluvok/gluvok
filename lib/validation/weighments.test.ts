@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EntryStatus, EntryType, WeighmentType } from "@/lib/constants/enums";
+import { EntryStatus, EntrySource, WeighmentType } from "@/lib/constants/enums";
 import {
   addDeviceEntrySchema,
   addEntrySchema,
@@ -28,13 +28,13 @@ describe("entries & weighments validation", () => {
       vehicle_number: "MH12AB1234",
       weight: "15000",
       center_id: "1",
-      type: EntryType.MANUAL,
+      source: EntrySource.MANUAL,
     });
 
     expect(result.vehicle_number).toBe("MH12AB1234");
     expect(result.weight).toBe(15000);
     expect(result.center_id).toBe(1);
-    expect(result.type).toBe(EntryType.MANUAL);
+    expect(result.source).toBe(EntrySource.MANUAL);
     expect(result.status).toBe(EntryStatus.PENDING);
   });
 

@@ -4,7 +4,7 @@
  * Includes flattened and computed fields used across views and forms.
  */
 
-import { Role, Unit, WeighmentType, EntryType, EntryStatus } from "@/lib/constants/enums";
+import { Role, Unit, WeighmentType, EntrySource, EntryStatus } from "@/lib/constants/enums";
 
 /**
  * Center Entity
@@ -70,7 +70,7 @@ export interface Entry {
   detected_vehicle_number?: string | null;
   vehicle_number: string;
   weight: number | string;
-  type: EntryType;
+  source: EntrySource;
   center_id: number;
   user_id: number;
   customer_id?: number | null;

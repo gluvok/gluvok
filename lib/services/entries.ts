@@ -4,7 +4,7 @@
  */
 
 import { supabase } from "@/db";
-import { EntryStatus, EntryType } from "@/lib/constants/enums";
+import { EntryStatus, EntrySource } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { uploadBase64ImagesToStorage } from "./storage";
 import { validateSequentialApproval, tryMergeEntries } from "./weighments";
@@ -15,7 +15,7 @@ export interface CreateEntryParams {
   vehicleNumber: string;
   weight: number;
   centerId: number;
-  type?: EntryType;
+  source?: EntrySource;
   detectedVehicleNumber?: string | null;
   customerId?: number | null;
   status?: EntryStatus;
@@ -70,7 +70,7 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
     vehicleNumber,
     weight,
     centerId,
-    type = EntryType.MANUAL,
+    source = EntrySource.MANUAL,
     detectedVehicleNumber = null,
     customerId = null,
     status = EntryStatus.PENDING,
@@ -89,7 +89,7 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
   let finalStatus = status;
   let isAutoApproved = false;
 
-  if (type === EntryType.AUTOMATIC) {
+  if (source === EntrySource.DEVICE) {
     if (centerRecord.auto_approve) {
       isAutoApproved = true;
       finalStatus = EntryStatus.APPROVED;
@@ -106,7 +106,7 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
 
   // 5. Validate sequential approval if approved
   if (finalStatus === EntryStatus.APPROVED) {
-    await validateSequentialApproval(client, Number(centerId), vehicleNumber, nowStr, 0, type);
+    await validateSequentialApproval(client, Number(centerId), vehicleNumber, nowStr, 0, source);
   }
 
   // 6. Insert new entry into database
@@ -116,7 +116,7 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
       detected_vehicle_number: detectedVehicleNumber,
       vehicle_number: vehicleNumber,
       weight: Number(weight),
-      type,
+      source,
       center_id: Number(centerId),
       user_id: userId,
       customer_id: customerId ? Number(customerId) : null,

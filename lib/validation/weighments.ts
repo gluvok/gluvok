@@ -128,4 +128,5 @@ export const addWeighmentSchema = z.object({
 
 export const editWeighmentSchema = z.object({
   type: z.enum([WeighmentType.UNASSIGNED, WeighmentType.IN, WeighmentType.OUT]).optional(),
+  rate_id: z.coerce.number().int().positive().nullable().optional(),
 });

@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
-import { validateSequentialApproval, tryMergeEntries } from "./weighments";
+import {
+  validateSequentialApproval,
+  tryMergeEntries,
+  formatWeighmentRecord,
+} from "./weighments";
 import { EntryStatus, EntrySource, Unit } from "@/lib/constants/enums";
 import type { supabase } from "@/db";
 
@@ -202,6 +206,74 @@ describe("Weighments Service", () => {
 
       const res = await tryMergeEntries(mockClient, 1, 2);
       expect(res).toBeNull();
+    });
+  });
+
+  describe("formatWeighmentRecord", () => {
+    it("correctly formats weighment with rate_id, center, weights, and timestamps", () => {
+      const mockRow = {
+        id: 10,
+        unit: Unit.KG,
+        type: "unassigned",
+        rate_id: 7,
+        in_entry_id: 1,
+        out_entry_id: 2,
+        created_at: "2026-08-31T10:00:00Z",
+        updated_at: "2026-08-31T10:00:00Z",
+        in_entry: {
+          created_at: "2026-08-31T08:00:00Z",
+          weight: 40000,
+          vehicle_number: "KA01AB1234",
+          center_id: 1,
+          centers: { name: "Center A" },
+          user_id: 2,
+          users: { name: "Operator 1" },
+          customer_id: 3,
+          customers: { name: "Customer 1" },
+          images: ["img1.jpg"],
+        },
+        out_entry: {
+          created_at: "2026-08-31T10:00:00Z",
+          weight: 15000,
+          vehicle_number: "KA01AB1234",
+          center_id: 1,
+          centers: { name: "Center A" },
+          user_id: 4,
+          users: { name: "Operator 2" },
+          customer_id: 3,
+          customers: { name: "Customer 1" },
+          images: ["img2.jpg"],
+        },
+      };
+
+      const result = formatWeighmentRecord(mockRow);
+      expect(result).toEqual({
+        id: 10,
+        unit: Unit.KG,
+        type: "unassigned",
+        rate_id: 7,
+        gross_weight: 40000,
+        tare_weight: 15000,
+        net_weight: 25000,
+        images: ["img1.jpg", "img2.jpg"],
+        in_entry_id: 1,
+        in_entry_created_at: "2026-08-31T08:00:00Z",
+        out_entry_id: 2,
+        out_entry_created_at: "2026-08-31T10:00:00Z",
+        center_id: 1,
+        center_name: "Center A",
+        in_user_id: 2,
+        in_user_name: "Operator 1",
+        out_user_id: 4,
+        out_user_name: "Operator 2",
+        in_customer_id: 3,
+        in_customer_name: "Customer 1",
+        out_customer_id: 3,
+        out_customer_name: "Customer 1",
+        vehicle_number: "KA01AB1234",
+        created_at: "2026-08-31T10:00:00Z",
+        updated_at: "2026-08-31T10:00:00Z",
+      });
     });
   });
 });

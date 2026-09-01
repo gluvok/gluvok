@@ -18,6 +18,7 @@ import {
   EntryStatus,
   EntrySource,
   FieldSpan,
+  WeighmentType,
 } from "@/lib/constants/enums";
 import { PROJECT_FIELDS, getSingularName } from "@/lib/fields";
 import { ENTITY_ADD_SCHEMAS, ENTITY_EDIT_SCHEMAS, checkEditUniqueness } from "@/lib/validation";
@@ -47,6 +48,38 @@ export function useEntityForm({
 
   const fields = React.useMemo(() => {
     const baseFields = PROJECT_FIELDS[projectSlug] || [];
+    if (isEdit && projectSlug === ProjectSlug.WEIGHMENTS && item) {
+      const typeVal = getField(item, "type");
+      const rateIdVal = getField(item, "rate_id");
+      const isTypeFixed =
+        typeVal !== null &&
+        typeVal !== undefined &&
+        typeVal !== "" &&
+        typeVal !== WeighmentType.UNASSIGNED;
+      const isRateFixed =
+        rateIdVal !== null &&
+        rateIdVal !== undefined &&
+        rateIdVal !== "";
+
+      const canEditType = !isTypeFixed;
+      const canEditRate = !isRateFixed;
+
+      if (canEditType && canEditRate) {
+        return baseFields;
+      }
+      if (canEditType) {
+        return baseFields
+          .filter((f) => f.key === "type")
+          .map((f) => ({ ...f, span: FieldSpan.FULL }));
+      }
+      if (canEditRate) {
+        return baseFields
+          .filter((f) => f.key === "rate_id")
+          .map((f) => ({ ...f, span: FieldSpan.FULL }));
+      }
+      return [];
+    }
+
     if (isEdit && projectSlug === ProjectSlug.ENTRIES && item) {
       const status = getField(item, "status");
       if (status === EntryStatus.REJECTED) {
@@ -165,6 +198,11 @@ export function useEntityForm({
           if (fetchedCommodities.length === 1) {
             defaultVals["commodity_id"] = String(fetchedCommodities[0].id);
           }
+        } else if (projectSlug === ProjectSlug.WEIGHMENTS) {
+          const fetchedRates = await useEntitiesStore.getState().fetchRates();
+          if (fetchedRates.length === 1 && !defaultVals["rate_id"]) {
+            defaultVals["rate_id"] = String(fetchedRates[0].id);
+          }
         }
 
         if (active) form.reset(defaultVals);
@@ -198,6 +236,14 @@ export function useEntityForm({
           }
           if (values["vehicle_number"] !== undefined) {
             updateValues["vehicle_number"] = values["vehicle_number"];
+          }
+        } else if (projectSlug === ProjectSlug.WEIGHMENTS) {
+          updateValues = {};
+          if (values["type"] !== undefined && values["type"] !== "") {
+            updateValues["type"] = values["type"];
+          }
+          if (values["rate_id"] !== undefined && values["rate_id"] !== "") {
+            updateValues["rate_id"] = Number(values["rate_id"]);
           }
         } else {
           updateValues = { ...values };

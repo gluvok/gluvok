@@ -119,6 +119,7 @@ export function FormFieldInput({ field, form, idPrefix, disabled }: FormFieldInp
           onChange={(val) =>
             form.setValue(field.key, val, { shouldValidate: true, shouldDirty: true })
           }
+          disabled={disabled}
         />
       );
     case FieldType.TYPE:
@@ -129,6 +130,7 @@ export function FormFieldInput({ field, form, idPrefix, disabled }: FormFieldInp
           onChange={(val) =>
             form.setValue(field.key, val, { shouldValidate: true, shouldDirty: true })
           }
+          disabled={disabled}
         />
       );
     default:

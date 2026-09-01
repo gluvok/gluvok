@@ -18,6 +18,7 @@ import {
   ProjectSlug,
   EntryStatus,
   EntrySource,
+  WeighmentType,
 } from "@/lib/constants/enums";
 import { type FieldConfig, getSingularName } from "@/lib/fields";
 import {
@@ -52,6 +53,26 @@ export function EntityDialogContent({
 
   const renderField = (field: FieldConfig) => {
     let entryFieldDisabled = false;
+    if (isEdit && projectSlug === ProjectSlug.WEIGHMENTS && item) {
+      const typeVal = getField(item, "type");
+      const rateIdVal = getField(item, "rate_id");
+      const isTypeFixed =
+        typeVal !== null &&
+        typeVal !== undefined &&
+        typeVal !== "" &&
+        typeVal !== WeighmentType.UNASSIGNED;
+      const isRateFixed =
+        rateIdVal !== null &&
+        rateIdVal !== undefined &&
+        rateIdVal !== "";
+
+      if (field.key === "type") {
+        entryFieldDisabled = isTypeFixed;
+      } else if (field.key === "rate_id") {
+        entryFieldDisabled = isRateFixed;
+      }
+    }
+
     if (isEdit && projectSlug === ProjectSlug.ENTRIES && item) {
       const entryStatus = getField(item, "status") as EntryStatus | string;
       const isAutoApproved = Boolean(getField(item, "auto_approved"));

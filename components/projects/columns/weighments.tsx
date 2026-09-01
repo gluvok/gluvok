@@ -17,6 +17,7 @@ import {
   Users,
   Clock,
   ArrowLeftRight,
+  IndianRupee,
 } from "lucide-react";
 import { WeighmentType } from "@/lib/constants/enums";
 import { getTypeIcon } from "@/lib/fields/helpers";
@@ -33,6 +34,7 @@ import { WeighmentImagesCell } from "./weighments-cell";
 export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
     createTextColumn("unit", "Unit", Ruler),
+    createIdColumn("rate_id", "Rate ID", IndianRupee),
     createCustomColumn("type", "Type", ArrowLeftRight, (val) => {
       const type = ((val as string) || WeighmentType.UNASSIGNED).toLowerCase();
       let typeClass = "bg-muted text-muted-foreground border border-border";

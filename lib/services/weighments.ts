@@ -164,6 +164,7 @@ export function formatWeighmentRecord(row: Record<string, unknown>): Record<stri
     id: row.id,
     unit: row.unit || Unit.KG,
     type: row.type || WeighmentType.UNASSIGNED,
+    rate_id: (row.rate_id as number | undefined) ?? null,
     gross_weight: grossWeight,
     tare_weight: tareWeight,
     net_weight: netWeight,

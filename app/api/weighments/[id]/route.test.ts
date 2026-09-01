@@ -230,5 +230,153 @@ describe("Weighments [id] PATCH route handler", () => {
     const response = await handler(patchRequest, sampleUser, mockDb, context);
 
     expect(response.status).toBe(400);
+    const json = await response.json();
+    expect(json.error).toContain("type is already set");
+  });
+
+  it("updates weighment rate_id when currently null", async () => {
+    const patchRequest = new Request("http://localhost/api/weighments/100", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rate_id: 3 }),
+    });
+
+    const updateMock = vi.fn(() => ({
+      eq: vi.fn(() => ({
+        is: vi.fn(() => ({
+          select: vi.fn(() => ({
+            single: vi.fn().mockResolvedValue({
+              data: { id: 100, type: "unassigned", rate_id: 3 },
+              error: null,
+            }),
+          })),
+        })),
+      })),
+    }));
+
+    const mockDb = {
+      from: vi.fn((table: string) => {
+        if (table === "weighments") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                is: vi.fn(() => ({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { id: 100, type: "unassigned", rate_id: null },
+                    error: null,
+                  }),
+                })),
+              })),
+            })),
+            update: updateMock,
+          };
+        }
+        if (table === "rates") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  is: vi.fn(() => ({
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: { id: 3, factory_id: 1 },
+                      error: null,
+                    }),
+                  })),
+                })),
+              })),
+            })),
+          };
+        }
+        return {};
+      }),
+    };
+
+    const handler = PATCH as unknown as RawHandler;
+    const response = await handler(patchRequest, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.data.rate_id).toBe(3);
+  });
+
+  it("rejects modifying rate_id if rate_id is already set", async () => {
+    const patchRequest = new Request("http://localhost/api/weighments/100", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rate_id: 4 }),
+    });
+
+    const mockDb = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            is: vi.fn(() => ({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: 100, type: "unassigned", rate_id: 3 },
+                error: null,
+              }),
+            })),
+          })),
+        })),
+      })),
+    };
+
+    const handler = PATCH as unknown as RawHandler;
+    const response = await handler(patchRequest, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(400);
+    const json = await response.json();
+    expect(json.error).toContain("Rate is already set");
+  });
+
+  it("rejects modifying rate_id if rate does not exist in user's factory", async () => {
+    const patchRequest = new Request("http://localhost/api/weighments/100", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rate_id: 999 }),
+    });
+
+    const mockDb = {
+      from: vi.fn((table: string) => {
+        if (table === "weighments") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                is: vi.fn(() => ({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { id: 100, type: "unassigned", rate_id: null },
+                    error: null,
+                  }),
+                })),
+              })),
+            })),
+          };
+        }
+        if (table === "rates") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  is: vi.fn(() => ({
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: null,
+                      error: null,
+                    }),
+                  })),
+                })),
+              })),
+            })),
+          };
+        }
+        return {};
+      }),
+    };
+
+    const handler = PATCH as unknown as RawHandler;
+    const response = await handler(patchRequest, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(400);
+    const json = await response.json();
+    expect(json.error).toContain("Rate not found or does not belong to your factory");
   });
 });

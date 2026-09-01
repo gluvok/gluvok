@@ -774,12 +774,11 @@ async function main() {
       continue;
     }
 
-    // Insert Weighment linking In + Out
+    // Insert Weighment linking In + Out (type defaults to unassigned via DB column default)
     const { error: wErr } = await supabase.from("weighments").insert({
       in_entry_id: inEntry.id,
       out_entry_id: outEntry.id,
       unit: pair.unit,
-      type: pair.weighmentType,
       rate_id: pair.rateId || null,
       created_at: outCreatedAt,
       updated_at: outCreatedAt,

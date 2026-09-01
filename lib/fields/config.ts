@@ -184,7 +184,16 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       type: FieldType.TYPE,
       required: false,
       icon: ArrowLeftRight,
-      span: FieldSpan.FULL,
+      span: FieldSpan.HALF,
+    },
+    {
+      key: "rate_id",
+      label: "Rate",
+      placeholder: "Select rate...",
+      type: FieldType.TEXT,
+      required: false,
+      icon: IndianRupee,
+      span: FieldSpan.HALF,
     },
   ],
   [ProjectSlug.USERS]: [

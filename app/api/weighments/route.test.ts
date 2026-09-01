@@ -69,6 +69,7 @@ describe("GET /api/weighments", () => {
                       id: 10,
                       unit: Unit.KG,
                       type: WeighmentType.UNASSIGNED,
+                      rate_id: 5,
                       in_entry_id: 1,
                       out_entry_id: 2,
                       created_at: "2026-08-31T10:00:00Z",
@@ -113,6 +114,7 @@ describe("GET /api/weighments", () => {
     expect(json.data[0].net_weight).toBe(10000);
     expect(json.data[0].center_name).toBe("Center A");
     expect(json.data[0].center_id).toBe(1);
+    expect(json.data[0].rate_id).toBe(5);
   });
 
   it("filters by user_id using entry ID pre-resolution without PostgREST syntax error", async () => {

@@ -13,6 +13,7 @@ interface TypeComboboxProps {
   value: string;
   onChange: (value: string) => void;
   id?: string;
+  disabled?: boolean;
 }
 
 const data = [
@@ -25,7 +26,7 @@ const data = [
  * TypeCombobox Component
  * Renders a dropdown to select a weighment transaction type (incoming vs outgoing).
  */
-export function TypeCombobox({ value, onChange, id }: TypeComboboxProps) {
+export function TypeCombobox({ value, onChange, id, disabled }: TypeComboboxProps) {
   const ActiveIcon = getTypeIcon(value);
 
   return (
@@ -37,6 +38,7 @@ export function TypeCombobox({ value, onChange, id }: TypeComboboxProps) {
       icon={ActiveIcon}
       placeholder="Select type..."
       id={id}
+      disabled={disabled}
     />
   );
 }

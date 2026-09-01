@@ -44,10 +44,7 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
     }
   }
 
-  const formatted = {
-    ...formatWeighmentRecord(row),
-    rate_id: row.rate_id,
-  };
+  const formatted = formatWeighmentRecord(row);
 
   return NextResponse.json({ data: formatted });
 });
@@ -75,18 +72,18 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     return apiError("Weighment not found", StatusCodes.NOT_FOUND);
   }
 
-  const allowedKeys = ["type"];
+  const allowedKeys = ["type", "rate_id"];
   const forbiddenKeys = Object.keys(body).filter((key) => !allowedKeys.includes(key));
   if (forbiddenKeys.length > 0) {
     return apiError(
-      "Only the 'type' field can be edited on a weighment record.",
+      "Only the 'type' and 'rate_id' fields can be edited on a weighment record.",
       StatusCodes.BAD_REQUEST,
     );
   }
 
   const updates: Record<string, unknown> = {};
 
-  // 3. Validate 'type' update lock if type is NOT 'unassigned'
+  // 2. Validate 'type' update lock if type is NOT 'unassigned'
   if (body.type !== undefined) {
     if (
       existing.type !== WeighmentType.UNASSIGNED &&
@@ -99,6 +96,33 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
       );
     }
     updates["type"] = body.type;
+  }
+
+  // 3. Validate 'rate_id' update lock if rate_id is NOT null
+  if (body.rate_id !== undefined) {
+    if (existing.rate_id !== null && existing.rate_id !== undefined) {
+      return apiError(
+        "Rate is already set for this weighment and cannot be modified.",
+        StatusCodes.BAD_REQUEST,
+      );
+    }
+    if (body.rate_id !== null) {
+      const { data: validRate } = await client
+        .from("rates")
+        .select("id")
+        .eq("id", body.rate_id)
+        .eq("factory_id", user.factory_id!)
+        .is("deleted_at", null)
+        .maybeSingle();
+
+      if (!validRate) {
+        return apiError(
+          "Rate not found or does not belong to your factory.",
+          StatusCodes.BAD_REQUEST,
+        );
+      }
+    }
+    updates["rate_id"] = body.rate_id;
   }
 
   if (Object.keys(updates).length === 0) {

@@ -12,6 +12,7 @@ interface UnitComboboxProps {
   value: string;
   onChange: (value: string) => void;
   id?: string;
+  disabled?: boolean;
 }
 
 const data = [
@@ -24,7 +25,7 @@ const data = [
  * UnitCombobox Component
  * Renders a dropdown to select a unit of measurement.
  */
-export function UnitCombobox({ value, onChange, id }: UnitComboboxProps) {
+export function UnitCombobox({ value, onChange, id, disabled }: UnitComboboxProps) {
   return (
     <BaseCombobox
       value={value}
@@ -33,6 +34,7 @@ export function UnitCombobox({ value, onChange, id }: UnitComboboxProps) {
       type="unit"
       placeholder="Select unit..."
       id={id}
+      disabled={disabled}
     />
   );
 }

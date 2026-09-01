@@ -145,4 +145,51 @@ describe("POST /api/auth/login (Browser Authentication)", () => {
     const json = await res.json();
     expect(json.error).toBe(AuthErrorMessage.INVALID_CREDENTIALS);
   });
+
+  it("authenticates hardware device user successfully and returns Bearer tokens in JSON response", async () => {
+    const passwordHash = await hashPassword("hardwarepass123");
+    mockDb.from.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          is: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: {
+                id: 5,
+                username: "pi1",
+                name: "Scale Hardware Unit 1",
+                password_hash: passwordHash,
+                role: Role.HARDWARE,
+                factory_id: 1,
+                token_version: 1,
+              },
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    });
+
+    const req = new NextRequest("http://localhost/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "pi1", password: "hardwarepass123" }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.success).toBe(true);
+    expect(json.access_token).toBeDefined();
+    expect(json.refresh_token).toBeDefined();
+    expect(json.token_type).toBe("Bearer");
+    expect(typeof json.expires_in).toBe("number");
+    expect(json.user).toEqual({
+      id: 5,
+      username: "pi1",
+      name: "Scale Hardware Unit 1",
+      role: Role.HARDWARE,
+      factory_id: 1,
+      factory_name: undefined,
+    });
+  });
 });

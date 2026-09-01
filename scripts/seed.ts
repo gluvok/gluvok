@@ -79,20 +79,20 @@ async function main() {
   const adminPasswordHash = await hashPassword("admin123");
   const hardwarePasswordHash = await hashPassword("hardware123");
 
-  console.log("Inserting admin user ('admin')...");
+  console.log("Inserting admin user ('admin1')...");
   const { data: existingAdmin } = await supabase
     .from("users")
     .select("id")
-    .eq("username", "admin")
+    .eq("username", "admin1")
     .maybeSingle();
 
   if (!existingAdmin) {
     const { data: newAdmin, error: adminErr } = await supabase
       .from("users")
       .insert({
-        username: "admin",
+        username: "admin1",
         password_hash: adminPasswordHash,
-        name: "Admin User",
+        name: "Admin User 1",
         role: Role.ADMIN,
         factory_id: factoryId,
       })
@@ -101,21 +101,21 @@ async function main() {
     if (adminErr || !newAdmin) throw adminErr || new Error("Failed to create admin user");
     console.log(`Admin user inserted with id=${newAdmin.id}`);
   } else {
-    console.log("Admin user already exists.");
+    console.log("Admin user ('admin1') already exists.");
   }
 
-  console.log("Inserting hardware device user ('hardware_device_1')...");
+  console.log("Inserting hardware device user ('pi1')...");
   const { data: existingHardware } = await supabase
     .from("users")
     .select("id")
-    .eq("username", "hardware_device_1")
+    .eq("username", "pi1")
     .maybeSingle();
 
   if (!existingHardware) {
     const { data: newHardware, error: hwErr } = await supabase
       .from("users")
       .insert({
-        username: "hardware_device_1",
+        username: "pi1",
         password_hash: hardwarePasswordHash,
         name: "Scale Hardware Unit 1",
         role: Role.HARDWARE,
@@ -126,7 +126,7 @@ async function main() {
     if (hwErr || !newHardware) throw hwErr || new Error("Failed to create hardware user");
     console.log(`Hardware user inserted with id=${newHardware.id}`);
   } else {
-    console.log("Hardware user already exists.");
+    console.log("Hardware user ('pi1') already exists.");
   }
 
   console.log("Seeding default commodities catalog...");

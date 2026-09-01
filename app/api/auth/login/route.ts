@@ -1,11 +1,11 @@
 /**
  * @file app/api/auth/login/route.ts
- * @description API route for browser authentication and cookie session initialization.
+ * @description API route for unified authentication (browser sessions and hardware Bearer tokens).
  */
 
 import { NextRequest } from "next/server";
-import { authenticateBrowserUser } from "@/lib/auth/browser";
+import { authenticateUser } from "@/lib/auth/login";
 
 export async function POST(request: NextRequest) {
-  return authenticateBrowserUser(request);
+  return authenticateUser(request);
 }

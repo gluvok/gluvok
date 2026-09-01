@@ -16,7 +16,6 @@ export type AppRoutes = AppRoute;
 
 export const ApiRoutes = {
   AUTH_LOGIN: "/api/auth/login",
-  AUTH_DEVICE_LOGIN: "/api/auth/device/login",
   AUTH_REFRESH: "/api/auth/refresh",
   AUTH_LOGOUT: "/api/auth/logout",
   AUTH_ME: "/api/auth/me",
@@ -24,7 +23,6 @@ export const ApiRoutes = {
   CENTERS: "/api/centers",
   RATES: "/api/rates",
   ENTRIES: "/api/entries",
-  DEVICE_ENTRIES: "/api/device/entries",
   WEIGHMENTS: "/api/weighments",
   COMMODITIES: "/api/commodities",
   USERS: "/api/users",
@@ -39,6 +37,5 @@ export const AUTH_ROUTES: readonly string[] = [AppRoutes.LOGIN];
 export const PUBLIC_ROUTES: readonly string[] = [AppRoutes.SERVICES];
 export const PUBLIC_API_ROUTES: readonly string[] = [
   ApiRoutes.AUTH_LOGIN,
-  ApiRoutes.AUTH_DEVICE_LOGIN,
   ApiRoutes.AUTH_REFRESH,
 ];

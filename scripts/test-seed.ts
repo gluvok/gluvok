@@ -152,8 +152,8 @@ async function main() {
   const userConfigs = [
     // Primary Factory Users
     {
-      username: "admin",
-      name: "System Administrator",
+      username: "admin1",
+      name: "System Administrator 1",
       role: Role.ADMIN,
       pass: adminPassHash,
       factoryId: primaryFactoryId,
@@ -180,14 +180,14 @@ async function main() {
       factoryId: primaryFactoryId,
     },
     {
-      username: "hardware_device_1",
+      username: "pi1",
       name: "Scale Hardware Unit 1",
       role: Role.HARDWARE,
       pass: hardwarePassHash,
       factoryId: primaryFactoryId,
     },
     {
-      username: "hardware_device_2",
+      username: "pi2",
       name: "Scale Hardware Unit 2",
       role: Role.HARDWARE,
       pass: hardwarePassHash,
@@ -223,7 +223,7 @@ async function main() {
     },
     // Secondary Factory Users
     {
-      username: "admin_secondary",
+      username: "admin2",
       name: "Apex Site Admin",
       role: Role.ADMIN,
       pass: adminPassHash,
@@ -244,7 +244,7 @@ async function main() {
       factoryId: secondaryFactoryId,
     },
     {
-      username: "hardware_scale_apex",
+      username: "pi3",
       name: "Apex Scale Terminal 1",
       role: Role.HARDWARE,
       pass: hardwarePassHash,
@@ -503,9 +503,9 @@ async function main() {
   // 7. ENTRIES & WEIGHMENTS (Rich scenarios spanning dates, statuses, and types)
   console.log("\n🚛 [7/8] Seeding Paired Entries and Weighments across date presets...");
 
-  const defaultOperatorId = userMap.get("operator_bob") || userMap.get("admin")!;
+  const defaultOperatorId = userMap.get("operator_bob") || userMap.get("admin1")!;
   const charlieOperatorId = userMap.get("operator_charlie") || defaultOperatorId;
-  const hardwareDevice1Id = userMap.get("hardware_device_1") || defaultOperatorId;
+  const hardwareDevice1Id = userMap.get("pi1") || defaultOperatorId;
 
   const mainCenterId = centerMap.get("Main Weighbridge")!;
   const northAutoCenterId = centerMap.get("North Automatic Scale")!;
@@ -906,7 +906,7 @@ async function main() {
       auto_approved: true,
       edited: false,
       center_id: centerMap.get("Apex Inbound Scale")!,
-      user_id: userMap.get("hardware_scale_apex")!,
+      user_id: userMap.get("pi3")!,
       customer_id: customerMap.get("Harpreet Singh"),
       factory_id: secondaryFactoryId,
       images: MOCK_IMAGES,
@@ -928,13 +928,15 @@ async function main() {
   console.log("🎉 Test Database Seeding Completed Successfully!");
   console.log("=================================================");
   console.log("📋 Test User Credentials Summary:");
-  console.log("  • Admin:      admin / admin123 (Factory 1)");
-  console.log("  • Manager:    manager_alice / manager123 (Factory 1)");
-  console.log("  • Operator:   operator_bob / operator123 (Factory 1)");
-  console.log("  • Operator:   operator_charlie / operator123 (Factory 1)");
-  console.log("  • Hardware:   hardware_device_1 / hardware123 (Factory 1)");
+  console.log("  • Admin 1:    admin1 / admin123 (Factory 1)");
+  console.log("  • Manager 1:  manager_alice / manager123 (Factory 1)");
+  console.log("  • Operator 1: operator_bob / operator123 (Factory 1)");
+  console.log("  • Operator 2: operator_charlie / operator123 (Factory 1)");
+  console.log("  • Hardware 1: pi1 / hardware123 (Factory 1)");
+  console.log("  • Hardware 2: pi2 / hardware123 (Factory 1)");
   console.log("  • Customer:   cust_ramesh / user123 (Factory 1)");
-  console.log("  • Apex Admin: admin_secondary / admin123 (Factory 2)");
+  console.log("  • Admin 2:    admin2 / admin123 (Factory 2)");
+  console.log("  • Hardware 3: pi3 / hardware123 (Factory 2)");
   console.log("=================================================");
 }
 

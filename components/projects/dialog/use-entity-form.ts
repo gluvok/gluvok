@@ -25,6 +25,7 @@ import {
   ENTITY_ADD_SCHEMAS,
   ENTITY_EDIT_SCHEMAS,
   type EntityAddSchema,
+  type EntityEditSchema,
   checkEditUniqueness,
 } from "@/lib/validation";
 import { useEntitiesStore, useAuthStore, getField, hasPermission } from "@/lib/store";
@@ -138,7 +139,7 @@ export function useEntityForm({
 
   const formSchema = React.useMemo(() => {
     return isEdit
-      ? ENTITY_EDIT_SCHEMAS[projectSlug as ProjectSlug]
+      ? (ENTITY_EDIT_SCHEMAS as Record<string, EntityEditSchema>)[projectSlug]
       : (ENTITY_ADD_SCHEMAS as Record<string, EntityAddSchema>)[projectSlug];
   }, [isEdit, projectSlug]);
 

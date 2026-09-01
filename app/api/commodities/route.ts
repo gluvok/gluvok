@@ -25,7 +25,7 @@ export const GET = withAuth(async (req, user, client) => {
   if (search) {
     const searchNum = parseInt(search, 10);
     if (!isNaN(searchNum)) {
-      query = query.or(`name.ilike.%${search}%,id.eq.${searchNum}`);
+      query = query.eq("id", searchNum);
     } else {
       query = query.ilike("name", `%${search}%`);
     }

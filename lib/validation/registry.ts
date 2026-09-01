@@ -5,18 +5,21 @@
 
 import { ProjectSlug } from "@/lib/constants/enums";
 import { addCenterSchema, editCenterSchema } from "./centers";
-import { addCommoditySchema, editCommoditySchema } from "./commodities";
 import { addRateSchema, editRateSchema } from "./rates";
 import { addCustomerSchema, editCustomerSchema } from "./customers";
 import { addEntrySchema, editEntrySchema } from "./entries";
 import { editWeighmentSchema } from "./weighments";
 import { addUserSchema, editUserSchema } from "./users";
 
-export type CreatableProjectSlug = Exclude<ProjectSlug, ProjectSlug.WEIGHMENTS>;
+export type CreatableProjectSlug = Exclude<
+  ProjectSlug,
+  ProjectSlug.WEIGHMENTS | ProjectSlug.COMMODITIES
+>;
+
+export type EditableProjectSlug = Exclude<ProjectSlug, ProjectSlug.COMMODITIES>;
 
 export type EntityAddSchema =
   | typeof addCenterSchema
-  | typeof addCommoditySchema
   | typeof addRateSchema
   | typeof addCustomerSchema
   | typeof addEntrySchema
@@ -24,7 +27,6 @@ export type EntityAddSchema =
 
 export type EntityEditSchema =
   | typeof editCenterSchema
-  | typeof editCommoditySchema
   | typeof editRateSchema
   | typeof editCustomerSchema
   | typeof editEntrySchema
@@ -33,16 +35,14 @@ export type EntityEditSchema =
 
 export const ENTITY_ADD_SCHEMAS: Record<CreatableProjectSlug, EntityAddSchema> = {
   [ProjectSlug.CENTERS]: addCenterSchema,
-  [ProjectSlug.COMMODITIES]: addCommoditySchema,
   [ProjectSlug.RATES]: addRateSchema,
   [ProjectSlug.CUSTOMERS]: addCustomerSchema,
   [ProjectSlug.ENTRIES]: addEntrySchema,
   [ProjectSlug.USERS]: addUserSchema,
 };
 
-export const ENTITY_EDIT_SCHEMAS: Record<ProjectSlug, EntityEditSchema> = {
+export const ENTITY_EDIT_SCHEMAS: Record<EditableProjectSlug, EntityEditSchema> = {
   [ProjectSlug.CENTERS]: editCenterSchema,
-  [ProjectSlug.COMMODITIES]: editCommoditySchema,
   [ProjectSlug.RATES]: editRateSchema,
   [ProjectSlug.CUSTOMERS]: editCustomerSchema,
   [ProjectSlug.ENTRIES]: editEntrySchema,

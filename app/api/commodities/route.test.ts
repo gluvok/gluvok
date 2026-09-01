@@ -65,7 +65,7 @@ describe("GET /api/commodities", () => {
     expect(response.status).toBe(200);
   });
 
-  it("applies ilike search filter when search param is provided", async () => {
+  it("applies ilike search filter when text search param is provided", async () => {
     const mockQuery: Record<string, unknown> = {};
     mockQuery.select = vi.fn(() => mockQuery);
     mockQuery.order = vi.fn(() => mockQuery);
@@ -76,5 +76,18 @@ describe("GET /api/commodities", () => {
     const req = new NextRequest("http://localhost/api/commodities?search=wheat");
     await (GET as unknown as RawHandler)(req, sampleUser, mockDb, context);
     expect(mockQuery.ilike).toHaveBeenCalledWith("name", "%wheat%");
+  });
+
+  it("applies eq id search filter when numeric search param is provided", async () => {
+    const mockQuery: Record<string, unknown> = {};
+    mockQuery.select = vi.fn(() => mockQuery);
+    mockQuery.order = vi.fn(() => mockQuery);
+    mockQuery.is = vi.fn(() => mockQuery);
+    mockQuery.eq = vi.fn(() => mockQuery);
+    const mockDb = { from: vi.fn(() => mockQuery) };
+
+    const req = new NextRequest("http://localhost/api/commodities?search=42");
+    await (GET as unknown as RawHandler)(req, sampleUser, mockDb, context);
+    expect(mockQuery.eq).toHaveBeenCalledWith("id", 42);
   });
 });

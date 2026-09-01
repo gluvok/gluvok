@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import {
   createEntry,
   validateCenterBelongsToFactory,
@@ -6,6 +6,11 @@ import {
 } from "./entries";
 import { EntryStatus, EntrySource } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
+import type { supabase } from "@/db";
+
+type MockSupabaseClient = typeof supabase & {
+  from: Mock;
+};
 
 const { mockUploadImages, mockValidateSeq, mockTryMerge } = vi.hoisted(() => ({
   mockUploadImages: vi.fn(),
@@ -23,7 +28,7 @@ vi.mock("./weighments", () => ({
 }));
 
 describe("Entries Service", () => {
-  let mockClient: any;
+  let mockClient: MockSupabaseClient;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -33,7 +38,7 @@ describe("Entries Service", () => {
 
     mockClient = {
       from: vi.fn(),
-    };
+    } as unknown as MockSupabaseClient;
   });
 
   describe("validateCenterBelongsToFactory", () => {
@@ -44,7 +49,10 @@ describe("Entries Service", () => {
         is: vi.fn().mockReturnThis(),
         maybeSingle: vi
           .fn()
-          .mockResolvedValue({ data: { id: 1, auto_approve: false }, error: null }),
+          .mockResolvedValue({
+            data: { id: 1, auto_approve: false },
+            error: null,
+          }),
       });
 
       const res = await validateCenterBelongsToFactory(mockClient, 1, 10);
@@ -59,9 +67,9 @@ describe("Entries Service", () => {
         maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
       });
 
-      await expect(validateCenterBelongsToFactory(mockClient, 1, 10)).rejects.toThrow(
-        ApiErrorMessage.SELECTED_CENTER_NOT_FOUND,
-      );
+      await expect(
+        validateCenterBelongsToFactory(mockClient, 1, 10),
+      ).rejects.toThrow(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND);
     });
   });
 
@@ -71,10 +79,14 @@ describe("Entries Service", () => {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         is: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: { id: 2 }, error: null }),
+        maybeSingle: vi
+          .fn()
+          .mockResolvedValue({ data: { id: 2 }, error: null }),
       });
 
-      await expect(validateCustomerBelongsToFactory(mockClient, 2, 10)).resolves.toBeUndefined();
+      await expect(
+        validateCustomerBelongsToFactory(mockClient, 2, 10),
+      ).resolves.toBeUndefined();
     });
 
     it("throws CUSTOMER_NOT_FOUND when customer is missing", async () => {
@@ -85,9 +97,9 @@ describe("Entries Service", () => {
         maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
       });
 
-      await expect(validateCustomerBelongsToFactory(mockClient, 2, 10)).rejects.toThrow(
-        ApiErrorMessage.CUSTOMER_NOT_FOUND,
-      );
+      await expect(
+        validateCustomerBelongsToFactory(mockClient, 2, 10),
+      ).rejects.toThrow(ApiErrorMessage.CUSTOMER_NOT_FOUND);
     });
   });
 
@@ -115,7 +127,10 @@ describe("Entries Service", () => {
             is: vi.fn().mockReturnThis(),
             maybeSingle: vi
               .fn()
-              .mockResolvedValue({ data: { id: 1, auto_approve: false }, error: null }),
+              .mockResolvedValue({
+                data: { id: 1, auto_approve: false },
+                error: null,
+              }),
           };
         }
         if (table === "customers") {
@@ -123,14 +138,18 @@ describe("Entries Service", () => {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
             is: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: { id: 2 }, error: null }),
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: { id: 2 }, error: null }),
           };
         }
         if (table === "entries") {
           return {
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: insertedEntry, error: null }),
+                single: vi
+                  .fn()
+                  .mockResolvedValue({ data: insertedEntry, error: null }),
               }),
             }),
           };
@@ -148,7 +167,10 @@ describe("Entries Service", () => {
       });
 
       expect(res).toEqual(insertedEntry);
-      expect(mockUploadImages).toHaveBeenCalledWith(["data:image/jpeg;base64,..."], 10);
+      expect(mockUploadImages).toHaveBeenCalledWith(
+        ["data:image/jpeg;base64,..."],
+        10,
+      );
       expect(mockValidateSeq).not.toHaveBeenCalled();
       expect(mockTryMerge).not.toHaveBeenCalled();
     });
@@ -177,14 +199,19 @@ describe("Entries Service", () => {
             is: vi.fn().mockReturnThis(),
             maybeSingle: vi
               .fn()
-              .mockResolvedValue({ data: { id: 1, auto_approve: true }, error: null }),
+              .mockResolvedValue({
+                data: { id: 1, auto_approve: true },
+                error: null,
+              }),
           };
         }
         if (table === "entries") {
           return {
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: insertedEntry, error: null }),
+                single: vi
+                  .fn()
+                  .mockResolvedValue({ data: insertedEntry, error: null }),
               }),
             }),
           };
@@ -223,14 +250,22 @@ describe("Entries Service", () => {
             is: vi.fn().mockReturnThis(),
             maybeSingle: vi
               .fn()
-              .mockResolvedValue({ data: { id: 1, auto_approve: false }, error: null }),
+              .mockResolvedValue({
+                data: { id: 1, auto_approve: false },
+                error: null,
+              }),
           };
         }
         if (table === "entries") {
           return {
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: null, error: { message: "DB failure" } }),
+                single: vi
+                  .fn()
+                  .mockResolvedValue({
+                    data: null,
+                    error: { message: "DB failure" },
+                  }),
               }),
             }),
           };

@@ -1,14 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { validateSequentialApproval, tryMergeEntries } from "./weighments";
 import { EntryStatus, EntrySource, Unit } from "@/lib/constants/enums";
+import type { supabase } from "@/db";
+
+type MockSupabaseClient = typeof supabase & {
+  from: Mock;
+};
 
 describe("Weighments Service", () => {
-  let mockClient: any;
+  let mockClient: MockSupabaseClient;
 
   beforeEach(() => {
     mockClient = {
       from: vi.fn(),
-    };
+    } as unknown as MockSupabaseClient;
   });
 
   describe("validateSequentialApproval", () => {
@@ -71,7 +76,9 @@ describe("Weighments Service", () => {
           2,
           EntrySource.DEVICE,
         ),
-      ).rejects.toThrow(/Cannot approve entry #2 because earlier device entry #1/);
+      ).rejects.toThrow(
+        /Cannot approve entry #2 because earlier device entry #1/,
+      );
     });
   });
 
@@ -101,7 +108,9 @@ describe("Weighments Service", () => {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
               is: vi.fn().mockReturnThis(),
-              maybeSingle: vi.fn().mockResolvedValue({ data: e2Data, error: null }),
+              maybeSingle: vi
+                .fn()
+                .mockResolvedValue({ data: e2Data, error: null }),
             };
           } else {
             return {
@@ -124,7 +133,12 @@ describe("Weighments Service", () => {
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
                 single: vi.fn().mockResolvedValue({
-                  data: { id: 100, in_entry_id: 1, out_entry_id: 2, unit: Unit.KG },
+                  data: {
+                    id: 100,
+                    in_entry_id: 1,
+                    out_entry_id: 2,
+                    unit: Unit.KG,
+                  },
                   error: null,
                 }),
               }),
@@ -134,7 +148,12 @@ describe("Weighments Service", () => {
       });
 
       const res = await tryMergeEntries(mockClient, 1, 2);
-      expect(res).toEqual({ id: 100, in_entry_id: 1, out_entry_id: 2, unit: Unit.KG });
+      expect(res).toEqual({
+        id: 100,
+        in_entry_id: 1,
+        out_entry_id: 2,
+        unit: Unit.KG,
+      });
     });
 
     it("should return null if no matching entry of the same source is found", async () => {
@@ -155,7 +174,9 @@ describe("Weighments Service", () => {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
               is: vi.fn().mockReturnThis(),
-              maybeSingle: vi.fn().mockResolvedValue({ data: e2Data, error: null }),
+              maybeSingle: vi
+                .fn()
+                .mockResolvedValue({ data: e2Data, error: null }),
             };
           } else {
             return {

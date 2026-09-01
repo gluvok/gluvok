@@ -42,10 +42,7 @@ export function DataTableViewOptions<TData extends RowData>({
           <Settings2 className="h-4 w-4" /> View
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="max-h-128 w-auto"
-      >
+      <DropdownMenuContent align="end" className="max-h-128 w-auto">
         <DropdownMenuLabel className="text-xs">Toggle columns</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {table

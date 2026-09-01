@@ -210,85 +210,88 @@ export function ProjectToolbar<TData extends RowData>({
           </div>
 
           {/* Active Filter Chips / Pills (Shown whenever filters are active) */}
-          {activeFiltersCount > 0 && (() => {
-            const hasStartDate = columnFilters.find((f) => f.id === "start_date");
-            const hasEndDate = columnFilters.find((f) => f.id === "end_date");
-            const chips: { id: string; label: string; onRemove: () => void }[] = [];
+          {activeFiltersCount > 0 &&
+            (() => {
+              const hasStartDate = columnFilters.find((f) => f.id === "start_date");
+              const hasEndDate = columnFilters.find((f) => f.id === "end_date");
+              const chips: { id: string; label: string; onRemove: () => void }[] = [];
 
-            if (hasStartDate && hasEndDate) {
-              const fromStr = formatSafeDate(String(hasStartDate.value));
-              const toStr = formatSafeDate(String(hasEndDate.value));
-              chips.push({
-                id: "date_range",
-                label: `Date: ${fromStr} – ${toStr}`,
-                onRemove: () => {
-                  table.setColumnFilters((prev) =>
-                    prev.filter((f) => f.id !== "start_date" && f.id !== "end_date"),
-                  );
-                },
-              });
-            } else if (hasStartDate) {
-              chips.push({
-                id: "start_date",
-                label: `From: ${formatSafeDate(String(hasStartDate.value))}`,
-                onRemove: () => {
-                  table.setColumnFilters((prev) => prev.filter((f) => f.id !== "start_date"));
-                },
-              });
-            } else if (hasEndDate) {
-              chips.push({
-                id: "end_date",
-                label: `To: ${formatSafeDate(String(hasEndDate.value))}`,
-                onRemove: () => {
-                  table.setColumnFilters((prev) => prev.filter((f) => f.id !== "end_date"));
-                },
-              });
-            }
-
-            for (const filter of columnFilters) {
-              if (filter.id === "start_date" || filter.id === "end_date") {
-                continue;
+              if (hasStartDate && hasEndDate) {
+                const fromStr = formatSafeDate(String(hasStartDate.value));
+                const toStr = formatSafeDate(String(hasEndDate.value));
+                chips.push({
+                  id: "date_range",
+                  label: `Date: ${fromStr} – ${toStr}`,
+                  onRemove: () => {
+                    table.setColumnFilters((prev) =>
+                      prev.filter((f) => f.id !== "start_date" && f.id !== "end_date"),
+                    );
+                  },
+                });
+              } else if (hasStartDate) {
+                chips.push({
+                  id: "start_date",
+                  label: `From: ${formatSafeDate(String(hasStartDate.value))}`,
+                  onRemove: () => {
+                    table.setColumnFilters((prev) => prev.filter((f) => f.id !== "start_date"));
+                  },
+                });
+              } else if (hasEndDate) {
+                chips.push({
+                  id: "end_date",
+                  label: `To: ${formatSafeDate(String(hasEndDate.value))}`,
+                  onRemove: () => {
+                    table.setColumnFilters((prev) => prev.filter((f) => f.id !== "end_date"));
+                  },
+                });
               }
-              chips.push({
-                id: filter.id,
-                label: formatFilterChipLabel(filter.id, filter.value),
-                onRemove: () => {
-                  table.setColumnFilters((prev) => prev.filter((f) => f.id !== filter.id));
-                },
-              });
-            }
 
-            return (
-              <div className="flex items-center gap-1.5 flex-wrap text-xs pt-0.5">
-                <span className="text-[11px] font-medium text-muted-foreground mr-1">Active:</span>
-                {chips.map((chip) => (
-                  <Badge
-                    key={chip.id}
-                    variant="secondary"
-                    className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-muted/80 hover:bg-muted text-foreground border border-border/60 transition-colors"
-                  >
-                    <span>{chip.label}</span>
-                    <button
-                      type="button"
-                      onClick={chip.onRemove}
-                      className="h-3.5 w-3.5 rounded-full hover:bg-foreground/10 flex items-center justify-center transition-colors"
-                      title={`Remove ${chip.id} filter`}
+              for (const filter of columnFilters) {
+                if (filter.id === "start_date" || filter.id === "end_date") {
+                  continue;
+                }
+                chips.push({
+                  id: filter.id,
+                  label: formatFilterChipLabel(filter.id, filter.value),
+                  onRemove: () => {
+                    table.setColumnFilters((prev) => prev.filter((f) => f.id !== filter.id));
+                  },
+                });
+              }
+
+              return (
+                <div className="flex items-center gap-1.5 flex-wrap text-xs pt-0.5">
+                  <span className="text-[11px] font-medium text-muted-foreground mr-1">
+                    Active:
+                  </span>
+                  {chips.map((chip) => (
+                    <Badge
+                      key={chip.id}
+                      variant="secondary"
+                      className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-muted/80 hover:bg-muted text-foreground border border-border/60 transition-colors"
                     >
-                      <X className="h-2.5 w-2.5 text-muted-foreground hover:text-foreground" />
-                    </button>
-                  </Badge>
-                ))}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => table.setColumnFilters([])}
-                  className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-transparent transition-colors underline underline-offset-2"
-                >
-                  Reset
-                </Button>
-              </div>
-            );
-          })()}
+                      <span>{chip.label}</span>
+                      <button
+                        type="button"
+                        onClick={chip.onRemove}
+                        className="h-3.5 w-3.5 rounded-full hover:bg-foreground/10 flex items-center justify-center transition-colors"
+                        title={`Remove ${chip.id} filter`}
+                      >
+                        <X className="h-2.5 w-2.5 text-muted-foreground hover:text-foreground" />
+                      </button>
+                    </Badge>
+                  ))}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => table.setColumnFilters([])}
+                    className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-transparent transition-colors underline underline-offset-2"
+                  >
+                    Reset
+                  </Button>
+                </div>
+              );
+            })()}
 
           {/* Collapsible Filter Panel */}
           {hasFilters && (

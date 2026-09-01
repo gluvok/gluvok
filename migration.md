@@ -50,13 +50,13 @@ This guide will show you how to use [TanStack Table](https://tanstack.com/table)
 1. Add the `<Table />` component to your project:
 
 ```bash
-npx shadcn@latest add table
+pnpm dlx shadcn@latest add table
 ```
 
 2. Add the `@tanstack/react-table` dependency. This guide uses **TanStack Table v9**:
 
 ```bash
-npm install @tanstack/react-table
+pnpm add @tanstack/react-table
 ```
 
 ## Prerequisites

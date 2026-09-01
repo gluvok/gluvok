@@ -1,8 +1,12 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, type Mock } from "vitest";
+
+type MockSupabaseClient = {
+  from: Mock;
+};
 
 describe("Rate edit lock rules", () => {
   it("should detect when a rate is linked to weighment records", async () => {
-    const mockClient: any = {
+    const mockClient: MockSupabaseClient = {
       from: vi.fn().mockImplementation((table: string) => {
         if (table === "weighments") {
           return {

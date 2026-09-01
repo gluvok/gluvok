@@ -91,6 +91,10 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
     expect(generatedHtml).toContain('src="https://example.com/scan2.jpg"');
     expect(generatedHtml).toContain("pdf-scan-card");
 
+    // Typography with Plus Jakarta Sans and JetBrains Mono
+    expect(generatedHtml).toContain("Plus+Jakarta+Sans");
+    expect(generatedHtml).toContain("JetBrains+Mono");
+
     // Page margins for multi-page print top margin
     expect(generatedHtml).toContain("margin: 14mm 16mm 16mm 16mm");
 

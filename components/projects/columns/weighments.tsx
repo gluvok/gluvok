@@ -98,10 +98,8 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
     createCustomColumn("out_entry_created_at", "Out-Entry Time", Clock, (val) => (
       <span className="font-mono text-muted-foreground text-xs">{formatDateTime(val)}</span>
     )),
-    createIdColumn("in_center_id", "In-Center ID", Building),
-    createTextColumn("in_center_name", "In-Center Name", Building),
-    createIdColumn("out_center_id", "Out-Center ID", Building),
-    createTextColumn("out_center_name", "Out-Center Name", Building),
+    createIdColumn("center_id", "Center ID", Building),
+    createTextColumn("center_name", "Center Name", Building),
     createIdColumn("in_user_id", "In-User ID", User),
     createTextColumn("in_user_name", "In-User Name", User),
     createIdColumn("out_user_id", "Out-User ID", User),

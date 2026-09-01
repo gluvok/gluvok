@@ -74,6 +74,7 @@ describe("GET /api/weighments", () => {
                       created_at: "2026-08-31T10:00:00Z",
                       updated_at: "2026-08-31T10:00:00Z",
                       in_entry: {
+                        center_id: 1,
                         weight: 15000,
                         vehicle_number: "KA01AB1234",
                         centers: { name: "Center A" },
@@ -81,6 +82,7 @@ describe("GET /api/weighments", () => {
                         customers: { name: "Farmer 1" },
                       },
                       out_entry: {
+                        center_id: 1,
                         weight: 5000,
                         vehicle_number: "KA01AB1234",
                         centers: { name: "Center A" },
@@ -109,7 +111,8 @@ describe("GET /api/weighments", () => {
     expect(json.data[0].gross_weight).toBe(15000);
     expect(json.data[0].tare_weight).toBe(5000);
     expect(json.data[0].net_weight).toBe(10000);
-    expect(json.data[0].in_center_name).toBe("Center A");
+    expect(json.data[0].center_name).toBe("Center A");
+    expect(json.data[0].center_id).toBe(1);
   });
 
   it("filters by user_id using entry ID pre-resolution without PostgREST syntax error", async () => {

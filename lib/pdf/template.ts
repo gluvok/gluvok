@@ -28,9 +28,9 @@ export function renderHeaderSection({
     <header class="flex justify-between items-start border-b-2 border-slate-900/90 pb-5 mb-6">
       <div class="brand flex flex-col gap-1.5">
         <img src="${logoUrl}" class="h-9 w-auto object-contain self-start" alt="Gluvok Logo" />
-        <span class="text-2xs font-bold tracking-widest uppercase text-slate-400">Official System Export</span>
+        <span class="text-2xs font-bold tracking-widest uppercase text-slate-400 font-sans">Official System Export</span>
       </div>
-      <div class="meta text-right font-sans flex flex-col items-end gap-1.5">
+      <div class="meta text-right flex flex-col items-end gap-1.5">
         <div class="text-lg font-extrabold text-slate-900 tracking-tight leading-none">${projectName} Export</div>
         <div class="flex items-center justify-end gap-1.5 flex-wrap">
           <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold bg-slate-900 text-white shadow-2xs">${finalCompanyName}</span>
@@ -92,11 +92,11 @@ export function renderScansSection(imagesHtml?: string): string {
 export function renderFooterSection(finalCompanyName: string): string {
   return `
     <footer class="border-t border-slate-200/80 pt-2.5 flex items-center justify-between text-2xs text-slate-400 font-sans tracking-wide">
-      <div>
-        Generated for <strong class="text-slate-700 font-semibold">${finalCompanyName}</strong>
+      <div class="flex items-center gap-1.5">
+        <span>Generated for <strong class="text-slate-700 font-semibold">${finalCompanyName}</strong></span>
       </div>
-      <div>
-        Powered by <strong class="text-slate-700 font-semibold">Gluvok</strong> &bull; Lathey Weigh Trix
+      <div class="flex items-center gap-1.5 font-mono text-2xs text-slate-400">
+        <span>Powered by <strong class="text-slate-700 font-semibold font-sans">Gluvok</strong> &bull; Lathey Weigh Trix</span>
       </div>
     </footer>
   `;
@@ -149,12 +149,16 @@ export function generatePdfHtml(
                 fontSize: {
                   '2xs': ['0.625rem', { lineHeight: 'calc(1 / 0.625)' }],
                 },
+                fontFamily: {
+                  sans: ['"Plus Jakarta Sans"', 'Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+                  mono: ['"JetBrains Mono"', 'monospace'],
+                },
               },
             },
           };
         </script>
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
           @page {
             size: auto;
             margin: 14mm 16mm 16mm 16mm;
@@ -163,9 +167,11 @@ export function generatePdfHtml(
             margin: 0;
             padding: 0;
             min-height: 100%;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
           }
           .text-2xs { font-size: 0.625rem; line-height: calc(1 / 0.625); }
+          .font-mono, [class*="font-mono"] { font-family: 'JetBrains Mono', monospace !important; }
           tr, .pdf-scan-card {
             page-break-inside: avoid;
             break-inside: avoid;

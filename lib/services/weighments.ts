@@ -155,8 +155,6 @@ export function formatWeighmentRecord(row: Record<string, unknown>): Record<stri
   const outImages = Array.isArray(outEntry.images) ? (outEntry.images as string[]) : [];
   const combinedImages = Array.from(new Set([...inImages, ...outImages]));
 
-  const inCenters = inEntry.centers as Record<string, unknown> | undefined;
-  const outCenters = outEntry.centers as Record<string, unknown> | undefined;
   const inUsers = inEntry.users as Record<string, unknown> | undefined;
   const outUsers = outEntry.users as Record<string, unknown> | undefined;
   const inCustomers = inEntry.customers as Record<string, unknown> | undefined;
@@ -174,10 +172,8 @@ export function formatWeighmentRecord(row: Record<string, unknown>): Record<stri
     in_entry_created_at: inEntry.created_at,
     out_entry_id: row.out_entry_id,
     out_entry_created_at: outEntry.created_at,
-    in_center_id: inEntry.center_id,
-    in_center_name: inCenters?.name || "",
-    out_center_id: outEntry.center_id,
-    out_center_name: outCenters?.name || "",
+    center_id: inEntry.center_id,
+    center_name: (inEntry.centers as { name: string }).name,
     in_user_id: inEntry.user_id,
     in_user_name: inUsers?.name || "",
     out_user_id: outEntry.user_id,

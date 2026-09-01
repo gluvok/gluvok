@@ -100,12 +100,10 @@ export const GET = withAuth(async (req, user, client) => {
     }
   }
 
-  // 4. Specific in/out Entry Filters
+  // 4. Specific in/out Entry Filters (for user and customer)
   const specificFilters: [string, "in_entry_id" | "out_entry_id", string][] = [
-    ["in_center_id", "in_entry_id", "center_id"],
     ["in_user_id", "in_entry_id", "user_id"],
     ["in_customer_id", "in_entry_id", "customer_id"],
-    ["out_center_id", "out_entry_id", "center_id"],
     ["out_user_id", "out_entry_id", "user_id"],
     ["out_customer_id", "out_entry_id", "customer_id"],
   ];

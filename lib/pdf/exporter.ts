@@ -114,7 +114,7 @@ export function downloadPDF<TData extends RowData>(
     imagesHtml = imagesList
       .map(
         (group) => `
-        <div class="mb-6 p-4 rounded-xl border border-slate-200 bg-slate-50/50 break-inside-avoid">
+        <div class="pdf-scan-card mb-6 p-4 rounded-xl border border-slate-200 bg-slate-50/50 break-inside-avoid">
           <div class="font-semibold text-xs text-slate-700 mb-3 flex items-center justify-between">
             <span>Record #${group.id}${group.vehicleNumber ? ` &bull; Vehicle: ${group.vehicleNumber}` : ""}</span>
             <span class="text-slate-500 font-normal">${group.images.length} attachment${group.images.length === 1 ? "" : "s"}</span>

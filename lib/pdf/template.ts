@@ -91,7 +91,7 @@ export function renderScansSection(imagesHtml?: string): string {
  */
 export function renderFooterSection(finalCompanyName: string): string {
   return `
-    <footer class="fixed bottom-3 left-6 right-6 border-t border-slate-200/80 pt-2.5 flex items-center justify-between text-2xs text-slate-400 font-sans tracking-wide">
+    <footer class="border-t border-slate-200/80 pt-2.5 flex items-center justify-between text-2xs text-slate-400 font-sans tracking-wide">
       <div>
         Generated for <strong class="text-slate-700 font-semibold">${finalCompanyName}</strong>
       </div>
@@ -155,21 +155,58 @@ export function generatePdfHtml(
         </script>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-          @page { size: auto; margin: 0mm; }
-          html, body { margin: 0; padding: 0; min-height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+          @page {
+            size: auto;
+            margin: 14mm 16mm 16mm 16mm;
+          }
+          html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          }
           .text-2xs { font-size: 0.625rem; line-height: calc(1 / 0.625); }
-          tr, .pdf-scan-card { page-break-inside: avoid; break-inside: avoid; }
-          .pdf-scans-header { page-break-after: avoid; break-after: avoid; page-break-inside: avoid; break-inside: avoid; }
-          .pdf-scan-wrapper { padding-top: 24px; page-break-inside: avoid; break-inside: avoid; }
-          .pdf-scan-wrapper:first-child { padding-top: 0; }
-          footer { position: fixed; bottom: 12mm; left: 20mm; right: 20mm; page-break-inside: avoid; break-inside: avoid; }
+          tr, .pdf-scan-card {
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          .pdf-scans-header {
+            page-break-after: avoid;
+            break-after: avoid;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          .pdf-images-section {
+            page-break-inside: auto;
+            break-inside: auto;
+          }
+          footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
           @media print {
-            @page { size: auto; margin: 0mm; }
-            body { padding: 15mm 20mm 20mm 20mm; margin: 0; position: relative; }
-            .pdf-content-wrapper { padding-bottom: 25mm; }
-            .pdf-scan-wrapper { padding-top: 24px; }
-            .pdf-scan-wrapper:first-child { padding-top: 0; }
-            footer { position: fixed; bottom: 12mm; left: 20mm; right: 20mm; }
+            @page {
+              size: auto;
+              margin: 14mm 16mm 16mm 16mm;
+            }
+            body {
+              padding: 0 !important;
+              margin: 0 !important;
+              position: relative;
+            }
+            .pdf-content-wrapper {
+              padding-bottom: 12mm;
+            }
+            footer {
+              position: fixed;
+              bottom: 0;
+              left: 0;
+              right: 0;
+            }
           }
         </style>
       </head>

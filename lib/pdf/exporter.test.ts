@@ -89,6 +89,47 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
     expect(generatedHtml).toContain("PB10XY1234");
     expect(generatedHtml).toContain('src="https://example.com/scan1.jpg"');
     expect(generatedHtml).toContain('src="https://example.com/scan2.jpg"');
+    expect(generatedHtml).toContain("pdf-scan-card");
+
+    // Page margins for multi-page print top margin
+    expect(generatedHtml).toContain("margin: 14mm 16mm 16mm 16mm");
+
+    appendChildSpy.mockRestore();
+  });
+
+  it("exports multiple rows with scan cards having pdf-scan-card class and avoid page breaks", () => {
+    const table = createMockTable([
+      {
+        id: 1,
+        vehicle_number: "PB10XY1234",
+        images: ["https://example.com/scan1.jpg"],
+        created_at: "2026-08-27T20:54:16.000Z",
+      },
+      {
+        id: 2,
+        vehicle_number: "MH12AB5678",
+        images: ["https://example.com/scan2.jpg", "https://example.com/scan3.jpg"],
+        created_at: "2026-08-27T20:54:16.000Z",
+      },
+    ]);
+
+    const appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => null!);
+
+    downloadPDF(table, "Weighments", "Apex Industries");
+
+    expect(appendChildSpy).toHaveBeenCalled();
+    const iframe = appendChildSpy.mock.calls[0][0] as HTMLIFrameElement;
+    const generatedHtml = iframe.srcdoc;
+
+    expect(generatedHtml).toContain("2 Records");
+    expect(generatedHtml).toContain("Record #1");
+    expect(generatedHtml).toContain("Record #2");
+    expect(generatedHtml).toContain("PB10XY1234");
+    expect(generatedHtml).toContain("MH12AB5678");
+
+    // Both scan cards should have pdf-scan-card class in HTML
+    const scanCardMatches = generatedHtml.match(/class="pdf-scan-card/g);
+    expect(scanCardMatches?.length).toBe(2);
 
     appendChildSpy.mockRestore();
   });

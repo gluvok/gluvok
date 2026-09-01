@@ -77,7 +77,7 @@ export interface Entry {
   factory_id: number;
   status: EntryStatus;
   auto_approved: boolean;
-  edited: boolean;
+  edited?: boolean;
   images: string[];
   created_at: string;
   updated_at: string;

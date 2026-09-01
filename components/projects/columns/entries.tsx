@@ -159,8 +159,18 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         </span>
       );
     }),
-    createCustomColumn("edited", "Edited", Pencil, (val) => {
-      const isEdited = val === true || val === "true";
+    createCustomColumn("edited", "Edited", Pencil, (val, row) => {
+      const rec = row as Record<string, unknown>;
+      const detectedVehicle = rec?.detected_vehicle_number as string | undefined;
+      const vehicleNumber = rec?.vehicle_number as string | undefined;
+      const isAutoApproved = Boolean(rec?.auto_approved);
+      const isApproved = rec?.status === EntryStatus.APPROVED || isAutoApproved;
+      const isEdited =
+        val === true ||
+        val === "true" ||
+        Boolean(
+          isApproved && detectedVehicle && vehicleNumber && detectedVehicle !== vehicleNumber,
+        );
       return (
         <span
           className={cn(

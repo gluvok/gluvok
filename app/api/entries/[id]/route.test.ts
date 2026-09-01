@@ -80,7 +80,7 @@ describe("Entries [id] route handlers", () => {
     expect(json.error).toBe(ApiErrorMessage.ENTRY_REJECTED_LOCKED);
   });
 
-  it("allows updating vehicle_number on auto_approved entry when edited is false", async () => {
+  it("allows updating vehicle_number on auto_approved entry when unedited", async () => {
     const patchRequest = new Request("http://localhost/api/entries/10", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -91,7 +91,7 @@ describe("Entries [id] route handlers", () => {
       id: 10,
       status: EntryStatus.APPROVED,
       auto_approved: true,
-      edited: false,
+      detected_vehicle_number: "KA01AB1111",
       vehicle_number: "KA01AB1111",
       customer_id: null,
       center_id: 1,
@@ -121,7 +121,6 @@ describe("Entries [id] route handlers", () => {
             data: {
               ...existingEntry,
               vehicle_number: "KA01AB9999",
-              edited: true,
             },
             error: null,
           });
@@ -146,7 +145,7 @@ describe("Entries [id] route handlers", () => {
     expect(json.data.edited).toBe(true);
   });
 
-  it("rejects updating vehicle_number on auto_approved entry when edited is already true", async () => {
+  it("rejects updating vehicle_number on auto_approved entry when vehicle is already edited", async () => {
     const patchRequest = new Request("http://localhost/api/entries/10", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -164,7 +163,7 @@ describe("Entries [id] route handlers", () => {
                     id: 10,
                     status: EntryStatus.APPROVED,
                     auto_approved: true,
-                    edited: true,
+                    detected_vehicle_number: "KA01AB1111",
                     vehicle_number: "KA01AB9999",
                     customer_id: null,
                     factory_id: 1,
@@ -203,7 +202,7 @@ describe("Entries [id] route handlers", () => {
                     id: 10,
                     status: EntryStatus.APPROVED,
                     auto_approved: false,
-                    edited: false,
+                    detected_vehicle_number: null,
                     vehicle_number: "KA01AB1111",
                     customer_id: null,
                     factory_id: 1,
@@ -242,7 +241,7 @@ describe("Entries [id] route handlers", () => {
                     id: 10,
                     status: EntryStatus.APPROVED,
                     auto_approved: false,
-                    edited: false,
+                    detected_vehicle_number: null,
                     vehicle_number: "KA01AB1111",
                     customer_id: 5,
                     factory_id: 1,
@@ -344,7 +343,7 @@ describe("Entries [id] route handlers", () => {
       status: EntryStatus.PENDING,
       source: EntrySource.DEVICE,
       auto_approved: false,
-      edited: false,
+      detected_vehicle_number: "KA01AB1111",
       vehicle_number: "KA01AB1111",
       customer_id: null,
       center_id: 1,
@@ -369,7 +368,6 @@ describe("Entries [id] route handlers", () => {
             data: {
               ...existingEntry,
               vehicle_number: "KA01AB7777",
-              edited: false,
             },
             error: null,
           });
@@ -401,7 +399,7 @@ describe("Entries [id] route handlers", () => {
       status: EntryStatus.PENDING,
       source: EntrySource.DEVICE,
       auto_approved: false,
-      edited: false,
+      detected_vehicle_number: "KA01AB1111",
       vehicle_number: "KA01AB1111",
       weight: 20000,
       customer_id: null,
@@ -444,7 +442,7 @@ describe("Entries [id] route handlers", () => {
       status: EntryStatus.APPROVED,
       source: EntrySource.MANUAL,
       auto_approved: false,
-      edited: false,
+      detected_vehicle_number: null,
       vehicle_number: "KA01AB1111",
       customer_id: null,
       center_id: 1,
@@ -482,7 +480,6 @@ describe("Entries [id] route handlers", () => {
             data: {
               ...existingEntry,
               customer_id: 3,
-              edited: false,
             },
             error: null,
           });

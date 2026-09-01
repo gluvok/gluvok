@@ -76,7 +76,11 @@ export function EntityDialogContent({
     if (isEdit && projectSlug === ProjectSlug.ENTRIES && item) {
       const entryStatus = getField(item, "status") as EntryStatus | string;
       const isAutoApproved = Boolean(getField(item, "auto_approved"));
-      const isEdited = Boolean(getField(item, "edited"));
+      const detectedVehicle = getField(item, "detected_vehicle_number");
+      const vehicleNumber = getField(item, "vehicle_number");
+      const isEdited = Boolean(
+        detectedVehicle && vehicleNumber && detectedVehicle !== vehicleNumber,
+      );
       const entrySource = getField(item, "source") as EntrySource | string;
       const customerId = getField(item, "customer_id");
       const isApproved = entryStatus === EntryStatus.APPROVED || isAutoApproved;

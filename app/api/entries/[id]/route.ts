@@ -41,12 +41,21 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
     }
   }
 
+  const isApproved = data.status === EntryStatus.APPROVED || data.auto_approved === true;
+  const isEdited = Boolean(
+    isApproved &&
+    data.detected_vehicle_number &&
+    data.vehicle_number &&
+    data.detected_vehicle_number !== data.vehicle_number,
+  );
+
   const centers = data.centers as Record<string, unknown> | undefined;
   const users = data.users as Record<string, unknown> | undefined;
   const customers = data.customers as Record<string, unknown> | undefined;
 
   const formatted = {
     ...data,
+    edited: isEdited,
     center_name: centers?.name || "",
     user_name: users?.name || "",
     customer_name: customers?.name || "",
@@ -86,7 +95,12 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   const isApproved = existing.status === EntryStatus.APPROVED || existing.auto_approved === true;
   const isAutoApproved = existing.auto_approved === true;
-  const isEdited = existing.edited === true;
+  const isEdited = Boolean(
+    isApproved &&
+    existing.detected_vehicle_number &&
+    existing.vehicle_number &&
+    existing.detected_vehicle_number !== existing.vehicle_number,
+  );
   const hasCustomer = existing.customer_id !== null && existing.customer_id !== undefined;
 
   // Fully locked if:
@@ -111,7 +125,6 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
         return apiError(ApiErrorMessage.VEHICLE_ALREADY_EDITED_LOCKED, StatusCodes.BAD_REQUEST);
       }
       updates["vehicle_number"] = body.vehicle_number;
-      updates["edited"] = true;
     }
 
     // 2. Customer ID check: only if customer is currently null
@@ -222,7 +235,16 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     await tryMergeEntries(client, user.factory_id, entryId);
   }
 
-  return NextResponse.json({ data: updatedEntry });
+  const isApprovedUpdated =
+    updatedEntry.status === EntryStatus.APPROVED || updatedEntry.auto_approved === true;
+  const isEditedUpdated = Boolean(
+    isApprovedUpdated &&
+      updatedEntry.detected_vehicle_number &&
+      updatedEntry.vehicle_number &&
+      updatedEntry.detected_vehicle_number !== updatedEntry.vehicle_number,
+  );
+
+  return NextResponse.json({ data: { ...updatedEntry, edited: isEditedUpdated } });
 });
 
 export const DELETE = withAuth(

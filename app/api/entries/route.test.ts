@@ -104,7 +104,7 @@ describe("Entries route handlers (/api/entries)", () => {
       expect(json.pagination.total).toBe(1);
     });
 
-    it("filters entries by auto_approved and edited boolean flags", async () => {
+    it("filters entries by auto_approved boolean flag and computes dynamic edited status", async () => {
       const eqMock = vi.fn();
       const mockQuery: Record<string, unknown> = {};
       mockQuery.select = vi.fn(() => mockQuery);
@@ -112,8 +112,23 @@ describe("Entries route handlers (/api/entries)", () => {
       mockQuery.is = vi.fn(() => mockQuery);
       mockQuery.order = vi.fn(() => mockQuery);
       mockQuery.range = vi.fn().mockResolvedValue({
-        data: [],
-        count: 0,
+        data: [
+          {
+            id: 1,
+            vehicle_number: "KA01AB2222",
+            detected_vehicle_number: "KA01AB1111",
+            status: EntryStatus.APPROVED,
+            auto_approved: true,
+          },
+          {
+            id: 2,
+            vehicle_number: "KA01AB3333",
+            detected_vehicle_number: "KA01AB3333",
+            status: EntryStatus.APPROVED,
+            auto_approved: true,
+          },
+        ],
+        count: 2,
         error: null,
       });
 
@@ -121,15 +136,15 @@ describe("Entries route handlers (/api/entries)", () => {
         from: vi.fn(() => mockQuery),
       };
 
-      const req = new NextRequest(
-        "http://localhost/api/entries?auto_approved=true&edited=false&page=1&limit=10",
-      );
+      const req = new NextRequest("http://localhost/api/entries?auto_approved=true&page=1&limit=10");
       const handler = GET as unknown as RawHandler;
       const response = await handler(req, sampleUser, mockDb, context);
 
       expect(response.status).toBe(200);
       expect(eqMock).toHaveBeenCalledWith("auto_approved", true);
-      expect(eqMock).toHaveBeenCalledWith("edited", false);
+      const json = await response.json();
+      expect(json.data[0].edited).toBe(true);
+      expect(json.data[1].edited).toBe(false);
     });
 
     it("scopes entries query with customers!inner and customers.user_id for Role.BASE users", async () => {

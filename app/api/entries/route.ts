@@ -47,7 +47,6 @@ export const GET = withAuth(async (req, user, client) => {
     user_id: req.nextUrl.searchParams.get("user_id"),
     customer_id: req.nextUrl.searchParams.get("customer_id"),
     auto_approved: req.nextUrl.searchParams.get("auto_approved"),
-    edited: req.nextUrl.searchParams.get("edited"),
   };
 
   for (const [key, val] of Object.entries(filterParams)) {
@@ -88,8 +87,20 @@ export const GET = withAuth(async (req, user, client) => {
     const users = row.users as Record<string, unknown> | undefined;
     const customers = row.customers as Record<string, unknown> | undefined;
 
+    const detectedVehicle = row.detected_vehicle_number as string | undefined;
+    const vehicleNumber = row.vehicle_number as string | undefined;
+    const isAutoApproved = Boolean(row.auto_approved);
+    const isApproved = row.status === EntryStatus.APPROVED || isAutoApproved;
+    const isEdited = Boolean(
+      isApproved &&
+      detectedVehicle &&
+      vehicleNumber &&
+      detectedVehicle !== vehicleNumber,
+    );
+
     return {
       ...row,
+      edited: isEdited,
       center_name: centers?.name || "",
       user_name: users?.name || "",
       customer_name: customers?.name || "",

@@ -8,13 +8,11 @@ import { addCenterSchema, editCenterSchema } from "./centers";
 import { addCommoditySchema, editCommoditySchema } from "./commodities";
 import { addRateSchema, editRateSchema } from "./rates";
 import { addCustomerSchema, editCustomerSchema } from "./customers";
-import {
-  addEntrySchema,
-  editEntrySchema,
-  addWeighmentSchema,
-  editWeighmentSchema,
-} from "./weighments";
+import { addEntrySchema, editEntrySchema } from "./entries";
+import { editWeighmentSchema } from "./weighments";
 import { addUserSchema, editUserSchema } from "./users";
+
+export type CreatableProjectSlug = Exclude<ProjectSlug, ProjectSlug.WEIGHMENTS>;
 
 export type EntityAddSchema =
   | typeof addCenterSchema
@@ -22,7 +20,6 @@ export type EntityAddSchema =
   | typeof addRateSchema
   | typeof addCustomerSchema
   | typeof addEntrySchema
-  | typeof addWeighmentSchema
   | typeof addUserSchema;
 
 export type EntityEditSchema =
@@ -34,13 +31,12 @@ export type EntityEditSchema =
   | typeof editWeighmentSchema
   | typeof editUserSchema;
 
-export const ENTITY_ADD_SCHEMAS: Record<ProjectSlug, EntityAddSchema> = {
+export const ENTITY_ADD_SCHEMAS: Record<CreatableProjectSlug, EntityAddSchema> = {
   [ProjectSlug.CENTERS]: addCenterSchema,
   [ProjectSlug.COMMODITIES]: addCommoditySchema,
   [ProjectSlug.RATES]: addRateSchema,
   [ProjectSlug.CUSTOMERS]: addCustomerSchema,
   [ProjectSlug.ENTRIES]: addEntrySchema,
-  [ProjectSlug.WEIGHMENTS]: addWeighmentSchema,
   [ProjectSlug.USERS]: addUserSchema,
 };
 

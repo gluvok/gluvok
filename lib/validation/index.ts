@@ -8,6 +8,7 @@ export * from "./centers";
 export * from "./commodities";
 export * from "./rates";
 export * from "./customers";
+export * from "./entries";
 export * from "./weighments";
 export * from "./users";
 export * from "./registry";

@@ -21,7 +21,12 @@ import {
   WeighmentType,
 } from "@/lib/constants/enums";
 import { PROJECT_FIELDS, getSingularName } from "@/lib/fields";
-import { ENTITY_ADD_SCHEMAS, ENTITY_EDIT_SCHEMAS, checkEditUniqueness } from "@/lib/validation";
+import {
+  ENTITY_ADD_SCHEMAS,
+  ENTITY_EDIT_SCHEMAS,
+  type EntityAddSchema,
+  checkEditUniqueness,
+} from "@/lib/validation";
 import { useEntitiesStore, useAuthStore, getField, hasPermission } from "@/lib/store";
 import { type EntityFormProps } from "./types";
 import { processImageUploadsAndDeletions } from "@/components/form/image/upload";
@@ -134,7 +139,7 @@ export function useEntityForm({
   const formSchema = React.useMemo(() => {
     return isEdit
       ? ENTITY_EDIT_SCHEMAS[projectSlug as ProjectSlug]
-      : ENTITY_ADD_SCHEMAS[projectSlug as ProjectSlug];
+      : (ENTITY_ADD_SCHEMAS as Record<string, EntityAddSchema>)[projectSlug];
   }, [isEdit, projectSlug]);
 
   const form = useForm<FieldValues>({

@@ -73,6 +73,7 @@ export enum FieldType {
   CHECKBOX = "checkbox",
   SWITCH = "switch",
   ENTRY_STATUS = "entry_status",
+  TEXTAREA = "textarea",
 }
 
 export enum FieldSpan {

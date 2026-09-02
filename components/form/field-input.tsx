@@ -14,8 +14,10 @@ import { type FieldConfig, getReferencedEntitySlug } from "@/lib/fields";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { StandardInput } from "./standard-input";
 import { ImageUpload } from "./image/upload";
+import { cn } from "@/lib/utils";
 
 interface FormFieldInputProps {
   field: FieldConfig;
@@ -131,6 +133,25 @@ export function FormFieldInput({ field, form, idPrefix, disabled }: FormFieldInp
             form.setValue(field.key, val, { shouldValidate: true, shouldDirty: true })
           }
           disabled={disabled}
+        />
+      );
+    case FieldType.TEXTAREA:
+      return (
+        <Textarea
+          id={fieldId}
+          disabled={disabled}
+          placeholder={field.placeholder}
+          className={cn(
+            "min-h-24 text-xs focus-visible:ring-0.5 focus-visible:ring-primary/50 transition-shadow",
+            field.className,
+          )}
+          {...form.register(field.key, {
+            onChange: (e) => {
+              if (field.transformOnChange) {
+                e.target.value = field.transformOnChange(e.target.value);
+              }
+            },
+          })}
         />
       );
     default:

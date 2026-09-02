@@ -8,6 +8,9 @@ import { DialogMode } from "@/lib/constants/enums";
 import { EntityDialog } from "./entity";
 import { DeleteEntityDialog } from "./delete";
 
+export * from "./entity";
+export * from "./delete";
+
 interface ProjectDialogsProps {
   creating: boolean;
   setCreating: (open: boolean) => void;

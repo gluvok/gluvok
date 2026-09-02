@@ -217,6 +217,17 @@ export function useEntityForm({
           if (fetchedRates.length === 1 && !defaultVals["rate_id"]) {
             defaultVals["rate_id"] = String(fetchedRates[0].id);
           }
+        } else if (projectSlug === ProjectSlug.TICKETS && item) {
+          const itemId = Number(getField(item, "id"));
+          const isWeighment =
+            getField(item, "net_weight") !== undefined ||
+            getField(item, "in_entry_id") !== undefined ||
+            getField(item, "gross_weight") !== undefined;
+          if (isWeighment) {
+            defaultVals["weighment_id"] = itemId;
+          } else {
+            defaultVals["entry_id"] = itemId;
+          }
         }
 
         if (active) form.reset(defaultVals);
@@ -313,7 +324,11 @@ export function useEntityForm({
           values["images"] = await processImageUploadsAndDeletions(values["images"], []);
         }
         await addEntity(projectSlug as ProjectSlug, values);
-        toast.success(`${singularName} created successfully`);
+        toast.success(
+          projectSlug === ProjectSlug.TICKETS
+            ? "Ticket raised successfully"
+            : `${singularName} created successfully`,
+        );
       }
       onOpenChange(false);
     } catch (err) {

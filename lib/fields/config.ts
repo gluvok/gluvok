@@ -269,8 +269,8 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
     {
       key: "concern",
       label: "Concern",
-      placeholder: "Describe the issue or discrepancy...",
-      type: FieldType.TEXT,
+      placeholder: "Describe the issue or discrepancy in detail...",
+      type: FieldType.TEXTAREA,
       required: true,
       icon: Tag,
       span: FieldSpan.FULL,

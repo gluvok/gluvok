@@ -10,6 +10,7 @@ describe("validation registry", () => {
       ProjectSlug.CUSTOMERS,
       ProjectSlug.ENTRIES,
       ProjectSlug.USERS,
+      ProjectSlug.TICKETS,
     ] as const;
 
     for (const slug of creatableSlugs) {
@@ -33,6 +34,7 @@ describe("validation registry", () => {
       ProjectSlug.WEIGHMENTS,
       ProjectSlug.USERS,
       ProjectSlug.SETTINGS,
+      ProjectSlug.TICKETS,
     ] as const;
 
     for (const slug of editableSlugs) {

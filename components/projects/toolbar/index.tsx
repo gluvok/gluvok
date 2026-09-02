@@ -31,7 +31,7 @@ import { format } from "date-fns";
 import { DataTableViewOptions } from "@/components/data-table";
 import { BulkActions } from "./bulk-actions";
 import { ProjectFilters, hasProjectFilters } from "@/components/projects/filters";
-import { useAuthStore, getPermissions } from "@/lib/store";
+import { useAuthStore, hasCreateAccess } from "@/lib/store";
 import {
   getRoleIcon,
   getSourceIcon,
@@ -171,8 +171,7 @@ export function ProjectToolbar<TData extends RowData>({
       }
     : setInternalShowFilters;
 
-  const permissions = useAuthStore((state) => getPermissions(state.user?.role, projectSlug));
-  const canCreate = permissions.create;
+  const canCreate = useAuthStore((state) => hasCreateAccess(state.user?.role, projectSlug));
   const hasFilters = hasProjectFilters(projectSlug);
 
   const selectedRows = table.getSelectedRowModel().rows;

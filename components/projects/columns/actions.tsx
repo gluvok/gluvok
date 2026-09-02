@@ -36,17 +36,16 @@ import {
   X,
   FileDown,
   Ticket,
-  Loader2,
   Eye,
   MessageSquare,
   Scale,
   Truck,
 } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { getField, useEntitiesStore } from "@/lib/store";
 import { type EntityRecord, type Ticket as TicketEntity } from "@/types";
 import { type ColumnActionsCallbacks } from "./index";
+import { EntityDialog } from "@/components/projects/dialog";
 
 import { type Permission, useAuthStore, type AuthUser, hasPermission } from "@/lib/store";
 import {
@@ -55,6 +54,7 @@ import {
   WeighmentType,
   EntryStatus,
   PermissionKey,
+  DialogMode,
 } from "@/lib/constants/enums";
 import { downloadPDF } from "@/lib/pdf";
 import { formatDateTime } from "@/lib/utils";
@@ -127,8 +127,6 @@ function ActionCell<T extends EntityRecord>({
   const [rejecting, setRejecting] = React.useState(false);
   const [statusLoading, setStatusLoading] = React.useState(false);
   const [ticketDialogOpen, setTicketDialogOpen] = React.useState(false);
-  const [ticketConcern, setTicketConcern] = React.useState("");
-  const [ticketSubmitting, setTicketSubmitting] = React.useState(false);
   const [viewTicketOpen, setViewTicketOpen] = React.useState(false);
   const vehicleNumber = String(getField(item, "vehicle_number") || "");
 
@@ -263,10 +261,7 @@ function ActionCell<T extends EntityRecord>({
             <DropdownMenuItem
               id={`actions-ticket-${projectSlug}-${itemId}`}
               className="text-xs cursor-pointer gap-2 py-1.5 px-2 rounded-lg transition-colors focus:bg-muted focus:text-foreground"
-              onClick={() => {
-                setTicketConcern("");
-                setTicketDialogOpen(true);
-              }}
+              onClick={() => setTicketDialogOpen(true)}
             >
               <Ticket className="h-3.5 w-3.5 text-muted-foreground/70" /> Raise Ticket
             </DropdownMenuItem>
@@ -422,96 +417,15 @@ function ActionCell<T extends EntityRecord>({
       )}
 
       {canRaiseTicket && (
-        <Dialog open={ticketDialogOpen} onOpenChange={setTicketDialogOpen}>
-          <DialogContent className="w-[92vw] sm:w-full max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-foreground">
-                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                  <Ticket className="h-4 w-4" />
-                </div>
-                Raise Support Ticket
-              </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground pt-1">
-                Dispute or report an operational issue for{" "}
-                <span className="font-semibold text-foreground">
-                  {projectSlug === ProjectSlug.ENTRIES ? "Entry" : "Weighment"} #{itemId}
-                </span>
-                {vehicleNumber ? ` (Vehicle: ${vehicleNumber})` : ""}.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-2 space-y-2">
-              <label
-                htmlFor={`ticket-concern-${itemId}`}
-                className="text-xs font-medium text-foreground"
-              >
-                Concern / Description
-              </label>
-              <Textarea
-                id={`ticket-concern-${itemId}`}
-                placeholder="Describe the discrepancy, weight difference, or problem..."
-                value={ticketConcern}
-                onChange={(e) => setTicketConcern(e.target.value)}
-                rows={4}
-                className="text-xs"
-              />
-            </div>
-            <DialogFooter className="gap-2 mx-0 mb-0 pt-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTicketDialogOpen(false)}
-                disabled={ticketSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={async () => {
-                  const trimmed = ticketConcern.trim();
-                  if (trimmed.length < 5) {
-                    toast.error("Please enter a concern of at least 5 characters");
-                    return;
-                  }
-                  try {
-                    setTicketSubmitting(true);
-                    const payload = {
-                      [projectSlug === ProjectSlug.ENTRIES ? "entry_id" : "weighment_id"]:
-                        Number(itemId),
-                      concern: trimmed,
-                    };
-                    const res = await fetch("/api/tickets", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify(payload),
-                    });
-                    const json = await res.json();
-                    if (!res.ok) {
-                      toast.error(json.error || "Failed to submit ticket");
-                      return;
-                    }
-                    toast.success(`Ticket #${json.data.id} submitted in pending status`);
-                    setTicketDialogOpen(false);
-                    setTicketConcern("");
-                  } catch {
-                    toast.error("Failed to submit ticket");
-                  } finally {
-                    setTicketSubmitting(false);
-                  }
-                }}
-                disabled={ticketSubmitting || ticketConcern.trim().length < 5}
-              >
-                {ticketSubmitting ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                    Submitting...
-                  </>
-                ) : (
-                  "Submit Ticket"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <EntityDialog
+          mode={DialogMode.CREATE}
+          open={ticketDialogOpen}
+          onOpenChange={setTicketDialogOpen}
+          projectSlug={ProjectSlug.TICKETS}
+          projectName="Tickets"
+          primaryIdKey="id"
+          item={item}
+        />
       )}
 
       {projectSlug === ProjectSlug.TICKETS &&

@@ -5,7 +5,7 @@
 
 "use client";
 
-import { Pencil, Plus, Save, X, Loader2 } from "lucide-react";
+import { Pencil, Plus, Save, X, Loader2, Ticket, Scale, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FormFieldInput } from "@/components/form";
@@ -43,13 +43,26 @@ export function EntityDialogContent({
   item,
 }: EntityDialogContentProps) {
   const currentUser = useAuthStore((state) => state.user);
-  const Icon = isEdit ? Pencil : Plus;
+  let Icon = isEdit ? Pencil : Plus;
   const singularName = getSingularName(projectName);
-  const desc = isEdit
+  let desc = isEdit
     ? "Update the attributes of this record. Click save when done."
     : `Enter the details for the new ${singularName.toLowerCase()}. Click save when done.`;
 
-  const originalText = isEdit ? "Save" : "Save";
+  let titleText = isEdit ? "Edit" : "Add";
+  let submitButtonText = "Save";
+
+  if (projectSlug === ProjectSlug.TICKETS) {
+    Icon = Ticket;
+    if (!isEdit) {
+      titleText = "Raise Ticket";
+      desc = "Submit a concern or request a manual review for this record.";
+      submitButtonText = "Raise Ticket";
+    } else {
+      titleText = "Edit Ticket Concern";
+      desc = "Update your submitted concern. Click save when done.";
+    }
+  }
 
   const renderField = (field: FieldConfig) => {
     let entryFieldDisabled = false;
@@ -248,11 +261,51 @@ export function EntityDialogContent({
     <>
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2 text-foreground">
-          <Icon className="h-4 w-4 text-primary" /> {isEdit ? "Edit" : "Add"}
+          <Icon className="h-4 w-4 text-primary" /> {titleText}
         </DialogTitle>
         <DialogDescription>{desc}</DialogDescription>
       </DialogHeader>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+        {projectSlug === ProjectSlug.TICKETS && item && !isEdit && (
+          <div className="p-3 rounded-lg border border-border/70 bg-muted/30 flex items-center gap-2.5 text-xs">
+            {getField(item, "net_weight") !== undefined ||
+            getField(item, "in_entry_id") !== undefined ? (
+              <>
+                <div className="p-1.5 rounded-md bg-primary/10 text-primary">
+                  <Scale className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="font-semibold text-foreground">
+                    Linked to Weighment #{String(getField(item, "id"))}
+                  </div>
+                  {getField(item, "vehicle_number") ? (
+                    <div className="text-muted-foreground font-mono text-2xs">
+                      Vehicle Plate: {String(getField(item, "vehicle_number"))}
+                    </div>
+                  ) : null}
+                </div>
+              </>
+            ) : getField(item, "weight") !== undefined ||
+              getField(item, "vehicle_number") !== undefined ? (
+              <>
+                <div className="p-1.5 rounded-md bg-primary/10 text-primary">
+                  <Truck className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="font-semibold text-foreground">
+                    Linked to Entry #{String(getField(item, "id"))}
+                  </div>
+                  {getField(item, "vehicle_number") ? (
+                    <div className="text-muted-foreground font-mono text-2xs">
+                      Vehicle Plate: {String(getField(item, "vehicle_number"))} ·{" "}
+                      {String(getField(item, "weight"))} kg
+                    </div>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
+          </div>
+        )}
         {fieldGroups.map((group, groupIdx) => {
           if (group.span === FieldSpan.FULL || group.fields.length === 1) {
             return renderField(group.fields[0]);
@@ -296,7 +349,7 @@ export function EntityDialogContent({
               ) : (
                 <Save className="h-3.5 w-3.5" />
               )}
-              {originalText}
+              {submitButtonText}
             </Button>
           </div>
         </DialogFooter>

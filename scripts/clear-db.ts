@@ -17,6 +17,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Order: Dependent child tables first -> Independent/parent tables last
 const tables = [
+  "tickets",
   "weighments",
   "entries",
   "rates",

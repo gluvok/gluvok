@@ -163,30 +163,38 @@ describe("Field Helpers & Icon Mapping", () => {
   });
 
   describe("getItemColorClass", () => {
+    it("applies no color override for unmapped or default 'all' values", () => {
+      expect(getItemColorClass("unit", "all")).toBe("");
+      expect(getItemColorClass("source", "all")).toBe("");
+      expect(getItemColorClass("type", "all")).toBe("");
+      expect(getItemColorClass(FieldType.ENTRY_STATUS, "all")).toBe("");
+      expect(getItemColorClass("verification", "all")).toBe("");
+      expect(getItemColorClass("role", "all")).toBe("");
+      expect(getItemColorClass(ProjectSlug.CENTERS, "1")).toBe("");
+    });
+
     it("resolves semantic colors for filter and combobox values", () => {
-      expect(getItemColorClass("unit", "all")).toBe("text-muted-foreground");
-      expect(getItemColorClass("source", "all")).toBe("text-muted-foreground");
-      expect(getItemColorClass("type", "all")).toBe("text-muted-foreground");
-      expect(getItemColorClass(FieldType.ENTRY_STATUS, "all")).toBe(
-        "text-muted-foreground",
+      expect(getItemColorClass("unit", Unit.KG)).toBe(
+        "text-blue-700 dark:text-blue-300",
       );
-      expect(getItemColorClass("verification", "all")).toBe(
-        "text-muted-foreground",
-      );
-      expect(getItemColorClass("role", "all")).toBe("text-muted-foreground");
-      expect(getItemColorClass("unit", Unit.KG)).toBe("text-blue-700 dark:text-blue-300");
       expect(getItemColorClass("source", EntrySource.DEVICE)).toBe(
         "text-sky-700 dark:text-sky-300",
       );
-      expect(getItemColorClass(FieldType.ENTRY_STATUS, EntryStatus.APPROVED)).toBe(
-        "text-emerald-700 dark:text-emerald-300",
+      expect(
+        getItemColorClass(FieldType.ENTRY_STATUS, EntryStatus.APPROVED),
+      ).toBe("text-emerald-700 dark:text-emerald-300");
+      expect(getItemColorClass("verification", "false")).toBe(
+        "text-amber-700 dark:text-amber-300",
       );
-      expect(getItemColorClass("verification", "false")).toBe("text-amber-700 dark:text-amber-300");
-      expect(getItemColorClass("auto_approve", "false")).toBe("text-red-700 dark:text-red-300");
+      expect(getItemColorClass("auto_approve", "false")).toBe(
+        "text-red-700 dark:text-red-300",
+      );
       expect(getItemColorClass("type", WeighmentType.OUT)).toBe(
         "text-orange-700 dark:text-orange-300",
       );
-      expect(getItemColorClass("role", Role.ADMIN)).toBe("text-purple-700 dark:text-purple-300");
+      expect(getItemColorClass("role", Role.ADMIN)).toBe(
+        "text-purple-700 dark:text-purple-300",
+      );
     });
   });
 });

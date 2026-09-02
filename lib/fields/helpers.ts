@@ -191,7 +191,7 @@ export function getRoleColorClass(role?: string): string {
     case Role.HARDWARE:
       return "text-cyan-700 dark:text-cyan-300";
     default:
-      return "text-muted-foreground";
+      return "";
   }
 }
 
@@ -217,7 +217,7 @@ export function getSourceColorClass(sourceVal?: string): string {
     case EntrySource.MANUAL:
       return "text-violet-700 dark:text-violet-300";
     default:
-      return "text-muted-foreground";
+      return "";
   }
 }
 
@@ -249,7 +249,7 @@ export function getTypeColorClass(typeVal?: string): string {
     case WeighmentType.UNASSIGNED:
       return "text-muted-foreground";
     default:
-      return "text-muted-foreground";
+      return "";
   }
 }
 
@@ -280,7 +280,7 @@ export function getStatusColorClass(statusVal?: string): string {
     case EntryStatus.REJECTED:
       return "text-red-700 dark:text-red-300";
     default:
-      return "text-muted-foreground";
+      return "";
   }
 }
 
@@ -324,7 +324,7 @@ export function getAutoApproveColorClass(val?: string): string {
   ) {
     return "text-red-700 dark:text-red-300";
   }
-  return "text-muted-foreground";
+  return "";
 }
 
 export function getVerificationColorClass(val?: string): string {
@@ -345,7 +345,7 @@ export function getVerificationColorClass(val?: string): string {
   ) {
     return "text-amber-700 dark:text-amber-300";
   }
-  return "text-muted-foreground";
+  return "";
 }
 
 export function getUnitIcon(unitVal?: string): LucideIcon {
@@ -370,7 +370,7 @@ export function getUnitColorClass(unitVal?: string): string {
     case Unit.GAL:
       return "text-cyan-700 dark:text-cyan-300";
     default:
-      return "text-muted-foreground";
+      return "";
   }
 }
 

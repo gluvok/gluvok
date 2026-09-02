@@ -81,7 +81,7 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
 
       {hasImages && (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden bg-background/95 backdrop-blur-sm border-muted-foreground/15 shadow-2xl rounded-2xl gap-0">
+          <DialogContent className="sm:max-w-sm p-0 overflow-hidden bg-background/95 backdrop-blur-sm border-muted-foreground/15 shadow-2xl rounded-2xl gap-0">
             <DialogHeader className="p-5 pb-4 border-b border-muted-foreground/10 bg-muted/20">
               <DialogTitle className="flex items-center gap-2 text-foreground text-sm font-semibold">
                 <ImageIcon className="h-4 w-4 text-primary" />

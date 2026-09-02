@@ -14,7 +14,6 @@ import {
   getSourceIcon,
   getStatusIcon,
   getAutoApproveIcon,
-  getEditedIcon,
 } from "@/lib/fields/helpers";
 import { CenterFilter, CustomerFilter, UserFilter, setTableColumnFilter } from "./common";
 
@@ -28,18 +27,11 @@ const VERIFICATION_OPTIONS = [
   { value: "false", label: "User Review" },
 ];
 
-const EDITED_OPTIONS = [
-  { value: "all", label: "All Edit Statuses" },
-  { value: "true", label: "Edited" },
-  { value: "false", label: "Original" },
-];
-
 export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersProps<TData>) {
   const columnFilters = table.state.columnFilters;
   const currentStatus = columnFilters.find((f) => f.id === "status")?.value;
   const currentSource = columnFilters.find((f) => f.id === "source")?.value;
   const currentAutoApproved = columnFilters.find((f) => f.id === "auto_approved")?.value;
-  const currentEdited = columnFilters.find((f) => f.id === "edited")?.value;
 
   const statusOptions = React.useMemo(() => {
     return [
@@ -99,19 +91,6 @@ export function EntriesFilters<TData extends RowData>({ table }: EntriesFiltersP
         icon={getAutoApproveIcon(currentAutoApproved as string)}
         className="w-auto"
         id="filter-entries-auto-approved-combobox"
-      />
-
-      {/* Edited */}
-      <BaseCombobox
-        type="edited"
-        value={currentEdited !== undefined ? String(currentEdited) : "all"}
-        onChange={(val) => setTableColumnFilter(table, "edited", val === "all" ? undefined : val)}
-        data={EDITED_OPTIONS}
-        placeholder="All Edit Statuses"
-        searchPlaceholder="Search edit status..."
-        icon={getEditedIcon(currentEdited as string)}
-        className="w-auto"
-        id="filter-entries-edited-combobox"
       />
 
       {/* Center */}

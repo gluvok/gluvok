@@ -77,13 +77,13 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
     images = [],
   } = params;
 
-  // 1. Verify center exists, belongs to active factory, and check auto_approve
-  const centerRecord = await validateCenterBelongsToFactory(client, Number(centerId), factoryId);
-
-  // 2. Verify customer exists (if provided) and belongs to the active factory
-  if (customerId) {
-    await validateCustomerBelongsToFactory(client, Number(customerId), factoryId);
-  }
+  // 1 & 2. Verify center and customer (if provided) concurrently
+  const [centerRecord] = await Promise.all([
+    validateCenterBelongsToFactory(client, Number(centerId), factoryId),
+    customerId
+      ? validateCustomerBelongsToFactory(client, Number(customerId), factoryId)
+      : Promise.resolve(),
+  ]);
 
   // 3. Determine auto_approved flag & final approval status
   let finalStatus = status;

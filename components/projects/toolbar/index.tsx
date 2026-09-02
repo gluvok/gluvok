@@ -50,9 +50,6 @@ function formatFilterChipLabel(id: string, value: unknown): string {
   if (id === "auto_approve") {
     return `Auto Approve: ${valStr === "true" ? "Enabled" : "Disabled"}`;
   }
-  if (id === "edited") {
-    return `Edit: ${valStr === "true" ? "Edited" : "Original"}`;
-  }
   if (id === "created_at" || id === "updated_at") {
     return `Date: ${formatSafeDate(valStr)}`;
   }

@@ -17,7 +17,6 @@ import {
   Cpu,
   UserCheck,
   Clock,
-  Pencil,
   PenLine,
   CheckCircle2,
   XCircle,
@@ -156,42 +155,6 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         >
           <PenLine className="h-3 w-3 shrink-0 text-muted-foreground" />
           User Entry
-        </span>
-      );
-    }),
-    createCustomColumn("edited", "Edited", Pencil, (val, row) => {
-      const rec = row as Record<string, unknown>;
-      const detectedVehicle = rec?.detected_vehicle_number as string | undefined;
-      const vehicleNumber = rec?.vehicle_number as string | undefined;
-      const isAutoApproved = Boolean(rec?.auto_approved);
-      const isApproved = rec?.status === EntryStatus.APPROVED || isAutoApproved;
-      const isEdited =
-        val === true ||
-        val === "true" ||
-        Boolean(
-          isApproved && detectedVehicle && vehicleNumber && detectedVehicle !== vehicleNumber,
-        );
-      return (
-        <span
-          className={cn(
-            badgeBaseClass,
-            "inline-flex items-center gap-1.5",
-            isEdited
-              ? "bg-amber-50 text-amber-700 border border-amber-200/50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/30"
-              : "bg-muted text-muted-foreground border border-border",
-          )}
-        >
-          {isEdited ? (
-            <>
-              <CheckCircle2 className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
-              Edited
-            </>
-          ) : (
-            <>
-              <XCircle className="h-3 w-3 shrink-0 text-muted-foreground" />
-              Original
-            </>
-          )}
         </span>
       );
     }),

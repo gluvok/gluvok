@@ -61,7 +61,7 @@ export async function tryMergeEntries(
   // 1. Fetch current entry E2
   const { data: e2, error: fetchErr } = await client
     .from("entries")
-    .select("*")
+    .select("id, status, vehicle_number, created_at, source")
     .eq("id", entryId)
     .eq("factory_id", factoryId)
     .is("deleted_at", null)
@@ -71,22 +71,10 @@ export async function tryMergeEntries(
     return null;
   }
 
-  // 2. Check if E2 is already linked in active weighments
-  const { data: existingW2 } = await client
-    .from("weighments")
-    .select("id")
-    .or(`in_entry_id.eq.${entryId},out_entry_id.eq.${entryId}`)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  if (existingW2) {
-    return null;
-  }
-
-  // 3. Find latest preceding approved entry E1 for the same vehicle, factory, AND matching entry source
+  // 2 & 3. Check if E2 is already linked in weighments AND query E1 candidates in parallel
   let e1Query = client
     .from("entries")
-    .select("*")
+    .select("id, vehicle_number, weight, created_at, source")
     .eq("factory_id", factoryId)
     .eq("vehicle_number", e2.vehicle_number)
     .eq("status", EntryStatus.APPROVED)
@@ -98,15 +86,21 @@ export async function tryMergeEntries(
     e1Query = e1Query.eq("source", e2.source);
   }
 
-  const { data: e1Candidates, error: e1Err } = await e1Query
-    .order("created_at", { ascending: false })
-    .limit(1);
+  const [w2Check, e1Res] = await Promise.all([
+    client
+      .from("weighments")
+      .select("id")
+      .or(`in_entry_id.eq.${entryId},out_entry_id.eq.${entryId}`)
+      .is("deleted_at", null)
+      .maybeSingle(),
+    e1Query.order("created_at", { ascending: false }).limit(1),
+  ]);
 
-  if (e1Err || !e1Candidates || e1Candidates.length === 0) {
+  if (w2Check.data || e1Res.error || !e1Res.data || e1Res.data.length === 0) {
     return null;
   }
 
-  const e1 = e1Candidates[0];
+  const e1 = e1Res.data[0];
 
   // 4. Check if E1 is already linked in active weighments
   const { data: existingW1 } = await client

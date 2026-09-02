@@ -25,16 +25,118 @@ export const GET = withAuth(async (req, user, client) => {
   const unitParam = searchParams.get("unit");
   const rateIdParam = searchParams.get("rate_id");
 
+  const dualFilters = ["center_id", "user_id", "customer_id"] as const;
+  const specificFilters: [string, "in_entry_id" | "out_entry_id", string][] = [
+    ["in_user_id", "in_entry_id", "user_id"],
+    ["in_customer_id", "in_entry_id", "customer_id"],
+    ["out_user_id", "out_entry_id", "user_id"],
+    ["out_customer_id", "out_entry_id", "customer_id"],
+  ];
+
+  // 1. Parallel Pre-Queries for Linked Entry Filters & Search
+  type DualFilterResult = { type: "dual"; ids: number[] };
+  type SpecificFilterResult = { type: "specific"; targetCol: "in_entry_id" | "out_entry_id"; ids: number[] };
+  type SearchFilterResult = { type: "search"; searchNum: number; ids: number[] };
+  type BaseScopeResult = { type: "base"; ids: number[] };
+
+  const preQueryPromises: Promise<DualFilterResult | SpecificFilterResult | SearchFilterResult | BaseScopeResult>[] = [];
+
+  if (user.role === Role.BASE) {
+    const userId = parseInt(user.sub, 10);
+    preQueryPromises.push(
+      (async (): Promise<BaseScopeResult> => {
+        const { data } = await client
+          .from("entries")
+          .select("id, customers!inner(user_id)")
+          .eq("factory_id", user.factory_id!)
+          .eq("customers.user_id", userId)
+          .is("deleted_at", null);
+        return {
+          type: "base",
+          ids: (data || []).map((e: { id: number }) => e.id),
+        };
+      })(),
+    );
+  }
+
+  for (const key of dualFilters) {
+    const val = searchParams.get(key);
+    if (val && val !== "all") {
+      const id = Number(val);
+      if (!isNaN(id)) {
+        preQueryPromises.push(
+          (async (): Promise<DualFilterResult> => {
+            const { data } = await client
+              .from("entries")
+              .select("id")
+              .eq("factory_id", user.factory_id!)
+              .eq(key, id)
+              .is("deleted_at", null);
+            return {
+              type: "dual",
+              ids: (data || []).map((e: { id: number }) => e.id),
+            };
+          })(),
+        );
+      }
+    }
+  }
+
+  for (const [param, targetCol, entryCol] of specificFilters) {
+    const val = searchParams.get(param);
+    if (val && val !== "all") {
+      const id = Number(val);
+      if (!isNaN(id)) {
+        preQueryPromises.push(
+          (async (): Promise<SpecificFilterResult> => {
+            const { data } = await client
+              .from("entries")
+              .select("id")
+              .eq("factory_id", user.factory_id!)
+              .eq(entryCol, id)
+              .is("deleted_at", null);
+            return {
+              type: "specific",
+              targetCol,
+              ids: (data || []).map((e: { id: number }) => e.id),
+            };
+          })(),
+        );
+      }
+    }
+  }
+
+  if (search) {
+    const searchNum = parseInt(search, 10);
+    preQueryPromises.push(
+      (async (): Promise<SearchFilterResult> => {
+        const { data } = await client
+          .from("entries")
+          .select("id")
+          .eq("factory_id", user.factory_id!)
+          .or(`vehicle_number.ilike.%${search}%,detected_vehicle_number.ilike.%${search}%`)
+          .is("deleted_at", null);
+        return {
+          type: "search",
+          searchNum,
+          ids: (data || []).map((e: { id: number }) => e.id),
+        };
+      })(),
+    );
+  }
+
+  const preQueryResults = await Promise.all(preQueryPromises);
+
+  // 2. Build Root Query with Optimized Column Projections
   let query = client
     .from("weighments")
     .select(
-      `*, in_entry:entries!in_entry_id(*, centers(name), users(name), customers(name)), out_entry:entries!out_entry_id(*, centers(name), users(name), customers(name))`,
+      `*, in_entry:entries!in_entry_id(id, weight, images, created_at, center_id, user_id, customer_id, vehicle_number, centers(name), users(name), customers(name)), out_entry:entries!out_entry_id(id, weight, images, created_at, center_id, user_id, customer_id, vehicle_number, centers(name), users(name), customers(name))`,
       { count: "exact" },
     )
     .eq("in_entry.factory_id", user.factory_id!)
     .is("deleted_at", null);
 
-  // 1. Direct Root-Table Filters
   if (typeParam && typeParam !== "all") {
     query = query.eq("type", typeParam);
   }
@@ -48,124 +150,55 @@ export const GET = withAuth(async (req, user, client) => {
   if (startDate) query = query.gte("created_at", startDate);
   if (endDate) query = query.lte("created_at", endDate);
 
-  // 2. Role.BASE Scoping (resolved via entries.customers inner join)
-  if (user.role === Role.BASE) {
-    const userId = parseInt(user.sub, 10);
-    const { data: baseEntries } = await client
-      .from("entries")
-      .select("id, customers!inner(user_id)")
-      .eq("factory_id", user.factory_id!)
-      .eq("customers.user_id", userId)
-      .is("deleted_at", null);
-
-    const baseEntryIds = (baseEntries || []).map((e: { id: number }) => e.id);
-
-    if (baseEntryIds.length === 0) {
-      return NextResponse.json({
-        data: [],
-        pagination: { page: pagination.page, limit: pagination.limit, total: 0 },
-      });
-    }
-
-    query = query.or(
-      `in_entry_id.in.(${baseEntryIds.join(",")}),out_entry_id.in.(${baseEntryIds.join(",")})`,
-    );
-  }
-
-  // 3. Dual in/out Entry Filters (center_id, user_id, customer_id)
-  const dualFilters = ["center_id", "user_id", "customer_id"] as const;
-  for (const key of dualFilters) {
-    const val = searchParams.get(key);
-    if (val && val !== "all") {
-      const id = Number(val);
-      if (!isNaN(id)) {
-        const { data: matchedEntries } = await client
-          .from("entries")
-          .select("id")
-          .eq("factory_id", user.factory_id!)
-          .eq(key, id)
-          .is("deleted_at", null);
-
-        const matchedIds = (matchedEntries || []).map((e: { id: number }) => e.id);
-        if (matchedIds.length === 0) {
-          return NextResponse.json({
-            data: [],
-            pagination: { page: pagination.page, limit: pagination.limit, total: 0 },
-          });
-        }
-        query = query.or(
-          `in_entry_id.in.(${matchedIds.join(",")}),out_entry_id.in.(${matchedIds.join(",")})`,
+  // 3. Apply Resolved Pre-query Results
+  for (const res of preQueryResults) {
+    if (res.type === "base") {
+      if (res.ids.length === 0) {
+        return NextResponse.json({
+          data: [],
+          pagination: { page: pagination.page, limit: pagination.limit, total: 0 },
+        });
+      }
+      query = query.or(`in_entry_id.in.(${res.ids.join(",")}),out_entry_id.in.(${res.ids.join(",")})`);
+    } else if (res.type === "dual") {
+      if (res.ids.length === 0) {
+        return NextResponse.json({
+          data: [],
+          pagination: { page: pagination.page, limit: pagination.limit, total: 0 },
+        });
+      }
+      query = query.or(`in_entry_id.in.(${res.ids.join(",")}),out_entry_id.in.(${res.ids.join(",")})`);
+    } else if (res.type === "specific") {
+      if (res.ids.length === 0) {
+        return NextResponse.json({
+          data: [],
+          pagination: { page: pagination.page, limit: pagination.limit, total: 0 },
+        });
+      }
+      query = query.in(res.targetCol, res.ids);
+    } else if (res.type === "search") {
+      const searchClauses: string[] = [];
+      if (!isNaN(res.searchNum)) {
+        searchClauses.push(
+          `id.eq.${res.searchNum}`,
+          `in_entry_id.eq.${res.searchNum}`,
+          `out_entry_id.eq.${res.searchNum}`,
         );
       }
-    }
-  }
-
-  // 4. Specific in/out Entry Filters (for user and customer)
-  const specificFilters: [string, "in_entry_id" | "out_entry_id", string][] = [
-    ["in_user_id", "in_entry_id", "user_id"],
-    ["in_customer_id", "in_entry_id", "customer_id"],
-    ["out_user_id", "out_entry_id", "user_id"],
-    ["out_customer_id", "out_entry_id", "customer_id"],
-  ];
-
-  for (const [param, targetCol, entryCol] of specificFilters) {
-    const val = searchParams.get(param);
-    if (val && val !== "all") {
-      const id = Number(val);
-      if (!isNaN(id)) {
-        const { data: matchedEntries } = await client
-          .from("entries")
-          .select("id")
-          .eq("factory_id", user.factory_id!)
-          .eq(entryCol, id)
-          .is("deleted_at", null);
-
-        const matchedIds = (matchedEntries || []).map((e: { id: number }) => e.id);
-        if (matchedIds.length === 0) {
-          return NextResponse.json({
-            data: [],
-            pagination: { page: pagination.page, limit: pagination.limit, total: 0 },
-          });
-        }
-        query = query.in(targetCol, matchedIds);
+      if (res.ids.length > 0) {
+        searchClauses.push(
+          `in_entry_id.in.(${res.ids.join(",")})`,
+          `out_entry_id.in.(${res.ids.join(",")})`,
+        );
       }
-    }
-  }
-
-  // 5. Search
-  if (search) {
-    const searchNum = parseInt(search, 10);
-    const { data: vehicleEntries } = await client
-      .from("entries")
-      .select("id")
-      .eq("factory_id", user.factory_id!)
-      .or(`vehicle_number.ilike.%${search}%,detected_vehicle_number.ilike.%${search}%`)
-      .is("deleted_at", null);
-
-    const vehicleEntryIds = (vehicleEntries || []).map((e: { id: number }) => e.id);
-    const searchClauses: string[] = [];
-
-    if (!isNaN(searchNum)) {
-      searchClauses.push(
-        `id.eq.${searchNum}`,
-        `in_entry_id.eq.${searchNum}`,
-        `out_entry_id.eq.${searchNum}`,
-      );
-    }
-    if (vehicleEntryIds.length > 0) {
-      searchClauses.push(
-        `in_entry_id.in.(${vehicleEntryIds.join(",")})`,
-        `out_entry_id.in.(${vehicleEntryIds.join(",")})`,
-      );
-    }
-
-    if (searchClauses.length > 0) {
-      query = query.or(searchClauses.join(","));
-    } else {
-      return NextResponse.json({
-        data: [],
-        pagination: { page: pagination.page, limit: pagination.limit, total: 0 },
-      });
+      if (searchClauses.length > 0) {
+        query = query.or(searchClauses.join(","));
+      } else {
+        return NextResponse.json({
+          data: [],
+          pagination: { page: pagination.page, limit: pagination.limit, total: 0 },
+        });
+      }
     }
   }
 

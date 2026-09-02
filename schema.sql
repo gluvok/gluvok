@@ -135,6 +135,22 @@ CREATE TABLE IF NOT EXISTS entries (
 CREATE INDEX IF NOT EXISTS idx_entries_factory_vehicle 
 ON entries (factory_id, vehicle_number, source, status, created_at DESC);
 
+CREATE INDEX IF NOT EXISTS idx_entries_factory_created
+ON entries (factory_id, created_at DESC)
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_entries_center
+ON entries (factory_id, center_id)
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_entries_customer
+ON entries (factory_id, customer_id)
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_entries_user
+ON entries (factory_id, user_id)
+WHERE deleted_at IS NULL;
+
 -- WEIGHMENTS TABLE (Merged double-entry pair)
 CREATE TABLE IF NOT EXISTS weighments (
     id SERIAL PRIMARY KEY,
@@ -147,6 +163,31 @@ CREATE TABLE IF NOT EXISTS weighments (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
 );
+
+CREATE INDEX IF NOT EXISTS idx_weighments_created
+ON weighments (created_at DESC)
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_weighments_rate
+ON weighments (rate_id)
+WHERE deleted_at IS NULL;
+
+-- INDEXES FOR RATES, CUSTOMERS, CENTERS
+CREATE INDEX IF NOT EXISTS idx_rates_factory_commodity
+ON rates (factory_id, commodity_id)
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_customers_factory
+ON customers (factory_id)
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_customers_user
+ON customers (user_id)
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_centers_factory
+ON centers (factory_id)
+WHERE deleted_at IS NULL;
 
 -- COMPUTED COLUMNS FOR WEIGHMENTS DERIVED WEIGHTS
 DROP FUNCTION IF EXISTS public.gross_weight(weighments);

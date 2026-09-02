@@ -22,7 +22,7 @@ export function getCustomersColumns<T extends RowData>(): ColumnDef<ProjectTable
       if (!u) return <span className="text-muted-foreground/40 text-xs">—</span>;
       return (
         <span className="font-mono text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
-          @{u}
+          {u}
         </span>
       );
     }),

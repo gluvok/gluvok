@@ -35,15 +35,29 @@ import {
   XCircle,
   X,
   FileDown,
+  Ticket,
+  Loader2,
+  Eye,
+  MessageSquare,
+  Scale,
+  Truck,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { getField, useEntitiesStore } from "@/lib/store";
-import { type EntityRecord } from "@/types";
+import { type EntityRecord, type Ticket as TicketEntity } from "@/types";
 import { type ColumnActionsCallbacks } from "./index";
 
-import { type Permission, useAuthStore, type AuthUser } from "@/lib/store";
-import { ProjectSlug, Role, WeighmentType, EntryStatus } from "@/lib/constants/enums";
+import { type Permission, useAuthStore, type AuthUser, hasPermission } from "@/lib/store";
+import {
+  ProjectSlug,
+  Role,
+  WeighmentType,
+  EntryStatus,
+  PermissionKey,
+} from "@/lib/constants/enums";
 import { downloadPDF } from "@/lib/pdf";
+import { formatDateTime } from "@/lib/utils";
 
 /**
  * hasRowModifyPermission
@@ -71,6 +85,12 @@ function hasRowModifyPermission(
         (isAdminOfFactory && [Role.MANAGER, Role.OPERATOR, Role.BASE].includes(itemRole as Role)) ||
         (isManagerOfFactory && [Role.OPERATOR, Role.BASE].includes(itemRole as Role))
       );
+    }
+
+    case ProjectSlug.TICKETS: {
+      if (currentUser.role === Role.ADMIN) return true;
+      const authorId = getField(item, "user_id");
+      return String(authorId) === String(currentUser.id);
     }
 
     default:
@@ -106,7 +126,16 @@ function ActionCell<T extends EntityRecord>({
   const [approving, setApproving] = React.useState(false);
   const [rejecting, setRejecting] = React.useState(false);
   const [statusLoading, setStatusLoading] = React.useState(false);
+  const [ticketDialogOpen, setTicketDialogOpen] = React.useState(false);
+  const [ticketConcern, setTicketConcern] = React.useState("");
+  const [ticketSubmitting, setTicketSubmitting] = React.useState(false);
+  const [viewTicketOpen, setViewTicketOpen] = React.useState(false);
   const vehicleNumber = String(getField(item, "vehicle_number") || "");
+
+  const canRaiseTicket =
+    (projectSlug === ProjectSlug.ENTRIES || projectSlug === ProjectSlug.WEIGHMENTS) &&
+    currentUser !== null &&
+    hasPermission(currentUser, ProjectSlug.TICKETS, PermissionKey.CREATE);
 
   const canModifyRow = hasRowModifyPermission(item, projectSlug, currentUser);
   let hasRowWrite = canWrite && canModifyRow;
@@ -221,6 +250,27 @@ function ActionCell<T extends EntityRecord>({
           >
             <FileDown className="h-3.5 w-3.5 text-muted-foreground/70" /> Download PDF
           </DropdownMenuItem>
+          {projectSlug === ProjectSlug.TICKETS && (
+            <DropdownMenuItem
+              id={`actions-view-ticket-${itemId}`}
+              className="text-xs cursor-pointer gap-2 py-1.5 px-2 rounded-lg transition-colors focus:bg-muted focus:text-foreground"
+              onClick={() => setViewTicketOpen(true)}
+            >
+              <Eye className="h-3.5 w-3.5 text-muted-foreground/70" /> View Details
+            </DropdownMenuItem>
+          )}
+          {canRaiseTicket && (
+            <DropdownMenuItem
+              id={`actions-ticket-${projectSlug}-${itemId}`}
+              className="text-xs cursor-pointer gap-2 py-1.5 px-2 rounded-lg transition-colors focus:bg-muted focus:text-foreground"
+              onClick={() => {
+                setTicketConcern("");
+                setTicketDialogOpen(true);
+              }}
+            >
+              <Ticket className="h-3.5 w-3.5 text-muted-foreground/70" /> Raise Ticket
+            </DropdownMenuItem>
+          )}
           {canApproveEntry && (
             <>
               <DropdownMenuSeparator className="my-1 bg-border/50" />
@@ -370,6 +420,206 @@ function ActionCell<T extends EntityRecord>({
           </DialogContent>
         </Dialog>
       )}
+
+      {canRaiseTicket && (
+        <Dialog open={ticketDialogOpen} onOpenChange={setTicketDialogOpen}>
+          <DialogContent className="w-[92vw] sm:w-full max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-foreground">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                  <Ticket className="h-4 w-4" />
+                </div>
+                Raise Support Ticket
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground pt-1">
+                Dispute or report an operational issue for{" "}
+                <span className="font-semibold text-foreground">
+                  {projectSlug === ProjectSlug.ENTRIES ? "Entry" : "Weighment"} #{itemId}
+                </span>
+                {vehicleNumber ? ` (Vehicle: ${vehicleNumber})` : ""}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-2 space-y-2">
+              <label
+                htmlFor={`ticket-concern-${itemId}`}
+                className="text-xs font-medium text-foreground"
+              >
+                Concern / Description
+              </label>
+              <Textarea
+                id={`ticket-concern-${itemId}`}
+                placeholder="Describe the discrepancy, weight difference, or problem..."
+                value={ticketConcern}
+                onChange={(e) => setTicketConcern(e.target.value)}
+                rows={4}
+                className="text-xs"
+              />
+            </div>
+            <DialogFooter className="gap-2 mx-0 mb-0 pt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setTicketDialogOpen(false)}
+                disabled={ticketSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={async () => {
+                  const trimmed = ticketConcern.trim();
+                  if (trimmed.length < 5) {
+                    toast.error("Please enter a concern of at least 5 characters");
+                    return;
+                  }
+                  try {
+                    setTicketSubmitting(true);
+                    const payload = {
+                      [projectSlug === ProjectSlug.ENTRIES ? "entry_id" : "weighment_id"]:
+                        Number(itemId),
+                      concern: trimmed,
+                    };
+                    const res = await fetch("/api/tickets", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payload),
+                    });
+                    const json = await res.json();
+                    if (!res.ok) {
+                      toast.error(json.error || "Failed to submit ticket");
+                      return;
+                    }
+                    toast.success(`Ticket #${json.data.id} submitted in pending status`);
+                    setTicketDialogOpen(false);
+                    setTicketConcern("");
+                  } catch {
+                    toast.error("Failed to submit ticket");
+                  } finally {
+                    setTicketSubmitting(false);
+                  }
+                }}
+                disabled={ticketSubmitting || ticketConcern.trim().length < 5}
+              >
+                {ticketSubmitting ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Submit Ticket"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {projectSlug === ProjectSlug.TICKETS &&
+        (() => {
+          const ticket = item as unknown as TicketEntity;
+          const authorName =
+            ticket.users?.name || ticket.user_name || `User #${getField(item, "user_id")}`;
+          const entryPlate = ticket.entries?.vehicle_number;
+          const entryWeight = ticket.entries?.weight;
+          const weighmentPlate = ticket.weighments?.in_entry?.vehicle_number;
+          const weighmentNet = ticket.weighments?.net_weight;
+          const weighmentUnit = ticket.weighments?.unit;
+
+          return (
+            <Dialog open={viewTicketOpen} onOpenChange={setViewTicketOpen}>
+              <DialogContent className="w-[92vw] sm:w-full max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-foreground">
+                    <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                      <Ticket className="h-4 w-4" />
+                    </div>
+                    Ticket #{itemId}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground pt-0.5">
+                    Raised by {authorName} on {formatDateTime(String(getField(item, "created_at")))}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="py-3 space-y-4 text-xs">
+                  <div className="p-3 rounded-lg border border-border/70 bg-muted/30 space-y-1">
+                    <div className="font-semibold text-2xs uppercase tracking-wider text-muted-foreground">
+                      Linked Target
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {ticket.entry_id ? (
+                        <>
+                          <Truck className="h-4 w-4 text-primary shrink-0" />
+                          <div>
+                            <span className="font-semibold text-foreground">
+                              Entry #{ticket.entry_id}
+                            </span>
+                            {entryPlate ? (
+                              <span className="text-muted-foreground font-mono ml-1.5">
+                                (Plate: {entryPlate} · {entryWeight} kg)
+                              </span>
+                            ) : null}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <Scale className="h-4 w-4 text-primary shrink-0" />
+                          <div>
+                            <span className="font-semibold text-foreground">
+                              Weighment #{ticket.weighment_id}
+                            </span>
+                            {weighmentPlate ? (
+                              <span className="text-muted-foreground font-mono ml-1.5">
+                                (Plate: {weighmentPlate} · Net: {weighmentNet} {weighmentUnit})
+                              </span>
+                            ) : null}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="font-semibold text-2xs uppercase tracking-wider text-muted-foreground">
+                      Concern
+                    </div>
+                    <div className="p-3 rounded-lg border border-border/70 bg-background text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                      {String(getField(item, "concern") || "")}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-2xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <MessageSquare className="h-3 w-3 text-primary" /> Support Response
+                      </span>
+                      <span className="text-2xs font-medium">
+                        Status:{" "}
+                        <span className="capitalize font-semibold text-foreground">
+                          {String(getField(item, "status") || "pending")}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-lg border border-border/70 bg-muted/40 text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                      {getField(item, "reply") && String(getField(item, "reply")).trim() ? (
+                        String(getField(item, "reply"))
+                      ) : (
+                        <span className="text-muted-foreground/60 italic">
+                          This ticket is currently pending review by the system administrator.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter className="mx-0 mb-0 pt-2">
+                  <Button size="sm" variant="outline" onClick={() => setViewTicketOpen(false)}>
+                    Close
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          );
+        })()}
     </div>
   );
 }

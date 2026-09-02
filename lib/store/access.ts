@@ -93,6 +93,14 @@ export const RBAC_MATRIX: RbacMatrix = {
       filter: false,
       editableFields: ["name", "check_center_on_merge"],
     },
+    [ProjectSlug.TICKETS]: {
+      read: true,
+      write: true,
+      delete: true,
+      create: true,
+      show: true,
+      filter: true,
+    },
   },
   [Role.MANAGER]: {
     [ProjectSlug.USERS]: {
@@ -160,6 +168,14 @@ export const RBAC_MATRIX: RbacMatrix = {
       filter: false,
       editableFields: [],
     },
+    [ProjectSlug.TICKETS]: {
+      read: true,
+      write: true,
+      delete: true,
+      create: true,
+      show: true,
+      filter: true,
+    },
   },
   [Role.OPERATOR]: {
     [ProjectSlug.USERS]: {
@@ -226,6 +242,14 @@ export const RBAC_MATRIX: RbacMatrix = {
       show: false,
       filter: false,
     },
+    [ProjectSlug.TICKETS]: {
+      read: true,
+      write: true,
+      delete: true,
+      create: true,
+      show: true,
+      filter: true,
+    },
   },
   [Role.BASE]: {
     [ProjectSlug.USERS]: {
@@ -285,6 +309,14 @@ export const RBAC_MATRIX: RbacMatrix = {
       filter: true,
     },
     [ProjectSlug.SETTINGS]: {
+      read: false,
+      write: false,
+      delete: false,
+      create: false,
+      show: false,
+      filter: false,
+    },
+    [ProjectSlug.TICKETS]: {
       read: false,
       write: false,
       delete: false,
@@ -358,6 +390,14 @@ export const RBAC_MATRIX: RbacMatrix = {
       show: false,
       filter: false,
     },
+    [ProjectSlug.TICKETS]: {
+      read: false,
+      write: false,
+      delete: false,
+      create: false,
+      show: false,
+      filter: false,
+    },
   },
 };
 
@@ -389,7 +429,8 @@ export function hasCreateAccess(role: Role | null | undefined, projectSlug: stri
   if (
     projectSlug === ProjectSlug.COMMODITIES ||
     projectSlug === ProjectSlug.WEIGHMENTS ||
-    projectSlug === ProjectSlug.SETTINGS
+    projectSlug === ProjectSlug.SETTINGS ||
+    projectSlug === ProjectSlug.TICKETS
   ) {
     return false;
   }

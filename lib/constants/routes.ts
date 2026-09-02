@@ -7,8 +7,9 @@ export const AppRoutes = {
   HOME: "/",
   LOGIN: "/login",
   SERVICES: "/services",
+  TICKETS: "/tickets",
   SUPPORT: "/support",
-  FEEDBACK: "/feedback",
+  FEEDBACK: "/support",
 } as const;
 
 export type AppRoute = (typeof AppRoutes)[keyof typeof AppRoutes];
@@ -27,6 +28,7 @@ export const ApiRoutes = {
   COMMODITIES: "/api/commodities",
   USERS: "/api/users",
   SETTINGS: "/api/settings",
+  TICKETS: "/api/tickets",
   FILTERS_PRELOAD: "/api/filters/preload",
 } as const;
 

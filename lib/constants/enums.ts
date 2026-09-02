@@ -23,6 +23,12 @@ export enum EntryStatus {
   REJECTED = "rejected",
 }
 
+export enum TicketStatus {
+  PENDING = "pending",
+  APPROVED = "approved",
+  REJECTED = "rejected",
+}
+
 export enum EntrySource {
   DEVICE = "device",
   MANUAL = "manual",
@@ -43,6 +49,7 @@ export enum ProjectSlug {
   WEIGHMENTS = "weighments",
   USERS = "users",
   SETTINGS = "settings",
+  TICKETS = "tickets",
 }
 
 export enum PermissionKey {

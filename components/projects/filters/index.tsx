@@ -13,6 +13,7 @@ import { EntriesFilters } from "./entries";
 import { RatesFilters } from "./rates";
 import { UsersFilters } from "./users";
 import { WeighmentsFilters } from "./weighments";
+import { TicketsFilters } from "./tickets";
 
 export * from "./common";
 export * from "./centers";
@@ -20,6 +21,7 @@ export * from "./entries";
 export * from "./rates";
 export * from "./users";
 export * from "./weighments";
+export * from "./tickets";
 export * from "./date-range-filter";
 
 export function hasProjectFilters(slug: string): boolean {
@@ -28,7 +30,8 @@ export function hasProjectFilters(slug: string): boolean {
     slug === ProjectSlug.ENTRIES ||
     slug === ProjectSlug.RATES ||
     slug === ProjectSlug.USERS ||
-    slug === ProjectSlug.WEIGHMENTS
+    slug === ProjectSlug.WEIGHMENTS ||
+    slug === ProjectSlug.TICKETS
   );
 }
 
@@ -52,6 +55,8 @@ export function ProjectFilters<TData extends RowData>({
       return <UsersFilters table={table} />;
     case ProjectSlug.WEIGHMENTS:
       return <WeighmentsFilters table={table} />;
+    case ProjectSlug.TICKETS:
+      return <TicketsFilters table={table} />;
     default:
       return null;
   }

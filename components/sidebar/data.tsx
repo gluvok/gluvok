@@ -3,7 +3,7 @@
  * @description Static navigation configuration data for mapping user navigation and project routes in the sidebar.
  */
 
-import { LifeBuoy, Send, Layers } from "lucide-react";
+import { Ticket, LifeBuoy, Layers } from "lucide-react";
 import { PROJECTS } from "@/lib/projects";
 import { DEFAULT_AVATAR, AppRoutes } from "@/lib/constants";
 import { Role } from "@/lib/constants/enums";
@@ -21,14 +21,14 @@ export const SIDEBAR_DATA = {
   },
   navSecondary: [
     {
+      title: "Tickets",
+      url: AppRoutes.TICKETS,
+      icon: <Ticket />,
+    },
+    {
       title: "Support",
       url: AppRoutes.SUPPORT,
       icon: <LifeBuoy />,
-    },
-    {
-      title: "Feedback",
-      url: AppRoutes.FEEDBACK,
-      icon: <Send />,
     },
     {
       title: "Services",

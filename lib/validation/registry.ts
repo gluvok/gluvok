@@ -11,10 +11,11 @@ import { addEntrySchema, editEntrySchema } from "./entries";
 import { editWeighmentSchema } from "./weighments";
 import { addUserSchema, editUserSchema } from "./users";
 import { editSettingsSchema } from "./settings";
+import { updateTicketConcernSchema } from "./tickets";
 
 export type CreatableProjectSlug = Exclude<
   ProjectSlug,
-  ProjectSlug.WEIGHMENTS | ProjectSlug.COMMODITIES | ProjectSlug.SETTINGS
+  ProjectSlug.WEIGHMENTS | ProjectSlug.COMMODITIES | ProjectSlug.SETTINGS | ProjectSlug.TICKETS
 >;
 
 export type EditableProjectSlug = Exclude<ProjectSlug, ProjectSlug.COMMODITIES>;
@@ -33,7 +34,8 @@ export type EntityEditSchema =
   | typeof editEntrySchema
   | typeof editWeighmentSchema
   | typeof editUserSchema
-  | typeof editSettingsSchema;
+  | typeof editSettingsSchema
+  | typeof updateTicketConcernSchema;
 
 export const ENTITY_ADD_SCHEMAS: Record<CreatableProjectSlug, EntityAddSchema> = {
   [ProjectSlug.CENTERS]: addCenterSchema,
@@ -51,4 +53,5 @@ export const ENTITY_EDIT_SCHEMAS: Record<EditableProjectSlug, EntityEditSchema> 
   [ProjectSlug.WEIGHMENTS]: editWeighmentSchema,
   [ProjectSlug.USERS]: editUserSchema,
   [ProjectSlug.SETTINGS]: editSettingsSchema,
+  [ProjectSlug.TICKETS]: updateTicketConcernSchema,
 };

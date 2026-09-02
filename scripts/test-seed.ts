@@ -7,7 +7,14 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { Role, Unit, EntryStatus, EntrySource, WeighmentType } from "../lib/constants/enums";
+import {
+  Role,
+  Unit,
+  EntryStatus,
+  EntrySource,
+  WeighmentType,
+  TicketStatus,
+} from "../lib/constants/enums";
 import { hashPassword } from "../lib/auth/password";
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -26,6 +33,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Tables in reverse dependency order for clearing
 const TABLES_IN_CLEAR_ORDER = [
+  "tickets",
   "weighments",
   "entries",
   "rates",
@@ -704,6 +712,8 @@ async function main() {
   ];
 
   let seededWeighmentsCount = 0;
+  const sampleEntryIds: number[] = [];
+  const sampleWeighmentIds: number[] = [];
 
   for (const pair of weighmentPairScenarios) {
     const custId = customerMap.get(pair.customerName);
@@ -735,6 +745,7 @@ async function main() {
       console.warn(`  ⚠️ Failed to create In Entry for ${pair.vehicleNumber}:`, inErr?.message);
       continue;
     }
+    sampleEntryIds.push(inEntry.id);
 
     // Insert Out Entry
     const { data: outEntry, error: outErr } = await supabase
@@ -763,19 +774,24 @@ async function main() {
     }
 
     // Insert Weighment linking In + Out (type defaults to unassigned via DB column default)
-    const { error: wErr } = await supabase.from("weighments").insert({
-      in_entry_id: inEntry.id,
-      out_entry_id: outEntry.id,
-      unit: pair.unit,
-      rate_id: pair.rateId || null,
-      created_at: outCreatedAt,
-      updated_at: outCreatedAt,
-    });
+    const { data: createdW, error: wErr } = await supabase
+      .from("weighments")
+      .insert({
+        in_entry_id: inEntry.id,
+        out_entry_id: outEntry.id,
+        unit: pair.unit,
+        rate_id: pair.rateId || null,
+        created_at: outCreatedAt,
+        updated_at: outCreatedAt,
+      })
+      .select("id")
+      .single();
 
     if (wErr) {
       console.warn(`  ⚠️ Failed to link weighment for ${pair.vehicleNumber}:`, wErr.message);
     } else {
       seededWeighmentsCount++;
+      if (createdW) sampleWeighmentIds.push(createdW.id);
     }
   }
 
@@ -903,6 +919,57 @@ async function main() {
     if (!error) standaloneCount++;
   }
   console.log(`  ✓ Seeded ${standaloneCount} standalone and edge-case entries.`);
+
+  // 9. SUPPORT TICKETS (Pending, Approved, Rejected)
+  console.log("\n🎫 [9/9] Seeding Support Tickets (Pending, Approved, Rejected)...");
+
+  const sampleTickets = [
+    {
+      entry_id: sampleEntryIds[0] || null,
+      weighment_id: null,
+      user_id: userMap.get("operator_bob")!,
+      concern:
+        "Camera OCR misread rear vehicle plate due to dried mud; requested manual number correction.",
+      status: TicketStatus.PENDING,
+      reply: null,
+      created_at: getRelativeDate(1, 2),
+    },
+    {
+      entry_id: null,
+      weighment_id: sampleWeighmentIds[0] || null,
+      user_id: userMap.get("operator_charlie")!,
+      concern:
+        "Discrepancy in tare weight recorded on double-axle trailer vs printed scale ticket.",
+      status: TicketStatus.APPROVED,
+      reply:
+        "Verified scale calibration log for 09:30 AM; tare adjusted and approved by DB administrator.",
+      created_at: getRelativeDate(3, 4),
+    },
+    {
+      entry_id: sampleEntryIds[1] || null,
+      weighment_id: null,
+      user_id: userMap.get("manager_alice")!,
+      concern:
+        "Suspected duplicate entry created due to network reconnect loop on weighbridge sensor.",
+      status: TicketStatus.REJECTED,
+      reply:
+        "Reviewed scale camera stills; two distinct vehicles crossed the sensor within 45 seconds. Rejected.",
+      created_at: getRelativeDate(7, 5),
+    },
+  ];
+
+  let seededTicketsCount = 0;
+  for (const t of sampleTickets) {
+    const { error } = await supabase.from("tickets").insert({
+      ...t,
+      updated_at: t.created_at,
+    });
+    if (!error) seededTicketsCount++;
+    else console.warn("  ⚠️ Ticket seed warning:", error.message);
+  }
+  console.log(
+    `  ✓ Seeded ${seededTicketsCount} support tickets across pending, approved, and rejected states.`,
+  );
 
   console.log("\n=================================================");
   console.log("🎉 Test Database Seeding Completed Successfully!");

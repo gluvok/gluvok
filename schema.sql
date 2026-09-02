@@ -4,6 +4,7 @@
 -- ==============================================================================
 
 -- 0. DESTRUCTIVE CLEANUP (Drop existing tables, types, and views to ensure a fresh schema build)
+DROP TABLE IF EXISTS tickets CASCADE;
 DROP TABLE IF EXISTS weighments CASCADE;
 DROP TABLE IF EXISTS entries CASCADE;
 DROP TABLE IF EXISTS rates CASCADE;
@@ -12,6 +13,8 @@ DROP TABLE IF EXISTS centers CASCADE;
 DROP TABLE IF EXISTS commodities CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS factories CASCADE;
+
+DROP TYPE IF EXISTS ticket_status CASCADE;
 
 DROP TYPE IF EXISTS entry_source CASCADE;
 DROP TYPE IF EXISTS entry_status CASCADE;
@@ -37,6 +40,9 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'entry_status') THEN
         CREATE TYPE entry_status AS ENUM ('pending', 'approved', 'rejected');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ticket_status') THEN
+        CREATE TYPE ticket_status AS ENUM ('pending', 'approved', 'rejected');
     END IF;
 END $$;
 
@@ -171,6 +177,36 @@ WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_weighments_rate
 ON weighments (rate_id)
+WHERE deleted_at IS NULL;
+
+-- TICKETS TABLE (Support tickets linked to either an entry or a weighment)
+CREATE TABLE IF NOT EXISTS tickets (
+    id SERIAL PRIMARY KEY,
+    concern TEXT NOT NULL,
+    reply TEXT,
+    status ticket_status NOT NULL DEFAULT 'pending',
+    entry_id INT REFERENCES entries(id) ON DELETE CASCADE,
+    weighment_id INT REFERENCES weighments(id) ON DELETE CASCADE,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ,
+    CONSTRAINT chk_ticket_link_one_only CHECK (
+        (entry_id IS NOT NULL AND weighment_id IS NULL) OR
+        (entry_id IS NULL AND weighment_id IS NOT NULL)
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_tickets_user_status 
+ON tickets (user_id, status, created_at DESC) 
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_tickets_entry 
+ON tickets (entry_id) 
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_tickets_weighment 
+ON tickets (weighment_id) 
 WHERE deleted_at IS NULL;
 
 -- INDEXES FOR RATES, CUSTOMERS, CENTERS

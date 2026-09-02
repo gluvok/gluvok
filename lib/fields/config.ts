@@ -265,6 +265,17 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       editableRoles: [Role.ADMIN],
     },
   ],
+  [ProjectSlug.TICKETS]: [
+    {
+      key: "concern",
+      label: "Concern",
+      placeholder: "Describe the issue or discrepancy...",
+      type: FieldType.TEXT,
+      required: true,
+      icon: Tag,
+      span: FieldSpan.FULL,
+    },
+  ],
 };
 
 export const REQUIRED_CREATE_FIELDS: Record<string, string[]> = {
@@ -275,4 +286,5 @@ export const REQUIRED_CREATE_FIELDS: Record<string, string[]> = {
   [ProjectSlug.ENTRIES]: ["vehicle_number", "weight", "center_id"],
   [ProjectSlug.WEIGHMENTS]: ["vehicle_number", "center_id", "weight", "unit", "type"],
   [ProjectSlug.USERS]: ["name", "username", "role", "password", "confirmPassword"],
+  [ProjectSlug.TICKETS]: ["concern"],
 };

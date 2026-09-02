@@ -238,6 +238,27 @@ describe("RBAC Access Controls", () => {
     });
   });
 
+  describe("Tickets Access", () => {
+    it("disallows ad-hoc create button on toolbar for all roles", () => {
+      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE, Role.HARDWARE];
+      for (const role of roles) {
+        expect(hasCreateAccess(role, ProjectSlug.TICKETS)).toBe(false);
+      }
+    });
+
+    it("grants ticket read and write permissions to Admin, Manager, and Operator but denies Base and Hardware", () => {
+      expect(hasPermission(Role.ADMIN, ProjectSlug.TICKETS, PermissionKey.READ)).toBe(true);
+      expect(hasPermission(Role.MANAGER, ProjectSlug.TICKETS, PermissionKey.READ)).toBe(true);
+      expect(hasPermission(Role.OPERATOR, ProjectSlug.TICKETS, PermissionKey.READ)).toBe(true);
+      expect(hasPermission(Role.BASE, ProjectSlug.TICKETS, PermissionKey.READ)).toBe(false);
+      expect(hasPermission(Role.HARDWARE, ProjectSlug.TICKETS, PermissionKey.READ)).toBe(false);
+
+      expect(hasPermission(Role.OPERATOR, ProjectSlug.TICKETS, PermissionKey.CREATE)).toBe(true);
+      expect(hasPermission(Role.BASE, ProjectSlug.TICKETS, PermissionKey.CREATE)).toBe(false);
+      expect(hasPermission(Role.HARDWARE, ProjectSlug.TICKETS, PermissionKey.CREATE)).toBe(false);
+    });
+  });
+
   describe("isColumnVisible & isFieldVisible", () => {
     it("should hide factory_id and factory_name columns and fields across all roles", () => {
       const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE, Role.HARDWARE];

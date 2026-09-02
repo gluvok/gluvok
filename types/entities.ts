@@ -4,7 +4,14 @@
  * Includes flattened and computed fields used across views and forms.
  */
 
-import { Role, Unit, WeighmentType, EntrySource, EntryStatus } from "@/lib/constants/enums";
+import {
+  Role,
+  Unit,
+  WeighmentType,
+  EntrySource,
+  EntryStatus,
+  TicketStatus,
+} from "@/lib/constants/enums";
 
 /**
  * Center Entity
@@ -123,6 +130,39 @@ export interface User {
   factory_name?: string;
 }
 
+export interface Ticket {
+  id: number;
+  concern: string;
+  reply: string | null;
+  status: TicketStatus;
+  entry_id: number | null;
+  weighment_id: number | null;
+  user_id: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+  // Joined / flattened fields
+  users?: { id?: number; name: string; username: string } | null;
+  user_name?: string;
+  user_username?: string;
+  entries?: {
+    id: number;
+    vehicle_number: string;
+    weight: number;
+    status: string;
+    created_at: string;
+  } | null;
+  weighments?: {
+    id: number;
+    unit: string;
+    gross_weight?: number;
+    tare_weight?: number;
+    net_weight?: number;
+    created_at: string;
+    in_entry?: { vehicle_number?: string } | null;
+  } | null;
+}
+
 /** Union of all entity types used across the app */
 export type EntityRecord =
   | Center
@@ -132,4 +172,5 @@ export type EntityRecord =
   | Weighment
   | Entry
   | Factory
-  | User;
+  | User
+  | Ticket;

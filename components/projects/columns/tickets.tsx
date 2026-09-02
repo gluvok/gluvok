@@ -6,30 +6,21 @@
 import { type ColumnDef, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import {
-  Ticket as TicketIcon,
   Truck,
   Scale,
   MessageSquare,
   Clock,
   CheckCircle2,
   XCircle,
-  FileText,
-  User as UserIcon,
-  Calendar,
+  CircleAlert,
+  UserCog,
   Layers,
 } from "lucide-react";
 import { createCustomColumn } from "./helpers";
 import { TicketStatus } from "@/lib/constants/enums";
-import { formatDateTime } from "@/lib/utils";
 
 export function getTicketsColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
-    createCustomColumn<T>("id", "Ticket ID", TicketIcon, (val) => {
-      return (
-        <span className="font-mono font-semibold text-foreground text-xs">#{String(val)}</span>
-      );
-    }),
-
     createCustomColumn<T>("target", "Linked Target", Layers, (_val, row) => {
       const rec = row as Record<string, unknown>;
       const entryId = rec.entry_id;
@@ -69,7 +60,7 @@ export function getTicketsColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       return <span className="text-muted-foreground text-xs">—</span>;
     }),
 
-    createCustomColumn<T>("concern", "Concern", FileText, (val) => {
+    createCustomColumn<T>("concern", "Concern", CircleAlert, (val) => {
       const text = String(val || "");
       return (
         <p className="truncate max-w-xs text-foreground/90 font-normal text-xs" title={text}>
@@ -117,7 +108,7 @@ export function getTicketsColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       );
     }),
 
-    createCustomColumn<T>("user_id", "Raised By", UserIcon, (val, row) => {
+    createCustomColumn<T>("user_id", "Raised By", UserCog, (val, row) => {
       const rec = row as Record<string, unknown>;
       const users = rec.users as { name?: string; username?: string } | undefined;
       const name = users?.name || rec.user_name || `User #${String(val)}`;
@@ -130,14 +121,6 @@ export function getTicketsColumns<T extends RowData>(): ColumnDef<ProjectTableFe
             <div className="text-2xs text-muted-foreground font-mono">{String(username)}</div>
           ) : null}
         </div>
-      );
-    }),
-
-    createCustomColumn<T>("created_at", "Created At", Calendar, (val) => {
-      return (
-        <span className="text-muted-foreground whitespace-nowrap font-mono text-2xs">
-          {formatDateTime(String(val))}
-        </span>
       );
     }),
   ];

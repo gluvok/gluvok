@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   ArrowLeftRight,
   Image,
+  CircleAlert,
 } from "lucide-react";
 
 export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
@@ -272,7 +273,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       placeholder: "Describe the issue or discrepancy in detail...",
       type: FieldType.TEXTAREA,
       required: true,
-      icon: Tag,
+      icon: CircleAlert,
       span: FieldSpan.FULL,
     },
   ],

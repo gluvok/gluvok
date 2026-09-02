@@ -50,6 +50,7 @@ export const editEntrySchema = z.object({
   customer_id: optionalIntegerIdSchema("Customer"),
   status: z.enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED]).optional(),
   images: z.array(z.string()).optional(),
+  update_weighment_pair: z.boolean().optional(),
 });
 
 export type AddEntryInput = z.infer<typeof addEntrySchema>;

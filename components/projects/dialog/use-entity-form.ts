@@ -52,6 +52,13 @@ export function useEntityForm({
   const updateEntity = useEntitiesStore((state) => state.updateEntity);
   const currentUser = useAuthStore((state) => state.user);
 
+  const [linkedWeighment, setLinkedWeighment] = React.useState<{
+    id: number;
+    partner_entry_id: number;
+  } | null>(null);
+  const [tripModalOpen, setTripModalOpen] = React.useState(false);
+  const [pendingValues, setPendingValues] = React.useState<FieldValues | null>(null);
+
   const fields = React.useMemo(() => {
     const baseFields = PROJECT_FIELDS[projectSlug] || [];
     if (isEdit && projectSlug === ProjectSlug.WEIGHMENTS && item) {
@@ -217,16 +224,40 @@ export function useEntityForm({
 
         if (active) form.reset(defaultVals);
       }
-    }
+
+      if (isEdit && projectSlug === ProjectSlug.ENTRIES && item) {
+        const itemRecord = item as unknown as Record<string, unknown>;
+        const existingLW = itemRecord["linked_weighment"] as
+          | { id: number; partner_entry_id: number }
+          | undefined
+          | null;
+        if (existingLW !== undefined) {
+          if (active) setLinkedWeighment(existingLW);
+        } else {
+          fetch(`/api/entries/${getField(item, primaryIdKey)}`)
+            .then((res) => res.json())
+            .then((json) => {
+              if (active) {
+                setLinkedWeighment(json?.data?.linked_weighment || null);
+              }
+            })
+            .catch(() => {
+              if (active) setLinkedWeighment(null);
+            });
+        }
+      } else {
+        if (active) setLinkedWeighment(null);
+      }
+    };
 
     initializeForm();
 
     return () => {
       active = false;
     };
-  }, [open, isEdit, item, fields, form, projectSlug, userFactoryId, currentUser]);
+  }, [open, isEdit, item, fields, form, projectSlug, userFactoryId, currentUser, primaryIdKey]);
 
-  const onSubmit = async (values: FieldValues) => {
+  const executeSubmit = async (values: FieldValues, updateBoth?: boolean) => {
     const singularName = getSingularName(projectName);
     try {
       if (isEdit) {
@@ -246,6 +277,9 @@ export function useEntityForm({
           }
           if (values["vehicle_number"] !== undefined) {
             updateValues["vehicle_number"] = values["vehicle_number"];
+          }
+          if (updateBoth !== undefined) {
+            updateValues["update_weighment_pair"] = updateBoth;
           }
         } else if (projectSlug === ProjectSlug.WEIGHMENTS) {
           updateValues = {};
@@ -291,7 +325,11 @@ export function useEntityForm({
           String(getField(item, primaryIdKey)),
           updateValues,
         );
-        toast.success(`${singularName} updated successfully`);
+        toast.success(
+          updateBoth
+            ? `${singularName} and paired weighment trip updated successfully`
+            : `${singularName} updated successfully`,
+        );
       } else {
         if (Array.isArray(values["images"])) {
           values["images"] = await processImageUploadsAndDeletions(values["images"], []);
@@ -308,7 +346,45 @@ export function useEntityForm({
     }
   };
 
+  const onSubmit = async (values: FieldValues) => {
+    const isChangingVehicle = Boolean(
+      isEdit &&
+        item &&
+        projectSlug === ProjectSlug.ENTRIES &&
+        linkedWeighment &&
+        values["vehicle_number"] !== undefined &&
+        values["vehicle_number"] !== getField(item, "vehicle_number"),
+    );
+
+    if (isChangingVehicle) {
+      setPendingValues(values);
+      setTripModalOpen(true);
+      return;
+    }
+
+    await executeSubmit(values);
+  };
+
+  const handleConfirmTripChoice = async (updateBoth: boolean) => {
+    setTripModalOpen(false);
+    if (!pendingValues) return;
+    const values = { ...pendingValues };
+    setPendingValues(null);
+    await executeSubmit(values, updateBoth);
+  };
+
   const isUnchanged = isEdit && !form.formState.isDirty;
 
-  return { form, fields, onSubmit, isEdit, isUnchanged, item };
+  return {
+    form,
+    fields,
+    onSubmit,
+    isEdit,
+    isUnchanged,
+    item,
+    linkedWeighment,
+    tripModalOpen,
+    setTripModalOpen,
+    handleConfirmTripChoice,
+  };
 }

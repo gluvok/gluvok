@@ -86,6 +86,7 @@ export interface Entry {
   center_name?: string;
   user_name?: string;
   customer_name?: string;
+  linked_weighment?: { id: number; partner_entry_id: number } | null;
 }
 
 export interface Weighment {

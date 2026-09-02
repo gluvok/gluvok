@@ -54,12 +54,30 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
   const users = data.users as Record<string, unknown> | undefined;
   const customers = data.customers as Record<string, unknown> | undefined;
 
+  const { data: linkedWeighment } = await client
+    .from("weighments")
+    .select("id, in_entry_id, out_entry_id")
+    .or(`in_entry_id.eq.${entryId},out_entry_id.eq.${entryId}`)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  const weighmentInfo = linkedWeighment
+    ? {
+        id: linkedWeighment.id,
+        partner_entry_id:
+          linkedWeighment.in_entry_id === entryId
+            ? linkedWeighment.out_entry_id
+            : linkedWeighment.in_entry_id,
+      }
+    : null;
+
   const formatted = {
     ...data,
     edited: isEdited,
     center_name: centers?.name || "",
     user_name: users?.name || "",
     customer_name: customers?.name || "",
+    linked_weighment: weighmentInfo,
   };
 
   return NextResponse.json({ data: formatted });
@@ -111,6 +129,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     return apiError(ApiErrorMessage.ENTRY_FULLY_LOCKED, StatusCodes.FORBIDDEN);
   }
 
+  const updateWeighmentPair = parsed.data.update_weighment_pair === true;
   const updates: Record<string, unknown> = {};
 
   if (isApproved) {
@@ -241,25 +260,30 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
           ? linkedWeighment.out_entry_id
           : linkedWeighment.in_entry_id;
 
-      const { data: partnerEntry } = await client
-        .from("entries")
-        .select("id, vehicle_number")
-        .eq("id", partnerEntryId)
-        .maybeSingle();
-
-      // If the partner entry has a different vehicle number from the new plate, this is a false merge
-      if (partnerEntry && updates["vehicle_number"] !== partnerEntry.vehicle_number) {
-        const nowStr = new Date().toISOString();
+      if (updateWeighmentPair) {
+        // Atomically update partner entry's vehicle_number to keep weighment intact
         await client
-          .from("weighments")
+          .from("entries")
           .update({
-            deleted_at: nowStr,
-            updated_at: nowStr,
+            vehicle_number: updates["vehicle_number"],
+            updated_at: new Date().toISOString(),
           })
-          .eq("id", linkedWeighment.id)
-          .is("deleted_at", null);
+          .eq("id", partnerEntryId)
+          .eq("factory_id", user.factory_id);
+      } else {
+        const { data: partnerEntry } = await client
+          .from("entries")
+          .select("id, vehicle_number")
+          .eq("id", partnerEntryId)
+          .maybeSingle();
 
-        unlinkedPartnerId = partnerEntryId;
+        // If the partner entry has a different vehicle number from the new plate, this is a false merge
+        if (partnerEntry && updates["vehicle_number"] !== partnerEntry.vehicle_number) {
+          // Clean hard-delete of the false-merge weighment row to completely free entry IDs
+          await client.from("weighments").delete().eq("id", linkedWeighment.id);
+
+          unlinkedPartnerId = partnerEntryId;
+        }
       }
     }
   }
@@ -279,8 +303,8 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     return apiError(ApiErrorMessage.FAILED_TO_UPDATE_ENTRY, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
-  // 5. Trigger entry merging if status is approved
-  if (updatedEntry.status === EntryStatus.APPROVED) {
+  // 5. Trigger entry merging if status is approved and not keeping existing pair
+  if (updatedEntry.status === EntryStatus.APPROVED && !updateWeighmentPair) {
     await tryMergeEntries(client, user.factory_id, entryId);
   }
   if (unlinkedPartnerId) {

@@ -9,10 +9,10 @@ import { toast } from "sonner";
 import { AlertTriangle, Trash2, X } from "lucide-react";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useEntitiesStore, useAuthStore, getField } from "@/lib/store";
+import { useEntitiesStore, useAuthStore, getField, hasPermission } from "@/lib/store";
 import { type DeleteContentProps } from "./types";
 import { getSingularName } from "@/lib/utils";
-import { ProjectSlug } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 
 export function DeleteEntityDialogContent({
   onOpenChange,
@@ -34,6 +34,13 @@ export function DeleteEntityDialogContent({
   const onDeleteConfirm = async () => {
     try {
       const currentUser = useAuthStore.getState().user;
+
+      if (projectSlug && !hasPermission(currentUser, projectSlug, PermissionKey.DELETE)) {
+        toast.error("You do not have permission to delete this record.");
+        onOpenChange(false);
+        return;
+      }
+
       const isSelfDeleted =
         projectSlug === ProjectSlug.USERS &&
         currentUser &&
@@ -98,6 +105,27 @@ export function DeleteEntityDialogContent({
           be undone.
         </DialogDescription>
       </DialogHeader>
+
+      {projectSlug === ProjectSlug.WEIGHMENTS && (
+        <div className="mt-2 rounded-md bg-destructive/10 border border-destructive/20 p-2.5 text-xs text-destructive flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>
+            {isBulk
+              ? "All corresponding linked entries will also be deleted."
+              : (() => {
+                  const inId = item ? getField(item, "in_entry_id") : undefined;
+                  const outId = item ? getField(item, "out_entry_id") : undefined;
+                  const linked: string[] = [];
+                  if (inId) linked.push(`In Entry #${inId}`);
+                  if (outId) linked.push(`Out Entry #${outId}`);
+                  return linked.length > 0
+                    ? `The linked entries (${linked.join(", ")}) will also be deleted.`
+                    : "The corresponding linked entries will also be deleted.";
+                })()}
+          </span>
+        </div>
+      )}
+
       <DialogFooter className="bg-transparent border-t-0 p-0 pt-4 mx-0 mb-0 flex flex-row items-center justify-end gap-3">
         <Button
           id="delete-entity-cancel"

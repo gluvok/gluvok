@@ -142,3 +142,52 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
 
   return newEntry;
 }
+
+export async function deleteEntries(
+  client: typeof supabase,
+  factoryId: number,
+  entryIds: number[],
+): Promise<{ deletedIds: number[] }> {
+  if (!entryIds || entryIds.length === 0) {
+    return { deletedIds: [] };
+  }
+
+  // 1. Check if any active weighments are linked to these entries
+  const { data: linkedWeighments } = await client
+    .from("weighments")
+    .select("id")
+    .or(`in_entry_id.in.(${entryIds.join(",")}),out_entry_id.in.(${entryIds.join(",")})`)
+    .is("deleted_at", null)
+    .limit(1);
+
+  if (linkedWeighments && linkedWeighments.length > 0) {
+    if (entryIds.length === 1) {
+      throw new Error(ApiErrorMessage.CANNOT_DELETE_ENTRY(entryIds[0]));
+    }
+    throw new Error(ApiErrorMessage.CANNOT_DELETE_SELECTED_ENTRIES);
+  }
+
+  const now = new Date().toISOString();
+  const { data: deletedEntries, error } = await client
+    .from("entries")
+    .update({
+      deleted_at: now,
+      updated_at: now,
+    })
+    .in("id", entryIds)
+    .is("deleted_at", null)
+    .eq("factory_id", factoryId)
+    .select("id");
+
+  if (error) {
+    console.error("Failed to soft delete entries:", error);
+    const msg =
+      entryIds.length === 1
+        ? error.message || ApiErrorMessage.CANNOT_DELETE_ENTRY(entryIds[0])
+        : error.message || ApiErrorMessage.CANNOT_DELETE_SELECTED_ENTRIES;
+    throw new Error(msg);
+  }
+
+  const deletedIds = (deletedEntries || []).map((e: { id: number }) => e.id);
+  return { deletedIds };
+}

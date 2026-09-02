@@ -3,6 +3,7 @@ import {
   createEntry,
   validateCenterBelongsToFactory,
   validateCustomerBelongsToFactory,
+  deleteEntries,
 } from "./entries";
 import { EntryStatus, EntrySource } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
@@ -281,6 +282,87 @@ describe("Entries Service", () => {
           centerId: 1,
         }),
       ).rejects.toThrow(ApiErrorMessage.CREATE_ENTRY_FAILED);
+    });
+  });
+
+  describe("deleteEntries", () => {
+    it("throws error when single entry is linked to an active weighment", async () => {
+      mockClient.from.mockReturnValue({
+        select: vi.fn(() => ({
+          or: vi.fn(() => ({
+            is: vi.fn(() => ({
+              limit: vi.fn().mockResolvedValue({
+                data: [{ id: 10 }],
+                error: null,
+              }),
+            })),
+          })),
+        })),
+      });
+
+      await expect(deleteEntries(mockClient, 1, [5])).rejects.toThrow(
+        ApiErrorMessage.CANNOT_DELETE_ENTRY(5),
+      );
+    });
+
+    it("throws error when multiple entries have active linked weighments", async () => {
+      mockClient.from.mockReturnValue({
+        select: vi.fn(() => ({
+          or: vi.fn(() => ({
+            is: vi.fn(() => ({
+              limit: vi.fn().mockResolvedValue({
+                data: [{ id: 10 }],
+                error: null,
+              }),
+            })),
+          })),
+        })),
+      });
+
+      await expect(deleteEntries(mockClient, 1, [5, 6])).rejects.toThrow(
+        ApiErrorMessage.CANNOT_DELETE_SELECTED_ENTRIES,
+      );
+    });
+
+    it("soft deletes unlinked entries successfully", async () => {
+      mockClient.from.mockImplementation((table: string) => {
+        if (table === "weighments") {
+          return {
+            select: vi.fn(() => ({
+              or: vi.fn(() => ({
+                is: vi.fn(() => ({
+                  limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+                })),
+              })),
+            })),
+          };
+        }
+        if (table === "entries") {
+          return {
+            update: vi.fn(() => ({
+              in: vi.fn(() => ({
+                is: vi.fn(() => ({
+                  eq: vi.fn(() => ({
+                    select: vi.fn().mockResolvedValue({
+                      data: [{ id: 5 }, { id: 6 }],
+                      error: null,
+                    }),
+                  })),
+                })),
+              })),
+            })),
+          };
+        }
+        return {};
+      });
+
+      const result = await deleteEntries(mockClient, 1, [5, 6]);
+      expect(result.deletedIds).toEqual([5, 6]);
+    });
+
+    it("returns empty array when entryIds is empty", async () => {
+      const result = await deleteEntries(mockClient, 1, []);
+      expect(result.deletedIds).toEqual([]);
     });
   });
 });

@@ -377,8 +377,8 @@ export function getActionsColumn<T extends EntityRecord>(
   callbacks: ColumnActionsCallbacks<T>,
   permissions?: Permission,
 ): ColumnDef<ProjectTableFeatures, T> {
-  const canWrite = permissions?.write ?? true;
-  const canDelete = permissions?.delete ?? true;
+  const canWrite = permissions?.write ?? false;
+  const canDelete = permissions?.delete ?? false;
 
   return {
     id: "actions",

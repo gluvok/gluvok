@@ -182,3 +182,79 @@ export function formatWeighmentRecord(row: Record<string, unknown>): Record<stri
     updated_at: row.updated_at,
   };
 }
+
+export async function deleteWeighments(
+  client: typeof supabase,
+  factoryId: number,
+  weighmentIds: number[],
+): Promise<{ deletedIds: number[]; cascadedEntryIds: number[] }> {
+  if (!weighmentIds || weighmentIds.length === 0) {
+    return { deletedIds: [], cascadedEntryIds: [] };
+  }
+
+  // 1. Fetch weighments with factory verification
+  const { data: weighments, error: fetchErr } = await client
+    .from("weighments")
+    .select(`id, in_entry_id, out_entry_id, in_entry:entries!in_entry_id(factory_id)`)
+    .in("id", weighmentIds)
+    .is("deleted_at", null);
+
+  if (fetchErr) {
+    console.error("Failed to fetch weighments for deletion:", fetchErr);
+    throw new Error("Failed to delete weighments");
+  }
+
+  const validWeighments = (weighments || []).filter(
+    (w: Record<string, unknown>) =>
+      (w["in_entry"] as { factory_id?: number } | undefined)?.factory_id === factoryId,
+  );
+
+  if (validWeighments.length === 0) {
+    return { deletedIds: [], cascadedEntryIds: [] };
+  }
+
+  const now = new Date().toISOString();
+  const validIds = validWeighments.map((w) => w.id as number);
+
+  // 2. Soft delete the weighment record(s)
+  const { error: deleteErr } = await client
+    .from("weighments")
+    .update({
+      deleted_at: now,
+      updated_at: now,
+    })
+    .in("id", validIds)
+    .is("deleted_at", null);
+
+  if (deleteErr) {
+    console.error("Failed to soft delete weighments:", deleteErr);
+    throw new Error("Failed to delete weighments");
+  }
+
+  // 3. Cascade soft delete to corresponding in_entry and out_entry
+  const cascadedEntryIds = [
+    ...new Set(
+      validWeighments
+        .flatMap((w) => [w.in_entry_id as number, w.out_entry_id as number])
+        .filter((id): id is number => typeof id === "number" && id > 0),
+    ),
+  ];
+
+  if (cascadedEntryIds.length > 0) {
+    const { error: cascadeErr } = await client
+      .from("entries")
+      .update({
+        deleted_at: now,
+        updated_at: now,
+      })
+      .in("id", cascadedEntryIds)
+      .eq("factory_id", factoryId)
+      .is("deleted_at", null);
+
+    if (cascadeErr) {
+      console.error("Failed to cascade soft delete to linked entries:", cascadeErr);
+    }
+  }
+
+  return { deletedIds: validIds, cascadedEntryIds };
+}

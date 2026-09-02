@@ -15,7 +15,7 @@ vi.mock("@/db/helpers", async (importOriginal) => {
   };
 });
 
-import { GET } from "./route";
+import { GET, DELETE } from "./route";
 
 type RawHandler = (
   request: NextRequest,
@@ -154,5 +154,120 @@ describe("GET /api/weighments", () => {
 
     expect(response.status).toBe(200);
     expect(orMock).toHaveBeenCalledWith("in_entry_id.in.(101,102),out_entry_id.in.(101,102)");
+  });
+});
+
+describe("DELETE /api/weighments", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockHasPermission.mockReturnValue(true);
+  });
+
+  it("rejects when user lacks DELETE permission", async () => {
+    mockHasPermission.mockReturnValue(false);
+    const req = new NextRequest("http://localhost/api/weighments", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [10, 20] }),
+    });
+
+    const handler = DELETE as unknown as RawHandler;
+    const response = await handler(req, sampleUser, {});
+
+    expect(response.status).toBe(403);
+    expect(mockHasPermission).toHaveBeenCalledWith(
+      sampleUser,
+      ProjectSlug.WEIGHMENTS,
+      PermissionKey.DELETE,
+    );
+  });
+
+  it("rejects invalid ids body payload", async () => {
+    const req = new NextRequest("http://localhost/api/weighments", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [] }),
+    });
+
+    const handler = DELETE as unknown as RawHandler;
+    const response = await handler(req, sampleUser, {});
+
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 404 when no weighments found", async () => {
+    const mockDb = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          in: vi.fn(() => ({
+            is: vi.fn().mockResolvedValue({ data: [], error: null }),
+          })),
+        })),
+      })),
+    };
+
+    const req = new NextRequest("http://localhost/api/weighments", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [100] }),
+    });
+
+    const handler = DELETE as unknown as RawHandler;
+    const response = await handler(req, sampleUser, mockDb);
+
+    expect(response.status).toBe(404);
+  });
+
+  it("successfully soft deletes weighments and returns count", async () => {
+    const mockDb = {
+      from: vi.fn((table: string) => {
+        if (table === "weighments") {
+          return {
+            select: vi.fn(() => ({
+              in: vi.fn(() => ({
+                is: vi.fn().mockResolvedValue({
+                  data: [
+                    { id: 10, in_entry_id: 1, out_entry_id: 2, in_entry: { factory_id: 1 } },
+                    { id: 20, in_entry_id: 3, out_entry_id: 4, in_entry: { factory_id: 1 } },
+                  ],
+                  error: null,
+                }),
+              })),
+            })),
+            update: vi.fn(() => ({
+              in: vi.fn(() => ({
+                is: vi.fn().mockResolvedValue({ error: null }),
+              })),
+            })),
+          };
+        }
+        if (table === "entries") {
+          return {
+            update: vi.fn(() => ({
+              in: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  is: vi.fn().mockResolvedValue({ error: null }),
+                })),
+              })),
+            })),
+          };
+        }
+        return {};
+      }),
+    };
+
+    const req = new NextRequest("http://localhost/api/weighments", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [10, 20] }),
+    });
+
+    const handler = DELETE as unknown as RawHandler;
+    const response = await handler(req, sampleUser, mockDb);
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.success).toBe(true);
+    expect(json.deleted_count).toBe(2);
   });
 });

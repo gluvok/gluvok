@@ -9,7 +9,7 @@ import {
   parseBulkIds,
 } from "@/db/helpers";
 import { ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
-import { formatWeighmentRecord } from "@/lib/services/weighments";
+import { formatWeighmentRecord, deleteWeighments } from "@/lib/services/weighments";
 
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.READ)) return forbiddenError();
@@ -244,63 +244,11 @@ export const DELETE = withAuth(async (req, user, client) => {
     return apiError("Please provide valid IDs to delete.", StatusCodes.BAD_REQUEST);
   }
 
-  // 1. Query target weighments with factory verification
-  const { data: weighments, error: fetchErr } = await client
-    .from("weighments")
-    .select(`id, in_entry_id, out_entry_id, in_entry:entries!in_entry_id(factory_id)`)
-    .in("id", ids)
-    .is("deleted_at", null);
+  const { deletedIds } = await deleteWeighments(client, user.factory_id!, ids);
 
-  if (fetchErr) {
-    console.error("Failed to fetch weighments for deletion:", fetchErr);
-    return apiError("Failed to delete weighments", StatusCodes.INTERNAL_SERVER_ERROR);
-  }
-
-  const validWeighments = (weighments || []).filter(
-    (w: Record<string, unknown>) =>
-      (w["in_entry"] as { factory_id?: number } | undefined)?.factory_id === user.factory_id,
-  );
-
-  if (validWeighments.length === 0) {
+  if (deletedIds.length === 0) {
     return apiError("One or more weighments not found", StatusCodes.NOT_FOUND);
   }
 
-  const now = new Date().toISOString();
-  const validIds = validWeighments.map((w) => w.id as number);
-
-  // 2. Soft delete weighment records
-  const { error: deleteErr } = await client
-    .from("weighments")
-    .update({ deleted_at: now, updated_at: now })
-    .in("id", validIds)
-    .is("deleted_at", null);
-
-  if (deleteErr) {
-    console.error("Failed to soft delete weighments:", deleteErr);
-    return apiError("Failed to delete weighments", StatusCodes.INTERNAL_SERVER_ERROR);
-  }
-
-  // 3. Cascade soft delete to all linked in/out entries
-  const linkedEntryIds = [
-    ...new Set(
-      validWeighments
-        .flatMap((w) => [w.in_entry_id as number, w.out_entry_id as number])
-        .filter((id): id is number => typeof id === "number" && id > 0),
-    ),
-  ];
-
-  if (linkedEntryIds.length > 0) {
-    const { error: cascadeErr } = await client
-      .from("entries")
-      .update({ deleted_at: now, updated_at: now })
-      .in("id", linkedEntryIds)
-      .eq("factory_id", user.factory_id)
-      .is("deleted_at", null);
-
-    if (cascadeErr) {
-      console.error("Failed to cascade soft delete to entries:", cascadeErr);
-    }
-  }
-
-  return NextResponse.json({ success: true, deleted_count: validIds.length });
+  return NextResponse.json({ success: true, deleted_count: deletedIds.length });
 });

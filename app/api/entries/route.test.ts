@@ -16,9 +16,13 @@ vi.mock("@/db/helpers", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/services/entries", () => ({
-  createEntry: mockCreateEntry,
-}));
+vi.mock("@/lib/services/entries", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/services/entries")>();
+  return {
+    ...actual,
+    createEntry: mockCreateEntry,
+  };
+});
 
 import { NextRequest } from "next/server";
 import { GET, POST, DELETE } from "./route";
@@ -375,6 +379,85 @@ describe("Entries route handlers (/api/entries)", () => {
       expect(response.status).toBe(400);
       const json = await response.json();
       expect(json.error).toBe(ApiErrorMessage.PROVIDE_VALID_IDS);
+    });
+
+    it("rejects when entries are linked to active weighments", async () => {
+      const mockDb = {
+        from: vi.fn(() => ({
+          select: vi.fn(() => ({
+            or: vi.fn(() => ({
+              is: vi.fn(() => ({
+                limit: vi.fn().mockResolvedValue({
+                  data: [{ id: 10 }],
+                  error: null,
+                }),
+              })),
+            })),
+          })),
+        })),
+      };
+
+      const req = new NextRequest("http://localhost/api/entries", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [1, 2] }),
+      });
+
+      const handler = DELETE as unknown as RawHandler;
+      const response = await handler(req, sampleUser, mockDb, context);
+
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.error).toBe(ApiErrorMessage.CANNOT_DELETE_SELECTED_ENTRIES);
+    });
+
+    it("successfully deletes entries when unlinked", async () => {
+      const mockDb = {
+        from: vi.fn((table: string) => {
+          if (table === "weighments") {
+            return {
+              select: vi.fn(() => ({
+                or: vi.fn(() => ({
+                  is: vi.fn(() => ({
+                    limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+                  })),
+                })),
+              })),
+            };
+          }
+          if (table === "entries") {
+            return {
+              update: vi.fn(() => ({
+                in: vi.fn(() => ({
+                  is: vi.fn(() => ({
+                    eq: vi.fn(() => ({
+                      select: vi.fn().mockResolvedValue({
+                        data: [{ id: 1 }, { id: 2 }],
+                        error: null,
+                      }),
+                    })),
+                  })),
+                })),
+              })),
+            };
+          }
+          return {};
+        }),
+      };
+
+      const req = new NextRequest("http://localhost/api/entries", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [1, 2] }),
+      });
+
+      const handler = DELETE as unknown as RawHandler;
+      const response = await handler(req, sampleUser, mockDb, context);
+
+      expect(response.status).toBe(200);
+      const json = await response.json();
+      expect(json.success).toBe(true);
+      expect(json.deleted_count).toBe(2);
     });
   });
 });

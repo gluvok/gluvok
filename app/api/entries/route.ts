@@ -10,7 +10,7 @@ import {
 } from "@/db/helpers";
 import { EntryStatus, EntrySource, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
-import { createEntry } from "@/lib/services/entries";
+import { createEntry, deleteEntries } from "@/lib/services/entries";
 import { addEntrySchema, addDeviceEntrySchema } from "@/lib/validation";
 
 export const GET = withAuth(async (req, user, client) => {
@@ -172,40 +172,17 @@ export const DELETE = withAuth(async (req, user, client) => {
   const ids = parseBulkIds(await req.json());
   if (!ids) return apiError(ApiErrorMessage.PROVIDE_VALID_IDS, StatusCodes.BAD_REQUEST);
 
-  // Check if any active weighments are linked to these entries
-  const { data: linkedWeighments } = await client
-    .from("weighments")
-    .select("id")
-    .or(`in_entry_id.in.(${ids.join(",")}),out_entry_id.in.(${ids.join(",")})`)
-    .is("deleted_at", null)
-    .limit(1);
+  try {
+    const { deletedIds } = await deleteEntries(client, user.factory_id!, ids);
 
-  if (linkedWeighments && linkedWeighments.length > 0) {
-    return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_ENTRIES, StatusCodes.BAD_REQUEST);
+    if (deletedIds.length !== ids.length) {
+      return apiError(ApiErrorMessage.ONE_OR_MORE_ENTRIES_NOT_FOUND, StatusCodes.NOT_FOUND);
+    }
+
+    return NextResponse.json({ success: true, deleted_count: deletedIds.length });
+  } catch (err: unknown) {
+    const msg =
+      err instanceof Error ? err.message : ApiErrorMessage.CANNOT_DELETE_SELECTED_ENTRIES;
+    return apiError(msg, StatusCodes.BAD_REQUEST);
   }
-
-  const { data: deletedEntries, error } = await client
-    .from("entries")
-    .update({
-      deleted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .in("id", ids)
-    .is("deleted_at", null)
-    .eq("factory_id", user.factory_id)
-    .select("id");
-
-  if (error) {
-    return apiError(
-      error.message || ApiErrorMessage.CANNOT_DELETE_SELECTED_ENTRIES,
-      StatusCodes.BAD_REQUEST,
-    );
-  }
-
-  const deletedCount = deletedEntries?.length || 0;
-  if (deletedCount !== ids.length) {
-    return apiError(ApiErrorMessage.ONE_OR_MORE_ENTRIES_NOT_FOUND, StatusCodes.NOT_FOUND);
-  }
-
-  return NextResponse.json({ success: true, deleted_count: deletedCount });
 });

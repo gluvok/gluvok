@@ -156,9 +156,20 @@ describe("RBAC Access Controls", () => {
   });
 
   describe("hasDeleteAccess", () => {
-    it("should return delete permission", () => {
+    it("should allow only ADMIN to delete WEIGHMENTS", () => {
       expect(hasDeleteAccess(Role.ADMIN, ProjectSlug.WEIGHMENTS)).toBe(true);
       expect(hasDeleteAccess(Role.MANAGER, ProjectSlug.WEIGHMENTS)).toBe(false);
+      expect(hasDeleteAccess(Role.OPERATOR, ProjectSlug.WEIGHMENTS)).toBe(false);
+      expect(hasDeleteAccess(Role.BASE, ProjectSlug.WEIGHMENTS)).toBe(false);
+      expect(hasDeleteAccess(Role.HARDWARE, ProjectSlug.WEIGHMENTS)).toBe(false);
+    });
+
+    it("should allow only ADMIN to delete ENTRIES", () => {
+      expect(hasDeleteAccess(Role.ADMIN, ProjectSlug.ENTRIES)).toBe(true);
+      expect(hasDeleteAccess(Role.MANAGER, ProjectSlug.ENTRIES)).toBe(false);
+      expect(hasDeleteAccess(Role.OPERATOR, ProjectSlug.ENTRIES)).toBe(false);
+      expect(hasDeleteAccess(Role.BASE, ProjectSlug.ENTRIES)).toBe(false);
+      expect(hasDeleteAccess(Role.HARDWARE, ProjectSlug.ENTRIES)).toBe(false);
     });
   });
 

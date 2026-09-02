@@ -72,12 +72,8 @@ describe("Weighments [id] DELETE route handler", () => {
     const mockDb = {
       from: vi.fn(() => ({
         select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              is: vi.fn(() => ({
-                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-              })),
-            })),
+          in: vi.fn(() => ({
+            is: vi.fn().mockResolvedValue({ data: [], error: null }),
           })),
         })),
       })),
@@ -95,7 +91,7 @@ describe("Weighments [id] DELETE route handler", () => {
     });
 
     const weighmentUpdateMock = vi.fn(() => ({
-      eq: vi.fn(() => ({
+      in: vi.fn(() => ({
         is: vi.fn().mockResolvedValue({ error: null }),
       })),
     }));
@@ -113,20 +109,18 @@ describe("Weighments [id] DELETE route handler", () => {
         if (table === "weighments") {
           return {
             select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                eq: vi.fn(() => ({
-                  is: vi.fn(() => ({
-                    maybeSingle: vi.fn().mockResolvedValue({
-                      data: {
-                        id: 100,
-                        in_entry_id: 10,
-                        out_entry_id: 20,
-                        in_entry: { factory_id: 1 },
-                      },
-                      error: null,
-                    }),
-                  })),
-                })),
+              in: vi.fn(() => ({
+                is: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: 100,
+                      in_entry_id: 10,
+                      out_entry_id: 20,
+                      in_entry: { factory_id: 1 },
+                    },
+                  ],
+                  error: null,
+                }),
               })),
             })),
             update: weighmentUpdateMock,

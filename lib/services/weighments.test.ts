@@ -3,6 +3,7 @@ import {
   validateSequentialApproval,
   tryMergeEntries,
   formatWeighmentRecord,
+  deleteWeighments,
 } from "./weighments";
 import { EntryStatus, EntrySource, Unit } from "@/lib/constants/enums";
 import type { supabase } from "@/db";
@@ -274,6 +275,84 @@ describe("Weighments Service", () => {
         created_at: "2026-08-31T10:00:00Z",
         updated_at: "2026-08-31T10:00:00Z",
       });
+    });
+  });
+
+  describe("deleteWeighments", () => {
+    it("should soft delete weighments and cascade soft delete to linked entries", async () => {
+      const weighmentsData = [
+        {
+          id: 10,
+          in_entry_id: 1,
+          out_entry_id: 2,
+          in_entry: { factory_id: 1 },
+        },
+        {
+          id: 20,
+          in_entry_id: 3,
+          out_entry_id: 4,
+          in_entry: { factory_id: 1 },
+        },
+      ];
+
+      const weighmentsUpdateMock = vi.fn(() => ({
+        in: vi.fn(() => ({
+          is: vi.fn().mockResolvedValue({ error: null }),
+        })),
+      }));
+
+      const entriesUpdateMock = vi.fn(() => ({
+        in: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            is: vi.fn().mockResolvedValue({ error: null }),
+          })),
+        })),
+      }));
+
+      mockClient.from.mockImplementation((table: string) => {
+        if (table === "weighments") {
+          return {
+            select: vi.fn(() => ({
+              in: vi.fn(() => ({
+                is: vi.fn().mockResolvedValue({ data: weighmentsData, error: null }),
+              })),
+            })),
+            update: weighmentsUpdateMock,
+          };
+        }
+        if (table === "entries") {
+          return {
+            update: entriesUpdateMock,
+          };
+        }
+        return {};
+      });
+
+      const result = await deleteWeighments(mockClient, 1, [10, 20]);
+      expect(result.deletedIds).toEqual([10, 20]);
+      expect(result.cascadedEntryIds).toEqual([1, 2, 3, 4]);
+      expect(weighmentsUpdateMock).toHaveBeenCalled();
+      expect(entriesUpdateMock).toHaveBeenCalled();
+    });
+
+    it("should return empty deletedIds when no matching weighments exist for factory", async () => {
+      mockClient.from.mockReturnValue({
+        select: vi.fn(() => ({
+          in: vi.fn(() => ({
+            is: vi.fn().mockResolvedValue({ data: [], error: null }),
+          })),
+        })),
+      });
+
+      const result = await deleteWeighments(mockClient, 1, [999]);
+      expect(result.deletedIds).toEqual([]);
+      expect(result.cascadedEntryIds).toEqual([]);
+    });
+
+    it("should return empty arrays when weighmentIds is empty", async () => {
+      const result = await deleteWeighments(mockClient, 1, []);
+      expect(result.deletedIds).toEqual([]);
+      expect(result.cascadedEntryIds).toEqual([]);
     });
   });
 });

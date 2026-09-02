@@ -271,11 +271,10 @@ describe("Entries [id] route handlers", () => {
         select: vi.fn(() => ({
           or: vi.fn(() => ({
             is: vi.fn(() => ({
-              limit: vi.fn(() => ({
-                maybeSingle: vi.fn().mockResolvedValue({
-                  data: { id: 50 },
-                }),
-              })),
+              limit: vi.fn().mockResolvedValue({
+                data: [{ id: 50 }],
+                error: null,
+              }),
             })),
           })),
         })),
@@ -301,9 +300,7 @@ describe("Entries [id] route handlers", () => {
             select: vi.fn(() => ({
               or: vi.fn(() => ({
                 is: vi.fn(() => ({
-                  limit: vi.fn(() => ({
-                    maybeSingle: vi.fn().mockResolvedValue({ data: null }),
-                  })),
+                  limit: vi.fn().mockResolvedValue({ data: [], error: null }),
                 })),
               })),
             })),
@@ -311,10 +308,10 @@ describe("Entries [id] route handlers", () => {
         }
         return {
           update: vi.fn(() => ({
-            eq: vi.fn(() => ({
+            in: vi.fn(() => ({
               is: vi.fn(() => ({
                 eq: vi.fn(() => ({
-                  select: vi.fn().mockResolvedValue({ data: [{ id: 10 }] }),
+                  select: vi.fn().mockResolvedValue({ data: [{ id: 10 }], error: null }),
                 })),
               })),
             })),

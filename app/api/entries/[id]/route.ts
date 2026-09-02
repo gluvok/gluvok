@@ -13,6 +13,7 @@ import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weig
 import {
   validateCenterBelongsToFactory,
   validateCustomerBelongsToFactory,
+  deleteEntries,
 } from "@/lib/services/entries";
 import { editEntrySchema } from "@/lib/validation";
 
@@ -251,41 +252,18 @@ export const DELETE = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.DELETE)) return forbiddenError();
 
-    // Check if any active weighments are linked to this entry
-    const { data: linkedWeighment } = await client
-      .from("weighments")
-      .select("id")
-      .or(`in_entry_id.eq.${entityId},out_entry_id.eq.${entityId}`)
-      .is("deleted_at", null)
-      .limit(1)
-      .maybeSingle();
+    try {
+      const { deletedIds } = await deleteEntries(client, factoryId, [entityId]);
 
-    if (linkedWeighment) {
-      return apiError(ApiErrorMessage.CANNOT_DELETE_ENTRY(entityId), StatusCodes.BAD_REQUEST);
+      if (deletedIds.length === 0) {
+        return apiError(ApiErrorMessage.ENTRY_NOT_FOUND, StatusCodes.NOT_FOUND);
+      }
+
+      return NextResponse.json({ success: true, id: entityId });
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : ApiErrorMessage.CANNOT_DELETE_ENTRY(entityId);
+      return apiError(msg, StatusCodes.BAD_REQUEST);
     }
-
-    const query = client
-      .from("entries")
-      .update({
-        deleted_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", entityId)
-      .is("deleted_at", null)
-      .eq("factory_id", factoryId);
-
-    const { data, error } = await query.select("id");
-    if (error) {
-      return apiError(
-        error.message || ApiErrorMessage.CANNOT_DELETE_ENTRY(entityId),
-        StatusCodes.BAD_REQUEST,
-      );
-    }
-
-    if (!data || data.length === 0) {
-      return apiError(ApiErrorMessage.ENTRY_NOT_FOUND, StatusCodes.NOT_FOUND);
-    }
-
-    return NextResponse.json({ success: true, id: entityId });
   }),
 );

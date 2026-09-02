@@ -188,6 +188,54 @@ describe("RBAC Access Controls", () => {
         hasPermission(Role.BASE, ProjectSlug.WEIGHMENTS, PermissionKey.EDIT_FIELD, "weight"),
       ).toBe(false);
     });
+
+    it("allows only admins to edit factory name in settings", () => {
+      expect(
+        hasPermission(Role.ADMIN, ProjectSlug.SETTINGS, PermissionKey.EDIT_FIELD, "name"),
+      ).toBe(true);
+      expect(
+        hasPermission(Role.MANAGER, ProjectSlug.SETTINGS, PermissionKey.EDIT_FIELD, "name"),
+      ).toBe(false);
+      expect(
+        hasPermission(Role.OPERATOR, ProjectSlug.SETTINGS, PermissionKey.EDIT_FIELD, "name"),
+      ).toBe(false);
+
+      // Both Admin and Manager can toggle check_center_on_merge
+      expect(
+        hasPermission(
+          Role.ADMIN,
+          ProjectSlug.SETTINGS,
+          PermissionKey.EDIT_FIELD,
+          "check_center_on_merge",
+        ),
+      ).toBe(true);
+      expect(
+        hasPermission(
+          Role.MANAGER,
+          ProjectSlug.SETTINGS,
+          PermissionKey.EDIT_FIELD,
+          "check_center_on_merge",
+        ),
+      ).toBe(true);
+    });
+  });
+
+  describe("Settings Access", () => {
+    it("disallows create and delete for all roles", () => {
+      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE, Role.HARDWARE];
+      for (const role of roles) {
+        expect(hasCreateAccess(role, ProjectSlug.SETTINGS)).toBe(false);
+        expect(hasDeleteAccess(role, ProjectSlug.SETTINGS)).toBe(false);
+      }
+    });
+
+    it("shows settings page to Admin and Manager but hides from others", () => {
+      expect(hasPageAccess(Role.ADMIN, ProjectSlug.SETTINGS)).toBe(true);
+      expect(hasPageAccess(Role.MANAGER, ProjectSlug.SETTINGS)).toBe(true);
+      expect(hasPageAccess(Role.OPERATOR, ProjectSlug.SETTINGS)).toBe(false);
+      expect(hasPageAccess(Role.BASE, ProjectSlug.SETTINGS)).toBe(false);
+      expect(hasPageAccess(Role.HARDWARE, ProjectSlug.SETTINGS)).toBe(false);
+    });
   });
 
   describe("isColumnVisible & isFieldVisible", () => {

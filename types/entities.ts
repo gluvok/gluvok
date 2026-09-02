@@ -61,6 +61,7 @@ export interface Customer {
 export interface Factory {
   id: number;
   name: string;
+  check_center_on_merge?: boolean;
   created_at: string;
   updated_at: string;
 }

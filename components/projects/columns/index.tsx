@@ -20,6 +20,7 @@ import { getCustomersColumns } from "./customers";
 import { getEntriesColumns } from "./entries";
 import { getWeighmentsColumns } from "./weighments";
 import { getUsersColumns } from "./users";
+import { getSettingsColumns } from "./settings";
 
 export interface ColumnActionsCallbacks<T = EntityRecord> {
   onEdit: (item: T) => void;
@@ -44,6 +45,8 @@ function getSpecificColumns<T extends RowData>(
       return getWeighmentsColumns<T>();
     case ProjectSlug.USERS:
       return getUsersColumns<T>();
+    case ProjectSlug.SETTINGS:
+      return getSettingsColumns<T>();
 
     default:
       return [];

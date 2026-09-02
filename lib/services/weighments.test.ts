@@ -88,13 +88,14 @@ describe("Weighments Service", () => {
   });
 
   describe("tryMergeEntries", () => {
-    it("should merge two entries of the same source and vehicle into a weighment", async () => {
+    it("should merge two entries of the same source and vehicle into a weighment when check_center_on_merge is false", async () => {
       const e2Data = {
         id: 2,
         vehicle_number: "MH12AB1234",
         status: EntryStatus.APPROVED,
         source: EntrySource.DEVICE,
         created_at: "2026-08-09T14:00:00Z",
+        center_id: 10,
       };
       const e1Data = {
         id: 1,
@@ -102,13 +103,30 @@ describe("Weighments Service", () => {
         status: EntryStatus.APPROVED,
         source: EntrySource.DEVICE,
         created_at: "2026-08-09T12:00:00Z",
+        center_id: 20, // different center
       };
 
-      let callCount = 0;
+      let entriesCallCount = 0;
+      const eqMock = vi.fn().mockReturnThis();
+
       mockClient.from.mockImplementation((table: string) => {
+        if (table === "factories") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                is: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { check_center_on_merge: false },
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
         if (table === "entries") {
-          callCount++;
-          if (callCount === 1) {
+          entriesCallCount++;
+          if (entriesCallCount === 1) {
             return {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
@@ -120,7 +138,7 @@ describe("Weighments Service", () => {
           } else {
             return {
               select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
+              eq: eqMock,
               lt: vi.fn().mockReturnThis(),
               neq: vi.fn().mockReturnThis(),
               is: vi.fn().mockReturnThis(),
@@ -159,6 +177,101 @@ describe("Weighments Service", () => {
         out_entry_id: 2,
         unit: Unit.KG,
       });
+      // Should NOT filter by center_id when check_center_on_merge is false
+      expect(eqMock).not.toHaveBeenCalledWith("center_id", 10);
+    });
+
+    it("should filter by center_id when check_center_on_merge is true", async () => {
+      const e2Data = {
+        id: 2,
+        vehicle_number: "MH12AB1234",
+        status: EntryStatus.APPROVED,
+        source: EntrySource.DEVICE,
+        created_at: "2026-08-09T14:00:00Z",
+        center_id: 10,
+      };
+      const e1Data = {
+        id: 1,
+        vehicle_number: "MH12AB1234",
+        status: EntryStatus.APPROVED,
+        source: EntrySource.DEVICE,
+        created_at: "2026-08-09T12:00:00Z",
+        center_id: 10, // matching center
+      };
+
+      let entriesCallCount = 0;
+      const eqMock = vi.fn().mockReturnThis();
+
+      mockClient.from.mockImplementation((table: string) => {
+        if (table === "factories") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                is: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { check_center_on_merge: true },
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === "entries") {
+          entriesCallCount++;
+          if (entriesCallCount === 1) {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              is: vi.fn().mockReturnThis(),
+              maybeSingle: vi
+                .fn()
+                .mockResolvedValue({ data: e2Data, error: null }),
+            };
+          } else {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: eqMock,
+              lt: vi.fn().mockReturnThis(),
+              neq: vi.fn().mockReturnThis(),
+              is: vi.fn().mockReturnThis(),
+              order: vi.fn().mockReturnThis(),
+              limit: vi.fn().mockResolvedValue({ data: [e1Data], error: null }),
+            };
+          }
+        }
+        if (table === "weighments") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            or: vi.fn().mockReturnThis(),
+            is: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: {
+                    id: 100,
+                    in_entry_id: 1,
+                    out_entry_id: 2,
+                    unit: Unit.KG,
+                  },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+      });
+
+      const res = await tryMergeEntries(mockClient, 1, 2);
+      expect(res).toEqual({
+        id: 100,
+        in_entry_id: 1,
+        out_entry_id: 2,
+        unit: Unit.KG,
+      });
+      // Should filter by center_id when check_center_on_merge is true
+      expect(eqMock).toHaveBeenCalledWith("center_id", 10);
     });
 
     it("should return null if no matching entry of the same source is found", async () => {
@@ -168,10 +281,25 @@ describe("Weighments Service", () => {
         status: EntryStatus.APPROVED,
         source: EntrySource.MANUAL,
         created_at: "2026-08-09T14:00:00Z",
+        center_id: 10,
       };
 
       let callCount = 0;
       mockClient.from.mockImplementation((table: string) => {
+        if (table === "factories") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                is: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { check_center_on_merge: false },
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
         if (table === "entries") {
           callCount++;
           if (callCount === 1) {

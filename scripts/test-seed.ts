@@ -181,14 +181,14 @@ async function main() {
     },
     {
       username: "pi1",
-      name: "Scale Hardware Unit 1",
+      name: "Pi 1",
       role: Role.HARDWARE,
       pass: hardwarePassHash,
       factoryId: primaryFactoryId,
     },
     {
       username: "pi2",
-      name: "Scale Hardware Unit 2",
+      name: "Pi 2",
       role: Role.HARDWARE,
       pass: hardwarePassHash,
       factoryId: primaryFactoryId,

@@ -8,10 +8,15 @@ import {
   hasPermission,
   parseBulkIds,
 } from "@/db/helpers";
-import { EntryStatus, EntrySource, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
+import { EntrySource, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { createEntry, deleteEntries } from "@/lib/services/entries";
-import { addEntrySchema, addDeviceEntrySchema } from "@/lib/validation";
+import {
+  addEntrySchema,
+  addDeviceEntrySchema,
+  type AddEntryInput,
+  type AddDeviceEntryInput,
+} from "@/lib/validation";
 
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.READ)) return forbiddenError();
@@ -105,59 +110,40 @@ export const GET = withAuth(async (req, user, client) => {
 export const POST = withAuth(async (req, user, client) => {
   try {
     const isHardware = user.role === Role.HARDWARE;
-    const body = await req.json();
-
-    if (isHardware) {
-      const parsed = addDeviceEntrySchema.safeParse(body);
-      if (!parsed.success) {
-        return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
-      }
-
-      const { detected_vehicle_number, vehicle_number, weight, center_id, status, images } =
-        parsed.data;
-
-      const newEntry = await createEntry(client, {
-        factoryId: user.factory_id,
-        userId: parseInt(user.sub, 10),
-        source: EntrySource.DEVICE,
-        detectedVehicleNumber: detected_vehicle_number,
-        vehicleNumber: vehicle_number,
-        weight,
-        centerId: center_id,
-        status,
-        images,
-      });
-
-      return NextResponse.json({ data: newEntry }, { status: StatusCodes.CREATED });
+    if (!isHardware && !hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.CREATE)) {
+      return forbiddenError();
     }
 
-    if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.CREATE)) return forbiddenError();
-
-    const parsed = addEntrySchema.safeParse(body);
+    const body = await req.json();
+    const schema = isHardware ? addDeviceEntrySchema : addEntrySchema;
+    const parsed = schema.safeParse(body);
     if (!parsed.success) {
       return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
     }
 
-    const {
-      vehicle_number,
-      weight,
-      center_id,
-      customer_id,
-      status = EntryStatus.PENDING,
-      images = [],
-    } = parsed.data;
-
-    const newEntry = await createEntry(client, {
-      factoryId: user.factory_id,
-      userId: parseInt(user.sub, 10),
-      source: EntrySource.MANUAL,
-      vehicleNumber: vehicle_number,
-      weight,
-      centerId: center_id,
-      customerId: customer_id,
-      status,
-      images,
-    });
+    const newEntry = isHardware
+      ? await createEntry(client, {
+          factoryId: user.factory_id,
+          userId: parseInt(user.sub, 10),
+          source: EntrySource.DEVICE,
+          detectedVehicleNumber: (parsed.data as AddDeviceEntryInput).detected_vehicle_number,
+          vehicleNumber: (parsed.data as AddDeviceEntryInput).detected_vehicle_number,
+          weight: (parsed.data as AddDeviceEntryInput).weight,
+          centerId: (parsed.data as AddDeviceEntryInput).center_id,
+          status: (parsed.data as AddDeviceEntryInput).status,
+          images: (parsed.data as AddDeviceEntryInput).images,
+        })
+      : await createEntry(client, {
+          factoryId: user.factory_id,
+          userId: parseInt(user.sub, 10),
+          source: EntrySource.MANUAL,
+          vehicleNumber: (parsed.data as AddEntryInput).vehicle_number,
+          weight: (parsed.data as AddEntryInput).weight,
+          centerId: (parsed.data as AddEntryInput).center_id,
+          customerId: (parsed.data as AddEntryInput).customer_id,
+          status: (parsed.data as AddEntryInput).status,
+          images: (parsed.data as AddEntryInput).images,
+        });
 
     return NextResponse.json({ data: newEntry }, { status: StatusCodes.CREATED });
   } catch (err: unknown) {

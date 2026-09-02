@@ -10,5 +10,6 @@ export * from "./customers";
 export * from "./entries";
 export * from "./weighments";
 export * from "./users";
+export * from "./settings";
 export * from "./registry";
 export * from "./uniqueness";

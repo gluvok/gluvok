@@ -42,6 +42,7 @@ export enum ProjectSlug {
   ENTRIES = "entries",
   WEIGHMENTS = "weighments",
   USERS = "users",
+  SETTINGS = "settings",
 }
 
 export enum PermissionKey {

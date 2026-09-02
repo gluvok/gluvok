@@ -117,7 +117,7 @@ async function main() {
       .insert({
         username: "pi1",
         password_hash: hardwarePasswordHash,
-        name: "Scale Hardware Unit 1",
+        name: "Pi 1",
         role: Role.HARDWARE,
         factory_id: factoryId,
       })

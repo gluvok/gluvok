@@ -467,6 +467,8 @@ export function getSingularName(name: string): string {
       return "User";
     case "Entries":
       return "Entry";
+    case "Settings":
+      return "Setting";
 
     default:
       if (name.endsWith("ies")) {

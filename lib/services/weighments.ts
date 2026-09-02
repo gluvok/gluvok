@@ -61,7 +61,7 @@ export async function tryMergeEntries(
   // 1. Fetch current entry E2
   const { data: e2, error: fetchErr } = await client
     .from("entries")
-    .select("id, status, vehicle_number, created_at, source")
+    .select("id, status, vehicle_number, created_at, source, center_id")
     .eq("id", entryId)
     .eq("factory_id", factoryId)
     .is("deleted_at", null)
@@ -71,10 +71,18 @@ export async function tryMergeEntries(
     return null;
   }
 
-  // 2 & 3. Check if E2 is already linked in weighments AND query E1 candidates in parallel
+  // 2. Fetch factory configuration to check if center scoping is enabled
+  const { data: factory } = await client
+    .from("factories")
+    .select("check_center_on_merge")
+    .eq("id", factoryId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  // 3. Check if E2 is already linked in weighments AND query E1 candidates in parallel
   let e1Query = client
     .from("entries")
-    .select("id, vehicle_number, weight, created_at, source")
+    .select("id, vehicle_number, weight, created_at, source, center_id")
     .eq("factory_id", factoryId)
     .eq("vehicle_number", e2.vehicle_number)
     .eq("status", EntryStatus.APPROVED)
@@ -84,6 +92,10 @@ export async function tryMergeEntries(
 
   if (e2.source) {
     e1Query = e1Query.eq("source", e2.source);
+  }
+
+  if (factory?.check_center_on_merge) {
+    e1Query = e1Query.eq("center_id", e2.center_id);
   }
 
   const [w2Check, e1Res] = await Promise.all([

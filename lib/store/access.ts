@@ -84,6 +84,15 @@ export const RBAC_MATRIX: RbacMatrix = {
       filter: true,
       editableFields: ["weight"],
     },
+    [ProjectSlug.SETTINGS]: {
+      read: true,
+      write: true,
+      delete: false,
+      create: false,
+      show: true,
+      filter: false,
+      editableFields: ["name", "check_center_on_merge"],
+    },
   },
   [Role.MANAGER]: {
     [ProjectSlug.USERS]: {
@@ -141,6 +150,15 @@ export const RBAC_MATRIX: RbacMatrix = {
       create: false,
       show: true,
       filter: true,
+    },
+    [ProjectSlug.SETTINGS]: {
+      read: true,
+      write: true,
+      delete: false,
+      create: false,
+      show: true,
+      filter: false,
+      editableFields: ["check_center_on_merge"],
     },
   },
   [Role.OPERATOR]: {
@@ -200,6 +218,14 @@ export const RBAC_MATRIX: RbacMatrix = {
       show: true,
       filter: true,
     },
+    [ProjectSlug.SETTINGS]: {
+      read: false,
+      write: false,
+      delete: false,
+      create: false,
+      show: false,
+      filter: false,
+    },
   },
   [Role.BASE]: {
     [ProjectSlug.USERS]: {
@@ -257,6 +283,14 @@ export const RBAC_MATRIX: RbacMatrix = {
       create: false,
       show: true,
       filter: true,
+    },
+    [ProjectSlug.SETTINGS]: {
+      read: false,
+      write: false,
+      delete: false,
+      create: false,
+      show: false,
+      filter: false,
     },
   },
   [Role.HARDWARE]: {
@@ -316,6 +350,14 @@ export const RBAC_MATRIX: RbacMatrix = {
       show: false,
       filter: false,
     },
+    [ProjectSlug.SETTINGS]: {
+      read: false,
+      write: false,
+      delete: false,
+      create: false,
+      show: false,
+      filter: false,
+    },
   },
 };
 
@@ -344,7 +386,11 @@ export function hasPageAccess(role: Role | null | undefined, projectSlug: string
 }
 
 export function hasCreateAccess(role: Role | null | undefined, projectSlug: string): boolean {
-  if (projectSlug === ProjectSlug.COMMODITIES || projectSlug === ProjectSlug.WEIGHMENTS) {
+  if (
+    projectSlug === ProjectSlug.COMMODITIES ||
+    projectSlug === ProjectSlug.WEIGHMENTS ||
+    projectSlug === ProjectSlug.SETTINGS
+  ) {
     return false;
   }
   return getPermissions(role, projectSlug).create;

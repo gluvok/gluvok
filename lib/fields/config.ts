@@ -3,7 +3,7 @@
  * @description Field configuration definitions for dialog form fields across project entities.
  */
 
-import { ProjectSlug, FieldType, FieldSpan } from "@/lib/constants/enums";
+import { ProjectSlug, FieldType, FieldSpan, Role } from "@/lib/constants/enums";
 import { getSelectPlaceholder } from "./helpers";
 import { type FieldConfig } from "./types";
 import {
@@ -242,6 +242,26 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       required: true,
       icon: KeyRound,
       span: FieldSpan.HALF,
+    },
+  ],
+  [ProjectSlug.SETTINGS]: [
+    {
+      key: "name",
+      label: "Factory Name",
+      placeholder: "e.g. Acme Processing Plant",
+      type: FieldType.TEXT,
+      required: true,
+      icon: Building,
+      span: FieldSpan.FULL,
+      editableRoles: [Role.ADMIN],
+    },
+    {
+      key: "check_center_on_merge",
+      label: "Check Center On Merge",
+      placeholder: "",
+      type: FieldType.SWITCH,
+      icon: ShieldCheck,
+      span: FieldSpan.FULL,
     },
   ],
 };

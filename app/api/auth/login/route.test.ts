@@ -156,7 +156,7 @@ describe("POST /api/auth/login (Browser Authentication)", () => {
               data: {
                 id: 5,
                 username: "pi1",
-                name: "Scale Hardware Unit 1",
+                name: "Pi 1",
                 password_hash: passwordHash,
                 role: Role.HARDWARE,
                 factory_id: 1,
@@ -186,7 +186,7 @@ describe("POST /api/auth/login (Browser Authentication)", () => {
     expect(json.user).toEqual({
       id: 5,
       username: "pi1",
-      name: "Scale Hardware Unit 1",
+      name: "Pi 1",
       role: Role.HARDWARE,
       factory_id: 1,
       factory_name: undefined,

@@ -48,3 +48,7 @@ export const editEntrySchema = z.object({
   status: z.enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED]).optional(),
   images: z.array(z.string()).optional(),
 });
+
+export type AddEntryInput = z.infer<typeof addEntrySchema>;
+export type AddDeviceEntryInput = z.infer<typeof addDeviceEntrySchema>;
+export type EditEntryInput = z.infer<typeof editEntrySchema>;

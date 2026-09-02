@@ -16,9 +16,10 @@ describe("validation registry", () => {
       expect(ENTITY_ADD_SCHEMAS[slug]).toBeDefined();
     }
 
-    // Weighments and Commodities are not manually creatable
+    // Weighments, Commodities, and Settings are not manually creatable
     expect((ENTITY_ADD_SCHEMAS as Record<string, unknown>)[ProjectSlug.WEIGHMENTS]).toBeUndefined();
     expect((ENTITY_ADD_SCHEMAS as Record<string, unknown>)[ProjectSlug.COMMODITIES]).toBeUndefined();
+    expect((ENTITY_ADD_SCHEMAS as Record<string, unknown>)[ProjectSlug.SETTINGS]).toBeUndefined();
   });
 
   it("registers edit schemas for all editable project entities", () => {
@@ -29,6 +30,7 @@ describe("validation registry", () => {
       ProjectSlug.ENTRIES,
       ProjectSlug.WEIGHMENTS,
       ProjectSlug.USERS,
+      ProjectSlug.SETTINGS,
     ] as const;
 
     for (const slug of editableSlugs) {

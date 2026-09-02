@@ -49,8 +49,7 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       const vn = String(val || "");
       if (!vn) return <span className="text-muted-foreground/40 text-xs">—</span>;
       return (
-        <span className="inline-flex items-center gap-1 font-mono text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
-          <Truck className="h-3 w-3 shrink-0" />
+        <span className="font-mono text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
           {vn}
         </span>
       );

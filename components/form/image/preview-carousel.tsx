@@ -49,9 +49,9 @@ export function ImagePreviewCarousel({
           {images.map((src, index) => {
             const imageSrc =
               src.startsWith("data:") ||
-                src.startsWith("blob:") ||
-                src.startsWith("/") ||
-                src.startsWith("http")
+              src.startsWith("blob:") ||
+              src.startsWith("/") ||
+              src.startsWith("http")
                 ? src
                 : `/${src}`;
             const displayName = getDisplayName(src, fileNames?.[index], index);

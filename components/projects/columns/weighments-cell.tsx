@@ -7,7 +7,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Image as ImageIcon, ImageOff } from "lucide-react";
+import { Image as ImageIcon } from "lucide-react";
 import { getDisplayName, splitFileName } from "@/lib/utils";
 import {
   Dialog,
@@ -66,17 +66,15 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
       {hasImages ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="group inline-flex items-center gap-1.5 py-0.5 px-2 rounded-full border border-muted-foreground/15 bg-muted/60 hover:bg-muted/90 text-2xs font-mono font-semibold text-foreground transition-all duration-200 active:scale-[0.97] outline-none focus-visible:ring-1 focus-visible:ring-ring shadow-sm cursor-pointer select-none"
+          className="group inline-flex items-center py-0.5 px-2 rounded-full border border-muted-foreground/15 bg-muted/60 hover:bg-muted/90 text-2xs font-mono font-semibold text-foreground transition-all duration-200 active:scale-[0.97] outline-none focus-visible:ring-1 focus-visible:ring-ring shadow-sm cursor-pointer select-none"
           title="View images"
         >
-          <ImageIcon className="h-3 w-3 stroke-[1.5] text-muted-foreground/70 group-hover:text-foreground transition-colors shrink-0" />
           <span className="text-muted-foreground group-hover:text-foreground transition-colors">
             {images.length} {images.length === 1 ? "image" : "images"}
           </span>
         </button>
       ) : (
-        <div className="inline-flex items-center gap-1.5 py-0.5 px-2 rounded-full border border-dashed border-muted-foreground/20 bg-muted/10 text-2xs font-mono font-medium text-muted-foreground/40 select-none cursor-default">
-          <ImageOff className="h-3 w-3 stroke-[1.5] text-muted-foreground/30" />
+        <div className="inline-flex items-center py-0.5 px-2 rounded-full border border-dashed border-muted-foreground/20 bg-muted/10 text-2xs font-mono font-medium text-muted-foreground/40 select-none cursor-default">
           <span>No images</span>
         </div>
       )}

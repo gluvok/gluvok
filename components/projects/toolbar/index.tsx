@@ -165,10 +165,10 @@ export function ProjectToolbar<TData extends RowData>({
   const showFilters = isControlled ? controlledShowFilters : internalShowFilters;
   const setShowFilters = isControlled
     ? (val: boolean | ((prev: boolean) => boolean)) => {
-      if (controlledSetShowFilters) {
-        controlledSetShowFilters(val);
+        if (controlledSetShowFilters) {
+          controlledSetShowFilters(val);
+        }
       }
-    }
     : setInternalShowFilters;
 
   const permissions = useAuthStore((state) => getPermissions(state.user?.role, projectSlug));
@@ -347,9 +347,7 @@ export function ProjectToolbar<TData extends RowData>({
 
               return (
                 <div className="flex items-center gap-1.5 flex-wrap text-xs pt-0.5">
-                  <span className="text-2xs font-medium text-muted-foreground mr-1">
-                    Active:
-                  </span>
+                  <span className="text-2xs font-medium text-muted-foreground mr-1">Active:</span>
                   {chips.map((chip) => {
                     const ChipIcon = chip.icon;
                     return (

@@ -88,6 +88,13 @@ describe("validation helpers", () => {
       expect(optPlate.parse(undefined)).toBeUndefined();
       expect(optPlate.parse("MH12AB1234")).toBe("MH12AB1234");
     });
+
+    it("removes dashes and capitalizes plate numbers like MH-04-AB-1212", () => {
+      expect(plate.parse("MH-04-AB-1212")).toBe("MH04AB1212");
+      expect(plate.parse("mh-04-ab-1212")).toBe("MH04AB1212");
+      expect(plate.parse("DL-1-C-AB-1234")).toBe("DL1CAB1234");
+      expect(optPlate.parse("KA-01-AB-1234")).toBe("KA01AB1234");
+    });
   });
 
   describe("positiveWeightSchema & optionalPositiveWeightSchema", () => {

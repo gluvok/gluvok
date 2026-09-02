@@ -135,7 +135,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       type: FieldType.TEXT,
       required: true,
       className: "uppercase",
-      transformOnChange: (v: string) => v.toUpperCase(),
+      transformOnChange: (v: string) => v.replace(/-/g, "").toUpperCase(),
       icon: Car,
       span: FieldSpan.HALF,
     },

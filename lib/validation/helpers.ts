@@ -101,19 +101,29 @@ export const indianPlateSchema = (fieldName = "Vehicle Number") =>
     .string()
     .min(1, ValidationMessage.INDIAN_PLATE_REQUIRED(fieldName))
     .max(15, ValidationMessage.INDIAN_PLATE_MAX(fieldName, 15))
-    .regex(INDIAN_PLATE_REGEX, ValidationMessage.INDIAN_PLATE_FORMAT)
-    .refine(validateIndianPlateStateCode, {
-      message: ValidationMessage.INDIAN_PLATE_STATE,
-    });
+    .transform((val) => val.replace(/-/g, "").toUpperCase())
+    .pipe(
+      z
+        .string()
+        .regex(INDIAN_PLATE_REGEX, ValidationMessage.INDIAN_PLATE_FORMAT)
+        .refine(validateIndianPlateStateCode, {
+          message: ValidationMessage.INDIAN_PLATE_STATE,
+        }),
+    );
 
 export const optionalIndianPlateSchema = (fieldName = "Vehicle Number") =>
   z
     .string()
     .max(15, ValidationMessage.INDIAN_PLATE_MAX(fieldName, 15))
-    .regex(INDIAN_PLATE_REGEX, ValidationMessage.INDIAN_PLATE_FORMAT)
-    .refine(validateIndianPlateStateCode, {
-      message: ValidationMessage.INDIAN_PLATE_STATE,
-    })
+    .transform((val) => val.replace(/-/g, "").toUpperCase())
+    .pipe(
+      z
+        .string()
+        .regex(INDIAN_PLATE_REGEX, ValidationMessage.INDIAN_PLATE_FORMAT)
+        .refine(validateIndianPlateStateCode, {
+          message: ValidationMessage.INDIAN_PLATE_STATE,
+        }),
+    )
     .optional();
 
 export const positiveWeightSchema = (fieldName = "Weight") =>

@@ -27,10 +27,23 @@ interface WeighmentsFiltersProps<TData extends RowData> {
 
 export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFiltersProps<TData>) {
   const rates = useEntitiesStore((state) => state.rates);
+  const fetchRates = useEntitiesStore((state) => state.fetchRates);
 
   const columnFilters = table.state.columnFilters;
   const currentType = columnFilters.find((f) => f.id === "type")?.value;
   const currentRateId = columnFilters.find((f) => f.id === "rate_id")?.value;
+
+  React.useEffect(() => {
+    if (currentRateId && currentRateId !== "all" && rates.length === 0) {
+      fetchRates();
+    }
+  }, [currentRateId, rates.length, fetchRates]);
+
+  const handleOpenRates = React.useCallback(() => {
+    if (rates.length === 0) {
+      fetchRates();
+    }
+  }, [rates.length, fetchRates]);
 
   const typeOptions = React.useMemo(() => {
     return [
@@ -76,6 +89,7 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
         onChange={(val) =>
           setTableColumnFilter(table, "rate_id", val === "all" ? undefined : Number(val))
         }
+        onOpen={handleOpenRates}
         data={rateOptions}
         placeholder="All Rates"
         searchPlaceholder="Search rate..."

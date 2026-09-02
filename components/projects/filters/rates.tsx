@@ -20,9 +20,23 @@ interface RatesFiltersProps<TData extends RowData> {
 
 export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps<TData>) {
   const commodities = useEntitiesStore((state) => state.commodities);
+  const fetchCommodities = useEntitiesStore((state) => state.fetchCommodities);
 
   const columnFilters = table.state.columnFilters;
   const currentCommodityId = columnFilters.find((f) => f.id === "commodity_id")?.value;
+
+  // If a specific commodity filter is active and commodities list is empty, fetch to show correct label
+  React.useEffect(() => {
+    if (currentCommodityId && currentCommodityId !== "all" && commodities.length === 0) {
+      fetchCommodities();
+    }
+  }, [currentCommodityId, commodities.length, fetchCommodities]);
+
+  const handleOpen = React.useCallback(() => {
+    if (commodities.length === 0) {
+      fetchCommodities();
+    }
+  }, [commodities.length, fetchCommodities]);
 
   const commodityOptions = React.useMemo(() => {
     return [
@@ -43,6 +57,7 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
         onChange={(val) =>
           setTableColumnFilter(table, "commodity_id", val === "all" ? undefined : Number(val))
         }
+        onOpen={handleOpen}
         data={commodityOptions}
         placeholder="All Commodities"
         searchPlaceholder="Search commodity..."

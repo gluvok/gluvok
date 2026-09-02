@@ -33,7 +33,20 @@ export function setTableColumnFilter<TData extends RowData>(
 
 export function CenterFilter<TData extends RowData>({ table }: FilterComponentProps<TData>) {
   const centers = useEntitiesStore((state) => state.centers);
+  const fetchCenters = useEntitiesStore((state) => state.fetchCenters);
   const currentCenterId = table.state.columnFilters.find((f) => f.id === "center_id")?.value;
+
+  React.useEffect(() => {
+    if (currentCenterId && currentCenterId !== "all" && centers.length === 0) {
+      fetchCenters();
+    }
+  }, [currentCenterId, centers.length, fetchCenters]);
+
+  const handleOpen = React.useCallback(() => {
+    if (centers.length === 0) {
+      fetchCenters();
+    }
+  }, [centers.length, fetchCenters]);
 
   const centerOptions = React.useMemo(() => {
     return [
@@ -52,6 +65,7 @@ export function CenterFilter<TData extends RowData>({ table }: FilterComponentPr
       onChange={(val) =>
         setTableColumnFilter(table, "center_id", val === "all" ? undefined : Number(val))
       }
+      onOpen={handleOpen}
       data={centerOptions}
       placeholder="All Centers"
       searchPlaceholder="Search center..."
@@ -64,7 +78,20 @@ export function CenterFilter<TData extends RowData>({ table }: FilterComponentPr
 
 export function UserFilter<TData extends RowData>({ table }: FilterComponentProps<TData>) {
   const users = useEntitiesStore((state) => state.users);
+  const fetchUsers = useEntitiesStore((state) => state.fetchUsers);
   const currentUserId = table.state.columnFilters.find((f) => f.id === "user_id")?.value;
+
+  React.useEffect(() => {
+    if (currentUserId && currentUserId !== "all" && users.length === 0) {
+      fetchUsers();
+    }
+  }, [currentUserId, users.length, fetchUsers]);
+
+  const handleOpen = React.useCallback(() => {
+    if (users.length === 0) {
+      fetchUsers();
+    }
+  }, [users.length, fetchUsers]);
 
   const userOptions = React.useMemo(() => {
     return [
@@ -83,6 +110,7 @@ export function UserFilter<TData extends RowData>({ table }: FilterComponentProp
       onChange={(val) =>
         setTableColumnFilter(table, "user_id", val === "all" ? undefined : Number(val))
       }
+      onOpen={handleOpen}
       data={userOptions}
       placeholder="All Users"
       searchPlaceholder="Search user..."
@@ -95,7 +123,20 @@ export function UserFilter<TData extends RowData>({ table }: FilterComponentProp
 
 export function CustomerFilter<TData extends RowData>({ table }: FilterComponentProps<TData>) {
   const customers = useEntitiesStore((state) => state.customers);
+  const fetchCustomers = useEntitiesStore((state) => state.fetchCustomers);
   const currentCustomerId = table.state.columnFilters.find((f) => f.id === "customer_id")?.value;
+
+  React.useEffect(() => {
+    if (currentCustomerId && currentCustomerId !== "all" && customers.length === 0) {
+      fetchCustomers();
+    }
+  }, [currentCustomerId, customers.length, fetchCustomers]);
+
+  const handleOpen = React.useCallback(() => {
+    if (customers.length === 0) {
+      fetchCustomers();
+    }
+  }, [customers.length, fetchCustomers]);
 
   const customerOptions = React.useMemo(() => {
     return [
@@ -114,6 +155,7 @@ export function CustomerFilter<TData extends RowData>({ table }: FilterComponent
       onChange={(val) =>
         setTableColumnFilter(table, "customer_id", val === "all" ? undefined : Number(val))
       }
+      onOpen={handleOpen}
       data={customerOptions}
       placeholder="All Customers"
       searchPlaceholder="Search customer..."

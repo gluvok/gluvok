@@ -43,6 +43,8 @@ interface BaseComboboxProps {
   className?: string;
   contentClassName?: string;
   disabled?: boolean;
+  onOpen?: () => void;
+  onOpenChange?: (open: boolean) => void;
 }
 
 /**
@@ -63,6 +65,8 @@ export function BaseCombobox({
   className,
   contentClassName,
   disabled,
+  onOpen,
+  onOpenChange,
 }: BaseComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const selectedItem = React.useMemo(() => {
@@ -71,6 +75,17 @@ export function BaseCombobox({
 
   const commodityIcon = useCommodityIcon(type, selectedItem);
 
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      setOpen(nextOpen);
+      onOpenChange?.(nextOpen);
+      if (nextOpen) {
+        onOpen?.();
+      }
+    },
+    [onOpen, onOpenChange],
+  );
+
   return (
     <Combobox
       data={data}
@@ -78,7 +93,7 @@ export function BaseCombobox({
       value={value}
       onValueChange={onChange}
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={handleOpenChange}
       modal={true}
     >
       <ComboboxTrigger

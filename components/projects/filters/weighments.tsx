@@ -28,6 +28,7 @@ interface WeighmentsFiltersProps<TData extends RowData> {
 export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFiltersProps<TData>) {
   const rates = useEntitiesStore((state) => state.rates);
   const fetchRates = useEntitiesStore((state) => state.fetchRates);
+  const [loadingRates, setLoadingRates] = React.useState(false);
 
   const columnFilters = table.state.columnFilters;
   const currentType = columnFilters.find((f) => f.id === "type")?.value;
@@ -39,11 +40,14 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
     }
   }, [currentRateId, rates.length, fetchRates]);
 
-  const handleOpenRates = React.useCallback(() => {
-    if (rates.length === 0) {
-      fetchRates();
+  const handleOpenRates = React.useCallback(async () => {
+    try {
+      setLoadingRates(true);
+      await fetchRates();
+    } finally {
+      setLoadingRates(false);
     }
-  }, [rates.length, fetchRates]);
+  }, [fetchRates]);
 
   const typeOptions = React.useMemo(() => {
     return [
@@ -90,6 +94,7 @@ export function WeighmentsFilters<TData extends RowData>({ table }: WeighmentsFi
           setTableColumnFilter(table, "rate_id", val === "all" ? undefined : Number(val))
         }
         onOpen={handleOpenRates}
+        isLoading={loadingRates}
         data={rateOptions}
         placeholder="All Rates"
         searchPlaceholder="Search rate..."

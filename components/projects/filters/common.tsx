@@ -34,6 +34,7 @@ export function setTableColumnFilter<TData extends RowData>(
 export function CenterFilter<TData extends RowData>({ table }: FilterComponentProps<TData>) {
   const centers = useEntitiesStore((state) => state.centers);
   const fetchCenters = useEntitiesStore((state) => state.fetchCenters);
+  const [loading, setLoading] = React.useState(false);
   const currentCenterId = table.state.columnFilters.find((f) => f.id === "center_id")?.value;
 
   React.useEffect(() => {
@@ -42,11 +43,14 @@ export function CenterFilter<TData extends RowData>({ table }: FilterComponentPr
     }
   }, [currentCenterId, centers.length, fetchCenters]);
 
-  const handleOpen = React.useCallback(() => {
-    if (centers.length === 0) {
-      fetchCenters();
+  const handleOpen = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      await fetchCenters();
+    } finally {
+      setLoading(false);
     }
-  }, [centers.length, fetchCenters]);
+  }, [fetchCenters]);
 
   const centerOptions = React.useMemo(() => {
     return [
@@ -66,6 +70,7 @@ export function CenterFilter<TData extends RowData>({ table }: FilterComponentPr
         setTableColumnFilter(table, "center_id", val === "all" ? undefined : Number(val))
       }
       onOpen={handleOpen}
+      isLoading={loading}
       data={centerOptions}
       placeholder="All Centers"
       searchPlaceholder="Search center..."
@@ -79,6 +84,7 @@ export function CenterFilter<TData extends RowData>({ table }: FilterComponentPr
 export function UserFilter<TData extends RowData>({ table }: FilterComponentProps<TData>) {
   const users = useEntitiesStore((state) => state.users);
   const fetchUsers = useEntitiesStore((state) => state.fetchUsers);
+  const [loading, setLoading] = React.useState(false);
   const currentUserId = table.state.columnFilters.find((f) => f.id === "user_id")?.value;
 
   React.useEffect(() => {
@@ -87,11 +93,14 @@ export function UserFilter<TData extends RowData>({ table }: FilterComponentProp
     }
   }, [currentUserId, users.length, fetchUsers]);
 
-  const handleOpen = React.useCallback(() => {
-    if (users.length === 0) {
-      fetchUsers();
+  const handleOpen = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      await fetchUsers();
+    } finally {
+      setLoading(false);
     }
-  }, [users.length, fetchUsers]);
+  }, [fetchUsers]);
 
   const userOptions = React.useMemo(() => {
     return [
@@ -111,6 +120,7 @@ export function UserFilter<TData extends RowData>({ table }: FilterComponentProp
         setTableColumnFilter(table, "user_id", val === "all" ? undefined : Number(val))
       }
       onOpen={handleOpen}
+      isLoading={loading}
       data={userOptions}
       placeholder="All Users"
       searchPlaceholder="Search user..."
@@ -124,6 +134,7 @@ export function UserFilter<TData extends RowData>({ table }: FilterComponentProp
 export function CustomerFilter<TData extends RowData>({ table }: FilterComponentProps<TData>) {
   const customers = useEntitiesStore((state) => state.customers);
   const fetchCustomers = useEntitiesStore((state) => state.fetchCustomers);
+  const [loading, setLoading] = React.useState(false);
   const currentCustomerId = table.state.columnFilters.find((f) => f.id === "customer_id")?.value;
 
   React.useEffect(() => {
@@ -132,11 +143,14 @@ export function CustomerFilter<TData extends RowData>({ table }: FilterComponent
     }
   }, [currentCustomerId, customers.length, fetchCustomers]);
 
-  const handleOpen = React.useCallback(() => {
-    if (customers.length === 0) {
-      fetchCustomers();
+  const handleOpen = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      await fetchCustomers();
+    } finally {
+      setLoading(false);
     }
-  }, [customers.length, fetchCustomers]);
+  }, [fetchCustomers]);
 
   const customerOptions = React.useMemo(() => {
     return [
@@ -156,6 +170,7 @@ export function CustomerFilter<TData extends RowData>({ table }: FilterComponent
         setTableColumnFilter(table, "customer_id", val === "all" ? undefined : Number(val))
       }
       onOpen={handleOpen}
+      isLoading={loading}
       data={customerOptions}
       placeholder="All Customers"
       searchPlaceholder="Search customer..."

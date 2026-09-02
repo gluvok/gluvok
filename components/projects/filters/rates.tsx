@@ -21,6 +21,7 @@ interface RatesFiltersProps<TData extends RowData> {
 export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps<TData>) {
   const commodities = useEntitiesStore((state) => state.commodities);
   const fetchCommodities = useEntitiesStore((state) => state.fetchCommodities);
+  const [loading, setLoading] = React.useState(false);
 
   const columnFilters = table.state.columnFilters;
   const currentCommodityId = columnFilters.find((f) => f.id === "commodity_id")?.value;
@@ -32,11 +33,14 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
     }
   }, [currentCommodityId, commodities.length, fetchCommodities]);
 
-  const handleOpen = React.useCallback(() => {
-    if (commodities.length === 0) {
-      fetchCommodities();
+  const handleOpen = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      await fetchCommodities();
+    } finally {
+      setLoading(false);
     }
-  }, [commodities.length, fetchCommodities]);
+  }, [fetchCommodities]);
 
   const commodityOptions = React.useMemo(() => {
     return [
@@ -58,6 +62,7 @@ export function RatesFilters<TData extends RowData>({ table }: RatesFiltersProps
           setTableColumnFilter(table, "commodity_id", val === "all" ? undefined : Number(val))
         }
         onOpen={handleOpen}
+        isLoading={loading}
         data={commodityOptions}
         placeholder="All Commodities"
         searchPlaceholder="Search commodity..."

@@ -48,6 +48,7 @@ export function EntityCombobox({
       emptyText={loading ? "Loading..." : `No ${entitySlug} found`}
       id={id}
       disabled={disabled}
+      isLoading={loading}
     />
   );
 }

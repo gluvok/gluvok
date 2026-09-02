@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import { ChevronsUpDown, Check, LucideIcon } from "lucide-react";
+import { ChevronsUpDown, Check, Loader2, LucideIcon } from "lucide-react";
 import {
   Combobox,
   ComboboxTrigger,
@@ -43,6 +43,7 @@ interface BaseComboboxProps {
   className?: string;
   contentClassName?: string;
   disabled?: boolean;
+  isLoading?: boolean;
   onOpen?: () => void;
   onOpenChange?: (open: boolean) => void;
 }
@@ -65,6 +66,7 @@ export function BaseCombobox({
   className,
   contentClassName,
   disabled,
+  isLoading,
   onOpen,
   onOpenChange,
 }: BaseComboboxProps) {
@@ -131,44 +133,53 @@ export function BaseCombobox({
           className="h-8 text-xs"
         />
         <ComboboxList className="max-h-64 overflow-y-auto">
-          <ComboboxEmpty className="py-2 text-center text-xs text-muted-foreground">
-            {emptyText || `No ${type} found.`}
-          </ComboboxEmpty>
-          <ComboboxGroup>
-            {data.map((item) => {
-              const itemIcon = getItemIcon(type, item.label);
-              const itemIconColor = "text-muted-foreground/80";
+          {isLoading ? (
+            <div className="flex items-center justify-center gap-2 py-6 text-xs text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span>Loading {type}...</span>
+            </div>
+          ) : (
+            <>
+              <ComboboxEmpty className="py-2 text-center text-xs text-muted-foreground">
+                {emptyText || `No ${type} found.`}
+              </ComboboxEmpty>
+              <ComboboxGroup>
+                {data.map((item) => {
+                  const itemIcon = getItemIcon(type, item.label);
+                  const itemIconColor = "text-muted-foreground/80";
 
-              return (
-                <ComboboxItem
-                  key={item.value}
-                  id={`${type}-option-${item.value}`}
-                  value={`${item.label.toLowerCase()} ${item.value.toLowerCase()} ${item.rightLabel ? item.rightLabel.toLowerCase() : ""}`}
-                  onSelect={() => {
-                    onChange(item.value);
-                    setOpen(false);
-                  }}
-                  className="text-xs cursor-pointer py-2 hover:bg-muted transition-colors flex items-center justify-between whitespace-nowrap gap-2"
-                >
-                  <span className="flex items-center gap-2 font-medium text-foreground whitespace-nowrap">
-                    {itemIcon &&
-                      React.createElement(itemIcon, {
-                        className: cn("h-3.5 w-3.5 shrink-0", itemIconColor),
-                      })}
-                    <span className="whitespace-nowrap">{item.label}</span>
-                  </span>
-                  {item.rightLabel && (
-                    <span className="text-xs text-muted-foreground font-semibold bg-muted px-1.5 py-0.5 rounded">
-                      {item.rightLabel}
-                    </span>
-                  )}
-                  {String(value) === String(item.value) && !item.rightLabel && (
-                    <Check className="h-3.5 w-3.5 text-primary" />
-                  )}
-                </ComboboxItem>
-              );
-            })}
-          </ComboboxGroup>
+                  return (
+                    <ComboboxItem
+                      key={item.value}
+                      id={`${type}-option-${item.value}`}
+                      value={`${item.label.toLowerCase()} ${item.value.toLowerCase()} ${item.rightLabel ? item.rightLabel.toLowerCase() : ""}`}
+                      onSelect={() => {
+                        onChange(item.value);
+                        setOpen(false);
+                      }}
+                      className="text-xs cursor-pointer py-2 hover:bg-muted transition-colors flex items-center justify-between whitespace-nowrap gap-2"
+                    >
+                      <span className="flex items-center gap-2 font-medium text-foreground whitespace-nowrap">
+                        {itemIcon &&
+                          React.createElement(itemIcon, {
+                            className: cn("h-3.5 w-3.5 shrink-0", itemIconColor),
+                          })}
+                        <span className="whitespace-nowrap">{item.label}</span>
+                      </span>
+                      {item.rightLabel && (
+                        <span className="text-xs text-muted-foreground font-semibold bg-muted px-1.5 py-0.5 rounded">
+                          {item.rightLabel}
+                        </span>
+                      )}
+                      {String(value) === String(item.value) && !item.rightLabel && (
+                        <Check className="h-3.5 w-3.5 text-primary" />
+                      )}
+                    </ComboboxItem>
+                  );
+                })}
+              </ComboboxGroup>
+            </>
+          )}
         </ComboboxList>
       </ComboboxContent>
     </Combobox>

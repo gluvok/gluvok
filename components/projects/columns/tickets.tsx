@@ -69,11 +69,14 @@ export function getTicketsColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-            <p className="truncate max-w-xs text-foreground/90 font-normal text-xs cursor-default">
+            <span className="inline-block w-fit max-w-xs truncate text-foreground/90 font-normal text-xs cursor-default">
               {text}
-            </p>
+            </span>
           </TooltipTrigger>
-          <TooltipContent className="max-w-sm text-xs leading-relaxed whitespace-pre-wrap p-2.5 shadow-md">
+          <TooltipContent
+            sideOffset={4}
+            className="max-w-sm text-xs leading-relaxed whitespace-pre-wrap p-2.5 shadow-md"
+          >
             {text}
           </TooltipContent>
         </Tooltip>
@@ -111,12 +114,15 @@ export function getTicketsColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex items-center gap-1.5 text-foreground/80 truncate max-w-xs text-xs cursor-default">
+            <div className="inline-flex items-center gap-1.5 text-foreground/80 truncate max-w-xs w-fit text-xs cursor-default">
               <MessageSquare className="h-3 w-3 text-primary shrink-0" />
               <span className="truncate">{replyText}</span>
             </div>
           </TooltipTrigger>
-          <TooltipContent className="max-w-sm text-xs leading-relaxed whitespace-pre-wrap p-2.5 shadow-md">
+          <TooltipContent
+            sideOffset={4}
+            className="max-w-sm text-xs leading-relaxed whitespace-pre-wrap p-2.5 shadow-md"
+          >
             {replyText}
           </TooltipContent>
         </Tooltip>

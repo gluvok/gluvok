@@ -114,4 +114,4 @@ export function createIdColumn<T extends RowData>(
 }
 
 export const badgeBaseClass =
-  "inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold shadow-sm";
+  "inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold shadow-sm bg-muted text-muted-foreground border border-border";

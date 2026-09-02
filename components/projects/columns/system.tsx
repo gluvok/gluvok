@@ -65,17 +65,31 @@ export function getSystemColumns<T extends RowData>(
   const config = PRIMARY_KEY_CONFIGS[primaryIdKey] || PRIMARY_KEY_CONFIGS.id;
 
   return [
-    createCustomColumn<T>(primaryIdKey, config.label, config.icon, config.renderCell),
+    createCustomColumn<T>(
+      primaryIdKey,
+      config.label,
+      config.icon,
+      config.renderCell,
+    ),
     {
       ...createCustomColumn<T>("created_at", "Created At", Calendar, (val) => (
-        <span className="text-indigo-500 dark:text-indigo-400 text-xs font-medium font-mono">{formatDateTime(val)}</span>
+        <span className="text-muted-foreground text-xs font-medium font-mono">
+          {formatDateTime(val)}
+        </span>
       )),
       enableGlobalFilter: false,
     },
     {
-      ...createCustomColumn<T>("updated_at", "Updated At", CalendarClock, (val) => (
-        <span className="text-violet-500 dark:text-violet-400 text-xs font-medium font-mono">{formatDateTime(val)}</span>
-      )),
+      ...createCustomColumn<T>(
+        "updated_at",
+        "Updated At",
+        CalendarClock,
+        (val) => (
+          <span className="text-muted-foreground text-xs font-medium font-mono">
+            {formatDateTime(val)}
+          </span>
+        ),
+      ),
       enableGlobalFilter: false,
     },
   ];

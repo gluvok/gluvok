@@ -15,18 +15,10 @@ export function getCentersColumns<T extends RowData>(): ColumnDef<ProjectTableFe
     createCustomColumn("auto_approve", "Auto Approve", ShieldCheck, (val) => {
       const isAuto = val === true || val === "true";
       return (
-        <span
-          className={cn(
-            badgeBaseClass,
-            "inline-flex items-center gap-1.5",
-            isAuto
-              ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/30"
-              : "bg-muted text-muted-foreground border border-border",
-          )}
-        >
+        <span className={cn(badgeBaseClass, "gap-1.5")}>
           {isAuto ? (
             <>
-              <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <CheckCircle2 className="h-3 w-3 shrink-0" />
               Enabled
             </>
           ) : (

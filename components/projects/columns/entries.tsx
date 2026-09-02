@@ -37,19 +37,9 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
   return [
     createCustomColumn("source", "Source", Sliders, (val) => {
       const source = String(val || EntrySource.DEVICE).toLowerCase();
-      let sourceClass = "bg-muted text-muted-foreground border border-border";
       const Icon = source === EntrySource.DEVICE ? Cpu : User;
-      if (source === EntrySource.DEVICE) {
-        sourceClass =
-          "bg-purple-50 text-purple-700 border border-purple-200/50 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800/30";
-      } else if (source === EntrySource.MANUAL) {
-        sourceClass =
-          "bg-blue-50 text-blue-700 border border-blue-200/50 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/30";
-      }
       return (
-        <span
-          className={cn(badgeBaseClass, "capitalize inline-flex items-center gap-1.5", sourceClass)}
-        >
+        <span className={cn(badgeBaseClass, "capitalize gap-1.5")}>
           <Icon className="h-3 w-3 shrink-0" />
           {source}
         </span>
@@ -59,7 +49,7 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       const vn = String(val || "");
       if (!vn) return <span className="text-muted-foreground/40 text-xs">—</span>;
       return (
-        <span className="inline-flex items-center gap-1 font-mono text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200/60 dark:bg-slate-800/40 dark:text-slate-300 dark:border-slate-700/40">
+        <span className="inline-flex items-center gap-1 font-mono text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
           <Car className="h-3 w-3 shrink-0" />
           {vn}
         </span>
@@ -67,26 +57,15 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
     }),
     createBaseColumn("weight", "Weight", Weight, ({ row }) => {
       const val = row.getValue("weight") as number;
-      return <div className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{val}</div>;
+      return (
+        <div className="font-mono text-xs font-bold text-foreground">{val}</div>
+      );
     }),
     createCustomColumn("status", "Status", Activity, (val) => {
       const status = String(val).toLowerCase();
-      let statusClass = "bg-muted text-muted-foreground border border-border";
       const Icon = getStatusIcon(status);
-      if (status === EntryStatus.APPROVED) {
-        statusClass =
-          "bg-emerald-50 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/30";
-      } else if (status === EntryStatus.PENDING) {
-        statusClass =
-          "bg-amber-50 text-amber-700 border border-amber-200/50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/30";
-      } else if (status === EntryStatus.REJECTED) {
-        statusClass =
-          "bg-rose-50 text-rose-700 border border-rose-200/50 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/30";
-      }
       return (
-        <span
-          className={cn(badgeBaseClass, "capitalize inline-flex items-center gap-1.5", statusClass)}
-        >
+        <span className={cn(badgeBaseClass, "capitalize gap-1.5")}>
           <Icon className="h-3 w-3 shrink-0" />
           {status}
         </span>
@@ -100,13 +79,8 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
 
       if (isAuto) {
         return (
-          <span
-            className={cn(
-              badgeBaseClass,
-              "inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 border border-purple-200/50 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800/30",
-            )}
-          >
-            <CheckCircle2 className="h-3 w-3 shrink-0 text-purple-600 dark:text-purple-400" />
+          <span className={cn(badgeBaseClass, "gap-1.5")}>
+            <CheckCircle2 className="h-3 w-3 shrink-0" />
             System Approved
           </span>
         );
@@ -115,39 +89,24 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       if (source === EntrySource.DEVICE) {
         if (status === EntryStatus.PENDING) {
           return (
-            <span
-              className={cn(
-                badgeBaseClass,
-                "inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200/50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/30",
-              )}
-            >
-              <Clock className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span className={cn(badgeBaseClass, "gap-1.5")}>
+              <Clock className="h-3 w-3 shrink-0" />
               Review Required
             </span>
           );
         }
         if (status === EntryStatus.APPROVED) {
           return (
-            <span
-              className={cn(
-                badgeBaseClass,
-                "inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/30",
-              )}
-            >
-              <UserCheck className="h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <span className={cn(badgeBaseClass, "gap-1.5")}>
+              <UserCheck className="h-3 w-3 shrink-0" />
               User Approved
             </span>
           );
         }
         if (status === EntryStatus.REJECTED) {
           return (
-            <span
-              className={cn(
-                badgeBaseClass,
-                "inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200/50 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/30",
-              )}
-            >
-              <XCircle className="h-3 w-3 shrink-0 text-rose-600 dark:text-rose-400" />
+            <span className={cn(badgeBaseClass, "gap-1.5")}>
+              <XCircle className="h-3 w-3 shrink-0" />
               Rejected
             </span>
           );
@@ -155,13 +114,8 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       }
 
       return (
-        <span
-          className={cn(
-            badgeBaseClass,
-            "inline-flex items-center gap-1.5 bg-muted text-muted-foreground border border-border",
-          )}
-        >
-          <PenLine className="h-3 w-3 shrink-0 text-muted-foreground" />
+        <span className={cn(badgeBaseClass, "gap-1.5")}>
+          <PenLine className="h-3 w-3 shrink-0" />
           User Entry
         </span>
       );

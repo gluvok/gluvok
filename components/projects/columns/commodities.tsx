@@ -15,7 +15,7 @@ export function getCommoditiesColumns<T extends RowData>(): ColumnDef<ProjectTab
       const Icon = getCommodityIcon(val);
       return (
         <div className="flex items-center gap-1.5 font-semibold text-foreground text-xs">
-          <Icon className="h-3.5 w-3.5 text-muted-foreground/75" />
+          <Icon className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
           {val}
         </div>
       );

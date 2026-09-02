@@ -114,29 +114,29 @@ export const DELETE = withAuth(
       return forbiddenError();
     }
 
-    // Check if any active entries are linked to this user
-    const { data: linkedEntry } = await client
-      .from("entries")
-      .select("id")
-      .eq("user_id", entityId)
-      .is("deleted_at", null)
-      .limit(1)
-      .maybeSingle();
+    // Check if any active entries or customers are linked to this user (parallel)
+    const [linkedEntryResult, linkedCustomerResult] = await Promise.all([
+      client
+        .from("entries")
+        .select("id")
+        .eq("user_id", entityId)
+        .is("deleted_at", null)
+        .limit(1)
+        .maybeSingle(),
+      client
+        .from("customers")
+        .select("id")
+        .eq("user_id", entityId)
+        .is("deleted_at", null)
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
-    if (linkedEntry) {
+    if (linkedEntryResult.data) {
       return apiError(ApiErrorMessage.CANNOT_DELETE_USER(entityId), StatusCodes.BAD_REQUEST);
     }
 
-    // Check if any active customers are linked to this user
-    const { data: linkedCustomer } = await client
-      .from("customers")
-      .select("id")
-      .eq("user_id", entityId)
-      .is("deleted_at", null)
-      .limit(1)
-      .maybeSingle();
-
-    if (linkedCustomer) {
+    if (linkedCustomerResult.data) {
       return apiError(ApiErrorMessage.CANNOT_DELETE_USER(entityId), StatusCodes.BAD_REQUEST);
     }
 

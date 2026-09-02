@@ -26,7 +26,6 @@ import { EntryStatus, EntrySource } from "@/lib/constants/enums";
 import { getStatusIcon } from "@/lib/fields";
 import { cn } from "@/lib/utils";
 import {
-  createTextColumn,
   createBaseColumn,
   createCustomColumn,
   createIdColumn,
@@ -56,10 +55,19 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         </span>
       );
     }),
-    createTextColumn("vehicle_number", "Vehicle Number", Car),
+    createCustomColumn("vehicle_number", "Vehicle Number", Car, (val) => {
+      const vn = String(val || "");
+      if (!vn) return <span className="text-muted-foreground/40 text-xs">—</span>;
+      return (
+        <span className="inline-flex items-center gap-1 font-mono text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200/60 dark:bg-slate-800/40 dark:text-slate-300 dark:border-slate-700/40">
+          <Car className="h-3 w-3 shrink-0" />
+          {vn}
+        </span>
+      );
+    }),
     createBaseColumn("weight", "Weight", Weight, ({ row }) => {
       const val = row.getValue("weight") as number;
-      return <div className="font-mono text-xs font-semibold text-foreground">{val}</div>;
+      return <div className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{val}</div>;
     }),
     createCustomColumn("status", "Status", Activity, (val) => {
       const status = String(val).toLowerCase();

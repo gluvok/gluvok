@@ -49,9 +49,13 @@ export const GET = withAuth(async (req, user, client) => {
   if (search) {
     const searchNum = parseInt(search, 10);
     if (!isNaN(searchNum)) {
-      query = query.or(`unit_price.ilike.%${search}%,id.eq.${searchNum}`);
+      query = query.or(
+        `id.eq.${searchNum},unit_price::text.ilike.%${search}%,commodities.name.ilike.%${search}%`,
+      );
     } else {
-      query = query.ilike("unit_price", `%${search}%`);
+      query = query.or(
+        `unit_price::text.ilike.%${search}%,commodities.name.ilike.%${search}%`,
+      );
     }
   }
 

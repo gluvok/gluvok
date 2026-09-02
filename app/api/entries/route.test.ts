@@ -104,7 +104,7 @@ describe("Entries route handlers (/api/entries)", () => {
       expect(json.pagination.total).toBe(1);
     });
 
-    it("filters entries by auto_approved boolean flag and computes dynamic edited status", async () => {
+    it("filters entries by auto_approved boolean flag", async () => {
       const eqMock = vi.fn();
       const mockQuery: Record<string, unknown> = {};
       mockQuery.select = vi.fn(() => mockQuery);
@@ -143,8 +143,8 @@ describe("Entries route handlers (/api/entries)", () => {
       expect(response.status).toBe(200);
       expect(eqMock).toHaveBeenCalledWith("auto_approved", true);
       const json = await response.json();
-      expect(json.data[0].edited).toBe(true);
-      expect(json.data[1].edited).toBe(false);
+      expect(json.data).toHaveLength(2);
+      expect(json.data[0]).not.toHaveProperty("edited");
     });
 
     it("scopes entries query with customers!inner and customers.user_id for Role.BASE users", async () => {

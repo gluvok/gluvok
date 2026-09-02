@@ -383,6 +383,7 @@ export function useEntityForm({
     isUnchanged,
     item,
     linkedWeighment,
+    pendingValues,
     tripModalOpen,
     setTripModalOpen,
     handleConfirmTripChoice,

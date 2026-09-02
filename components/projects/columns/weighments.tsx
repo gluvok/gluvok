@@ -20,7 +20,12 @@ import {
   IndianRupee,
 } from "lucide-react";
 import { WeighmentType } from "@/lib/constants/enums";
-import { getTypeIcon } from "@/lib/fields/helpers";
+import {
+  getTypeIcon,
+  getTypeColorClass,
+  getUnitIcon,
+  getUnitColorClass,
+} from "@/lib/fields/helpers";
 import { cn, formatDateTime } from "@/lib/utils";
 import {
   createTextColumn,
@@ -33,14 +38,35 @@ import { WeighmentImagesCell } from "./weighments-cell";
 
 export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
-    createTextColumn("unit", "Unit", Ruler),
+    createCustomColumn("unit", "Unit", Ruler, (val) => {
+      const unit = String(val || "");
+      const Icon = getUnitIcon(unit);
+      return (
+        <span
+          className={cn(
+            badgeBaseClass,
+            "uppercase tracking-wide gap-1.5",
+            getUnitColorClass(unit),
+          )}
+        >
+          <Icon className="h-3 w-3 shrink-0" />
+          {unit}
+        </span>
+      );
+    }),
     createIdColumn("rate_id", "Rate ID", IndianRupee),
     createCustomColumn("type", "Type", ArrowLeftRight, (val) => {
       const type = ((val as string) || WeighmentType.UNASSIGNED).toLowerCase();
       const Icon = getTypeIcon(type);
 
       return (
-        <span className={cn(badgeBaseClass, "capitalize gap-1.5")}>
+        <span
+          className={cn(
+            badgeBaseClass,
+            "capitalize gap-1.5",
+            getTypeColorClass(type),
+          )}
+        >
           <Icon className="h-3 w-3 shrink-0" />
           {type}
         </span>
@@ -72,20 +98,32 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
       ...createBaseColumn("images", "Images", Image, ({ row }) => {
         const images = row.getValue("images") as string[] | undefined;
         const vehicleNumber =
-          ((row.original as Record<string, unknown>)?.vehicle_number as string) || "Weighment";
-        return <WeighmentImagesCell images={images} vehicleNumber={vehicleNumber} />;
+          ((row.original as Record<string, unknown>)
+            ?.vehicle_number as string) || "Weighment";
+        return (
+          <WeighmentImagesCell images={images} vehicleNumber={vehicleNumber} />
+        );
       }),
       enableGlobalFilter: false,
       enableSorting: false,
     },
     createIdColumn("in_entry_id", "In-Entry ID", Tag),
     createCustomColumn("in_entry_created_at", "In-Entry Time", Clock, (val) => (
-      <span className="font-mono text-muted-foreground text-xs">{formatDateTime(val)}</span>
+      <span className="font-mono text-muted-foreground text-xs">
+        {formatDateTime(val)}
+      </span>
     )),
     createIdColumn("out_entry_id", "Out-Entry ID", Tag),
-    createCustomColumn("out_entry_created_at", "Out-Entry Time", Clock, (val) => (
-      <span className="font-mono text-muted-foreground text-xs">{formatDateTime(val)}</span>
-    )),
+    createCustomColumn(
+      "out_entry_created_at",
+      "Out-Entry Time",
+      Clock,
+      (val) => (
+        <span className="font-mono text-muted-foreground text-xs">
+          {formatDateTime(val)}
+        </span>
+      ),
+    ),
     createIdColumn("center_id", "Center ID", Building),
     createTextColumn("center_name", "Center Name", Building),
     createIdColumn("in_user_id", "In-User ID", User),

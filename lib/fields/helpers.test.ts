@@ -38,8 +38,8 @@ import {
   Bot,
   Shield,
   Ruler,
-  Scale,
-  Weight,
+  Anvil,
+  Boxes,
   Droplet,
 } from "lucide-react";
 import {
@@ -144,8 +144,8 @@ describe("Field Helpers & Icon Mapping", () => {
   describe("getUnitIcon", () => {
     it("returns distinct measurement icons for each unit", () => {
       expect(getUnitIcon()).toBe(Ruler);
-      expect(getUnitIcon(Unit.KG)).toBe(Weight);
-      expect(getUnitIcon(Unit.Q)).toBe(Scale);
+      expect(getUnitIcon(Unit.KG)).toBe(Anvil);
+      expect(getUnitIcon(Unit.Q)).toBe(Boxes);
       expect(getUnitIcon(Unit.GAL)).toBe(Droplet);
     });
   });
@@ -164,16 +164,16 @@ describe("Field Helpers & Icon Mapping", () => {
 
   describe("getItemColorClass", () => {
     it("resolves semantic colors for filter and combobox values", () => {
-      expect(getItemColorClass("unit", "all")).toBe("text-blue-700 dark:text-blue-300");
-      expect(getItemColorClass("source", "all")).toBe("text-sky-700 dark:text-sky-300");
-      expect(getItemColorClass("type", "all")).toBe("text-indigo-700 dark:text-indigo-300");
+      expect(getItemColorClass("unit", "all")).toBe("text-muted-foreground");
+      expect(getItemColorClass("source", "all")).toBe("text-muted-foreground");
+      expect(getItemColorClass("type", "all")).toBe("text-muted-foreground");
       expect(getItemColorClass(FieldType.ENTRY_STATUS, "all")).toBe(
-        "text-blue-700 dark:text-blue-300",
+        "text-muted-foreground",
       );
       expect(getItemColorClass("verification", "all")).toBe(
-        "text-cyan-700 dark:text-cyan-300",
+        "text-muted-foreground",
       );
-      expect(getItemColorClass("role", "all")).toBe("text-indigo-700 dark:text-indigo-300");
+      expect(getItemColorClass("role", "all")).toBe("text-muted-foreground");
       expect(getItemColorClass("unit", Unit.KG)).toBe("text-blue-700 dark:text-blue-300");
       expect(getItemColorClass("source", EntrySource.DEVICE)).toBe(
         "text-sky-700 dark:text-sky-300",

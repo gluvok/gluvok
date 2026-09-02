@@ -7,7 +7,7 @@ import { type ColumnDef, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { IndianRupee, Ruler, Tag } from "lucide-react";
 import { badgeBaseClass, createCustomColumn } from "./helpers";
-import { getCommodityIcon } from "@/lib/fields";
+import { getCommodityIcon, getUnitIcon, getUnitColorClass } from "@/lib/fields";
 import { cn } from "@/lib/utils";
 
 export function getRatesColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
@@ -37,9 +37,16 @@ export function getRatesColumns<T extends RowData>(): ColumnDef<ProjectTableFeat
     }),
     createCustomColumn("unit", "Unit", Ruler, (val) => {
       const unit = String(val || "");
+      const Icon = getUnitIcon(unit);
       return (
-        <span className={cn(badgeBaseClass, "uppercase tracking-wide")}>
-          <Ruler className="h-3 w-3 mr-1 shrink-0" />
+        <span
+          className={cn(
+            badgeBaseClass,
+            "uppercase tracking-wide",
+            getUnitColorClass(unit),
+          )}
+        >
+          <Icon className="h-3 w-3 mr-1 shrink-0" />
           {unit}
         </span>
       );

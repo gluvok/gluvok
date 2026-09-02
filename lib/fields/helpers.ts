@@ -47,8 +47,8 @@ import {
   Pencil,
   Activity,
   Ruler,
-  Scale,
-  Weight,
+  Anvil,
+  Boxes,
   type LucideIcon,
 } from "lucide-react";
 
@@ -180,9 +180,6 @@ export function getRoleIcon(role?: string): LucideIcon {
 
 export function getRoleColorClass(role?: string): string {
   switch (role?.toLowerCase().trim()) {
-    case undefined:
-    case "all":
-      return "text-indigo-700 dark:text-indigo-300";
     case Role.ADMIN:
       return "text-purple-700 dark:text-purple-300";
     case Role.MANAGER:
@@ -215,9 +212,6 @@ export function getSourceIcon(sourceVal?: string): LucideIcon {
 
 export function getSourceColorClass(sourceVal?: string): string {
   switch (sourceVal?.toLowerCase().trim()) {
-    case undefined:
-    case "all":
-      return "text-sky-700 dark:text-sky-300";
     case EntrySource.DEVICE:
       return "text-sky-700 dark:text-sky-300";
     case EntrySource.MANUAL:
@@ -248,9 +242,6 @@ export function getTypeIcon(typeVal?: string): LucideIcon {
 
 export function getTypeColorClass(typeVal?: string): string {
   switch (typeVal?.toLowerCase().trim()) {
-    case undefined:
-    case "all":
-      return "text-indigo-700 dark:text-indigo-300";
     case WeighmentType.IN:
       return "text-sky-700 dark:text-sky-300";
     case WeighmentType.OUT:
@@ -282,9 +273,6 @@ export function getStatusIcon(statusVal?: string): LucideIcon {
 
 export function getStatusColorClass(statusVal?: string): string {
   switch (statusVal?.toLowerCase().trim()) {
-    case undefined:
-    case "all":
-      return "text-blue-700 dark:text-blue-300";
     case EntryStatus.PENDING:
       return "text-amber-700 dark:text-amber-300";
     case EntryStatus.APPROVED:
@@ -320,9 +308,6 @@ export function getAutoApproveIcon(val?: string): LucideIcon {
 
 export function getAutoApproveColorClass(val?: string): string {
   const normalized = val?.toLowerCase().trim();
-  if (!normalized || normalized === "all") {
-    return "text-emerald-700 dark:text-emerald-300";
-  }
   if (
     normalized === "true" ||
     normalized === "system approved" ||
@@ -344,9 +329,6 @@ export function getAutoApproveColorClass(val?: string): string {
 
 export function getVerificationColorClass(val?: string): string {
   const normalized = val?.toLowerCase().trim();
-  if (!normalized || normalized === "all") {
-    return "text-cyan-700 dark:text-cyan-300";
-  }
   if (
     normalized === "true" ||
     normalized === "system approved" ||
@@ -369,9 +351,9 @@ export function getVerificationColorClass(val?: string): string {
 export function getUnitIcon(unitVal?: string): LucideIcon {
   switch (unitVal?.toLowerCase().trim()) {
     case Unit.KG:
-      return Weight;
+      return Anvil;
     case Unit.Q:
-      return Scale;
+      return Boxes;
     case Unit.GAL:
       return Droplet;
     default:
@@ -381,9 +363,6 @@ export function getUnitIcon(unitVal?: string): LucideIcon {
 
 export function getUnitColorClass(unitVal?: string): string {
   switch (unitVal?.toLowerCase().trim()) {
-    case undefined:
-    case "all":
-      return "text-blue-700 dark:text-blue-300";
     case Unit.KG:
       return "text-blue-700 dark:text-blue-300";
     case Unit.Q:

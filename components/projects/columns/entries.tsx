@@ -23,7 +23,12 @@ import {
   Activity,
 } from "lucide-react";
 import { EntryStatus, EntrySource } from "@/lib/constants/enums";
-import { getStatusIcon } from "@/lib/fields";
+import {
+  getStatusIcon,
+  getSourceColorClass,
+  getStatusColorClass,
+  getVerificationColorClass,
+} from "@/lib/fields";
 import { cn } from "@/lib/utils";
 import {
   createBaseColumn,
@@ -39,7 +44,13 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       const source = String(val || EntrySource.DEVICE).toLowerCase();
       const Icon = source === EntrySource.DEVICE ? Cpu : User;
       return (
-        <span className={cn(badgeBaseClass, "capitalize gap-1.5")}>
+        <span
+          className={cn(
+            badgeBaseClass,
+            "capitalize gap-1.5",
+            getSourceColorClass(source),
+          )}
+        >
           <Icon className="h-3 w-3 shrink-0" />
           {source}
         </span>
@@ -65,7 +76,13 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       const status = String(val).toLowerCase();
       const Icon = getStatusIcon(status);
       return (
-        <span className={cn(badgeBaseClass, "capitalize gap-1.5")}>
+        <span
+          className={cn(
+            badgeBaseClass,
+            "capitalize gap-1.5",
+            getStatusColorClass(status),
+          )}
+        >
           <Icon className="h-3 w-3 shrink-0" />
           {status}
         </span>
@@ -79,7 +96,13 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
 
       if (isAuto) {
         return (
-          <span className={cn(badgeBaseClass, "gap-1.5")}>
+          <span
+            className={cn(
+              badgeBaseClass,
+              "gap-1.5",
+              getVerificationColorClass("true"),
+            )}
+          >
             <CheckCircle2 className="h-3 w-3 shrink-0" />
             System Approved
           </span>
@@ -89,7 +112,13 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       if (source === EntrySource.DEVICE) {
         if (status === EntryStatus.PENDING) {
           return (
-            <span className={cn(badgeBaseClass, "gap-1.5")}>
+            <span
+              className={cn(
+                badgeBaseClass,
+                "gap-1.5",
+                getStatusColorClass(EntryStatus.PENDING),
+              )}
+            >
               <Clock className="h-3 w-3 shrink-0" />
               Review Required
             </span>
@@ -97,7 +126,13 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         }
         if (status === EntryStatus.APPROVED) {
           return (
-            <span className={cn(badgeBaseClass, "gap-1.5")}>
+            <span
+              className={cn(
+                badgeBaseClass,
+                "gap-1.5",
+                getStatusColorClass(EntryStatus.APPROVED),
+              )}
+            >
               <UserCheck className="h-3 w-3 shrink-0" />
               User Approved
             </span>
@@ -105,7 +140,13 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         }
         if (status === EntryStatus.REJECTED) {
           return (
-            <span className={cn(badgeBaseClass, "gap-1.5")}>
+            <span
+              className={cn(
+                badgeBaseClass,
+                "gap-1.5",
+                getStatusColorClass(EntryStatus.REJECTED),
+              )}
+            >
               <XCircle className="h-3 w-3 shrink-0" />
               Rejected
             </span>
@@ -114,7 +155,13 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       }
 
       return (
-        <span className={cn(badgeBaseClass, "gap-1.5")}>
+        <span
+          className={cn(
+            badgeBaseClass,
+            "gap-1.5",
+            getVerificationColorClass("false"),
+          )}
+        >
           <PenLine className="h-3 w-3 shrink-0" />
           User Entry
         </span>

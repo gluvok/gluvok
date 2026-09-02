@@ -219,7 +219,7 @@ function ActionCell<T extends EntityRecord>({
           <DropdownMenuItem
             id={`actions-download-pdf-${projectSlug}-${itemId}`}
             className="text-xs cursor-pointer gap-2 py-2"
-            onClick={() => downloadPDF(table, projectName, undefined, [row])}
+            onClick={() => downloadPDF(table, projectName, undefined, [row], projectSlug)}
           >
             <FileDown className="h-3.5 w-3.5 text-muted-foreground" /> Download PDF
           </DropdownMenuItem>

@@ -541,8 +541,8 @@ async function main() {
   const weighmentPairScenarios: WeighmentPairScenario[] = [
     // Today - Wheat Inbound (Gross In -> Tare Out)
     {
-      vehicleNumber: "KA-01-EA-1024",
-      detectedVehicle: "KA-01-EA-1024",
+      vehicleNumber: "KA01EA1024",
+      detectedVehicle: "KA01EA1024",
       inWeight: 42500,
       outWeight: 14200,
       customerName: "Ramesh Kumar",
@@ -559,8 +559,8 @@ async function main() {
     },
     // Today - Scrap Copper Inbound (Manual Scale)
     {
-      vehicleNumber: "MH-12-PQ-9080",
-      detectedVehicle: "MH-12-PQ-9080",
+      vehicleNumber: "MH12PQ9080",
+      detectedVehicle: "MH12PQ9080",
       inWeight: 31200,
       outWeight: 12100,
       customerName: "Anita Patel",
@@ -577,8 +577,8 @@ async function main() {
     },
     // Yesterday - Corn Delivery (Automatic Scale)
     {
-      vehicleNumber: "DL-03-CC-4421",
-      detectedVehicle: "DL03CC4421", // OCR slight mismatch corrected
+      vehicleNumber: "DL03CC4421",
+      detectedVehicle: "DL03CC4421",
       inWeight: 38900,
       outWeight: 13400,
       customerName: "Vikram Singh",
@@ -595,8 +595,8 @@ async function main() {
     },
     // 2 Days Ago - Wine Tanker Outbound (Tare In -> Gross Out)
     {
-      vehicleNumber: "HR-26-BR-7711",
-      detectedVehicle: "HR-26-BR-7711",
+      vehicleNumber: "HR26BR7711",
+      detectedVehicle: "HR26BR7711",
       inWeight: 15600,
       outWeight: 44200,
       customerName: "Priya Sharma",
@@ -613,8 +613,8 @@ async function main() {
     },
     // 4 Days Ago (Last 7 Days) - Sugarcane Inbound (Quintals)
     {
-      vehicleNumber: "GJ-06-ZZ-3312",
-      detectedVehicle: "GJ-06-ZZ-3312",
+      vehicleNumber: "GJ06ZZ3312",
+      detectedVehicle: "GJ06ZZ3312",
       inWeight: 46800,
       outWeight: 15300,
       customerName: "Sunil Verma",
@@ -631,8 +631,8 @@ async function main() {
     },
     // 6 Days Ago (Last 7 Days) - Soybeans Inbound
     {
-      vehicleNumber: "RJ-14-GH-6655",
-      detectedVehicle: "RJ-14-GH-6655",
+      vehicleNumber: "RJ14GH6655",
+      detectedVehicle: "RJ14GH6655",
       inWeight: 39500,
       outWeight: 14100,
       customerName: "Deepak Choudhary",
@@ -649,8 +649,8 @@ async function main() {
     },
     // 12 Days Ago (This Month) - Wheat Inbound
     {
-      vehicleNumber: "UP-32-AB-5544",
-      detectedVehicle: "UP-32-AB-5544",
+      vehicleNumber: "UP32AB5544",
+      detectedVehicle: "UP32AB5544",
       inWeight: 45100,
       outWeight: 14800,
       customerName: "Meena Devi",
@@ -667,8 +667,8 @@ async function main() {
     },
     // 20 Days Ago (This Month) - Scrap Copper
     {
-      vehicleNumber: "PB-10-XY-8899",
-      detectedVehicle: "PB-10-XY-8899",
+      vehicleNumber: "PB10XY8899",
+      detectedVehicle: "PB10XY8899",
       inWeight: 28400,
       outWeight: 11900,
       customerName: "Kavita Rao",
@@ -685,8 +685,8 @@ async function main() {
     },
     // 35 Days Ago (Past Month) - Corn Inbound
     {
-      vehicleNumber: "WB-02-MM-1122",
-      detectedVehicle: "WB-02-MM-1122",
+      vehicleNumber: "WB02MM1122",
+      detectedVehicle: "WB02MM1122",
       inWeight: 41200,
       outWeight: 13900,
       customerName: "Ramesh Kumar",
@@ -789,8 +789,8 @@ async function main() {
   const standaloneEntries = [
     // 1. Pending Manual Entry (Needs operator approval) - Today
     {
-      vehicle_number: "TN-09-KK-4455",
-      detected_vehicle_number: "TN-09-KK-4455",
+      vehicle_number: "TN09KK4455",
+      detected_vehicle_number: "TN09KK4455",
       weight: 38200,
       source: EntrySource.MANUAL,
       status: EntryStatus.PENDING,
@@ -804,7 +804,7 @@ async function main() {
     },
     // 2. Pending Automatic Entry (Manual review queue due to OCR mismatch) - Today
     {
-      vehicle_number: "TS-07-EE-9988",
+      vehicle_number: "TS07EE9988",
       detected_vehicle_number: "TS07EE9988",
       weight: 44100,
       source: EntrySource.DEVICE,
@@ -819,8 +819,8 @@ async function main() {
     },
     // 3. Rejected Entry (Excess weight / Security flag) - Yesterday
     {
-      vehicle_number: "AP-28-FF-6677",
-      detected_vehicle_number: "AP-28-FF-6677",
+      vehicle_number: "AP28FF6677",
+      detected_vehicle_number: "AP28FF6677",
       weight: 62500, // Gross overload
       source: EntrySource.DEVICE,
       status: EntryStatus.REJECTED,
@@ -834,8 +834,8 @@ async function main() {
     },
     // 4. Rejected Manual Entry (Plate mismatch / bad manifest) - 3 Days Ago
     {
-      vehicle_number: "KL-07-CD-3344",
-      detected_vehicle_number: "KL-07-CD-3300",
+      vehicle_number: "KL07CD3344",
+      detected_vehicle_number: "KL07CD3300",
       weight: 29800,
       source: EntrySource.MANUAL,
       status: EntryStatus.REJECTED,
@@ -849,8 +849,8 @@ async function main() {
     },
     // 5. Active On-Site Entry (Approved Gross Inbound, awaiting exit Tare weighment) - Today
     {
-      vehicle_number: "MH-04-AB-1212",
-      detected_vehicle_number: "MH-04-AB-1212",
+      vehicle_number: "MH04AB1212",
+      detected_vehicle_number: "MH04AB1212",
       weight: 41900,
       source: EntrySource.DEVICE,
       status: EntryStatus.APPROVED,
@@ -864,8 +864,8 @@ async function main() {
     },
     // 6. Active On-Site Entry (Approved Tare Inbound for loading, awaiting gross weighment) - Today
     {
-      vehicle_number: "DL-01-XY-7890",
-      detected_vehicle_number: "DL-01-XY-7890",
+      vehicle_number: "DL01XY7890",
+      detected_vehicle_number: "DL01XY7890",
       weight: 13800,
       source: EntrySource.MANUAL,
       status: EntryStatus.APPROVED,
@@ -879,8 +879,8 @@ async function main() {
     },
     // 7. Secondary Factory Entry (Apex Inbound) - Yesterday
     {
-      vehicle_number: "GJ-01-AB-9900",
-      detected_vehicle_number: "GJ-01-AB-9900",
+      vehicle_number: "GJ01AB9900",
+      detected_vehicle_number: "GJ01AB9900",
       weight: 37600,
       source: EntrySource.DEVICE,
       status: EntryStatus.APPROVED,

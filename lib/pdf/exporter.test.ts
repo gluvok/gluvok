@@ -198,4 +198,81 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
 
     appendChildSpy.mockRestore();
   });
+
+  it("includes all mandatory weighments fields (id, vehicle_number, unit, gross, tare, net, images, created_at) even when not visible in table", () => {
+    const allColumns = [
+      { id: "id", columnDef: { meta: { label: "ID" } } },
+      { id: "vehicle_number", columnDef: { meta: { label: "Vehicle Number" } } },
+      { id: "unit", columnDef: { meta: { label: "Unit" } } },
+      { id: "gross_weight", columnDef: { meta: { label: "Gross Weight" } } },
+      { id: "tare_weight", columnDef: { meta: { label: "Tare Weight" } } },
+      { id: "net_weight", columnDef: { meta: { label: "Net Weight" } } },
+      { id: "images", columnDef: { meta: { label: "Images" } } },
+      { id: "created_at", columnDef: { meta: { label: "Created At" } } },
+      { id: "center_name", columnDef: { meta: { label: "Center Name" } } },
+    ];
+
+    // Simulate user having hidden gross_weight and tare_weight in View Options:
+    const visibleColumns = allColumns.filter(
+      (c) => c.id !== "gross_weight" && c.id !== "tare_weight",
+    );
+
+    const rows = [
+      {
+        id: 101,
+        vehicle_number: "PB04AB1111",
+        unit: "kg",
+        gross_weight: 15000,
+        tare_weight: 7000,
+        net_weight: 8000,
+        images: ["https://example.com/img1.jpg"],
+        created_at: "2026-08-27T20:54:16.000Z",
+        center_name: "North Center",
+      },
+    ];
+
+    const mockRows = rows.map((r) => ({
+      id: String(r.id),
+      original: r,
+      getValue: (colId: string) => r[colId as keyof typeof r],
+    }));
+
+    const table = {
+      getFilteredSelectedRowModel: () => ({ rows: mockRows }),
+      getVisibleLeafColumns: () => visibleColumns,
+      getAllLeafColumns: () => allColumns,
+      options: { meta: { projectSlug: "weighments" } },
+    } as unknown as Table<ProjectTableFeatures, Record<string, unknown>>;
+
+    const appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => null!);
+
+    downloadPDF(table, "Weighments", "Apex Industries");
+
+    expect(appendChildSpy).toHaveBeenCalled();
+    const iframe = appendChildSpy.mock.calls[0][0] as HTMLIFrameElement;
+    const html = iframe.srcdoc;
+
+    // Verify all 8 mandatory columns are in the headers
+    expect(html).toContain("ID</th>");
+    expect(html).toContain("Vehicle Number</th>");
+    expect(html).toContain("Unit</th>");
+    expect(html).toContain("Gross Weight</th>");
+    expect(html).toContain("Tare Weight</th>");
+    expect(html).toContain("Net Weight</th>");
+    expect(html).toContain("Images</th>");
+    expect(html).toContain("Created At</th>");
+
+    // Also includes additional visible column
+    expect(html).toContain("Center Name</th>");
+
+    // Verify row values
+    expect(html).toContain("PB04AB1111");
+    expect(html).toContain("15000");
+    expect(html).toContain("7000");
+    expect(html).toContain("8000");
+    expect(html).toContain("North Center");
+
+    appendChildSpy.mockRestore();
+  });
 });
+

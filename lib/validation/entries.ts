@@ -29,9 +29,12 @@ export const addEntrySchema = z.object({
   images: z.array(z.string()).optional(),
 });
 
+export const deviceVehicleNumberSchema = (fieldName = "Vehicle Number") =>
+  z.union([z.literal("NO_PLATE_DETECTED"), indianPlateSchema(fieldName)]);
+
 export const addDeviceEntrySchema = z.object({
   detected_vehicle_number: z.string().min(1, ValidationMessage.REQUIRED("Detected vehicle number")),
-  vehicle_number: indianPlateSchema("Vehicle Number"),
+  vehicle_number: deviceVehicleNumberSchema("Vehicle Number").optional(),
   weight: positiveWeightSchema("Weight"),
   center_id: integerIdSchema("Center"),
   status: z

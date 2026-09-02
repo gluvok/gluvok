@@ -324,6 +324,57 @@ describe("Entries route handlers (/api/entries)", () => {
       );
     });
 
+    it("creates DEVICE entry when caller has Role.HARDWARE with NO_PLATE_DETECTED", async () => {
+      const hardwareUser = {
+        sub: "5",
+        username: "hardware_scale_1",
+        role: Role.HARDWARE,
+        factory_id: 1,
+      };
+
+      const createdEntry = {
+        id: 21,
+        detected_vehicle_number: "NO_PLATE_DETECTED",
+        vehicle_number: "NO_PLATE_DETECTED",
+        weight: 15000,
+        center_id: 1,
+        user_id: 5,
+        factory_id: 1,
+        source: EntrySource.DEVICE,
+        status: EntryStatus.PENDING,
+      };
+      mockCreateEntry.mockResolvedValue(createdEntry);
+
+      const req = new NextRequest("http://localhost/api/entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          detected_vehicle_number: "NO_PLATE_DETECTED",
+          weight: 15000,
+          center_id: 1,
+        }),
+      });
+
+      const handler = POST as unknown as RawHandler;
+      const response = await handler(req, hardwareUser, {}, context);
+
+      expect(response.status).toBe(201);
+      const json = await response.json();
+      expect(json.data.source).toBe(EntrySource.DEVICE);
+      expect(mockCreateEntry).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          factoryId: 1,
+          userId: 5,
+          source: EntrySource.DEVICE,
+          detectedVehicleNumber: "NO_PLATE_DETECTED",
+          vehicleNumber: "NO_PLATE_DETECTED",
+          weight: 15000,
+          centerId: 1,
+        }),
+      );
+    });
+
     it("handles createEntry service error", async () => {
       mockCreateEntry.mockRejectedValue(new Error(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND));
 

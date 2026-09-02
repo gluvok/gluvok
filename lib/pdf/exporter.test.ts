@@ -91,12 +91,42 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
     expect(generatedHtml).toContain('src="https://example.com/scan2.jpg"');
     expect(generatedHtml).toContain("pdf-scan-card");
 
-    // Typography with Plus Jakarta Sans and JetBrains Mono
-    expect(generatedHtml).toContain("Plus+Jakarta+Sans");
-    expect(generatedHtml).toContain("JetBrains+Mono");
+    // Typography with Inter font
+    expect(generatedHtml).toContain("family=Inter");
+    expect(generatedHtml).toContain("font-family: 'Inter'");
 
-    // Page margins for multi-page print top margin
-    expect(generatedHtml).toContain("margin: 14mm 16mm 16mm 16mm");
+    // Page settings: landscape and print-color-adjust
+    expect(generatedHtml).toContain("size: landscape");
+    expect(generatedHtml).toContain("print-color-adjust: exact");
+
+    appendChildSpy.mockRestore();
+  });
+
+  it("handles tables without an images column without errors", () => {
+    const tableWithoutImages = {
+      getFilteredSelectedRowModel: () => ({
+        rows: [
+          {
+            id: "1",
+            original: { id: 1, name: "Acme Sugars" },
+            getValue: (colId: string) => (colId === "name" ? "Acme Sugars" : 1),
+          },
+        ],
+      }),
+      getVisibleLeafColumns: () => [
+        { id: "id", columnDef: { meta: { label: "ID" } } },
+        { id: "name", columnDef: { meta: { label: "Name" } } },
+      ],
+      getColumn: (id: string) => (id === "images" ? undefined : {}),
+    } as unknown as Table<ProjectTableFeatures, Record<string, unknown>>;
+
+    const appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => null!);
+
+    expect(() => downloadPDF(tableWithoutImages, "Settings", "Acme")).not.toThrow();
+
+    expect(appendChildSpy).toHaveBeenCalled();
+    const iframe = appendChildSpy.mock.calls[0][0] as HTMLIFrameElement;
+    expect(iframe.srcdoc).toContain("Acme Sugars");
 
     appendChildSpy.mockRestore();
   });

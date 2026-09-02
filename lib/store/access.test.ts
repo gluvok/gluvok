@@ -189,7 +189,7 @@ describe("RBAC Access Controls", () => {
       ).toBe(false);
     });
 
-    it("allows only admins to edit factory name in settings", () => {
+    it("allows only admins to edit factory name and check_center_on_merge in settings", () => {
       expect(
         hasPermission(Role.ADMIN, ProjectSlug.SETTINGS, PermissionKey.EDIT_FIELD, "name"),
       ).toBe(true);
@@ -200,7 +200,7 @@ describe("RBAC Access Controls", () => {
         hasPermission(Role.OPERATOR, ProjectSlug.SETTINGS, PermissionKey.EDIT_FIELD, "name"),
       ).toBe(false);
 
-      // Both Admin and Manager can toggle check_center_on_merge
+      // Only Admin can toggle check_center_on_merge
       expect(
         hasPermission(
           Role.ADMIN,
@@ -216,7 +216,7 @@ describe("RBAC Access Controls", () => {
           PermissionKey.EDIT_FIELD,
           "check_center_on_merge",
         ),
-      ).toBe(true);
+      ).toBe(false);
     });
   });
 

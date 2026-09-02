@@ -86,7 +86,7 @@ describe("PATCH /api/settings/:id", () => {
     expect(response.status).toBe(400);
   });
 
-  it("rejects Manager attempting to modify factory name with 403 Forbidden", async () => {
+  it("rejects Manager attempting to modify factory settings with 403 Forbidden", async () => {
     const patchReq = new Request("http://localhost/api/settings/1", {
       method: "PATCH",
       body: JSON.stringify({ name: "Manager Renamed Factory" }),
@@ -100,7 +100,24 @@ describe("PATCH /api/settings/:id", () => {
     );
     expect(response.status).toBe(403);
     const json = await response.json();
-    expect(json.error).toBe("Only admin has permission to modify the name of the factory.");
+    expect(json.error).toBe("Only admin has permission to modify factory settings.");
+  });
+
+  it("rejects Manager attempting to modify check_center_on_merge with 403 Forbidden", async () => {
+    const patchReq = new Request("http://localhost/api/settings/1", {
+      method: "PATCH",
+      body: JSON.stringify({ check_center_on_merge: true }),
+    });
+    const response = await (PATCH as unknown as RawPatchHandler)(
+      patchReq,
+      managerUser,
+      {},
+      context,
+      scope,
+    );
+    expect(response.status).toBe(403);
+    const json = await response.json();
+    expect(json.error).toBe("Only admin has permission to modify factory settings.");
   });
 
   it("allows Admin to modify factory name and check_center_on_merge", async () => {
@@ -133,38 +150,6 @@ describe("PATCH /api/settings/:id", () => {
     expect(response.status).toBe(200);
     const json = await response.json();
     expect(json.data.name).toBe("Acme Sugars");
-    expect(json.data.check_center_on_merge).toBe(true);
-  });
-
-  it("allows Manager to modify check_center_on_merge without name", async () => {
-    const updated = {
-      id: 1,
-      name: "Original Factory",
-      check_center_on_merge: true,
-      updated_at: new Date().toISOString(),
-    };
-    const mockQuery: Record<string, unknown> = {};
-    mockQuery.update = vi.fn(() => mockQuery);
-    mockQuery.eq = vi.fn(() => mockQuery);
-    mockQuery.is = vi.fn(() => mockQuery);
-    mockQuery.select = vi.fn(() => mockQuery);
-    mockQuery.maybeSingle = vi.fn().mockResolvedValue({ data: updated, error: null });
-
-    const mockDb = { from: vi.fn(() => mockQuery) };
-
-    const patchReq = new Request("http://localhost/api/settings/1", {
-      method: "PATCH",
-      body: JSON.stringify({ check_center_on_merge: true }),
-    });
-    const response = await (PATCH as unknown as RawPatchHandler)(
-      patchReq,
-      managerUser,
-      mockDb,
-      context,
-      scope,
-    );
-    expect(response.status).toBe(200);
-    const json = await response.json();
     expect(json.data.check_center_on_merge).toBe(true);
   });
 });

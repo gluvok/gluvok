@@ -2,7 +2,6 @@ import {
   withAuth,
   withEntityScope,
   apiError,
-  forbiddenError,
   hasPermission,
   StatusCodes,
   formatEntityResponse,
@@ -12,7 +11,13 @@ import { editSettingsSchema } from "@/lib/validation";
 
 export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
-    if (!hasPermission(user, ProjectSlug.SETTINGS, PermissionKey.WRITE)) return forbiddenError();
+    // Enforce: only admin has permission to modify factory settings
+    if (user.role !== Role.ADMIN || !hasPermission(user, ProjectSlug.SETTINGS, PermissionKey.WRITE)) {
+      return apiError(
+        "Only admin has permission to modify factory settings.",
+        StatusCodes.FORBIDDEN,
+      );
+    }
 
     // Verify target entity matches caller's scoped factory
     if (entityId !== factoryId) {
@@ -26,14 +31,6 @@ export const PATCH = withAuth(
     }
 
     const { name, check_center_on_merge } = parsed.data;
-
-    // Enforce: only admin has permission to modify the name of the factory
-    if (name !== undefined && user.role !== Role.ADMIN) {
-      return apiError(
-        "Only admin has permission to modify the name of the factory.",
-        StatusCodes.FORBIDDEN,
-      );
-    }
 
     const updates: Record<string, unknown> = {
       updated_at: new Date().toISOString(),

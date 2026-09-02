@@ -17,6 +17,8 @@ import {
   useProjectTable,
 } from "@/components/projects";
 import { hasProjectFilters, DateRangeFilter } from "@/components/projects/filters";
+import { ProjectSlug } from "@/lib/constants/enums";
+import { SettingsView } from "@/components/projects/settings/settings-view";
 import { Spinner } from "@/components/kibo-ui/spinner";
 
 interface ProjectClientProps {
@@ -26,6 +28,14 @@ interface ProjectClientProps {
 }
 
 export function ProjectClient({ projectName, projectSlug, desc }: ProjectClientProps) {
+  if (projectSlug === ProjectSlug.SETTINGS) {
+    return <SettingsView projectName={projectName} desc={desc} />;
+  }
+
+  return <ProjectTableClient projectName={projectName} projectSlug={projectSlug} desc={desc} />;
+}
+
+function ProjectTableClient({ projectName, projectSlug, desc }: ProjectClientProps) {
   const primaryIdKey = getPrimaryIdKey(projectSlug);
   const pt = useProjectTable({ projectSlug, primaryIdKey, projectName });
   const {

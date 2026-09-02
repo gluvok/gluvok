@@ -30,11 +30,11 @@ export function renderHeaderSection({
         <img src="${logoUrl}" class="h-9 w-auto object-contain self-start" alt="Gluvok Logo" />
         <span class="text-2xs font-bold tracking-widest uppercase text-slate-400 font-sans">Official System Export</span>
       </div>
-      <div class="meta text-right flex flex-col items-end gap-1.5">
+      <div class="meta text-right flex flex-col items-end gap-1.5 font-sans">
         <div class="text-lg font-extrabold text-slate-900 tracking-tight leading-none">${projectName} Export</div>
         <div class="flex items-center justify-end gap-1.5 flex-wrap">
           <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold bg-slate-900 text-white shadow-2xs">${finalCompanyName}</span>
-          <span class="inline-flex items-center px-2.5 py-0.5 text-2xs font-mono text-slate-600 bg-slate-100 border border-slate-200">${date}</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 text-2xs font-sans text-slate-600 bg-slate-100 border border-slate-200">${date}</span>
           <span class="inline-flex items-center gap-1 px-2.5 py-0.5 text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
             <span class="w-1.5 h-1.5 bg-emerald-500"></span>
             ${recordText}
@@ -51,13 +51,13 @@ export function renderHeaderSection({
 export function renderTableSection(headersHtml: string, rowsHtml: string): string {
   return `
     <div class="border border-slate-200/90 shadow-sm overflow-hidden mb-6 bg-white">
-      <table class="w-full border-collapse text-left text-xs text-slate-700">
+      <table class="w-full border-collapse text-left text-xs text-slate-700 font-sans">
         <thead>
           <tr class="bg-slate-50/90 text-slate-700 uppercase text-2xs font-bold tracking-wider border-b border-slate-200">
             ${headersHtml}
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100 bg-white">
+        <tbody class="divide-y divide-slate-100 bg-white font-sans">
           ${rowsHtml}
         </tbody>
       </table>
@@ -71,7 +71,7 @@ export function renderTableSection(headersHtml: string, rowsHtml: string): strin
 export function renderScansSection(imagesHtml?: string): string {
   if (!imagesHtml) return "";
   return `
-    <div class="pdf-images-section mt-8 border-t-2 border-slate-900/90 pt-5">
+    <div class="pdf-images-section mt-8 border-t-2 border-slate-900/90 pt-5 font-sans">
       <div class="pdf-scans-header mb-4 flex items-center justify-between border-b border-slate-200 pb-2.5">
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-2.5 bg-indigo-600"></span>
@@ -95,7 +95,7 @@ export function renderFooterSection(finalCompanyName: string): string {
       <div class="flex items-center gap-1.5">
         <span>Generated for <strong class="text-slate-700 font-semibold">${finalCompanyName}</strong></span>
       </div>
-      <div class="flex items-center gap-1.5 font-mono text-2xs text-slate-400">
+      <div class="flex items-center gap-1.5 text-2xs text-slate-400 font-sans">
         <span>Powered by <strong class="text-slate-700 font-semibold font-sans">Gluvok</strong> &bull; Lathey Weigh Trix</span>
       </div>
     </footer>
@@ -150,28 +150,34 @@ export function generatePdfHtml(
                   '2xs': ['0.625rem', { lineHeight: 'calc(1 / 0.625)' }],
                 },
                 fontFamily: {
-                  sans: ['"Plus Jakarta Sans"', 'Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
-                  mono: ['"JetBrains Mono"', 'monospace'],
+                  sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+                  mono: ['Inter', 'monospace'],
                 },
               },
             },
           };
         </script>
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
           @page {
-            size: auto;
-            margin: 14mm 16mm 16mm 16mm;
+            size: landscape;
+            margin: 12mm 16mm 14mm 16mm;
+            font-family: 'Inter', sans-serif;
+          }
+          html, body, table, th, td, div, span, p, header, footer {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
           }
           html, body {
             margin: 0;
             padding: 0;
             min-height: 100%;
-            font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             -webkit-font-smoothing: antialiased;
           }
           .text-2xs { font-size: 0.625rem; line-height: calc(1 / 0.625); }
-          .font-mono, [class*="font-mono"] { font-family: 'JetBrains Mono', monospace !important; }
           tr, .pdf-scan-card {
             page-break-inside: avoid;
             break-inside: avoid;
@@ -196,8 +202,8 @@ export function generatePdfHtml(
           }
           @media print {
             @page {
-              size: auto;
-              margin: 14mm 16mm 16mm 16mm;
+              size: landscape;
+              margin: 12mm 16mm 14mm 16mm;
             }
             body {
               padding: 0 !important;

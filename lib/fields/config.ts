@@ -262,6 +262,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       type: FieldType.SWITCH,
       icon: ShieldCheck,
       span: FieldSpan.FULL,
+      editableRoles: [Role.ADMIN],
     },
   ],
 };

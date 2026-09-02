@@ -63,6 +63,25 @@ describe("entries validation", () => {
     expect(result.images).toEqual(["base64image"]);
   });
 
+  it("allows NO_PLATE_DETECTED in device entry schema", () => {
+    const withDetectedOnly = addDeviceEntrySchema.parse({
+      detected_vehicle_number: "NO_PLATE_DETECTED",
+      weight: "18000",
+      center_id: "3",
+    });
+    expect(withDetectedOnly.detected_vehicle_number).toBe("NO_PLATE_DETECTED");
+    expect(withDetectedOnly.vehicle_number).toBeUndefined();
+
+    const withBoth = addDeviceEntrySchema.parse({
+      detected_vehicle_number: "NO_PLATE_DETECTED",
+      vehicle_number: "NO_PLATE_DETECTED",
+      weight: "18000",
+      center_id: "3",
+    });
+    expect(withBoth.detected_vehicle_number).toBe("NO_PLATE_DETECTED");
+    expect(withBoth.vehicle_number).toBe("NO_PLATE_DETECTED");
+  });
+
   it("rejects device entry when detected_vehicle_number is missing", () => {
     expect(() =>
       addDeviceEntrySchema.parse({

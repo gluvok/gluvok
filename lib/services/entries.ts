@@ -90,7 +90,11 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
   let isAutoApproved = false;
 
   if (source === EntrySource.DEVICE) {
-    if (centerRecord.auto_approve) {
+    if (
+      centerRecord.auto_approve &&
+      vehicleNumber !== "NO_PLATE_DETECTED" &&
+      detectedVehicleNumber !== "NO_PLATE_DETECTED"
+    ) {
       isAutoApproved = true;
       finalStatus = EntryStatus.APPROVED;
     }

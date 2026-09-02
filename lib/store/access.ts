@@ -153,12 +153,12 @@ export const RBAC_MATRIX: RbacMatrix = {
     },
     [ProjectSlug.SETTINGS]: {
       read: true,
-      write: true,
+      write: false,
       delete: false,
       create: false,
       show: true,
       filter: false,
-      editableFields: ["check_center_on_merge"],
+      editableFields: [],
     },
   },
   [Role.OPERATOR]: {

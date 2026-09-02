@@ -48,7 +48,7 @@ export const PROJECTS: ProjectMetadata[] = [
     name: "Weighments",
     desc: "Merged double-entry weighment records",
     icon: Scale,
-    color: "text-purple-500",
+    color: "text-emerald-500",
   },
   {
     slug: ProjectSlug.USERS,

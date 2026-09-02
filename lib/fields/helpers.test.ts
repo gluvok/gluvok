@@ -180,6 +180,9 @@ describe("Field Helpers & Icon Mapping", () => {
       expect(getItemColorClass("source", EntrySource.DEVICE)).toBe(
         "text-sky-700 dark:text-sky-300",
       );
+      expect(getItemColorClass("source", EntrySource.MANUAL)).toBe(
+        "text-indigo-700 dark:text-indigo-300",
+      );
       expect(
         getItemColorClass(FieldType.ENTRY_STATUS, EntryStatus.APPROVED),
       ).toBe("text-emerald-700 dark:text-emerald-300");

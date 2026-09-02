@@ -69,7 +69,9 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
     createBaseColumn("weight", "Weight", Weight, ({ row }) => {
       const val = row.getValue("weight") as number;
       return (
-        <div className="font-mono text-xs font-bold text-foreground">{val}</div>
+        <div className="font-mono text-xs font-bold text-sky-600 dark:text-sky-400">
+          {val}
+        </div>
       );
     }),
     createCustomColumn("status", "Status", Activity, (val) => {

@@ -215,7 +215,7 @@ export function getSourceColorClass(sourceVal?: string): string {
     case EntrySource.DEVICE:
       return "text-sky-700 dark:text-sky-300";
     case EntrySource.MANUAL:
-      return "text-violet-700 dark:text-violet-300";
+      return "text-indigo-700 dark:text-indigo-300";
     default:
       return "";
   }

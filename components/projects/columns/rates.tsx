@@ -30,7 +30,7 @@ export function getRatesColumns<T extends RowData>(): ColumnDef<ProjectTableFeat
         currency: "INR",
       }).format(price);
       return (
-        <div className="font-medium text-xs text-foreground font-mono">
+        <div className="font-semibold text-xs text-emerald-600 dark:text-emerald-400 font-mono">
           {formatted}
         </div>
       );

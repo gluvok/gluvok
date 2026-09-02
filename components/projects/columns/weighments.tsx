@@ -75,7 +75,7 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
     createBaseColumn("gross_weight", "Gross Weight", Weight, ({ row }) => {
       const val = row.getValue("gross_weight") as number;
       return (
-        <div className="font-mono text-xs font-semibold text-foreground">
+        <div className="font-mono text-xs font-semibold text-sky-600 dark:text-sky-400">
           {val}
         </div>
       );
@@ -83,7 +83,7 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
     createBaseColumn("tare_weight", "Tare Weight", Truck, ({ row }) => {
       const val = row.getValue("tare_weight") as number;
       return (
-        <div className="font-mono text-xs font-semibold text-foreground">
+        <div className="font-mono text-xs font-semibold text-amber-600 dark:text-amber-400">
           {val}
         </div>
       );
@@ -91,7 +91,9 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
     createBaseColumn("net_weight", "Net Weight", PackageCheck, ({ row }) => {
       const val = row.getValue("net_weight") as number;
       return (
-        <div className="font-mono text-xs font-bold text-foreground">{val}</div>
+        <div className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
+          {val}
+        </div>
       );
     }),
     {

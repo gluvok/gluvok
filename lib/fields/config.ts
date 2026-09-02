@@ -14,7 +14,7 @@ import {
   Ruler,
   Weight,
   IndianRupee,
-  Car,
+  Truck,
   AtSign,
   KeyRound,
   ShieldCheck,
@@ -136,7 +136,7 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       required: true,
       className: "uppercase",
       transformOnChange: (v: string) => v.replace(/-/g, "").toUpperCase(),
-      icon: Car,
+      icon: Truck,
       span: FieldSpan.HALF,
     },
     {

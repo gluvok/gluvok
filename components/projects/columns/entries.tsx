@@ -6,7 +6,7 @@
 import { type ColumnDef, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import {
-  Car,
+  Truck,
   Weight,
   Building,
   User,
@@ -56,12 +56,12 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         </span>
       );
     }),
-    createCustomColumn("vehicle_number", "Vehicle Number", Car, (val) => {
+    createCustomColumn("vehicle_number", "Vehicle Number", Truck, (val) => {
       const vn = String(val || "");
       if (!vn) return <span className="text-muted-foreground/40 text-xs">—</span>;
       return (
         <span className="inline-flex items-center gap-1 font-mono text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
-          <Car className="h-3 w-3 shrink-0" />
+          <Truck className="h-3 w-3 shrink-0" />
           {vn}
         </span>
       );

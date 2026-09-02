@@ -45,6 +45,8 @@ export const COLUMN_ICONS: Record<string, React.ComponentType<{ className?: stri
   gross_weight: Weight,
   tare_weight: Truck,
   net_weight: PackageCheck,
+  vehicle_number: Truck,
+  detected_vehicle_number: Truck,
 };
 
 const COLUMN_LABEL_MAP: Record<string, string> = {

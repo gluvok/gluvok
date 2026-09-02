@@ -371,7 +371,12 @@ describe("Entries [id] route handlers", () => {
           query.update = vi.fn(() => query);
           return query;
         }
-        return {};
+        return {
+          select: vi.fn().mockReturnThis(),
+          or: vi.fn().mockReturnThis(),
+          is: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        };
       }),
     };
 
@@ -542,6 +547,114 @@ describe("Entries [id] route handlers", () => {
     expect(response.status).toBe(400);
     const json = await response.json();
     expect(json.error).toBe(ApiErrorMessage.CANNOT_APPROVE_NO_PLATE);
+  });
+
+  it("disbands linked weighment and re-merges when auto-approved entry plate changes", async () => {
+    const patchRequest = new Request("http://localhost/api/entries/10", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ vehicle_number: "MH04AB1212" }),
+    });
+
+    const weighmentUpdateMock = vi.fn();
+    let entryFetchCount = 0;
+    const mockDb = {
+      from: vi.fn((table: string) => {
+        if (table === "entries") {
+          const query: Record<string, unknown> = {};
+          query.select = vi.fn(() => query);
+          query.eq = vi.fn(() => query);
+          query.is = vi.fn(() => query);
+          query.lt = vi.fn(() => query);
+          query.gt = vi.fn(() => query);
+          query.neq = vi.fn(() => query);
+          query.order = vi.fn(() => query);
+          query.limit = vi.fn(() => query);
+          query.maybeSingle = vi.fn().mockImplementation(async () => {
+            entryFetchCount++;
+            if (entryFetchCount === 1) {
+              return {
+                data: {
+                  id: 10,
+                  status: EntryStatus.APPROVED,
+                  source: EntrySource.DEVICE,
+                  auto_approved: true,
+                  detected_vehicle_number: "MH12AB1234",
+                  vehicle_number: "MH12AB1234",
+                  customer_id: null,
+                  center_id: 1,
+                  created_at: "2026-08-31T10:00:00Z",
+                },
+                error: null,
+              };
+            }
+            if (entryFetchCount === 2) {
+              return { data: null, error: null };
+            }
+            if (entryFetchCount === 3) {
+              return { data: { id: 20, vehicle_number: "MH12AB1234" }, error: null };
+            }
+            return { data: null, error: null };
+          });
+          query.single = vi.fn().mockResolvedValue({
+            data: {
+              id: 10,
+              status: EntryStatus.APPROVED,
+              source: EntrySource.DEVICE,
+              auto_approved: true,
+              detected_vehicle_number: "MH12AB1234",
+              vehicle_number: "MH04AB1212",
+              customer_id: null,
+              center_id: 1,
+              created_at: "2026-08-31T10:00:00Z",
+            },
+            error: null,
+          });
+          query.update = vi.fn(() => query);
+          return query;
+        }
+        if (table === "weighments") {
+          const query: Record<string, unknown> = {};
+          query.select = vi.fn(() => query);
+          query.or = vi.fn(() => query);
+          query.eq = vi.fn(() => query);
+          query.is = vi.fn(() => query);
+          query.maybeSingle = vi.fn().mockResolvedValue({
+            data: {
+              id: 99,
+              in_entry_id: 10,
+              out_entry_id: 20,
+            },
+            error: null,
+          });
+          query.update = vi.fn((payload) => {
+            weighmentUpdateMock(payload);
+            return query;
+          });
+          return query;
+        }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          or: vi.fn().mockReturnThis(),
+          is: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        };
+      }),
+    };
+
+    const handler = PATCH as unknown as RawHandler;
+    const response = await handler(patchRequest, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.data.vehicle_number).toBe("MH04AB1212");
+    expect(json.data.edited).toBe(true);
+    expect(weighmentUpdateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deleted_at: expect.any(String),
+      }),
+    );
   });
 
   it("rejects DELETE when user lacks DELETE permission", async () => {

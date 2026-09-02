@@ -316,6 +316,7 @@ describe("Weighments Service", () => {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
               lt: vi.fn().mockReturnThis(),
+              gt: vi.fn().mockReturnThis(),
               neq: vi.fn().mockReturnThis(),
               is: vi.fn().mockReturnThis(),
               order: vi.fn().mockReturnThis(),
@@ -335,6 +336,103 @@ describe("Weighments Service", () => {
 
       const res = await tryMergeEntries(mockClient, 1, 2);
       expect(res).toBeNull();
+    });
+
+    it("should merge with a later unmerged entry (forward merge) when no earlier entry exists", async () => {
+      const e1Data = {
+        id: 1,
+        vehicle_number: "MH12AB1234",
+        status: EntryStatus.APPROVED,
+        source: EntrySource.DEVICE,
+        created_at: "2026-08-09T10:00:00Z",
+        center_id: 10,
+      };
+      const e2Data = {
+        id: 2,
+        vehicle_number: "MH12AB1234",
+        status: EntryStatus.APPROVED,
+        source: EntrySource.DEVICE,
+        created_at: "2026-08-09T12:00:00Z",
+        center_id: 10,
+      };
+
+      let entriesCallCount = 0;
+      mockClient.from.mockImplementation((table: string) => {
+        if (table === "factories") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                is: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { check_center_on_merge: false },
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === "entries") {
+          entriesCallCount++;
+          if (entriesCallCount === 1) {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              is: vi.fn().mockReturnThis(),
+              maybeSingle: vi.fn().mockResolvedValue({ data: e1Data, error: null }),
+            };
+          } else if (entriesCallCount === 2) {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              lt: vi.fn().mockReturnThis(),
+              neq: vi.fn().mockReturnThis(),
+              is: vi.fn().mockReturnThis(),
+              order: vi.fn().mockReturnThis(),
+              limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+            };
+          } else {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              gt: vi.fn().mockReturnThis(),
+              neq: vi.fn().mockReturnThis(),
+              is: vi.fn().mockReturnThis(),
+              order: vi.fn().mockReturnThis(),
+              limit: vi.fn().mockResolvedValue({ data: [e2Data], error: null }),
+            };
+          }
+        }
+        if (table === "weighments") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            or: vi.fn().mockReturnThis(),
+            is: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: {
+                    id: 101,
+                    in_entry_id: 1,
+                    out_entry_id: 2,
+                    unit: Unit.KG,
+                  },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+      });
+
+      const res = await tryMergeEntries(mockClient, 1, 1);
+      expect(res).toEqual({
+        id: 101,
+        in_entry_id: 1,
+        out_entry_id: 2,
+        unit: Unit.KG,
+      });
     });
   });
 

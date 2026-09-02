@@ -108,42 +108,95 @@ export async function tryMergeEntries(
     e1Query.order("created_at", { ascending: false }).limit(1),
   ]);
 
-  if (w2Check.data || e1Res.error || !e1Res.data || e1Res.data.length === 0) {
+  if (w2Check.data) {
     return null;
   }
 
-  const e1 = e1Res.data[0];
+  // 4. Try backward merge: look for an earlier unmerged entry (E1 In, E2 Out)
+  if (!e1Res.error && e1Res.data && e1Res.data.length > 0) {
+    const e1 = e1Res.data[0];
 
-  // 4. Check if E1 is already linked in active weighments
-  const { data: existingW1 } = await client
-    .from("weighments")
-    .select("id")
-    .or(`in_entry_id.eq.${e1.id},out_entry_id.eq.${e1.id}`)
-    .is("deleted_at", null)
-    .maybeSingle();
+    const { data: existingW1 } = await client
+      .from("weighments")
+      .select("id")
+      .or(`in_entry_id.eq.${e1.id},out_entry_id.eq.${e1.id}`)
+      .is("deleted_at", null)
+      .maybeSingle();
 
-  if (existingW1) {
-    // E1 is already paired with another weighment, cannot pair with E2
-    return null;
+    if (!existingW1) {
+      const { data: newWeighment, error: insertErr } = await client
+        .from("weighments")
+        .insert({
+          in_entry_id: e1.id,
+          out_entry_id: e2.id,
+          unit: Unit.KG,
+        })
+        .select("*")
+        .single();
+
+      if (insertErr) {
+        console.error("Failed to create weighment record:", insertErr);
+        return null;
+      }
+
+      return newWeighment;
+    }
   }
 
-  // 5. Create new weighment record linking E1 (In) and E2 (Out)
-  const { data: newWeighment, error: insertErr } = await client
-    .from("weighments")
-    .insert({
-      in_entry_id: e1.id,
-      out_entry_id: e2.id,
-      unit: Unit.KG,
-    })
-    .select("*")
-    .single();
+  // 5. Try forward merge: look for a later unmerged entry (E2 In, E_next Out)
+  let eNextQuery = client
+    .from("entries")
+    .select("id, vehicle_number, weight, created_at, source, center_id")
+    .eq("factory_id", factoryId)
+    .eq("vehicle_number", e2.vehicle_number)
+    .eq("status", EntryStatus.APPROVED)
+    .gt("created_at", e2.created_at)
+    .neq("id", entryId)
+    .is("deleted_at", null);
 
-  if (insertErr) {
-    console.error("Failed to create weighment record:", insertErr);
-    return null;
+  if (e2.source) {
+    eNextQuery = eNextQuery.eq("source", e2.source);
   }
 
-  return newWeighment;
+  if (factory?.check_center_on_merge) {
+    eNextQuery = eNextQuery.eq("center_id", e2.center_id);
+  }
+
+  const { data: eNextCandidates, error: eNextErr } = await eNextQuery
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  if (!eNextErr && eNextCandidates && eNextCandidates.length > 0) {
+    const eNext = eNextCandidates[0];
+
+    const { data: existingWNext } = await client
+      .from("weighments")
+      .select("id")
+      .or(`in_entry_id.eq.${eNext.id},out_entry_id.eq.${eNext.id}`)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (!existingWNext) {
+      const { data: newWeighment, error: insertErr } = await client
+        .from("weighments")
+        .insert({
+          in_entry_id: e2.id,
+          out_entry_id: eNext.id,
+          unit: Unit.KG,
+        })
+        .select("*")
+        .single();
+
+      if (insertErr) {
+        console.error("Failed to create forward weighment record:", insertErr);
+        return null;
+      }
+
+      return newWeighment;
+    }
+  }
+
+  return null;
 }
 
 export function formatWeighmentRecord(row: Record<string, unknown>): Record<string, unknown> {

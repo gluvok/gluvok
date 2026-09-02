@@ -221,6 +221,49 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   updates["updated_at"] = new Date().toISOString();
 
+  const isChangingVehicle =
+    updates["vehicle_number"] !== undefined &&
+    updates["vehicle_number"] !== existing.vehicle_number;
+
+  let unlinkedPartnerId: number | null = null;
+
+  if (isChangingVehicle) {
+    const { data: linkedWeighment } = await client
+      .from("weighments")
+      .select("id, in_entry_id, out_entry_id")
+      .or(`in_entry_id.eq.${entryId},out_entry_id.eq.${entryId}`)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (linkedWeighment) {
+      const partnerEntryId =
+        linkedWeighment.in_entry_id === entryId
+          ? linkedWeighment.out_entry_id
+          : linkedWeighment.in_entry_id;
+
+      const { data: partnerEntry } = await client
+        .from("entries")
+        .select("id, vehicle_number")
+        .eq("id", partnerEntryId)
+        .maybeSingle();
+
+      // If the partner entry has a different vehicle number from the new plate, this is a false merge
+      if (partnerEntry && updates["vehicle_number"] !== partnerEntry.vehicle_number) {
+        const nowStr = new Date().toISOString();
+        await client
+          .from("weighments")
+          .update({
+            deleted_at: nowStr,
+            updated_at: nowStr,
+          })
+          .eq("id", linkedWeighment.id)
+          .is("deleted_at", null);
+
+        unlinkedPartnerId = partnerEntryId;
+      }
+    }
+  }
+
   // 4. Perform update
   const { data: updatedEntry, error: updateErr } = await client
     .from("entries")
@@ -239,6 +282,9 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   // 5. Trigger entry merging if status is approved
   if (updatedEntry.status === EntryStatus.APPROVED) {
     await tryMergeEntries(client, user.factory_id, entryId);
+  }
+  if (unlinkedPartnerId) {
+    await tryMergeEntries(client, user.factory_id, unlinkedPartnerId);
   }
 
   const isApprovedUpdated =

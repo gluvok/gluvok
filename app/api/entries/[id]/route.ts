@@ -315,9 +315,9 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     updatedEntry.status === EntryStatus.APPROVED || updatedEntry.auto_approved === true;
   const isEditedUpdated = Boolean(
     isApprovedUpdated &&
-      updatedEntry.detected_vehicle_number &&
-      updatedEntry.vehicle_number &&
-      updatedEntry.detected_vehicle_number !== updatedEntry.vehicle_number,
+    updatedEntry.detected_vehicle_number &&
+    updatedEntry.vehicle_number &&
+    updatedEntry.detected_vehicle_number !== updatedEntry.vehicle_number,
   );
 
   return NextResponse.json({ data: { ...updatedEntry, edited: isEditedUpdated } });

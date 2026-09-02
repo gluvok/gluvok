@@ -121,10 +121,7 @@ function ActionCell<T extends EntityRecord>({
       typeVal !== undefined &&
       typeVal !== "" &&
       typeVal !== WeighmentType.UNASSIGNED;
-    const isRateFixed =
-      rateIdVal !== null &&
-      rateIdVal !== undefined &&
-      rateIdVal !== "";
+    const isRateFixed = rateIdVal !== null && rateIdVal !== undefined && rateIdVal !== "";
     if (isTypeFixed && isRateFixed) {
       hasRowWrite = false;
     }
@@ -135,9 +132,7 @@ function ActionCell<T extends EntityRecord>({
     const isAutoApproved = Boolean(getField(item, "auto_approved"));
     const detectedVehicle = getField(item, "detected_vehicle_number");
     const vehicleNumber = getField(item, "vehicle_number");
-    const isEdited = Boolean(
-      detectedVehicle && vehicleNumber && detectedVehicle !== vehicleNumber,
-    );
+    const isEdited = Boolean(detectedVehicle && vehicleNumber && detectedVehicle !== vehicleNumber);
     const customerId = getField(item, "customer_id");
     const isApproved = entryStatus === EntryStatus.APPROVED || isAutoApproved;
     const hasCustomer = customerId !== null && customerId !== undefined && customerId !== "";

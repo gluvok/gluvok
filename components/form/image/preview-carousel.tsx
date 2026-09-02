@@ -49,9 +49,9 @@ export function ImagePreviewCarousel({
           {images.map((src, index) => {
             const imageSrc =
               src.startsWith("data:") ||
-              src.startsWith("blob:") ||
-              src.startsWith("/") ||
-              src.startsWith("http")
+                src.startsWith("blob:") ||
+                src.startsWith("/") ||
+                src.startsWith("http")
                 ? src
                 : `/${src}`;
             const displayName = getDisplayName(src, fileNames?.[index], index);
@@ -72,7 +72,7 @@ export function ImagePreviewCarousel({
                       unoptimized
                     />
                     <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                      <span className="text-[10px] font-mono bg-background/80 text-foreground px-1.5 py-0.5 rounded shadow-xs border">
+                      <span className="text-2xs font-mono bg-background/80 text-foreground px-1.5 py-0.5 rounded shadow-xs border">
                         {index + 1} / {images.length}
                       </span>
                       {!disabled && (
@@ -92,7 +92,7 @@ export function ImagePreviewCarousel({
                   {/* Filename label */}
                   <div
                     title={displayName}
-                    className="mt-1.5 flex justify-center text-[10px] font-mono text-muted-foreground w-full px-1 overflow-hidden whitespace-nowrap"
+                    className="mt-1.5 flex justify-center text-2xs font-mono text-muted-foreground w-full px-1 overflow-hidden whitespace-nowrap"
                   >
                     <span className="truncate">{splitFileName(displayName)[0]}</span>
                     <span className="shrink-0">{splitFileName(displayName)[1]}</span>

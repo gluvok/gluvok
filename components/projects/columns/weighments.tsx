@@ -52,13 +52,7 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
       const unit = String(val || "");
       const Icon = getUnitIcon(unit);
       return (
-        <span
-          className={cn(
-            badgeBaseClass,
-            "tracking-wide gap-1.5",
-            getUnitColorClass(unit),
-          )}
-        >
+        <span className={cn(badgeBaseClass, "tracking-wide gap-1.5", getUnitColorClass(unit))}>
           <Icon className="h-3 w-3 shrink-0" />
           {unit}
         </span>
@@ -70,13 +64,7 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
       const Icon = getTypeIcon(type);
 
       return (
-        <span
-          className={cn(
-            badgeBaseClass,
-            "capitalize gap-1.5",
-            getTypeColorClass(type),
-          )}
-        >
+        <span className={cn(badgeBaseClass, "capitalize gap-1.5", getTypeColorClass(type))}>
           <Icon className="h-3 w-3 shrink-0" />
           {type}
         </span>
@@ -85,9 +73,7 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
     createBaseColumn("gross_weight", "Gross Weight", Weight, ({ row }) => {
       const val = row.getValue("gross_weight") as number;
       return (
-        <div className="font-mono text-xs font-semibold text-sky-600 dark:text-sky-400">
-          {val}
-        </div>
+        <div className="font-mono text-xs font-semibold text-sky-600 dark:text-sky-400">{val}</div>
       );
     }),
     createBaseColumn("tare_weight", "Tare Weight", Truck, ({ row }) => {
@@ -110,32 +96,20 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
       ...createBaseColumn("images", "Images", Image, ({ row }) => {
         const images = row.getValue("images") as string[] | undefined;
         const vehicleNumber =
-          ((row.original as Record<string, unknown>)
-            ?.vehicle_number as string) || "Weighment";
-        return (
-          <WeighmentImagesCell images={images} vehicleNumber={vehicleNumber} />
-        );
+          ((row.original as Record<string, unknown>)?.vehicle_number as string) || "Weighment";
+        return <WeighmentImagesCell images={images} vehicleNumber={vehicleNumber} />;
       }),
       enableGlobalFilter: false,
       enableSorting: false,
     },
     createIdColumn("in_entry_id", "In-Entry ID", Tag),
     createCustomColumn("in_entry_created_at", "In-Entry Time", Clock, (val) => (
-      <span className="font-mono text-muted-foreground text-xs">
-        {formatDateTime(val)}
-      </span>
+      <span className="font-mono text-muted-foreground text-xs">{formatDateTime(val)}</span>
     )),
     createIdColumn("out_entry_id", "Out-Entry ID", Tag),
-    createCustomColumn(
-      "out_entry_created_at",
-      "Out-Entry Time",
-      Clock,
-      (val) => (
-        <span className="font-mono text-muted-foreground text-xs">
-          {formatDateTime(val)}
-        </span>
-      ),
-    ),
+    createCustomColumn("out_entry_created_at", "Out-Entry Time", Clock, (val) => (
+      <span className="font-mono text-muted-foreground text-xs">{formatDateTime(val)}</span>
+    )),
     createIdColumn("center_id", "Center ID", Building),
     createTextColumn("center_name", "Center Name", Building),
     createIdColumn("in_user_id", "In-User ID", User),

@@ -49,10 +49,7 @@ export const PATCH = withAuth(
       .limit(1);
 
     if (linkedWeighments && linkedWeighments.length > 0) {
-      return apiError(
-        ApiErrorMessage.RATE_ASSOCIATED_WITH_WEIGHMENT,
-        StatusCodes.FORBIDDEN,
-      );
+      return apiError(ApiErrorMessage.RATE_ASSOCIATED_WITH_WEIGHMENT, StatusCodes.FORBIDDEN);
     }
 
     const body = await req.json();

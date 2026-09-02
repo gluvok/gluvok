@@ -136,4 +136,3 @@ export const optionalPositiveWeightSchema = (fieldName = "Weight") =>
     .number({ message: ValidationMessage.MUST_BE_NUMBER(fieldName) })
     .positive(ValidationMessage.MUST_BE_POSITIVE_NUMBER(fieldName))
     .optional();
-

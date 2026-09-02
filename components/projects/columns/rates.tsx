@@ -39,13 +39,7 @@ export function getRatesColumns<T extends RowData>(): ColumnDef<ProjectTableFeat
       const unit = String(val || "");
       const Icon = getUnitIcon(unit);
       return (
-        <span
-          className={cn(
-            badgeBaseClass,
-            "tracking-wide",
-            getUnitColorClass(unit),
-          )}
-        >
+        <span className={cn(badgeBaseClass, "tracking-wide", getUnitColorClass(unit))}>
           <Icon className="h-3 w-3 mr-1 shrink-0" />
           {unit}
         </span>

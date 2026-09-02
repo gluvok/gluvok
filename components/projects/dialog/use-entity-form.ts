@@ -69,10 +69,7 @@ export function useEntityForm({
         typeVal !== undefined &&
         typeVal !== "" &&
         typeVal !== WeighmentType.UNASSIGNED;
-      const isRateFixed =
-        rateIdVal !== null &&
-        rateIdVal !== undefined &&
-        rateIdVal !== "";
+      const isRateFixed = rateIdVal !== null && rateIdVal !== undefined && rateIdVal !== "";
 
       const canEditType = !isTypeFixed;
       const canEditRate = !isRateFixed;
@@ -229,7 +226,7 @@ export function useEntityForm({
         setLinkedWeighment(null);
         setPendingValues(null);
       }
-    };
+    }
 
     initializeForm();
 
@@ -330,10 +327,10 @@ export function useEntityForm({
   const onSubmit = async (values: FieldValues) => {
     const isChangingVehicle = Boolean(
       isEdit &&
-        item &&
-        projectSlug === ProjectSlug.ENTRIES &&
-        values["vehicle_number"] !== undefined &&
-        values["vehicle_number"] !== getField(item, "vehicle_number"),
+      item &&
+      projectSlug === ProjectSlug.ENTRIES &&
+      values["vehicle_number"] !== undefined &&
+      values["vehicle_number"] !== getField(item, "vehicle_number"),
     );
 
     if (isChangingVehicle && item) {

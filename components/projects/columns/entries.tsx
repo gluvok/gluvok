@@ -30,12 +30,7 @@ import {
   getVerificationColorClass,
 } from "@/lib/fields";
 import { cn } from "@/lib/utils";
-import {
-  createBaseColumn,
-  createCustomColumn,
-  createIdColumn,
-  badgeBaseClass,
-} from "./helpers";
+import { createBaseColumn, createCustomColumn, createIdColumn, badgeBaseClass } from "./helpers";
 import { WeighmentImagesCell } from "./weighments-cell";
 
 export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
@@ -44,13 +39,7 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       const source = String(val || EntrySource.DEVICE).toLowerCase();
       const Icon = source === EntrySource.DEVICE ? Cpu : User;
       return (
-        <span
-          className={cn(
-            badgeBaseClass,
-            "capitalize gap-1.5",
-            getSourceColorClass(source),
-          )}
-        >
+        <span className={cn(badgeBaseClass, "capitalize gap-1.5", getSourceColorClass(source))}>
           <Icon className="h-3 w-3 shrink-0" />
           {source}
         </span>
@@ -69,22 +58,14 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
     createBaseColumn("weight", "Weight", Weight, ({ row }) => {
       const val = row.getValue("weight") as number;
       return (
-        <div className="font-mono text-xs font-bold text-sky-600 dark:text-sky-400">
-          {val}
-        </div>
+        <div className="font-mono text-xs font-bold text-sky-600 dark:text-sky-400">{val}</div>
       );
     }),
     createCustomColumn("status", "Status", Activity, (val) => {
       const status = String(val).toLowerCase();
       const Icon = getStatusIcon(status);
       return (
-        <span
-          className={cn(
-            badgeBaseClass,
-            "capitalize gap-1.5",
-            getStatusColorClass(status),
-          )}
-        >
+        <span className={cn(badgeBaseClass, "capitalize gap-1.5", getStatusColorClass(status))}>
           <Icon className="h-3 w-3 shrink-0" />
           {status}
         </span>
@@ -98,13 +79,7 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
 
       if (isAuto) {
         return (
-          <span
-            className={cn(
-              badgeBaseClass,
-              "gap-1.5",
-              getVerificationColorClass("true"),
-            )}
-          >
+          <span className={cn(badgeBaseClass, "gap-1.5", getVerificationColorClass("true"))}>
             <CheckCircle2 className="h-3 w-3 shrink-0" />
             System Approved
           </span>
@@ -115,11 +90,7 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         if (status === EntryStatus.PENDING) {
           return (
             <span
-              className={cn(
-                badgeBaseClass,
-                "gap-1.5",
-                getStatusColorClass(EntryStatus.PENDING),
-              )}
+              className={cn(badgeBaseClass, "gap-1.5", getStatusColorClass(EntryStatus.PENDING))}
             >
               <Clock className="h-3 w-3 shrink-0" />
               Review Required
@@ -129,11 +100,7 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         if (status === EntryStatus.APPROVED) {
           return (
             <span
-              className={cn(
-                badgeBaseClass,
-                "gap-1.5",
-                getStatusColorClass(EntryStatus.APPROVED),
-              )}
+              className={cn(badgeBaseClass, "gap-1.5", getStatusColorClass(EntryStatus.APPROVED))}
             >
               <UserCheck className="h-3 w-3 shrink-0" />
               User Approved
@@ -143,11 +110,7 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         if (status === EntryStatus.REJECTED) {
           return (
             <span
-              className={cn(
-                badgeBaseClass,
-                "gap-1.5",
-                getStatusColorClass(EntryStatus.REJECTED),
-              )}
+              className={cn(badgeBaseClass, "gap-1.5", getStatusColorClass(EntryStatus.REJECTED))}
             >
               <XCircle className="h-3 w-3 shrink-0" />
               Rejected
@@ -157,13 +120,7 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       }
 
       return (
-        <span
-          className={cn(
-            badgeBaseClass,
-            "gap-1.5",
-            getVerificationColorClass("false"),
-          )}
-        >
+        <span className={cn(badgeBaseClass, "gap-1.5", getVerificationColorClass("false"))}>
           <PenLine className="h-3 w-3 shrink-0" />
           User Entry
         </span>

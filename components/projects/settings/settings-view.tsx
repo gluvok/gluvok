@@ -183,7 +183,7 @@ export function SettingsView({ desc }: SettingsViewProps) {
                   className="h-9 text-sm"
                 />
                 {!isAdmin && (
-                  <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1.5 pt-0.5">
+                  <p className="text-2xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5 pt-0.5">
                     <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
                     Only administrators have permission to modify the factory name.
                   </p>
@@ -220,7 +220,7 @@ export function SettingsView({ desc }: SettingsViewProps) {
                 <div className="flex items-center gap-2.5 shrink-0 mt-0.5">
                   <Badge
                     variant={checkCenterOnMerge ? "default" : "secondary"}
-                    className="text-[10px] px-1.5 py-0 h-4 font-normal"
+                    className="text-2xs px-1.5 py-0 h-4 font-normal"
                   >
                     {checkCenterOnMerge ? "Enabled" : "Disabled"}
                   </Badge>
@@ -244,7 +244,7 @@ export function SettingsView({ desc }: SettingsViewProps) {
               {isDirty && (
                 <Badge
                   variant="outline"
-                  className="text-[11px] border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/20"
+                  className="text-2xs border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/20"
                 >
                   Unsaved changes
                 </Badge>

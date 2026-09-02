@@ -35,7 +35,4 @@ export type ApiRoutes = ApiRoute;
 
 export const AUTH_ROUTES: readonly string[] = [AppRoutes.LOGIN];
 export const PUBLIC_ROUTES: readonly string[] = [AppRoutes.SERVICES];
-export const PUBLIC_API_ROUTES: readonly string[] = [
-  ApiRoutes.AUTH_LOGIN,
-  ApiRoutes.AUTH_REFRESH,
-];
+export const PUBLIC_API_ROUTES: readonly string[] = [ApiRoutes.AUTH_LOGIN, ApiRoutes.AUTH_REFRESH];

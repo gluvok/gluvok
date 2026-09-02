@@ -156,9 +156,7 @@ export function downloadPDF<TData extends RowData>(
     (typeof table.getVisibleLeafColumns === "function" ? table.getVisibleLeafColumns() : []);
 
   const visibleLeafCols =
-    typeof table.getVisibleLeafColumns === "function"
-      ? table.getVisibleLeafColumns()
-      : allLeafCols;
+    typeof table.getVisibleLeafColumns === "function" ? table.getVisibleLeafColumns() : allLeafCols;
 
   interface PdfColDescriptor {
     id: string;

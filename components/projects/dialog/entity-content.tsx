@@ -61,10 +61,7 @@ export function EntityDialogContent({
         typeVal !== undefined &&
         typeVal !== "" &&
         typeVal !== WeighmentType.UNASSIGNED;
-      const isRateFixed =
-        rateIdVal !== null &&
-        rateIdVal !== undefined &&
-        rateIdVal !== "";
+      const isRateFixed = rateIdVal !== null && rateIdVal !== undefined && rateIdVal !== "";
 
       if (field.key === "type") {
         entryFieldDisabled = isTypeFixed;
@@ -124,7 +121,7 @@ export function EntityDialogContent({
               />
             </div>
             {form.formState.errors[field.key] && (
-              <span className="text-destructive text-[11px] font-medium">
+              <span className="text-destructive text-2xs font-medium">
                 {form.formState.errors[field.key]?.message as string}
               </span>
             )}
@@ -142,7 +139,7 @@ export function EntityDialogContent({
               />
             </div>
             {form.formState.errors[field.key] && (
-              <span className="text-destructive text-[11px] font-medium">
+              <span className="text-destructive text-2xs font-medium">
                 {form.formState.errors[field.key]?.message as string}
               </span>
             )}
@@ -189,7 +186,7 @@ export function EntityDialogContent({
               disabled={disabled}
             />
             {form.formState.errors[field.key] && (
-              <span className="text-destructive text-[11px] font-medium">
+              <span className="text-destructive text-2xs font-medium">
                 {form.formState.errors[field.key]?.message as string}
               </span>
             )}

@@ -36,11 +36,17 @@ export const GET = withAuth(async (req, user, client) => {
 
   // 1. Parallel Pre-Queries for Linked Entry Filters & Search
   type DualFilterResult = { type: "dual"; ids: number[] };
-  type SpecificFilterResult = { type: "specific"; targetCol: "in_entry_id" | "out_entry_id"; ids: number[] };
+  type SpecificFilterResult = {
+    type: "specific";
+    targetCol: "in_entry_id" | "out_entry_id";
+    ids: number[];
+  };
   type SearchFilterResult = { type: "search"; searchNum: number; ids: number[] };
   type BaseScopeResult = { type: "base"; ids: number[] };
 
-  const preQueryPromises: Promise<DualFilterResult | SpecificFilterResult | SearchFilterResult | BaseScopeResult>[] = [];
+  const preQueryPromises: Promise<
+    DualFilterResult | SpecificFilterResult | SearchFilterResult | BaseScopeResult
+  >[] = [];
 
   if (user.role === Role.BASE) {
     const userId = parseInt(user.sub, 10);
@@ -160,7 +166,9 @@ export const GET = withAuth(async (req, user, client) => {
           pagination: { page: pagination.page, limit: pagination.limit, total: 0 },
         });
       }
-      query = query.or(`in_entry_id.in.(${res.ids.join(",")}),out_entry_id.in.(${res.ids.join(",")})`);
+      query = query.or(
+        `in_entry_id.in.(${res.ids.join(",")}),out_entry_id.in.(${res.ids.join(",")})`,
+      );
     } else if (res.type === "dual") {
       if (res.ids.length === 0) {
         return NextResponse.json({
@@ -168,7 +176,9 @@ export const GET = withAuth(async (req, user, client) => {
           pagination: { page: pagination.page, limit: pagination.limit, total: 0 },
         });
       }
-      query = query.or(`in_entry_id.in.(${res.ids.join(",")}),out_entry_id.in.(${res.ids.join(",")})`);
+      query = query.or(
+        `in_entry_id.in.(${res.ids.join(",")}),out_entry_id.in.(${res.ids.join(",")})`,
+      );
     } else if (res.type === "specific") {
       if (res.ids.length === 0) {
         return NextResponse.json({
@@ -221,7 +231,10 @@ export const GET = withAuth(async (req, user, client) => {
 
   if (error) {
     console.error("Supabase query error:", error);
-    return apiError(error.message || ApiErrorMessage.DATABASE_QUERY_FAILED, StatusCodes.INTERNAL_SERVER_ERROR);
+    return apiError(
+      error.message || ApiErrorMessage.DATABASE_QUERY_FAILED,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+    );
   }
 
   // 8. Format response rows

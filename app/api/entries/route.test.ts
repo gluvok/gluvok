@@ -140,7 +140,9 @@ describe("Entries route handlers (/api/entries)", () => {
         from: vi.fn(() => mockQuery),
       };
 
-      const req = new NextRequest("http://localhost/api/entries?auto_approved=true&page=1&limit=10");
+      const req = new NextRequest(
+        "http://localhost/api/entries?auto_approved=true&page=1&limit=10",
+      );
       const handler = GET as unknown as RawHandler;
       const response = await handler(req, sampleUser, mockDb, context);
 

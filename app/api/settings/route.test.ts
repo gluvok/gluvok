@@ -49,7 +49,11 @@ describe("GET /api/settings", () => {
     mockHasPermission.mockReturnValue(false);
     const response = await (GET as unknown as RawGetHandler)(request, baseUser, {});
     expect(response.status).toBe(403);
-    expect(mockHasPermission).toHaveBeenCalledWith(baseUser, ProjectSlug.SETTINGS, PermissionKey.READ);
+    expect(mockHasPermission).toHaveBeenCalledWith(
+      baseUser,
+      ProjectSlug.SETTINGS,
+      PermissionKey.READ,
+    );
   });
 
   it("allows Admin and returns factory settings", async () => {

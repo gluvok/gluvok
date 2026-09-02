@@ -165,8 +165,7 @@ export const DELETE = withAuth(async (req, user, client) => {
 
     return NextResponse.json({ success: true, deleted_count: deletedIds.length });
   } catch (err: unknown) {
-    const msg =
-      err instanceof Error ? err.message : ApiErrorMessage.CANNOT_DELETE_SELECTED_ENTRIES;
+    const msg = err instanceof Error ? err.message : ApiErrorMessage.CANNOT_DELETE_SELECTED_ENTRIES;
     return apiError(msg, StatusCodes.BAD_REQUEST);
   }
 });

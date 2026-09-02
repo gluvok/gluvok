@@ -18,7 +18,9 @@ describe("validation registry", () => {
 
     // Weighments, Commodities, and Settings are not manually creatable
     expect((ENTITY_ADD_SCHEMAS as Record<string, unknown>)[ProjectSlug.WEIGHMENTS]).toBeUndefined();
-    expect((ENTITY_ADD_SCHEMAS as Record<string, unknown>)[ProjectSlug.COMMODITIES]).toBeUndefined();
+    expect(
+      (ENTITY_ADD_SCHEMAS as Record<string, unknown>)[ProjectSlug.COMMODITIES],
+    ).toBeUndefined();
     expect((ENTITY_ADD_SCHEMAS as Record<string, unknown>)[ProjectSlug.SETTINGS]).toBeUndefined();
   });
 
@@ -38,6 +40,8 @@ describe("validation registry", () => {
     }
 
     // Commodities are not editable
-    expect((ENTITY_EDIT_SCHEMAS as Record<string, unknown>)[ProjectSlug.COMMODITIES]).toBeUndefined();
+    expect(
+      (ENTITY_EDIT_SCHEMAS as Record<string, unknown>)[ProjectSlug.COMMODITIES],
+    ).toBeUndefined();
   });
 });

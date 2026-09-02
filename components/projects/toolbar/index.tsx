@@ -165,10 +165,10 @@ export function ProjectToolbar<TData extends RowData>({
   const showFilters = isControlled ? controlledShowFilters : internalShowFilters;
   const setShowFilters = isControlled
     ? (val: boolean | ((prev: boolean) => boolean)) => {
-        if (controlledSetShowFilters) {
-          controlledSetShowFilters(val);
-        }
+      if (controlledSetShowFilters) {
+        controlledSetShowFilters(val);
       }
+    }
     : setInternalShowFilters;
 
   const permissions = useAuthStore((state) => getPermissions(state.user?.role, projectSlug));
@@ -207,7 +207,7 @@ export function ProjectToolbar<TData extends RowData>({
               </div>
               <Badge
                 variant="secondary"
-                className="h-7 px-2.5 text-[11px] font-semibold text-muted-foreground bg-muted/50 border border-border/50 shrink-0 select-none hidden sm:inline-flex items-center gap-1"
+                className="h-7 px-2.5 text-2xs font-semibold text-muted-foreground bg-muted/50 border border-border/50 shrink-0 select-none hidden sm:inline-flex items-center gap-1"
                 title="Total matching records"
               >
                 <span>{totalCount.toLocaleString()}</span>
@@ -231,7 +231,7 @@ export function ProjectToolbar<TData extends RowData>({
                       <ListFilter className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="hidden xs:inline">Filters</span>
                       {activeFiltersCount > 0 && (
-                        <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1">
+                        <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-2xs font-bold text-primary-foreground px-1">
                           {activeFiltersCount}
                         </span>
                       )}
@@ -347,7 +347,7 @@ export function ProjectToolbar<TData extends RowData>({
 
               return (
                 <div className="flex items-center gap-1.5 flex-wrap text-xs pt-0.5">
-                  <span className="text-[11px] font-medium text-muted-foreground mr-1">
+                  <span className="text-2xs font-medium text-muted-foreground mr-1">
                     Active:
                   </span>
                   {chips.map((chip) => {
@@ -356,7 +356,7 @@ export function ProjectToolbar<TData extends RowData>({
                       <Badge
                         key={chip.id}
                         variant="secondary"
-                        className="h-6 gap-1.5 pl-2 pr-1 text-[11px] font-medium bg-muted/80 hover:bg-muted text-foreground border border-border/60 transition-colors inline-flex items-center"
+                        className="h-6 gap-1.5 pl-2 pr-1 text-2xs font-medium bg-muted/80 hover:bg-muted text-foreground border border-border/60 transition-colors inline-flex items-center"
                       >
                         <ChipIcon className="h-3 w-3 text-muted-foreground shrink-0" />
                         <span>{chip.label}</span>
@@ -375,7 +375,7 @@ export function ProjectToolbar<TData extends RowData>({
                     variant="ghost"
                     size="sm"
                     onClick={() => table.setColumnFilters([])}
-                    className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-transparent transition-colors underline underline-offset-2"
+                    className="h-6 px-1.5 text-2xs text-muted-foreground hover:text-foreground hover:bg-transparent transition-colors underline underline-offset-2"
                   >
                     Reset
                   </Button>

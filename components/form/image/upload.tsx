@@ -170,7 +170,7 @@ export function ImageUpload({ value = [], onChange, disabled }: ImageUploadProps
               <Upload className="h-4 w-4" />
             </div>
             <p className="font-semibold text-xs text-foreground">Upload weighment images</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
+            <p className="text-2xs text-muted-foreground mt-0.5">
               Drag &amp; drop or click to browse (Max 10MB each)
             </p>
           </DropzoneEmptyState>

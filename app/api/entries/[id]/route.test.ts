@@ -752,7 +752,6 @@ describe("Entries [id] route handlers", () => {
     expect(partnerEntryUpdateMock).toHaveBeenCalled();
   });
 
-
   it("rejects DELETE when user lacks DELETE permission", async () => {
     mockHasPermission.mockReturnValue(false);
     const deleteRequest = new Request("http://localhost/api/entries/10", { method: "DELETE" });

@@ -275,4 +275,3 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
     appendChildSpy.mockRestore();
   });
 });
-

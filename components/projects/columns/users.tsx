@@ -26,17 +26,8 @@ export function getUsersColumns<T extends RowData>(): ColumnDef<ProjectTableFeat
     createCustomColumn("role", "Role", Shield, (val) => {
       const roleStr = String(val || "");
       return (
-        <span
-          className={cn(
-            badgeBaseClass,
-            "capitalize gap-1.5",
-            getRoleColorClass(roleStr),
-          )}
-        >
-          <RenderRoleIcon
-            icon={getRoleIcon(roleStr)}
-            className="size-3 shrink-0"
-          />
+        <span className={cn(badgeBaseClass, "capitalize gap-1.5", getRoleColorClass(roleStr))}>
+          <RenderRoleIcon icon={getRoleIcon(roleStr)} className="size-3 shrink-0" />
           {roleStr}
         </span>
       );

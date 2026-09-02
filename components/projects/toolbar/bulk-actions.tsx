@@ -58,7 +58,7 @@ export function BulkActions<TData extends EntityRecord = EntityRecord>({
   return (
     <div className="flex w-full items-center justify-between gap-3 px-4 py-2 bg-muted/50 rounded-lg border border-border/80 animate-in fade-in slide-in-from-top-1 duration-200">
       <div className="flex items-center gap-2 text-xs font-medium text-foreground">
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary animate-pulse">
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-2xs font-bold text-primary animate-pulse">
           {selectedRows.length}
         </span>
         <span>

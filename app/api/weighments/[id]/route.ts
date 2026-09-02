@@ -76,10 +76,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   const allowedKeys = ["type", "rate_id"];
   const forbiddenKeys = Object.keys(body).filter((key) => !allowedKeys.includes(key));
   if (forbiddenKeys.length > 0) {
-    return apiError(
-      ApiErrorMessage.WEIGHMENT_ONLY_TYPE_RATE_EDITABLE,
-      StatusCodes.BAD_REQUEST,
-    );
+    return apiError(ApiErrorMessage.WEIGHMENT_ONLY_TYPE_RATE_EDITABLE, StatusCodes.BAD_REQUEST);
   }
 
   const updates: Record<string, unknown> = {};
@@ -91,10 +88,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
       existing.type !== null &&
       existing.type !== undefined
     ) {
-      return apiError(
-        ApiErrorMessage.WEIGHMENT_TYPE_ALREADY_SET,
-        StatusCodes.BAD_REQUEST,
-      );
+      return apiError(ApiErrorMessage.WEIGHMENT_TYPE_ALREADY_SET, StatusCodes.BAD_REQUEST);
     }
     updates["type"] = body.type;
   }
@@ -102,10 +96,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   // 3. Validate 'rate_id' update lock if rate_id is NOT null
   if (body.rate_id !== undefined) {
     if (existing.rate_id !== null && existing.rate_id !== undefined) {
-      return apiError(
-        ApiErrorMessage.WEIGHMENT_RATE_ALREADY_SET,
-        StatusCodes.BAD_REQUEST,
-      );
+      return apiError(ApiErrorMessage.WEIGHMENT_RATE_ALREADY_SET, StatusCodes.BAD_REQUEST);
     }
     if (body.rate_id !== null) {
       const { data: validRate } = await client
@@ -117,10 +108,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
         .maybeSingle();
 
       if (!validRate) {
-        return apiError(
-          ApiErrorMessage.WEIGHMENT_RATE_NOT_FOUND,
-          StatusCodes.BAD_REQUEST,
-        );
+        return apiError(ApiErrorMessage.WEIGHMENT_RATE_NOT_FOUND, StatusCodes.BAD_REQUEST);
       }
       updates["unit"] = validRate.unit;
     }

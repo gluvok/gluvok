@@ -15,19 +15,11 @@ export function getCustomersColumns<T extends RowData>(): ColumnDef<ProjectTable
         <span className="font-semibold text-foreground text-xs">{String(val ?? "")}</span>
       </div>
     )),
-    createTextColumn(
-      "father_name",
-      "Father's Name",
-      User,
-      "text-muted-foreground text-xs",
-    ),
+    createTextColumn("father_name", "Father's Name", User, "text-muted-foreground text-xs"),
     createCustomColumn("username", "Username", AtSign, (_val, row) => {
       const rec = row as Record<string, unknown>;
-      const u =
-        (rec.username as string) ||
-        (rec.users as { username?: string } | null)?.username;
-      if (!u)
-        return <span className="text-muted-foreground/40 text-xs">—</span>;
+      const u = (rec.username as string) || (rec.users as { username?: string } | null)?.username;
+      if (!u) return <span className="text-muted-foreground/40 text-xs">—</span>;
       return (
         <span className="font-mono text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
           @{u}

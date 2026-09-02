@@ -5,6 +5,7 @@ This guide contains the exact `curl` commands and request/response specification
 ---
 
 ## Table of Contents
+
 1. [Overview & Requirements](#1-overview--requirements)
 2. [Step 1: Device Authentication (Login)](#2-step-1-device-authentication-login)
 3. [Step 2: Refresh Access Token](#3-step-2-refresh-access-token)
@@ -28,6 +29,7 @@ This guide contains the exact `curl` commands and request/response specification
 Authenticate the device with its username and password to receive an `access_token` and a `refresh_token`.
 
 ### cURL Request
+
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/auth/login" \
   -H "Content-Type: application/json" \
@@ -38,6 +40,7 @@ curl -X POST "https://gluvok.vercel.app/api/auth/login" \
 ```
 
 ### Response (`200 OK`)
+
 ```json
 {
   "success": true,
@@ -64,6 +67,7 @@ curl -X POST "https://gluvok.vercel.app/api/auth/login" \
 When the `access_token` expires or an API request returns `401 Unauthorized`, use the `refresh_token` to get a fresh pair of tokens without requiring username/password re-authentication.
 
 ### Option A: Via JSON Body (Recommended)
+
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/auth/refresh" \
   -H "Content-Type: application/json" \
@@ -73,12 +77,14 @@ curl -X POST "https://gluvok.vercel.app/api/auth/refresh" \
 ```
 
 ### Option B: Via Authorization Header
+
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/auth/refresh" \
   -H "Authorization: Bearer YOUR_REFRESH_TOKEN_HERE"
 ```
 
 ### Response (`200 OK`)
+
 ```json
 {
   "success": true,
@@ -103,6 +109,7 @@ curl -X POST "https://gluvok.vercel.app/api/auth/refresh" \
 Upload camera captures to Supabase Storage before creating the entry. The endpoint accepts `multipart/form-data`.
 
 ### Single Image Upload (`file`)
+
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/storage/upload" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN_HERE" \
@@ -110,6 +117,7 @@ curl -X POST "https://gluvok.vercel.app/api/storage/upload" \
 ```
 
 ### Multiple Images Upload (`files`)
+
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/storage/upload" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN_HERE" \
@@ -118,6 +126,7 @@ curl -X POST "https://gluvok.vercel.app/api/storage/upload" \
 ```
 
 ### Response (`201 Created`)
+
 ```json
 {
   "data": {
@@ -136,6 +145,7 @@ curl -X POST "https://gluvok.vercel.app/api/storage/upload" \
 Submit the vehicle entry with weight, center ID, detected/confirmed plate number, and uploaded image URLs.
 
 ### cURL Request
+
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/entries" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN_HERE" \
@@ -156,14 +166,15 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 
 ### Request Fields Specification
 
-| Field | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `detected_vehicle_number` | String | **Yes** | Raw OCR/ANPR text recognized by the camera (or `"NO_PLATE_DETECTED"`) |
-| `weight` | Number | **Yes** | Positive numeric weight (kg/tons) |
-| `center_id` | Integer | **Yes** | Center / weighbridge ID |
-| `images` | Array | No | Array of uploaded public image URLs or Base64 data URIs |
+| Field                     | Type    | Required | Description                                                           |
+| :------------------------ | :------ | :------- | :-------------------------------------------------------------------- |
+| `detected_vehicle_number` | String  | **Yes**  | Raw OCR/ANPR text recognized by the camera (or `"NO_PLATE_DETECTED"`) |
+| `weight`                  | Number  | **Yes**  | Positive numeric weight (kg/tons)                                     |
+| `center_id`               | Integer | **Yes**  | Center / weighbridge ID                                               |
+| `images`                  | Array   | No       | Array of uploaded public image URLs or Base64 data URIs               |
 
 ### Response (`201 Created`)
+
 ```json
 {
   "data": {
@@ -195,6 +206,7 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 If you prefer not calling `/api/storage/upload` separately, you can send Base64 Data URI strings directly inside `images` in `POST /api/entries`. The server will automatically decode and upload them to storage.
 
 ### cURL Request (with Base64 Image)
+
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/entries" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN_HERE" \
@@ -215,9 +227,9 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 
 ## 7. Error Handling & Status Codes
 
-| Status Code | Reason | What to do |
-| :--- | :--- | :--- |
-| `401 Unauthorized` | Access token expired or invalid credentials | Call `POST /api/auth/refresh`. If refresh also fails with 401, re-login via `POST /api/auth/login`. |
-| `400 Bad Request` | Validation failure (e.g. invalid plate format, missing fields, non-positive weight) | Inspect `error` message in response JSON and fix payload formatting. |
-| `403 Forbidden` | Center does not exist or does not belong to the user's factory | Verify `center_id` is assigned to your device's factory. |
-| `500 Server Error` | Database or storage error | Retry after a short backoff period. |
+| Status Code        | Reason                                                                              | What to do                                                                                          |
+| :----------------- | :---------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------- |
+| `401 Unauthorized` | Access token expired or invalid credentials                                         | Call `POST /api/auth/refresh`. If refresh also fails with 401, re-login via `POST /api/auth/login`. |
+| `400 Bad Request`  | Validation failure (e.g. invalid plate format, missing fields, non-positive weight) | Inspect `error` message in response JSON and fix payload formatting.                                |
+| `403 Forbidden`    | Center does not exist or does not belong to the user's factory                      | Verify `center_id` is assigned to your device's factory.                                            |
+| `500 Server Error` | Database or storage error                                                           | Retry after a short backoff period.                                                                 |

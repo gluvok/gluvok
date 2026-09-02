@@ -45,7 +45,7 @@ import { cn } from "@/lib/utils";
 const cardContainerStyles =
   "relative flex flex-col gap-5 rounded-xl border bg-card p-6 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-1";
 const badgeBaseStyles =
-  "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider w-fit shadow-sm";
+  "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-2xs font-bold uppercase tracking-wider w-fit shadow-sm";
 
 // Icon wrappers — service/capability keep border, feature list icons are borderless
 const iconWrapperBase =

@@ -81,9 +81,7 @@ describe("Weighments Service", () => {
           2,
           EntrySource.DEVICE,
         ),
-      ).rejects.toThrow(
-        /Cannot approve entry #2 because earlier device entry #1/,
-      );
+      ).rejects.toThrow(/Cannot approve entry #2 because earlier device entry #1/);
     });
   });
 
@@ -131,9 +129,7 @@ describe("Weighments Service", () => {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
               is: vi.fn().mockReturnThis(),
-              maybeSingle: vi
-                .fn()
-                .mockResolvedValue({ data: e2Data, error: null }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: e2Data, error: null }),
             };
           } else {
             return {
@@ -224,9 +220,7 @@ describe("Weighments Service", () => {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
               is: vi.fn().mockReturnThis(),
-              maybeSingle: vi
-                .fn()
-                .mockResolvedValue({ data: e2Data, error: null }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: e2Data, error: null }),
             };
           } else {
             return {
@@ -307,9 +301,7 @@ describe("Weighments Service", () => {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
               is: vi.fn().mockReturnThis(),
-              maybeSingle: vi
-                .fn()
-                .mockResolvedValue({ data: e2Data, error: null }),
+              maybeSingle: vi.fn().mockResolvedValue({ data: e2Data, error: null }),
             };
           } else {
             return {

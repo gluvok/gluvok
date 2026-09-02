@@ -66,7 +66,7 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
       {hasImages ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="group inline-flex items-center gap-1.5 py-0.5 px-2 rounded-full border border-muted-foreground/15 bg-muted/60 hover:bg-muted/90 text-[10px] font-mono font-semibold text-foreground transition-all duration-200 active:scale-[0.97] outline-none focus-visible:ring-1 focus-visible:ring-ring shadow-sm cursor-pointer select-none"
+          className="group inline-flex items-center gap-1.5 py-0.5 px-2 rounded-full border border-muted-foreground/15 bg-muted/60 hover:bg-muted/90 text-2xs font-mono font-semibold text-foreground transition-all duration-200 active:scale-[0.97] outline-none focus-visible:ring-1 focus-visible:ring-ring shadow-sm cursor-pointer select-none"
           title="View images"
         >
           <ImageIcon className="h-3 w-3 stroke-[1.5] text-muted-foreground/70 group-hover:text-foreground transition-colors shrink-0" />
@@ -75,7 +75,7 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
           </span>
         </button>
       ) : (
-        <div className="inline-flex items-center gap-1.5 py-0.5 px-2 rounded-full border border-dashed border-muted-foreground/20 bg-muted/10 text-[10px] font-mono font-medium text-muted-foreground/40 select-none cursor-default">
+        <div className="inline-flex items-center gap-1.5 py-0.5 px-2 rounded-full border border-dashed border-muted-foreground/20 bg-muted/10 text-2xs font-mono font-medium text-muted-foreground/40 select-none cursor-default">
           <ImageOff className="h-3 w-3 stroke-[1.5] text-muted-foreground/30" />
           <span>No images</span>
         </div>
@@ -91,7 +91,7 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
                 Vehicle:{" "}
-                <span className="font-mono font-medium text-foreground bg-muted px-1.5 py-0.5 rounded text-[10px]">
+                <span className="font-mono font-medium text-foreground bg-muted px-1.5 py-0.5 rounded text-2xs">
                   {vehicleNumber}
                 </span>
               </DialogDescription>
@@ -120,7 +120,7 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
                         </div>
                         <div
                           title={getDisplayName(img, undefined, i)}
-                          className="mt-2 flex justify-center text-[11px] font-mono text-muted-foreground w-full px-2 overflow-hidden whitespace-nowrap"
+                          className="mt-2 flex justify-center text-2xs font-mono text-muted-foreground w-full px-2 overflow-hidden whitespace-nowrap"
                         >
                           <span className="truncate">
                             {splitFileName(getDisplayName(img, undefined, i))[0]}

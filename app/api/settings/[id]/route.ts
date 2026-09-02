@@ -13,11 +13,11 @@ import { editSettingsSchema } from "@/lib/validation";
 export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
     // Enforce: only admin has permission to modify factory settings
-    if (user.role !== Role.ADMIN || !hasPermission(user, ProjectSlug.SETTINGS, PermissionKey.WRITE)) {
-      return apiError(
-        ApiErrorMessage.ONLY_ADMIN_MODIFY_SETTINGS,
-        StatusCodes.FORBIDDEN,
-      );
+    if (
+      user.role !== Role.ADMIN ||
+      !hasPermission(user, ProjectSlug.SETTINGS, PermissionKey.WRITE)
+    ) {
+      return apiError(ApiErrorMessage.ONLY_ADMIN_MODIFY_SETTINGS, StatusCodes.FORBIDDEN);
     }
 
     // Verify target entity matches caller's scoped factory

@@ -53,9 +53,7 @@ export const GET = withAuth(async (req, user, client) => {
         `id.eq.${searchNum},unit_price::text.ilike.%${search}%,commodities.name.ilike.%${search}%`,
       );
     } else {
-      query = query.or(
-        `unit_price::text.ilike.%${search}%,commodities.name.ilike.%${search}%`,
-      );
+      query = query.or(`unit_price::text.ilike.%${search}%,commodities.name.ilike.%${search}%`);
     }
   }
 
@@ -63,7 +61,10 @@ export const GET = withAuth(async (req, user, client) => {
   const { data, count, error } = await query.range(offset, offset + limit - 1);
   if (error) {
     console.error("Supabase query error:", error);
-    return apiError(error.message || ApiErrorMessage.DATABASE_QUERY_FAILED, StatusCodes.INTERNAL_SERVER_ERROR);
+    return apiError(
+      error.message || ApiErrorMessage.DATABASE_QUERY_FAILED,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+    );
   }
 
   const formattedData = (data || []).map((row: Record<string, unknown>) => {

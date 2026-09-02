@@ -204,7 +204,7 @@ export function EntityDialog(props: EntityDialogProps) {
             </div>
 
             {/* Footer */}
-            <DialogFooter className="bg-transparent border-t-0 p-0 pt-3 pb-1 flex flex-row items-center justify-end gap-2">
+            <DialogFooter className="mx-0 mb-0 bg-transparent border-t-0 p-0 pt-4 flex flex-row items-center justify-end gap-2.5">
               <Button
                 variant="ghost"
                 size="sm"

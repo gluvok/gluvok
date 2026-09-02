@@ -115,7 +115,7 @@ export const GET = withAuth(async (req, user, client) => {
           .from("entries")
           .select("id")
           .eq("factory_id", user.factory_id!)
-          .or(`vehicle_number.ilike.%${search}%,detected_vehicle_number.ilike.%${search}%`)
+          .ilike("vehicle_number", `%${search}%`)
           .is("deleted_at", null);
         return {
           type: "search",

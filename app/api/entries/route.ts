@@ -71,10 +71,8 @@ export const GET = withAuth(async (req, user, client) => {
   if (search) {
     const searchNum = parseInt(search, 10);
     query = isNaN(searchNum)
-      ? query.or(`vehicle_number.ilike.%${search}%,detected_vehicle_number.ilike.%${search}%`)
-      : query.or(
-          `vehicle_number.ilike.%${search}%,detected_vehicle_number.ilike.%${search}%,id.eq.${searchNum}`,
-        );
+      ? query.ilike("vehicle_number", `%${search}%`)
+      : query.or(`vehicle_number.ilike.%${search}%,id.eq.${searchNum}`);
   }
 
   const { page, limit, offset } = pagination;

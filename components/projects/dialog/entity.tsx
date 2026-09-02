@@ -5,6 +5,7 @@
  * @description Dialog modal wrapper for rendering entity creation or editing forms.
  */
 
+import * as React from "react";
 import { type EntityRecord } from "@/types";
 import {
   Dialog,
@@ -15,7 +16,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Truck, ArrowRight, Scale, Unlink } from "lucide-react";
+import { Truck, ArrowRight, Scale, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { getField } from "@/lib/store";
 import { DialogMode } from "@/lib/constants/enums";
 import { useEntityForm } from "./use-entity-form";
@@ -37,10 +39,23 @@ interface EntityDialogProps {
  */
 export function EntityDialog(props: EntityDialogProps) {
   const formState = useEntityForm(props);
+  const [selectedChoice, setSelectedChoice] = React.useState<"both" | "single">("both");
+  const [isSubmittingChoice, setIsSubmittingChoice] = React.useState(false);
+
+  // Reset to recommended ("both") when trip modal opens
+  React.useEffect(() => {
+    if (formState.tripModalOpen) {
+      setSelectedChoice("both");
+      setIsSubmittingChoice(false);
+    }
+  }, [formState.tripModalOpen]);
 
   return (
     <>
-      <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+      <Dialog
+        open={props.open && !formState.tripModalOpen}
+        onOpenChange={props.onOpenChange}
+      >
         <DialogContent className="w-[92vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <EntityDialogContent
             mode={props.mode}
@@ -55,7 +70,10 @@ export function EntityDialog(props: EntityDialogProps) {
 
       {formState.tripModalOpen && formState.linkedWeighment && (
         <Dialog open={formState.tripModalOpen} onOpenChange={formState.setTripModalOpen}>
-          <DialogContent showCloseButton={false} className="w-[92vw] sm:w-full max-w-md p-5 rounded-xl border border-border/60 bg-card shadow-lg">
+          <DialogContent
+            showCloseButton={false}
+            className="w-[92vw] sm:w-full max-w-md p-5 pb-6 rounded-xl border border-border/60 bg-card shadow-lg"
+          >
             <DialogHeader className="space-y-1 text-left pb-0.5">
               <div className="flex items-center gap-2">
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
@@ -104,21 +122,37 @@ export function EntityDialog(props: EntityDialogProps) {
             <div className="space-y-2 pt-0.5">
               <p className="text-[11px] font-medium text-muted-foreground">How would you like to apply this update?</p>
 
-              {/* Option 1: Update Both Entries */}
+              {/* Option 1: Update Both Entries (Recommended) */}
               <button
                 type="button"
-                onClick={() => formState.handleConfirmTripChoice(true)}
-                className="group w-full text-left p-3 rounded-lg border border-border/50 bg-background hover:bg-muted/40 hover:border-border transition-all duration-150 flex items-start gap-2.5 cursor-pointer"
+                onClick={() => setSelectedChoice("both")}
+                className={cn(
+                  "group w-full text-left p-3 rounded-lg border transition-all duration-150 flex items-start gap-2.5 cursor-pointer",
+                  selectedChoice === "both"
+                    ? "border-primary/40 bg-primary/[0.04]"
+                    : "border-border/50 bg-background hover:bg-muted/40 hover:border-border"
+                )}
               >
-                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted/70 text-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                  <Truck className="h-3 w-3" />
+                <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+                  <div
+                    className={cn(
+                      "h-3.5 w-3.5 rounded-full border flex items-center justify-center transition-colors",
+                      selectedChoice === "both"
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-muted-foreground/40"
+                    )}
+                  >
+                    {selectedChoice === "both" && (
+                      <div className="h-1.5 w-1.5 rounded-full bg-background" />
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-0.5 flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
                       Update Both Entries
                     </span>
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary">
                       Recommended
                     </span>
                   </div>
@@ -131,11 +165,27 @@ export function EntityDialog(props: EntityDialogProps) {
               {/* Option 2: Update Only This Entry */}
               <button
                 type="button"
-                onClick={() => formState.handleConfirmTripChoice(false)}
-                className="group w-full text-left p-3 rounded-lg border border-border/50 bg-background hover:bg-muted/40 hover:border-border transition-all duration-150 flex items-start gap-2.5 cursor-pointer"
+                onClick={() => setSelectedChoice("single")}
+                className={cn(
+                  "group w-full text-left p-3 rounded-lg border transition-all duration-150 flex items-start gap-2.5 cursor-pointer",
+                  selectedChoice === "single"
+                    ? "border-amber-500/40 bg-amber-500/[0.04]"
+                    : "border-border/50 bg-background hover:bg-muted/40 hover:border-border"
+                )}
               >
-                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                  <Unlink className="h-3 w-3" />
+                <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+                  <div
+                    className={cn(
+                      "h-3.5 w-3.5 rounded-full border flex items-center justify-center transition-colors",
+                      selectedChoice === "single"
+                        ? "border-amber-600 bg-amber-600 text-white"
+                        : "border-muted-foreground/40"
+                    )}
+                  >
+                    {selectedChoice === "single" && (
+                      <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-0.5 flex-1 min-w-0">
                   <div className="flex items-center justify-between">
@@ -154,14 +204,31 @@ export function EntityDialog(props: EntityDialogProps) {
             </div>
 
             {/* Footer */}
-            <DialogFooter className="bg-transparent border-t-0 p-0 pt-1 flex items-center justify-end">
+            <DialogFooter className="bg-transparent border-t-0 p-0 pt-3 pb-1 flex flex-row items-center justify-end gap-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => formState.setTripModalOpen(false)}
-                className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                disabled={isSubmittingChoice}
+                className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground"
               >
                 Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={async () => {
+                  setIsSubmittingChoice(true);
+                  try {
+                    await formState.handleConfirmTripChoice(selectedChoice === "both");
+                  } finally {
+                    setIsSubmittingChoice(false);
+                  }
+                }}
+                disabled={isSubmittingChoice}
+                className="gap-1.5 h-8 px-3.5 text-xs shadow-sm"
+              >
+                {isSubmittingChoice && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                Confirm Update
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -225,28 +225,9 @@ export function useEntityForm({
         if (active) form.reset(defaultVals);
       }
 
-      if (isEdit && projectSlug === ProjectSlug.ENTRIES && item) {
-        const itemRecord = item as unknown as Record<string, unknown>;
-        const existingLW = itemRecord["linked_weighment"] as
-          | { id: number; partner_entry_id: number }
-          | undefined
-          | null;
-        if (existingLW !== undefined) {
-          if (active) setLinkedWeighment(existingLW);
-        } else {
-          fetch(`/api/entries/${getField(item, primaryIdKey)}`)
-            .then((res) => res.json())
-            .then((json) => {
-              if (active) {
-                setLinkedWeighment(json?.data?.linked_weighment || null);
-              }
-            })
-            .catch(() => {
-              if (active) setLinkedWeighment(null);
-            });
-        }
-      } else {
-        if (active) setLinkedWeighment(null);
+      if (!open) {
+        setLinkedWeighment(null);
+        setPendingValues(null);
       }
     };
 
@@ -351,26 +332,40 @@ export function useEntityForm({
       isEdit &&
         item &&
         projectSlug === ProjectSlug.ENTRIES &&
-        linkedWeighment &&
         values["vehicle_number"] !== undefined &&
         values["vehicle_number"] !== getField(item, "vehicle_number"),
     );
 
-    if (isChangingVehicle) {
-      setPendingValues(values);
-      setTripModalOpen(true);
-      return;
+    if (isChangingVehicle && item) {
+      let freshLinkedWeighment: { id: number; partner_entry_id: number } | null = null;
+      try {
+        const res = await fetch(`/api/entries/${getField(item, primaryIdKey)}`);
+        const json = await res.json();
+        freshLinkedWeighment = json?.data?.linked_weighment || null;
+      } catch {
+        freshLinkedWeighment = null;
+      }
+
+      if (freshLinkedWeighment) {
+        setLinkedWeighment(freshLinkedWeighment);
+        setPendingValues(values);
+        setTripModalOpen(true);
+        return;
+      }
     }
 
     await executeSubmit(values);
   };
 
   const handleConfirmTripChoice = async (updateBoth: boolean) => {
-    setTripModalOpen(false);
     if (!pendingValues) return;
     const values = { ...pendingValues };
-    setPendingValues(null);
-    await executeSubmit(values, updateBoth);
+    try {
+      await executeSubmit(values, updateBoth);
+    } finally {
+      setTripModalOpen(false);
+      setPendingValues(null);
+    }
   };
 
   const isUnchanged = isEdit && !form.formState.isDirty;

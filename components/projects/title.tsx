@@ -46,9 +46,7 @@ export function ProjectTitle({
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
       {actions && (
-        <div className="flex items-center gap-2 self-start sm:self-auto mr-1 sm:mr-2">
-          {actions}
-        </div>
+        <div className="flex items-center gap-2 self-end sm:self-auto mr-1 sm:mr-2">{actions}</div>
       )}
     </div>
   );

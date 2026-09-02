@@ -134,47 +134,54 @@ export function DateRangeFilter<TData extends RowData>({
             </Button>
           )}
         </div>
-        <PopoverContent className="w-auto p-0 flex flex-col" align={align}>
+        <PopoverContent
+          className="w-auto max-w-[calc(100vw-2rem)] p-0 flex flex-col overflow-hidden"
+          align={align}
+        >
           {/* Quick Presets Bar */}
-          <div className="flex items-center gap-1.5 p-2 border-b border-border bg-muted/20 flex-wrap">
-            <span className="text-2xs font-medium text-muted-foreground mr-1 flex items-center gap-1">
+          <div className="p-2 border-b border-border bg-muted/20 space-y-1.5 md:space-y-0 md:flex md:items-center md:gap-1.5">
+            <div className="flex items-center gap-1 text-2xs font-medium text-muted-foreground shrink-0">
               <Zap className="h-3.5 w-3.5 text-amber-500" />
               Presets:
-            </span>
-            {PRESET_OPTIONS.map((preset) => (
-              <Button
-                key={preset.id}
-                variant="outline"
-                size="sm"
-                onClick={() => handlePresetSelect(preset.id)}
-                className="h-5 text-2xs px-1.5 py-0 font-medium hover:bg-accent"
-                id={`preset-${preset.id}`}
-              >
-                {preset.label}
-              </Button>
-            ))}
+            </div>
+            <div className="grid grid-cols-3 gap-1 md:flex md:flex-wrap md:gap-1.5">
+              {PRESET_OPTIONS.map((preset) => (
+                <Button
+                  key={preset.id}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePresetSelect(preset.id)}
+                  className="h-5.5 text-2xs px-1.5 py-0 font-medium hover:bg-accent justify-center truncate"
+                  id={`preset-${preset.id}`}
+                >
+                  {preset.label}
+                </Button>
+              ))}
+            </div>
           </div>
 
-          <Calendar
-            mode="range"
-            captionLayout="dropdown"
-            defaultMonth={dateRange?.from}
-            selected={dateRange}
-            onSelect={applyRange}
-            numberOfMonths={2}
-            disabled={{ after: new Date() }}
-            endMonth={new Date()}
-          />
+          <div className="w-full flex justify-center">
+            <Calendar
+              mode="range"
+              captionLayout="dropdown"
+              defaultMonth={dateRange?.from}
+              selected={dateRange}
+              onSelect={applyRange}
+              numberOfMonths={2}
+              disabled={{ after: new Date() }}
+              endMonth={new Date()}
+            />
+          </div>
           {dateRange?.from && (
-            <div className="flex items-center justify-between border-t border-border px-3 py-1.5 bg-muted/30 gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-t border-border p-2 bg-muted/30 gap-1.5">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => applyRange({ from: dateRange.from!, to: new Date() })}
-                className="h-6 text-2xs px-2.5 font-medium bg-background hover:bg-accent text-primary border-primary/30 gap-1.5 shadow-2xs transition-all hover:border-primary/50"
+                className="h-6 text-2xs px-2.5 font-medium bg-background hover:bg-accent text-primary border-primary/30 gap-1.5 shadow-2xs transition-all hover:border-primary/50 w-full sm:w-auto"
                 id="set-end-to-today"
               >
-                <CalendarCheck data-icon="inline-start" />
+                <CalendarCheck className="h-3.5 w-3.5" data-icon="inline-start" />
                 Select Today as End Date
               </Button>
               <Button
@@ -184,7 +191,7 @@ export function DateRangeFilter<TData extends RowData>({
                   handleClear();
                   setOpen(false);
                 }}
-                className="h-6 text-xs px-2 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                className="h-6 text-xs px-2 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10 w-full sm:w-auto justify-center"
               >
                 <X className="h-3.5 w-3.5" />
                 Clear

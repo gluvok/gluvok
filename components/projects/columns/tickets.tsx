@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { createCustomColumn } from "./helpers";
 import { TicketStatus } from "@/lib/constants/enums";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function getTicketsColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
@@ -61,11 +62,21 @@ export function getTicketsColumns<T extends RowData>(): ColumnDef<ProjectTableFe
     }),
 
     createCustomColumn<T>("concern", "Concern", CircleAlert, (val) => {
-      const text = String(val || "");
+      const text = String(val || "").trim();
+      if (!text) {
+        return <span className="text-muted-foreground text-xs">—</span>;
+      }
       return (
-        <p className="truncate max-w-xs text-foreground/90 font-normal text-xs" title={text}>
-          {text || "—"}
-        </p>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <p className="truncate max-w-xs text-foreground/90 font-normal text-xs cursor-default">
+              {text}
+            </p>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-sm text-xs leading-relaxed whitespace-pre-wrap p-2.5 shadow-md">
+            {text}
+          </TooltipContent>
+        </Tooltip>
       );
     }),
 
@@ -98,13 +109,17 @@ export function getTicketsColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         return <span className="text-muted-foreground/50 text-2xs italic">Awaiting response</span>;
       }
       return (
-        <div
-          className="flex items-center gap-1.5 text-foreground/80 truncate max-w-xs text-xs"
-          title={replyText}
-        >
-          <MessageSquare className="h-3 w-3 text-primary shrink-0" />
-          <span className="truncate">{replyText}</span>
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-1.5 text-foreground/80 truncate max-w-xs text-xs cursor-default">
+              <MessageSquare className="h-3 w-3 text-primary shrink-0" />
+              <span className="truncate">{replyText}</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-sm text-xs leading-relaxed whitespace-pre-wrap p-2.5 shadow-md">
+            {replyText}
+          </TooltipContent>
+        </Tooltip>
       );
     }),
 

@@ -85,6 +85,7 @@ export enum FieldSpan {
 export enum DialogMode {
   CREATE = "create",
   EDIT = "edit",
+  VIEW = "view",
 }
 
 export enum DatePreset {

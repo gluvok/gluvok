@@ -1,33 +1,39 @@
 /**
  * @file components/projects/dialog/entity-content.tsx
- * @description Dialog component or hook for managing entity content actions.
+ * @description Renders entity form fields, headers, and view-details displays within EntityDialog.
  */
 
 "use client";
 
-import { Pencil, Plus, Save, X, Loader2, Ticket, Scale, Truck } from "lucide-react";
+import {
+  Pencil,
+  Plus,
+  Save,
+  X,
+  Loader2,
+  Ticket,
+  Scale,
+  Truck,
+  CircleAlert,
+  UserCog,
+  MessageSquare,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FormFieldInput } from "@/components/form";
 import { type EntityDialogContentProps } from "./types";
 import {
-  FieldType,
-  Role,
   FieldSpan,
-  PermissionKey,
   ProjectSlug,
   EntryStatus,
   EntrySource,
   WeighmentType,
+  DialogMode,
 } from "@/lib/constants/enums";
 import { type FieldConfig, getSingularName } from "@/lib/fields";
-import {
-  useAuthStore,
-  hasPermission,
-  isFieldVisible,
-  isFieldRequired,
-  getField,
-} from "@/lib/store";
+import { useAuthStore, isFieldVisible, isFieldRequired, getField } from "@/lib/store";
+import { formatDateTime } from "@/lib/utils";
+import { type Ticket as TicketEntity } from "@/types";
 
 export function EntityDialogContent({
   mode,
@@ -43,6 +49,119 @@ export function EntityDialogContent({
   item,
 }: EntityDialogContentProps) {
   const currentUser = useAuthStore((state) => state.user);
+
+  // VIEW MODE FOR TICKETS
+  if (mode === DialogMode.VIEW && projectSlug === ProjectSlug.TICKETS && item) {
+    const ticket = item as unknown as TicketEntity;
+    const itemId = String(getField(item, primaryIdKey));
+    const authorName = ticket.users?.name || ticket.user_name || `User #${ticket.user_id}`;
+    const authorUsername = ticket.users?.username || ticket.user_username;
+    const entryPlate = ticket.entries?.vehicle_number;
+    const entryWeight = ticket.entries?.weight;
+    const weighmentPlate = ticket.weighments?.in_entry?.vehicle_number;
+    const weighmentNet = ticket.weighments?.net_weight;
+    const weighmentUnit = ticket.weighments?.unit;
+
+    return (
+      <>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-foreground">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+              <Ticket className="h-4 w-4" />
+            </div>
+            Ticket #{itemId}
+          </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground pt-0.5 flex items-center gap-1.5">
+            <UserCog className="h-3.5 w-3.5 text-muted-foreground/80 shrink-0" />
+            <span>
+              Raised by <strong className="text-foreground">{authorName}</strong>
+              {authorUsername ? ` (@${authorUsername})` : ""} on{" "}
+              {formatDateTime(String(ticket.created_at))}
+            </span>
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="py-3 space-y-4 text-xs">
+          {/* Linked Target Card */}
+          <div className="p-3 rounded-lg border border-border/70 bg-muted/30 space-y-1">
+            <div className="font-semibold text-2xs uppercase tracking-wider text-muted-foreground">
+              Linked Target
+            </div>
+            <div className="flex items-center gap-2">
+              {ticket.entry_id ? (
+                <>
+                  <Truck className="h-4 w-4 text-primary shrink-0" />
+                  <div>
+                    <span className="font-semibold text-foreground">Entry #{ticket.entry_id}</span>
+                    {entryPlate ? (
+                      <span className="text-muted-foreground font-mono ml-1.5">
+                        (Plate: {entryPlate} · {entryWeight} kg)
+                      </span>
+                    ) : null}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Scale className="h-4 w-4 text-primary shrink-0" />
+                  <div>
+                    <span className="font-semibold text-foreground">
+                      Weighment #{ticket.weighment_id}
+                    </span>
+                    {weighmentPlate ? (
+                      <span className="text-muted-foreground font-mono ml-1.5">
+                        (Plate: {weighmentPlate} · Net: {weighmentNet} {weighmentUnit})
+                      </span>
+                    ) : null}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Concern Section with CircleAlert icon */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 font-semibold text-2xs uppercase tracking-wider text-muted-foreground">
+              <CircleAlert className="h-3.5 w-3.5 text-amber-500 shrink-0" /> Concern
+            </div>
+            <div className="p-3 rounded-lg border border-border/70 bg-background text-foreground/90 leading-relaxed whitespace-pre-wrap">
+              {String(ticket.concern || "")}
+            </div>
+          </div>
+
+          {/* Support Response Section */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-2xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <MessageSquare className="h-3 w-3 text-primary" /> Support Response
+              </span>
+              <span className="text-2xs font-medium">
+                Status:{" "}
+                <span className="capitalize font-semibold text-foreground">
+                  {String(ticket.status || "pending")}
+                </span>
+              </span>
+            </div>
+            <div className="p-3 rounded-lg border border-border/70 bg-muted/40 text-foreground/90 leading-relaxed whitespace-pre-wrap">
+              {ticket.reply && ticket.reply.trim() ? (
+                ticket.reply
+              ) : (
+                <span className="text-muted-foreground/60 italic">
+                  This ticket is currently pending review by the system administrator.
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="mx-0 mb-0 pt-2 flex flex-row items-center justify-end">
+          <Button size="sm" variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </>
+    );
+  }
+
   let Icon = isEdit ? Pencil : Plus;
   const singularName = getSingularName(projectName);
   let desc = isEdit
@@ -91,164 +210,78 @@ export function EntityDialogContent({
       const isEdited = Boolean(
         detectedVehicle && vehicleNumber && detectedVehicle !== vehicleNumber,
       );
-      const entrySource = getField(item, "source") as EntrySource | string;
       const customerId = getField(item, "customer_id");
+      const source = getField(item, "source") as EntrySource | string;
       const isApproved = entryStatus === EntryStatus.APPROVED || isAutoApproved;
       const hasCustomer = customerId !== null && customerId !== undefined && customerId !== "";
 
-      if (entryStatus === EntryStatus.REJECTED) {
-        entryFieldDisabled = true;
-      } else if (isApproved) {
+      if (isApproved) {
+        const canEditVehicle = isAutoApproved && !isEdited;
+        const canEditCustomer = !hasCustomer;
+
         if (field.key === "vehicle_number") {
-          entryFieldDisabled = !isAutoApproved || isEdited;
+          entryFieldDisabled = !canEditVehicle;
         } else if (field.key === "customer_id") {
-          entryFieldDisabled = hasCustomer;
+          entryFieldDisabled = !canEditCustomer;
         } else {
           entryFieldDisabled = true;
         }
       } else if (entryStatus === EntryStatus.PENDING) {
-        if (entrySource === EntrySource.DEVICE) {
+        if (source === EntrySource.MANUAL) {
+          entryFieldDisabled = false;
+        } else {
           entryFieldDisabled = field.key !== "vehicle_number";
         }
+      } else if (entryStatus === EntryStatus.REJECTED) {
+        entryFieldDisabled = true;
       }
     }
 
-    const disabled =
-      entryFieldDisabled ||
-      (isEdit && field.key === primaryIdKey) ||
-      (field.editableRoles && !field.editableRoles.includes(currentUser?.role as Role)) ||
-      (isEdit &&
-        field.requiresEditPermission &&
-        !hasPermission(currentUser?.role, projectSlug, PermissionKey.EDIT_FIELD, field.key));
+    const isVisible = isFieldVisible(currentUser?.role, projectSlug, field.key);
+    if (!isVisible) return null;
 
-    switch (field.type) {
-      case FieldType.SWITCH:
-        return (
-          <div key={field.key} className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between h-10 px-3 rounded-lg border border-border/80 bg-muted/20">
-              <FormFieldInput
-                field={field}
-                form={form}
-                idPrefix={`${mode}-entity`}
-                disabled={disabled}
-              />
-            </div>
-            {form.formState.errors[field.key] && (
-              <span className="text-destructive text-2xs font-medium">
-                {form.formState.errors[field.key]?.message as string}
-              </span>
-            )}
-          </div>
-        );
-      case FieldType.CHECKBOX:
-        return (
-          <div key={field.key} className="flex flex-col gap-1.5 justify-end">
-            <div className="flex items-center h-9 px-1">
-              <FormFieldInput
-                field={field}
-                form={form}
-                idPrefix={`${mode}-entity`}
-                disabled={disabled}
-              />
-            </div>
-            {form.formState.errors[field.key] && (
-              <span className="text-destructive text-2xs font-medium">
-                {form.formState.errors[field.key]?.message as string}
-              </span>
-            )}
-          </div>
-        );
-      default: {
-        const isPasswordInEdit =
-          isEdit && (field.key === "password" || field.key === "confirmPassword");
-        const displayLabel = isPasswordInEdit
-          ? field.key === "password"
-            ? "New Password"
-            : "Confirm New Password"
-          : field.label;
-        const displayPlaceholder = isPasswordInEdit
-          ? "Leave blank to keep unchanged"
-          : field.placeholder;
-        const isReq = isFieldRequired(projectSlug, field.key, field.required);
-        const showAsterisk = isReq && !isPasswordInEdit;
+    const isRequired = isFieldRequired(projectSlug, field.key, field.required);
 
-        const effectiveField = {
-          ...field,
-          label: displayLabel,
-          placeholder: displayPlaceholder,
-        };
-
-        return (
-          <div key={field.key} className="flex flex-col gap-1.5 min-w-0 flex-1">
-            <label
-              htmlFor={`field-${field.key}`}
-              className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"
-            >
-              {field.icon && <field.icon className="h-3.5 w-3.5 text-muted-foreground/75" />}
-              {displayLabel}
-              {showAsterisk && (
-                <span className="text-destructive leading-none" aria-hidden>
-                  *
-                </span>
-              )}
-            </label>
-            <FormFieldInput
-              field={effectiveField}
-              form={form}
-              idPrefix={`${mode}-entity`}
-              disabled={disabled}
-            />
-            {form.formState.errors[field.key] && (
-              <span className="text-destructive text-2xs font-medium">
-                {form.formState.errors[field.key]?.message as string}
-              </span>
-            )}
-          </div>
-        );
-      }
-    }
+    return (
+      <div key={field.key} className="space-y-1">
+        <FormFieldInput
+          field={{ ...field, required: isRequired }}
+          form={form}
+          idPrefix={mode}
+          disabled={entryFieldDisabled}
+        />
+        {form.formState.errors[field.key] && (
+          <p className="text-destructive text-xs">
+            {form.formState.errors[field.key]?.message as string}
+          </p>
+        )}
+      </div>
+    );
   };
 
-  const visibleFields = fields.filter((field: FieldConfig) => {
-    const role = currentUser?.role as Role;
-    if (!isFieldVisible(role, projectSlug, field.key)) {
-      return false;
-    }
-    if (field.visibleRoles && !field.visibleRoles.includes(role)) {
-      return false;
-    }
-    if (isEdit && field.editVisibleRoles && !field.editVisibleRoles.includes(role)) {
-      return false;
-    }
-    // Hide createOnly fields (e.g. password, confirmPassword) when editing
-    if (isEdit && field.createOnly) {
-      return false;
-    }
-    return true;
-  });
-
-  type GroupItem = { span: FieldSpan; fields: FieldConfig[] };
-  const fieldGroups: GroupItem[] = [];
-  let currentGroupSpan: FieldSpan | null = null;
+  const fieldGroups: { span: FieldSpan; fields: FieldConfig[] }[] = [];
   let currentGroup: FieldConfig[] = [];
+  let currentGroupSpan: FieldSpan | null = null;
 
   const flushGroup = () => {
-    if (currentGroup.length > 0 && currentGroupSpan) {
-      fieldGroups.push({ span: currentGroupSpan, fields: [...currentGroup] });
+    if (currentGroup.length > 0 && currentGroupSpan !== null) {
+      fieldGroups.push({ span: currentGroupSpan, fields: currentGroup });
       currentGroup = [];
       currentGroupSpan = null;
     }
   };
 
-  visibleFields.forEach((field: FieldConfig) => {
-    const fieldSpan: FieldSpan = field.span || (field.halfWidth ? FieldSpan.HALF : FieldSpan.FULL);
-    const maxInGroup = fieldSpan === FieldSpan.THIRD ? 3 : fieldSpan === FieldSpan.HALF ? 2 : 1;
+  fields.forEach((field) => {
+    const isVisible = isFieldVisible(currentUser?.role, projectSlug, field.key);
+    if (!isVisible) return;
+
+    const fieldSpan = field.span || FieldSpan.FULL;
 
     if (fieldSpan === FieldSpan.FULL) {
       flushGroup();
       fieldGroups.push({ span: FieldSpan.FULL, fields: [field] });
     } else {
-      if (field.newRow || currentGroupSpan !== fieldSpan || currentGroup.length >= maxInGroup) {
+      if (currentGroupSpan !== null && currentGroupSpan !== fieldSpan) {
         flushGroup();
       }
       currentGroupSpan = fieldSpan;

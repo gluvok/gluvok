@@ -2,7 +2,7 @@
 
 /**
  * @file components/projects/dialog/entity.tsx
- * @description Dialog modal wrapper for rendering entity creation or editing forms.
+ * @description Unified dialog modal wrapper for rendering entity creation, editing, viewing, and trip updates.
  */
 
 import * as React from "react";
@@ -23,7 +23,7 @@ import { DialogMode } from "@/lib/constants/enums";
 import { useEntityForm } from "./use-entity-form";
 import { EntityDialogContent } from "./entity-content";
 
-interface EntityDialogProps {
+export interface EntityDialogProps {
   mode: DialogMode;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -36,6 +36,7 @@ interface EntityDialogProps {
 /**
  * EntityDialog Component
  * Mounts standard form overlay dialog wrapping EntityDialogContent and integrating useEntityForm hook.
+ * When an entry edit requires trip disambiguation, transitions smoothly within the same dialog container.
  */
 export function EntityDialog(props: EntityDialogProps) {
   const formState = useEntityForm(props);
@@ -50,30 +51,23 @@ export function EntityDialog(props: EntityDialogProps) {
     }
   }, [formState.tripModalOpen]);
 
-  return (
-    <>
-      <Dialog open={props.open && !formState.tripModalOpen} onOpenChange={props.onOpenChange}>
-        <DialogContent className="w-[92vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <EntityDialogContent
-            mode={props.mode}
-            onOpenChange={props.onOpenChange}
-            projectName={props.projectName}
-            projectSlug={props.projectSlug}
-            primaryIdKey={props.primaryIdKey}
-            {...formState}
-          />
-        </DialogContent>
-      </Dialog>
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      formState.setTripModalOpen(false);
+    }
+    props.onOpenChange(open);
+  };
 
-      {formState.tripModalOpen && formState.linkedWeighment && (
-        <Dialog open={formState.tripModalOpen} onOpenChange={formState.setTripModalOpen}>
-          <DialogContent
-            showCloseButton={false}
-            className="w-[92vw] sm:w-full max-w-md p-5 pb-6 rounded-xl border border-border/60 bg-card shadow-lg"
-          >
+  const isShowingTripDecision = formState.tripModalOpen && formState.linkedWeighment;
+
+  return (
+    <Dialog open={props.open} onOpenChange={handleOpenChange}>
+      <DialogContent className="w-[92vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        {isShowingTripDecision && formState.linkedWeighment ? (
+          <>
             <DialogHeader className="space-y-1 text-left pb-0.5">
               <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <Truck className="h-3.5 w-3.5" />
                 </div>
                 <div>
@@ -90,7 +84,7 @@ export function EntityDialog(props: EntityDialogProps) {
             </DialogHeader>
 
             {/* Trip Context Card */}
-            <div className="rounded-lg border border-border/40 bg-muted/30 p-3 space-y-2">
+            <div className="rounded-lg border border-border/40 bg-muted/30 p-3 space-y-2 my-2">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Scale className="h-3.5 w-3.5" />
@@ -220,7 +214,7 @@ export function EntityDialog(props: EntityDialogProps) {
                 disabled={isSubmittingChoice}
                 className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground"
               >
-                Cancel
+                Back to Edit
               </Button>
               <Button
                 size="sm"
@@ -239,9 +233,18 @@ export function EntityDialog(props: EntityDialogProps) {
                 Confirm Update
               </Button>
             </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-    </>
+          </>
+        ) : (
+          <EntityDialogContent
+            mode={props.mode}
+            onOpenChange={props.onOpenChange}
+            projectName={props.projectName}
+            projectSlug={props.projectSlug}
+            primaryIdKey={props.primaryIdKey}
+            {...formState}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

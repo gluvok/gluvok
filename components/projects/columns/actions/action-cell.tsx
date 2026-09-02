@@ -41,7 +41,6 @@ import {
 import { downloadPDF } from "@/lib/pdf";
 import { hasRowModifyPermission } from "./permissions";
 import { EntryApproveDialog, EntryRejectDialog } from "./entry-status-dialogs";
-import { TicketDetailsDialog } from "./ticket-details-dialog";
 
 export interface ActionCellProps<T extends EntityRecord> {
   item: T;
@@ -300,13 +299,16 @@ export function ActionCell<T extends EntityRecord>({
         />
       )}
 
-      {/* Ticket Details View Dialog */}
+      {/* Standard EntityDialog for Viewing Ticket Details / Response */}
       {projectSlug === ProjectSlug.TICKETS && (
-        <TicketDetailsDialog
+        <EntityDialog
+          mode={DialogMode.VIEW}
           open={viewTicketOpen}
           onOpenChange={setViewTicketOpen}
+          projectSlug={ProjectSlug.TICKETS}
+          projectName="Tickets"
+          primaryIdKey="id"
           item={item}
-          itemId={itemId}
         />
       )}
     </div>

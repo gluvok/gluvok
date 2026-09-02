@@ -8,6 +8,7 @@
 import * as React from "react";
 import { useForm, type FieldValues, type Path, type Resolver } from "react-hook-form";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
+import { z } from "zod";
 import { toast } from "sonner";
 import { type EntityRecord } from "@/types";
 import {
@@ -47,6 +48,7 @@ export function useEntityForm({
   item,
 }: UseEntityFormProps) {
   const isEdit = mode === DialogMode.EDIT;
+  const isView = mode === DialogMode.VIEW;
 
   const addEntity = useEntitiesStore((state) => state.addEntity);
   const updateEntity = useEntitiesStore((state) => state.updateEntity);
@@ -142,10 +144,13 @@ export function useEntityForm({
   }, [projectSlug, isEdit, item]);
 
   const formSchema = React.useMemo(() => {
+    if (isView) {
+      return z.object({});
+    }
     return isEdit
       ? (ENTITY_EDIT_SCHEMAS as Record<string, EntityEditSchema>)[projectSlug]
       : (ENTITY_ADD_SCHEMAS as Record<string, EntityAddSchema>)[projectSlug];
-  }, [isEdit, projectSlug]);
+  }, [isEdit, isView, projectSlug]);
 
   const form = useForm<FieldValues>({
     resolver: standardSchemaResolver(formSchema as never) as unknown as Resolver<FieldValues>,
@@ -387,6 +392,7 @@ export function useEntityForm({
     fields,
     onSubmit,
     isEdit,
+    isView,
     isUnchanged,
     item,
     linkedWeighment,

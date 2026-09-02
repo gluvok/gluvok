@@ -13,7 +13,6 @@ import { ActionCell } from "./action-cell";
 export * from "./permissions";
 export * from "./action-cell";
 export * from "./entry-status-dialogs";
-export * from "./ticket-details-dialog";
 
 export function getActionsColumn<T extends EntityRecord>(
   projectSlug: string,

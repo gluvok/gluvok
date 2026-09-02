@@ -22,6 +22,7 @@ export interface EntityDialogContentProps {
   projectName: string;
   projectSlug: string;
   isEdit: boolean;
+  isView?: boolean;
   isUnchanged?: boolean;
   fields: FieldConfig[];
   form: UseFormReturn<FieldValues>;

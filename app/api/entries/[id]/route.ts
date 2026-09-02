@@ -173,7 +173,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
       for (const field of lockedDeviceFields) {
         if (body[field] !== undefined && body[field] !== existing[field]) {
           return apiError(
-            `Cannot modify ${field === "center_id" ? "center" : field} on a device entry.`,
+            ApiErrorMessage.CANNOT_MODIFY_DEVICE_FIELD(field === "center_id" ? "center" : field),
             StatusCodes.BAD_REQUEST,
           );
         }
@@ -190,7 +190,12 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   const newStatus = (updates["status"] as string) || existing.status;
   const targetVehicle = (updates["vehicle_number"] as string) || existing.vehicle_number;
 
-  // 3. Sequential Approval Validation if transitioning to approved or changing vehicle plate on approved
+  // 3. Do not allow approving an entry with NO_PLATE_DETECTED
+  if (newStatus === EntryStatus.APPROVED && targetVehicle === "NO_PLATE_DETECTED") {
+    return apiError(ApiErrorMessage.CANNOT_APPROVE_NO_PLATE, StatusCodes.BAD_REQUEST);
+  }
+
+  // 4. Sequential Approval Validation if transitioning to approved or changing vehicle plate on approved
   const isTransitioningToApproved =
     newStatus === EntryStatus.APPROVED && existing.status !== EntryStatus.APPROVED;
   const isChangingVehicleOnApproved =

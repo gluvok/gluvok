@@ -504,6 +504,46 @@ describe("Entries [id] route handlers", () => {
     expect(json.data.edited).toBe(false);
   });
 
+  it("rejects approving an entry when vehicle_number is NO_PLATE_DETECTED", async () => {
+    const patchRequest = new Request("http://localhost/api/entries/10", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: EntryStatus.APPROVED }),
+    });
+
+    const mockDb = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              is: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: {
+                    id: 10,
+                    status: EntryStatus.PENDING,
+                    source: EntrySource.DEVICE,
+                    vehicle_number: "NO_PLATE_DETECTED",
+                    detected_vehicle_number: "NO_PLATE_DETECTED",
+                    auto_approved: false,
+                    customer_id: null,
+                  },
+                  error: null,
+                }),
+              })),
+            })),
+          })),
+        })),
+      })),
+    };
+
+    const handler = PATCH as unknown as RawHandler;
+    const response = await handler(patchRequest, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(400);
+    const json = await response.json();
+    expect(json.error).toBe(ApiErrorMessage.CANNOT_APPROVE_NO_PLATE);
+  });
+
   it("rejects DELETE when user lacks DELETE permission", async () => {
     mockHasPermission.mockReturnValue(false);
     const deleteRequest = new Request("http://localhost/api/entries/10", { method: "DELETE" });

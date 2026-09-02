@@ -77,9 +77,15 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
     images = [],
   } = params;
 
+  const isNoPlate =
+    vehicleNumber === "NO_PLATE_DETECTED" || detectedVehicleNumber === "NO_PLATE_DETECTED";
+
   // 1 & 2. Verify center and customer (if provided) concurrently
+  // When no plate detected is received from device, skip fetching the centers table since auto-approval is impossible.
   const [centerRecord] = await Promise.all([
-    validateCenterBelongsToFactory(client, Number(centerId), factoryId),
+    isNoPlate && source === EntrySource.DEVICE
+      ? Promise.resolve(null)
+      : validateCenterBelongsToFactory(client, Number(centerId), factoryId),
     customerId
       ? validateCustomerBelongsToFactory(client, Number(customerId), factoryId)
       : Promise.resolve(),
@@ -89,17 +95,13 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
   let finalStatus = status;
   let isAutoApproved = false;
 
-  if (source === EntrySource.DEVICE) {
-    if (
-      centerRecord.auto_approve &&
-      vehicleNumber !== "NO_PLATE_DETECTED" &&
-      detectedVehicleNumber !== "NO_PLATE_DETECTED"
-    ) {
+  if (source === EntrySource.DEVICE && !isNoPlate) {
+    if (centerRecord?.auto_approve) {
       isAutoApproved = true;
       finalStatus = EntryStatus.APPROVED;
     }
   } else {
-    // Manual entries are NEVER auto-approved
+    // Manual entries or entries with NO_PLATE_DETECTED are NEVER auto-approved
     isAutoApproved = false;
   }
 

@@ -142,6 +142,8 @@ function ActionCell<T extends EntityRecord>({
     const isApproved = entryStatus === EntryStatus.APPROVED || isAutoApproved;
     const hasCustomer = customerId !== null && customerId !== undefined && customerId !== "";
 
+    const isNoPlate = vehicleNumber === "NO_PLATE_DETECTED";
+
     if (entryStatus === EntryStatus.REJECTED) {
       hasRowWrite = false;
     } else if (isApproved) {
@@ -149,7 +151,7 @@ function ActionCell<T extends EntityRecord>({
         hasRowWrite = false;
       }
     } else if (entryStatus === EntryStatus.PENDING) {
-      canApproveEntry = hasRowWrite;
+      canApproveEntry = hasRowWrite && !isNoPlate;
       canRejectEntry = hasRowWrite;
     }
   }

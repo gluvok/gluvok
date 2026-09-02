@@ -50,7 +50,7 @@ export const PATCH = withAuth(
 
     if (linkedWeighments && linkedWeighments.length > 0) {
       return apiError(
-        "This rate is associated with weighment record(s) and cannot be edited.",
+        ApiErrorMessage.RATE_ASSOCIATED_WITH_WEIGHMENT,
         StatusCodes.FORBIDDEN,
       );
     }

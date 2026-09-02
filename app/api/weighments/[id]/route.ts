@@ -8,6 +8,7 @@ import {
   hasPermission,
 } from "@/db/helpers";
 import { WeighmentType, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
+import { ApiErrorMessage } from "@/lib/constants/messages";
 import { editWeighmentSchema } from "@/lib/validation";
 import { formatWeighmentRecord, deleteWeighments } from "@/lib/services/weighments";
 
@@ -27,7 +28,7 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
     .maybeSingle();
 
   if (error || !row) {
-    return apiError("Weighment not found", StatusCodes.NOT_FOUND);
+    return apiError(ApiErrorMessage.WEIGHMENT_NOT_FOUND, StatusCodes.NOT_FOUND);
   }
 
   const inEntry = (row["in_entry"] as Record<string, unknown>) || {};
@@ -40,7 +41,7 @@ export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
     const isOwnCustomer = inCustomer?.user_id === userId || outCustomer?.user_id === userId;
 
     if (!isOwnCustomer) {
-      return apiError("Weighment not found", StatusCodes.NOT_FOUND);
+      return apiError(ApiErrorMessage.WEIGHMENT_NOT_FOUND, StatusCodes.NOT_FOUND);
     }
   }
 
@@ -69,14 +70,14 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     .maybeSingle();
 
   if (fetchErr || !existing) {
-    return apiError("Weighment not found", StatusCodes.NOT_FOUND);
+    return apiError(ApiErrorMessage.WEIGHMENT_NOT_FOUND, StatusCodes.NOT_FOUND);
   }
 
   const allowedKeys = ["type", "rate_id"];
   const forbiddenKeys = Object.keys(body).filter((key) => !allowedKeys.includes(key));
   if (forbiddenKeys.length > 0) {
     return apiError(
-      "Only the 'type' and 'rate_id' fields can be edited on a weighment record.",
+      ApiErrorMessage.WEIGHMENT_ONLY_TYPE_RATE_EDITABLE,
       StatusCodes.BAD_REQUEST,
     );
   }
@@ -91,7 +92,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
       existing.type !== undefined
     ) {
       return apiError(
-        "Weighment type is already set and cannot be modified further.",
+        ApiErrorMessage.WEIGHMENT_TYPE_ALREADY_SET,
         StatusCodes.BAD_REQUEST,
       );
     }
@@ -102,7 +103,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   if (body.rate_id !== undefined) {
     if (existing.rate_id !== null && existing.rate_id !== undefined) {
       return apiError(
-        "Rate is already set for this weighment and cannot be modified.",
+        ApiErrorMessage.WEIGHMENT_RATE_ALREADY_SET,
         StatusCodes.BAD_REQUEST,
       );
     }
@@ -117,7 +118,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
       if (!validRate) {
         return apiError(
-          "Rate not found or does not belong to your factory.",
+          ApiErrorMessage.WEIGHMENT_RATE_NOT_FOUND,
           StatusCodes.BAD_REQUEST,
         );
       }
@@ -127,7 +128,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   }
 
   if (Object.keys(updates).length === 0) {
-    return apiError("No valid fields provided for update.", StatusCodes.BAD_REQUEST);
+    return apiError(ApiErrorMessage.WEIGHMENT_NO_VALID_FIELDS, StatusCodes.BAD_REQUEST);
   }
 
   updates["updated_at"] = new Date().toISOString();
@@ -142,7 +143,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   if (error || !updated) {
     console.error("Failed to update weighment:", error);
-    return apiError("Failed to update weighment record.", StatusCodes.INTERNAL_SERVER_ERROR);
+    return apiError(ApiErrorMessage.FAILED_TO_UPDATE_WEIGHMENT, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
   return NextResponse.json({ data: updated });
@@ -155,7 +156,7 @@ export const DELETE = withAuth(
     const { deletedIds } = await deleteWeighments(client, factoryId, [entityId]);
 
     if (deletedIds.length === 0) {
-      return apiError("Weighment not found", StatusCodes.NOT_FOUND);
+      return apiError(ApiErrorMessage.WEIGHMENT_NOT_FOUND, StatusCodes.NOT_FOUND);
     }
 
     return NextResponse.json({ success: true, id: entityId });

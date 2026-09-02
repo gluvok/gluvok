@@ -131,6 +131,34 @@ export const ApiErrorMessage = {
   CREATE_ENTRY_FAILED: "Failed to create entry.",
   PROCESS_DEVICE_ENTRY_FAILED: "Failed to process device entry creation.",
   PROCESS_ENTRY_FAILED: "Failed to process entry creation.",
+  CANNOT_APPROVE_NO_PLATE:
+    "Cannot approve an entry with no detected license plate. Please assign a valid vehicle number first.",
+  CANNOT_MODIFY_DEVICE_FIELD: (field: string) => `Cannot modify ${field} on a device entry.`,
+
+  // Weighments Specific
+  RATE_ASSOCIATED_WITH_WEIGHMENT:
+    "This rate is associated with weighment record(s) and cannot be edited.",
+  WEIGHMENT_TYPE_ALREADY_SET: "Weighment type is already set and cannot be modified further.",
+  WEIGHMENT_RATE_ALREADY_SET: "Rate is already set for this weighment and cannot be modified.",
+  WEIGHMENT_RATE_NOT_FOUND: "Rate not found or does not belong to your factory.",
+  WEIGHMENT_ONLY_TYPE_RATE_EDITABLE:
+    "Only the 'type' and 'rate_id' fields can be edited on a weighment record.",
+  WEIGHMENT_NO_VALID_FIELDS: "No valid fields provided for update.",
+  FAILED_TO_UPDATE_WEIGHMENT: "Failed to update weighment record.",
+
+  // Settings Specific
+  ONLY_ADMIN_MODIFY_SETTINGS: "Only admin has permission to modify factory settings.",
+  FACTORY_SETTINGS_NOT_FOUND: "Factory settings not found",
+
+  // Storage / Uploads
+  NO_IMAGE_FILES_PROVIDED: "No image files provided for upload.",
+  FILE_EXCEEDS_MAX_SIZE: (fileName: string, maxMB = 10) =>
+    `File "${fileName}" exceeds maximum allowed size of ${maxMB}MB.`,
+  INVALID_IMAGE_FILE_TYPE: (fileType: string) =>
+    `Invalid file type "${fileType}". Only image files are permitted.`,
+  FAILED_TO_UPLOAD_IMAGE: "Failed to upload image to storage.",
+  FAILED_TO_DELETE_IMAGES: "Failed to delete images from storage.",
+
   DATABASE_QUERY_FAILED: "Database query failed",
 } as const;
 

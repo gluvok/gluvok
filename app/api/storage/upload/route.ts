@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { withAuth, apiError, StatusCodes } from "@/db/helpers";
+import { ApiErrorMessage } from "@/lib/constants/messages";
 import { supabase } from "@/lib/supabase";
 
 const STORAGE_BUCKET_NAME = "gluvok";
@@ -36,7 +37,7 @@ export const POST = withAuth(async (req, user) => {
     }
 
     if (allFiles.length === 0) {
-      return apiError("No image files provided for upload.", StatusCodes.BAD_REQUEST);
+      return apiError(ApiErrorMessage.NO_IMAGE_FILES_PROVIDED, StatusCodes.BAD_REQUEST);
     }
 
     const factoryPrefix = String(user.factory_id ?? "default");
@@ -45,14 +46,14 @@ export const POST = withAuth(async (req, user) => {
     for (const file of allFiles) {
       if (file.size > MAX_IMAGE_SIZE) {
         return apiError(
-          `File "${file.name}" exceeds maximum allowed size of 10MB.`,
+          ApiErrorMessage.FILE_EXCEEDS_MAX_SIZE(file.name, 10),
           StatusCodes.BAD_REQUEST,
         );
       }
 
       if (file.type && !ALLOWED_MIME_TYPES.has(file.type.toLowerCase())) {
         return apiError(
-          `Invalid file type "${file.type}". Only image files are permitted.`,
+          ApiErrorMessage.INVALID_IMAGE_FILE_TYPE(file.type),
           StatusCodes.BAD_REQUEST,
         );
       }
@@ -74,7 +75,7 @@ export const POST = withAuth(async (req, user) => {
 
       if (uploadError) {
         console.error("Supabase storage upload error:", uploadError);
-        return apiError("Failed to upload image to storage.", StatusCodes.INTERNAL_SERVER_ERROR);
+        return apiError(ApiErrorMessage.FAILED_TO_UPLOAD_IMAGE, StatusCodes.INTERNAL_SERVER_ERROR);
       }
 
       const { data } = supabase.storage.from(STORAGE_BUCKET_NAME).getPublicUrl(filePath);
@@ -132,7 +133,7 @@ export const DELETE = withAuth(async (req, user) => {
 
     if (removeError) {
       console.error("Supabase storage deletion error:", removeError);
-      return apiError("Failed to delete images from storage.", StatusCodes.INTERNAL_SERVER_ERROR);
+      return apiError(ApiErrorMessage.FAILED_TO_DELETE_IMAGES, StatusCodes.INTERNAL_SERVER_ERROR);
     }
 
     return NextResponse.json({ success: true, count: targetPaths.length });

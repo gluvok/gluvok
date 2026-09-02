@@ -7,6 +7,7 @@ import {
   formatEntityResponse,
 } from "@/db/helpers";
 import { ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
+import { ApiErrorMessage } from "@/lib/constants/messages";
 import { editSettingsSchema } from "@/lib/validation";
 
 export const PATCH = withAuth(
@@ -14,14 +15,14 @@ export const PATCH = withAuth(
     // Enforce: only admin has permission to modify factory settings
     if (user.role !== Role.ADMIN || !hasPermission(user, ProjectSlug.SETTINGS, PermissionKey.WRITE)) {
       return apiError(
-        "Only admin has permission to modify factory settings.",
+        ApiErrorMessage.ONLY_ADMIN_MODIFY_SETTINGS,
         StatusCodes.FORBIDDEN,
       );
     }
 
     // Verify target entity matches caller's scoped factory
     if (entityId !== factoryId) {
-      return apiError("Factory settings not found", StatusCodes.NOT_FOUND);
+      return apiError(ApiErrorMessage.FACTORY_SETTINGS_NOT_FOUND, StatusCodes.NOT_FOUND);
     }
 
     const body = await req.json().catch(() => ({}));
@@ -47,7 +48,7 @@ export const PATCH = withAuth(
       .maybeSingle();
 
     if (error || !updated) {
-      return apiError("Factory settings not found", StatusCodes.NOT_FOUND);
+      return apiError(ApiErrorMessage.FACTORY_SETTINGS_NOT_FOUND, StatusCodes.NOT_FOUND);
     }
 
     return formatEntityResponse(updated);

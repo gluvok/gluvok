@@ -242,6 +242,65 @@ describe("Entries Service", () => {
       expect(mockTryMerge).toHaveBeenCalledWith(mockClient, 10, 101);
     });
 
+    it("creates a device entry with NO_PLATE_DETECTED without querying centers table", async () => {
+      const insertedEntry = {
+        id: 102,
+        detected_vehicle_number: "NO_PLATE_DETECTED",
+        vehicle_number: "NO_PLATE_DETECTED",
+        weight: 15000,
+        source: EntrySource.DEVICE,
+        center_id: 1,
+        user_id: 5,
+        customer_id: null,
+        factory_id: 10,
+        status: EntryStatus.PENDING,
+        auto_approved: false,
+        images: ["http://img1.jpg"],
+      };
+
+      const centersQueryMock = vi.fn();
+      mockClient.from.mockImplementation((table: string) => {
+        if (table === "centers") {
+          centersQueryMock();
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            is: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { id: 1, auto_approve: true },
+              error: null,
+            }),
+          };
+        }
+        if (table === "entries") {
+          return {
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi
+                  .fn()
+                  .mockResolvedValue({ data: insertedEntry, error: null }),
+              }),
+            }),
+          };
+        }
+      });
+
+      const res = await createEntry(mockClient, {
+        factoryId: 10,
+        userId: 5,
+        vehicleNumber: "NO_PLATE_DETECTED",
+        detectedVehicleNumber: "NO_PLATE_DETECTED",
+        weight: 15000,
+        centerId: 1,
+        source: EntrySource.DEVICE,
+      });
+
+      expect(res).toEqual(insertedEntry);
+      expect(centersQueryMock).not.toHaveBeenCalled();
+      expect(mockValidateSeq).not.toHaveBeenCalled();
+      expect(mockTryMerge).not.toHaveBeenCalled();
+    });
+
     it("throws error when db insert fails", async () => {
       mockClient.from.mockImplementation((table: string) => {
         if (table === "centers") {

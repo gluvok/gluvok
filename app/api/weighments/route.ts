@@ -9,6 +9,7 @@ import {
   parseBulkIds,
 } from "@/db/helpers";
 import { ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
+import { ApiErrorMessage } from "@/lib/constants/messages";
 import { formatWeighmentRecord, deleteWeighments } from "@/lib/services/weighments";
 
 export const GET = withAuth(async (req, user, client) => {
@@ -221,7 +222,7 @@ export const GET = withAuth(async (req, user, client) => {
 
   if (error) {
     console.error("Supabase query error:", error);
-    return apiError(error.message || "Database query failed", StatusCodes.INTERNAL_SERVER_ERROR);
+    return apiError(error.message || ApiErrorMessage.DATABASE_QUERY_FAILED, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
   // 8. Format response rows
@@ -241,13 +242,13 @@ export const DELETE = withAuth(async (req, user, client) => {
 
   const ids = parseBulkIds(await req.json().catch(() => null));
   if (!ids) {
-    return apiError("Please provide valid IDs to delete.", StatusCodes.BAD_REQUEST);
+    return apiError(ApiErrorMessage.PROVIDE_VALID_IDS, StatusCodes.BAD_REQUEST);
   }
 
   const { deletedIds } = await deleteWeighments(client, user.factory_id!, ids);
 
   if (deletedIds.length === 0) {
-    return apiError("One or more weighments not found", StatusCodes.NOT_FOUND);
+    return apiError(ApiErrorMessage.ONE_OR_MORE_WEIGHMENTS_NOT_FOUND, StatusCodes.NOT_FOUND);
   }
 
   return NextResponse.json({ success: true, deleted_count: deletedIds.length });

@@ -32,7 +32,7 @@ describe("entries validation", () => {
     expect(result.status).toBe(EntryStatus.PENDING);
   });
 
-  it("parses valid device entry data with default pending status", () => {
+  it("parses valid device entry data with images default to empty array", () => {
     const result = addDeviceEntrySchema.parse({
       detected_vehicle_number: "MH12AB1234",
       weight: "18000",
@@ -42,21 +42,20 @@ describe("entries validation", () => {
     expect(result.detected_vehicle_number).toBe("MH12AB1234");
     expect(result.weight).toBe(18000);
     expect(result.center_id).toBe(3);
-    expect(result.status).toBe(EntryStatus.PENDING);
     expect(result.images).toEqual([]);
+    expect(result).not.toHaveProperty("status");
   });
 
-  it("parses valid device entry data with explicit approved status", () => {
+  it("parses valid device entry data with provided images", () => {
     const result = addDeviceEntrySchema.parse({
       detected_vehicle_number: "MH12AB1234",
       weight: 18000,
       center_id: 3,
-      status: EntryStatus.APPROVED,
       images: ["base64image"],
     });
 
-    expect(result.status).toBe(EntryStatus.APPROVED);
     expect(result.images).toEqual(["base64image"]);
+    expect(result).not.toHaveProperty("status");
   });
 
   it("allows NO_PLATE_DETECTED in device entry schema", () => {

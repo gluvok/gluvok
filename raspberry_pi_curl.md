@@ -144,13 +144,15 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
     "detected_vehicle_number": "MH12AB1234",
     "weight": 14250.5,
     "center_id": 1,
-    "status": "pending",
     "images": [
       "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/abc12345-1725210000.jpg",
       "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/def67890-1725210001.jpg"
     ]
   }'
 ```
+
+> [!NOTE]
+> Entry status is resolved automatically server-side. Entries default to `pending`, and are automatically set to `approved` (with `auto_approved: true`) if the collection center has auto-approval enabled and a plate was detected.
 
 ### Request Fields Specification
 
@@ -159,7 +161,6 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 | `detected_vehicle_number` | String | **Yes** | Raw OCR/ANPR text recognized by the camera (or `"NO_PLATE_DETECTED"`) |
 | `weight` | Number | **Yes** | Positive numeric weight (kg/tons) |
 | `center_id` | Integer | **Yes** | Center / weighbridge ID |
-| `status` | String | No | `"pending"`, `"approved"`, or `"rejected"` (Default: `"pending"`) |
 | `images` | Array | No | Array of uploaded public image URLs or Base64 data URIs |
 
 ### Response (`201 Created`)

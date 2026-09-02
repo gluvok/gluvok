@@ -130,7 +130,6 @@ export const POST = withAuth(async (req, user, client) => {
           vehicleNumber: (parsed.data as AddDeviceEntryInput).detected_vehicle_number,
           weight: (parsed.data as AddDeviceEntryInput).weight,
           centerId: (parsed.data as AddDeviceEntryInput).center_id,
-          status: (parsed.data as AddDeviceEntryInput).status,
           images: (parsed.data as AddDeviceEntryInput).images,
         })
       : await createEntry(client, {

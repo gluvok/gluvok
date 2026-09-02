@@ -27,7 +27,6 @@ export const deviceVehicleNumberSchema = (fieldName = "Vehicle Number") =>
 export const baseEntrySchema = z.object({
   weight: positiveWeightSchema("Weight"),
   center_id: integerIdSchema("Center"),
-  status: entryStatusSchema,
 });
 
 export const addEntrySchema = baseEntrySchema.extend({
@@ -35,6 +34,7 @@ export const addEntrySchema = baseEntrySchema.extend({
   source: z.enum([EntrySource.MANUAL, EntrySource.DEVICE]).optional(),
   user_id: optionalIntegerIdSchema("User").default(null),
   customer_id: optionalIntegerIdSchema("Customer").default(null),
+  status: entryStatusSchema,
   images: z.array(z.string()).optional(),
 });
 

@@ -27,7 +27,7 @@ import {
 import { Spinner } from "@/components/kibo-ui/spinner";
 import { toast } from "sonner";
 import {
-  Building,
+  Factory as FactoryIcon,
   ShieldCheck,
   ShieldAlert,
   Save,
@@ -150,7 +150,7 @@ export function SettingsView({ desc }: SettingsViewProps) {
       <Card className="border-border/70 shadow-xs">
         <CardHeader className="border-b border-border/60 pb-4">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Building className="h-4.5 w-4.5 text-primary" />
+            <FactoryIcon className="h-4.5 w-4.5 text-primary" />
             Factory Settings
           </CardTitle>
           <CardDescription className="text-xs">

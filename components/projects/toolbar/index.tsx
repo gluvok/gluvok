@@ -21,7 +21,7 @@ import {
   ListFilter,
   Calendar,
   Building,
-  User,
+  UserCog,
   Users,
   Tag,
   IndianRupee,
@@ -106,8 +106,15 @@ function getFilterChipIcon(
   if (id === "center_id" || id === "center_name") {
     return Building;
   }
-  if (id === "user_id" || id === "user_name") {
-    return User;
+  if (
+    id === "user_id" ||
+    id === "user_name" ||
+    id === "in_user_id" ||
+    id === "in_user_name" ||
+    id === "out_user_id" ||
+    id === "out_user_name"
+  ) {
+    return UserCog;
   }
   if (id === "customer_id" || id === "customer_name") {
     return Users;

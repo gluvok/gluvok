@@ -25,6 +25,7 @@ import {
   Users,
   Tag,
   IndianRupee,
+  Truck,
 } from "lucide-react";
 import { format } from "date-fns";
 import { DataTableViewOptions } from "@/components/data-table";
@@ -142,6 +143,9 @@ function getFilterChipIcon(
   }
   if (id === "auto_approved" || id === "auto_approve") {
     return getAutoApproveIcon(String(value || ""));
+  }
+  if (id === "vehicle_number" || id === "detected_vehicle_number") {
+    return Truck;
   }
   return ListFilter;
 }

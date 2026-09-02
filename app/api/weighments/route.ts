@@ -204,15 +204,14 @@ export const GET = withAuth(async (req, user, client) => {
   }
 
   // 6. Sorting
-  const entrySortPrefix = sortColumn.startsWith("in_entry_")
-    ? "in_entry."
-    : sortColumn.startsWith("out_entry_")
-      ? "out_entry."
-      : "";
-
-  const effectiveSortColumn = entrySortPrefix
-    ? `${entrySortPrefix}${sortColumn.replace(/^(in|out)_entry_/, "")}`
-    : sortColumn;
+  const effectiveSortColumn =
+    sortColumn === "vehicle_number"
+      ? "in_entry.vehicle_number"
+      : sortColumn.startsWith("in_entry_")
+        ? `in_entry.${sortColumn.replace(/^in_entry_/, "")}`
+        : sortColumn.startsWith("out_entry_")
+          ? `out_entry.${sortColumn.replace(/^out_entry_/, "")}`
+          : sortColumn;
 
   query = query.order(effectiveSortColumn, { ascending: !sortDesc });
 

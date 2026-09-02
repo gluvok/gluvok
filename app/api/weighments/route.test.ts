@@ -155,6 +155,33 @@ describe("GET /api/weighments", () => {
     expect(response.status).toBe(200);
     expect(orMock).toHaveBeenCalledWith("in_entry_id.in.(101,102),out_entry_id.in.(101,102)");
   });
+
+  it("sorts by in_entry.vehicle_number when sort_column is vehicle_number", async () => {
+    const orderMock = vi.fn();
+    const mockQuery: Record<string, unknown> = {};
+    mockQuery.select = vi.fn(() => mockQuery);
+    mockQuery.eq = vi.fn(() => mockQuery);
+    mockQuery.is = vi.fn(() => mockQuery);
+    mockQuery.order = orderMock.mockImplementation(() => mockQuery);
+    mockQuery.range = vi.fn().mockResolvedValue({
+      data: [],
+      count: 0,
+      error: null,
+    });
+
+    const mockDb = {
+      from: vi.fn(() => mockQuery),
+    };
+
+    const req = new NextRequest(
+      "http://localhost/api/weighments?sort_column=vehicle_number&sort_desc=false",
+    );
+    const handler = GET as unknown as RawHandler;
+    const response = await handler(req, sampleUser, mockDb);
+
+    expect(response.status).toBe(200);
+    expect(orderMock).toHaveBeenCalledWith("in_entry.vehicle_number", { ascending: true });
+  });
 });
 
 describe("DELETE /api/weighments", () => {

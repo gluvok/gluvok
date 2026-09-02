@@ -176,37 +176,37 @@ export function ActionCell<T extends EntityRecord>({
           </DropdownMenuLabel>
           <DropdownMenuItem
             id={`actions-copy-${projectSlug}-${itemId}`}
-            className="text-xs cursor-pointer gap-2 py-1.5 px-2 rounded-lg transition-colors focus:bg-muted focus:text-foreground"
+            className="text-xs cursor-pointer gap-2 py-1.5 px-2 rounded-lg transition-colors focus:bg-sky-500/10 focus:text-foreground"
             onClick={() => {
               navigator.clipboard.writeText(itemId);
               toast.success("Identifier copied to clipboard");
             }}
           >
-            <Copy className="h-3.5 w-3.5 text-muted-foreground/70" /> Copy ID
+            <Copy className="h-3.5 w-3.5 text-sky-500 dark:text-sky-400" /> Copy ID
           </DropdownMenuItem>
           <DropdownMenuItem
             id={`actions-download-pdf-${projectSlug}-${itemId}`}
-            className="text-xs cursor-pointer gap-2 py-1.5 px-2 rounded-lg transition-colors focus:bg-muted focus:text-foreground"
+            className="text-xs cursor-pointer gap-2 py-1.5 px-2 rounded-lg transition-colors focus:bg-rose-500/10 focus:text-foreground"
             onClick={() => downloadPDF(table, projectName, undefined, [row], projectSlug)}
           >
-            <FileDown className="h-3.5 w-3.5 text-muted-foreground/70" /> Download PDF
+            <FileDown className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400" /> Download PDF
           </DropdownMenuItem>
           {projectSlug === ProjectSlug.TICKETS && (
             <DropdownMenuItem
               id={`actions-view-ticket-${itemId}`}
-              className="text-xs cursor-pointer gap-2 py-1.5 px-2 rounded-lg transition-colors focus:bg-muted focus:text-foreground"
+              className="text-xs cursor-pointer gap-2 py-1.5 px-2 rounded-lg transition-colors focus:bg-blue-500/10 focus:text-foreground"
               onClick={() => setViewTicketOpen(true)}
             >
-              <Eye className="h-3.5 w-3.5 text-muted-foreground/70" /> View Details
+              <Eye className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" /> View Details
             </DropdownMenuItem>
           )}
           {canRaiseTicket && (
             <DropdownMenuItem
               id={`actions-ticket-${projectSlug}-${itemId}`}
-              className="text-xs cursor-pointer gap-2 py-1.5 px-2 rounded-lg transition-colors focus:bg-muted focus:text-foreground"
+              className="text-xs cursor-pointer gap-2 py-1.5 px-2 rounded-lg text-amber-600 dark:text-amber-400 focus:bg-amber-500/10 focus:text-amber-700 dark:focus:text-amber-300 transition-colors"
               onClick={() => setTicketDialogOpen(true)}
             >
-              <Ticket className="h-3.5 w-3.5 text-muted-foreground/70" /> Raise Ticket
+              <Ticket className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" /> Raise Ticket
             </DropdownMenuItem>
           )}
           {canApproveEntry && (
@@ -238,10 +238,10 @@ export function ActionCell<T extends EntityRecord>({
               )}
               <DropdownMenuItem
                 id={`actions-edit-${projectSlug}-${itemId}`}
-                className="text-xs cursor-pointer gap-2 py-1.5 px-2 rounded-lg transition-colors focus:bg-muted focus:text-foreground"
+                className="text-xs cursor-pointer gap-2 py-1.5 px-2 rounded-lg transition-colors focus:bg-indigo-500/10 focus:text-foreground"
                 onClick={() => callbacks.onEdit(item)}
               >
-                <Pencil className="h-3.5 w-3.5 text-muted-foreground/70" /> Edit
+                <Pencil className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" /> Edit
               </DropdownMenuItem>
             </>
           )}

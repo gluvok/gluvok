@@ -127,9 +127,7 @@ export const POST = withAuth(async (req, user, client) => {
           userId: parseInt(user.sub, 10),
           source: EntrySource.DEVICE,
           detectedVehicleNumber: (parsed.data as AddDeviceEntryInput).detected_vehicle_number,
-          vehicleNumber:
-            (parsed.data as AddDeviceEntryInput).vehicle_number ||
-            (parsed.data as AddDeviceEntryInput).detected_vehicle_number,
+          vehicleNumber: (parsed.data as AddDeviceEntryInput).detected_vehicle_number,
           weight: (parsed.data as AddDeviceEntryInput).weight,
           centerId: (parsed.data as AddDeviceEntryInput).center_id,
           status: (parsed.data as AddDeviceEntryInput).status,
@@ -138,8 +136,9 @@ export const POST = withAuth(async (req, user, client) => {
       : await createEntry(client, {
           factoryId: user.factory_id,
           userId: parseInt(user.sub, 10),
-          source: EntrySource.MANUAL,
+          source: (parsed.data as AddEntryInput).source || EntrySource.MANUAL,
           vehicleNumber: (parsed.data as AddEntryInput).vehicle_number,
+          detectedVehicleNumber: null,
           weight: (parsed.data as AddEntryInput).weight,
           centerId: (parsed.data as AddEntryInput).center_id,
           customerId: (parsed.data as AddEntryInput).customer_id,

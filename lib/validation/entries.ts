@@ -5,7 +5,6 @@
 
 import * as z from "zod";
 import { EntryStatus, EntrySource } from "@/lib/constants/enums";
-import { ValidationMessage } from "@/lib/constants/messages";
 import {
   integerIdSchema,
   optionalIntegerIdSchema,
@@ -15,31 +14,32 @@ import {
   optionalPositiveWeightSchema,
 } from "./helpers";
 
-export const addEntrySchema = z.object({
-  detected_vehicle_number: z.string().optional().nullable(),
-  vehicle_number: indianPlateSchema("Vehicle Number"),
-  weight: positiveWeightSchema("Weight"),
-  source: z.enum([EntrySource.MANUAL, EntrySource.DEVICE]).optional(),
-  center_id: integerIdSchema("Center"),
-  user_id: optionalIntegerIdSchema("User").default(null),
-  customer_id: optionalIntegerIdSchema("Customer").default(null),
-  status: z
-    .enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED])
-    .default(EntryStatus.PENDING),
-  images: z.array(z.string()).optional(),
-});
+export const entryStatusSchema = z
+  .enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED])
+  .default(EntryStatus.PENDING);
 
 export const deviceVehicleNumberSchema = (fieldName = "Vehicle Number") =>
   z.union([z.literal("NO_PLATE_DETECTED"), indianPlateSchema(fieldName)]);
 
-export const addDeviceEntrySchema = z.object({
-  detected_vehicle_number: z.string().min(1, ValidationMessage.REQUIRED("Detected vehicle number")),
-  vehicle_number: deviceVehicleNumberSchema("Vehicle Number").optional(),
+/**
+ * Common schema fields shared across addEntrySchema and addDeviceEntrySchema.
+ */
+export const baseEntrySchema = z.object({
   weight: positiveWeightSchema("Weight"),
   center_id: integerIdSchema("Center"),
-  status: z
-    .enum([EntryStatus.PENDING, EntryStatus.APPROVED, EntryStatus.REJECTED])
-    .default(EntryStatus.PENDING),
+  status: entryStatusSchema,
+});
+
+export const addEntrySchema = baseEntrySchema.extend({
+  vehicle_number: indianPlateSchema("Vehicle Number"),
+  source: z.enum([EntrySource.MANUAL, EntrySource.DEVICE]).optional(),
+  user_id: optionalIntegerIdSchema("User").default(null),
+  customer_id: optionalIntegerIdSchema("Customer").default(null),
+  images: z.array(z.string()).optional(),
+});
+
+export const addDeviceEntrySchema = baseEntrySchema.extend({
+  detected_vehicle_number: deviceVehicleNumberSchema("Detected vehicle number"),
   images: z.array(z.string()).optional().default([]),
 });
 

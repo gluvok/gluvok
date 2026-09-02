@@ -298,7 +298,6 @@ describe("Entries route handlers (/api/entries)", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           detected_vehicle_number: "KA01AB1234",
-          vehicle_number: "KA01AB1234",
           weight: 15000,
           center_id: 1,
         }),

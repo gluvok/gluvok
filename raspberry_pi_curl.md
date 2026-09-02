@@ -32,8 +32,8 @@ Authenticate the device with its username and password to receive an `access_tok
 curl -X POST "https://gluvok.vercel.app/api/auth/login" \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "raspberry_pi_01",
-    "password": "your_secure_device_password"
+    "username": "pi1",
+    "password": "hardware123"
   }'
 ```
 
@@ -142,7 +142,6 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
   -H "Content-Type: application/json" \
   -d '{
     "detected_vehicle_number": "MH12AB1234",
-    "vehicle_number": "MH12AB1234",
     "weight": 14250.5,
     "center_id": 1,
     "status": "pending",
@@ -157,8 +156,7 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `detected_vehicle_number` | String | **Yes** | Raw OCR/ANPR text recognized by the camera |
-| `vehicle_number` | String | **Yes** | Validated Indian vehicle number (e.g. `MH12AB1234`) |
+| `detected_vehicle_number` | String | **Yes** | Raw OCR/ANPR text recognized by the camera (or `"NO_PLATE_DETECTED"`) |
 | `weight` | Number | **Yes** | Positive numeric weight (kg/tons) |
 | `center_id` | Integer | **Yes** | Center / weighbridge ID |
 | `status` | String | No | `"pending"`, `"approved"`, or `"rejected"` (Default: `"pending"`) |

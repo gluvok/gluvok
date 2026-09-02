@@ -3,7 +3,6 @@ import { EntryStatus, EntrySource } from "@/lib/constants/enums";
 import { addDeviceEntrySchema, addEntrySchema, editEntrySchema } from "./entries";
 
 const validEntry = {
-  detected_vehicle_number: "PB10XY1234",
   vehicle_number: "PB10XY1234",
   weight: "15.5",
   center_id: "1",
@@ -18,7 +17,7 @@ describe("entries validation", () => {
     expect(result.customer_id).toBeNull();
   });
 
-  it("parses valid manual entry with omitted detected_vehicle_number and user_id", () => {
+  it("parses valid manual entry with omitted user_id", () => {
     const result = addEntrySchema.parse({
       vehicle_number: "MH12AB1234",
       weight: "15000",
@@ -36,13 +35,11 @@ describe("entries validation", () => {
   it("parses valid device entry data with default pending status", () => {
     const result = addDeviceEntrySchema.parse({
       detected_vehicle_number: "MH12AB1234",
-      vehicle_number: "MH12AB1234",
       weight: "18000",
       center_id: "3",
     });
 
     expect(result.detected_vehicle_number).toBe("MH12AB1234");
-    expect(result.vehicle_number).toBe("MH12AB1234");
     expect(result.weight).toBe(18000);
     expect(result.center_id).toBe(3);
     expect(result.status).toBe(EntryStatus.PENDING);
@@ -52,7 +49,6 @@ describe("entries validation", () => {
   it("parses valid device entry data with explicit approved status", () => {
     const result = addDeviceEntrySchema.parse({
       detected_vehicle_number: "MH12AB1234",
-      vehicle_number: "MH12AB1234",
       weight: 18000,
       center_id: 3,
       status: EntryStatus.APPROVED,
@@ -64,28 +60,17 @@ describe("entries validation", () => {
   });
 
   it("allows NO_PLATE_DETECTED in device entry schema", () => {
-    const withDetectedOnly = addDeviceEntrySchema.parse({
+    const withNoPlate = addDeviceEntrySchema.parse({
       detected_vehicle_number: "NO_PLATE_DETECTED",
       weight: "18000",
       center_id: "3",
     });
-    expect(withDetectedOnly.detected_vehicle_number).toBe("NO_PLATE_DETECTED");
-    expect(withDetectedOnly.vehicle_number).toBeUndefined();
-
-    const withBoth = addDeviceEntrySchema.parse({
-      detected_vehicle_number: "NO_PLATE_DETECTED",
-      vehicle_number: "NO_PLATE_DETECTED",
-      weight: "18000",
-      center_id: "3",
-    });
-    expect(withBoth.detected_vehicle_number).toBe("NO_PLATE_DETECTED");
-    expect(withBoth.vehicle_number).toBe("NO_PLATE_DETECTED");
+    expect(withNoPlate.detected_vehicle_number).toBe("NO_PLATE_DETECTED");
   });
 
   it("rejects device entry when detected_vehicle_number is missing", () => {
     expect(() =>
       addDeviceEntrySchema.parse({
-        vehicle_number: "MH12AB1234",
         weight: 18000,
         center_id: 3,
       }),

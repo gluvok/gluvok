@@ -51,7 +51,7 @@ export default async function ProjectPage({ params }: Props) {
       <ProjectHeader projectSlug={projectSlug} projectName={projectName} Icon={IconComponent} />
 
       {/* Main dashboard content container */}
-      <main className="p-6 w-full min-w-0">
+      <main className="p-6 w-full min-w-0 flex-1 flex flex-col">
         <ProjectClient
           key={projectSlug}
           projectName={projectName}

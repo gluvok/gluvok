@@ -16,7 +16,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Truck, ArrowRight, Scale, Loader2 } from "lucide-react";
+import { Truck, ArrowRight, Scale, Loader2, Save, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getField } from "@/lib/store";
 import { DialogMode } from "@/lib/constants/enums";
@@ -212,9 +212,9 @@ export function EntityDialog(props: EntityDialogProps) {
                 size="sm"
                 onClick={() => formState.setTripModalOpen(false)}
                 disabled={isSubmittingChoice}
-                className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground"
+                className="gap-1.5 h-8 px-3 text-xs text-muted-foreground hover:text-foreground"
               >
-                Back to Edit
+                <ArrowLeft className="h-3.5 w-3.5" /> Back to Edit
               </Button>
               <Button
                 size="sm"
@@ -229,7 +229,11 @@ export function EntityDialog(props: EntityDialogProps) {
                 disabled={isSubmittingChoice}
                 className="gap-1.5 h-8 px-3.5 text-xs shadow-sm"
               >
-                {isSubmittingChoice && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {isSubmittingChoice ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Save className="h-3.5 w-3.5" />
+                )}
                 Confirm Update
               </Button>
             </DialogFooter>

@@ -45,7 +45,7 @@ export function getWeighmentsColumns<T extends RowData>(): ColumnDef<ProjectTabl
         <span
           className={cn(
             badgeBaseClass,
-            "uppercase tracking-wide gap-1.5",
+            "tracking-wide gap-1.5",
             getUnitColorClass(unit),
           )}
         >

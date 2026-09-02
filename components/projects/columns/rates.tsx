@@ -42,7 +42,7 @@ export function getRatesColumns<T extends RowData>(): ColumnDef<ProjectTableFeat
         <span
           className={cn(
             badgeBaseClass,
-            "uppercase tracking-wide",
+            "tracking-wide",
             getUnitColorClass(unit),
           )}
         >

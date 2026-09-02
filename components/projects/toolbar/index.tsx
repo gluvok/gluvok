@@ -13,12 +13,32 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import { Search, Plus, RotateCw, X, ListFilter } from "lucide-react";
+import {
+  Search,
+  Plus,
+  RotateCw,
+  X,
+  ListFilter,
+  Calendar,
+  Building,
+  User,
+  Users,
+  Tag,
+  IndianRupee,
+} from "lucide-react";
 import { format } from "date-fns";
 import { DataTableViewOptions } from "@/components/data-table";
 import { BulkActions } from "./bulk-actions";
 import { ProjectFilters, hasProjectFilters } from "@/components/projects/filters";
 import { useAuthStore, getPermissions } from "@/lib/store";
+import {
+  getRoleIcon,
+  getSourceIcon,
+  getStatusIcon,
+  getTypeIcon,
+  getUnitIcon,
+  getAutoApproveIcon,
+} from "@/lib/fields";
 import { type EntityRecord } from "@/types";
 
 interface ProjectToolbarProps<TData extends RowData> {
@@ -68,6 +88,55 @@ function formatFilterChipLabel(id: string, value: unknown): string {
   if (valStr === "true") return `${capitalizedId}: Yes`;
   if (valStr === "false") return `${capitalizedId}: No`;
   return `${capitalizedId}: ${valStr}`;
+}
+
+function getFilterChipIcon(
+  id: string,
+  value?: unknown,
+): React.ComponentType<{ className?: string }> {
+  if (
+    id === "date_range" ||
+    id === "start_date" ||
+    id === "end_date" ||
+    id === "created_at" ||
+    id === "updated_at"
+  ) {
+    return Calendar;
+  }
+  if (id === "center_id" || id === "center_name") {
+    return Building;
+  }
+  if (id === "user_id" || id === "user_name") {
+    return User;
+  }
+  if (id === "customer_id" || id === "customer_name") {
+    return Users;
+  }
+  if (id === "commodity_id" || id === "commodity_name") {
+    return Tag;
+  }
+  if (id === "rate_id") {
+    return IndianRupee;
+  }
+  if (id === "role") {
+    return getRoleIcon(String(value || ""));
+  }
+  if (id === "source") {
+    return getSourceIcon(String(value || ""));
+  }
+  if (id === "status") {
+    return getStatusIcon(String(value || ""));
+  }
+  if (id === "type") {
+    return getTypeIcon(String(value || ""));
+  }
+  if (id === "unit") {
+    return getUnitIcon(String(value || ""));
+  }
+  if (id === "auto_approved" || id === "auto_approve") {
+    return getAutoApproveIcon(String(value || ""));
+  }
+  return ListFilter;
 }
 
 export function ProjectToolbar<TData extends RowData>({
@@ -211,7 +280,12 @@ export function ProjectToolbar<TData extends RowData>({
             (() => {
               const hasStartDate = columnFilters.find((f) => f.id === "start_date");
               const hasEndDate = columnFilters.find((f) => f.id === "end_date");
-              const chips: { id: string; label: string; onRemove: () => void }[] = [];
+              const chips: {
+                id: string;
+                label: string;
+                icon: React.ComponentType<{ className?: string }>;
+                onRemove: () => void;
+              }[] = [];
 
               if (hasStartDate && hasEndDate) {
                 const fromStr = formatSafeDate(String(hasStartDate.value));
@@ -219,6 +293,7 @@ export function ProjectToolbar<TData extends RowData>({
                 chips.push({
                   id: "date_range",
                   label: `Date: ${fromStr} – ${toStr}`,
+                  icon: Calendar,
                   onRemove: () => {
                     table.setColumnFilters((prev) =>
                       prev.filter((f) => f.id !== "start_date" && f.id !== "end_date"),
@@ -229,6 +304,7 @@ export function ProjectToolbar<TData extends RowData>({
                 chips.push({
                   id: "start_date",
                   label: `From: ${formatSafeDate(String(hasStartDate.value))}`,
+                  icon: Calendar,
                   onRemove: () => {
                     table.setColumnFilters((prev) => prev.filter((f) => f.id !== "start_date"));
                   },
@@ -237,6 +313,7 @@ export function ProjectToolbar<TData extends RowData>({
                 chips.push({
                   id: "end_date",
                   label: `To: ${formatSafeDate(String(hasEndDate.value))}`,
+                  icon: Calendar,
                   onRemove: () => {
                     table.setColumnFilters((prev) => prev.filter((f) => f.id !== "end_date"));
                   },
@@ -250,6 +327,7 @@ export function ProjectToolbar<TData extends RowData>({
                 chips.push({
                   id: filter.id,
                   label: formatFilterChipLabel(filter.id, filter.value),
+                  icon: getFilterChipIcon(filter.id, filter.value),
                   onRemove: () => {
                     table.setColumnFilters((prev) => prev.filter((f) => f.id !== filter.id));
                   },
@@ -261,23 +339,27 @@ export function ProjectToolbar<TData extends RowData>({
                   <span className="text-[11px] font-medium text-muted-foreground mr-1">
                     Active:
                   </span>
-                  {chips.map((chip) => (
-                    <Badge
-                      key={chip.id}
-                      variant="secondary"
-                      className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-muted/80 hover:bg-muted text-foreground border border-border/60 transition-colors"
-                    >
-                      <span>{chip.label}</span>
-                      <button
-                        type="button"
-                        onClick={chip.onRemove}
-                        className="h-3.5 w-3.5 rounded-full hover:bg-foreground/10 flex items-center justify-center transition-colors"
-                        title={`Remove ${chip.id} filter`}
+                  {chips.map((chip) => {
+                    const ChipIcon = chip.icon;
+                    return (
+                      <Badge
+                        key={chip.id}
+                        variant="secondary"
+                        className="h-6 gap-1.5 pl-2 pr-1 text-[11px] font-medium bg-muted/80 hover:bg-muted text-foreground border border-border/60 transition-colors inline-flex items-center"
                       >
-                        <X className="h-2.5 w-2.5 text-muted-foreground hover:text-foreground" />
-                      </button>
-                    </Badge>
-                  ))}
+                        <ChipIcon className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span>{chip.label}</span>
+                        <button
+                          type="button"
+                          onClick={chip.onRemove}
+                          className="h-3.5 w-3.5 rounded-full hover:bg-foreground/10 flex items-center justify-center transition-colors ml-0.5"
+                          title={`Remove ${chip.id} filter`}
+                        >
+                          <X className="h-2.5 w-2.5 text-muted-foreground hover:text-foreground" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
                   <Button
                     variant="ghost"
                     size="sm"

@@ -109,7 +109,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     if (body.rate_id !== null) {
       const { data: validRate } = await client
         .from("rates")
-        .select("id")
+        .select("id, unit")
         .eq("id", body.rate_id)
         .eq("factory_id", user.factory_id!)
         .is("deleted_at", null)
@@ -121,6 +121,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
           StatusCodes.BAD_REQUEST,
         );
       }
+      updates["unit"] = validRate.unit;
     }
     updates["rate_id"] = body.rate_id;
   }

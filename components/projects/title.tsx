@@ -37,17 +37,15 @@ export function ProjectTitle({
     `Manage the directory of ${projectName.toLowerCase()}, edit records, and configure settings.`;
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-foreground">
-          <Icon className="h-6 w-6 text-primary" />
-          {projectName}
+    <div className="flex flex-col gap-1.5 mb-6">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2 text-foreground min-w-0">
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary shrink-0" />
+          <span className="truncate">{projectName}</span>
         </h1>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
       </div>
-      {actions && (
-        <div className="flex items-center gap-2 self-end sm:self-auto mr-1 sm:mr-2">{actions}</div>
-      )}
+      <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{description}</p>
     </div>
   );
 }

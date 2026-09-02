@@ -6,7 +6,9 @@ import {
   getTypeIcon,
   getAutoApproveIcon,
   getRoleIcon,
+  getUnitIcon,
   getItemIcon,
+  getItemColorClass,
 } from "./helpers";
 import {
   Flower2,
@@ -35,6 +37,10 @@ import {
   HardHat,
   Bot,
   Shield,
+  Ruler,
+  Scale,
+  Weight,
+  Droplet,
 } from "lucide-react";
 import {
   EntrySource,
@@ -43,6 +49,7 @@ import {
   ProjectSlug,
   WeighmentType,
   Role,
+  Unit,
 } from "@/lib/constants/enums";
 
 describe("Field Helpers & Icon Mapping", () => {
@@ -134,6 +141,15 @@ describe("Field Helpers & Icon Mapping", () => {
     });
   });
 
+  describe("getUnitIcon", () => {
+    it("returns distinct measurement icons for each unit", () => {
+      expect(getUnitIcon()).toBe(Ruler);
+      expect(getUnitIcon(Unit.KG)).toBe(Weight);
+      expect(getUnitIcon(Unit.Q)).toBe(Scale);
+      expect(getUnitIcon(Unit.GAL)).toBe(Droplet);
+    });
+  });
+
   describe("getItemIcon", () => {
     it("resolves commodity, source, status, type, and verification icons correctly", () => {
       expect(getItemIcon(ProjectSlug.COMMODITIES, "Mustard")).toBe(Flower2);
@@ -143,6 +159,34 @@ describe("Field Helpers & Icon Mapping", () => {
       expect(getItemIcon(FieldType.ENTRY_STATUS, "All Statuses")).toBe(Activity);
       expect(getItemIcon(FieldType.ENTRY_STATUS, "Pending")).toBe(Clock);
       expect(getItemIcon("verification", "All Verifications")).toBe(ShieldCheck);
+    });
+  });
+
+  describe("getItemColorClass", () => {
+    it("resolves semantic colors for filter and combobox values", () => {
+      expect(getItemColorClass("unit", "all")).toBe("text-blue-700 dark:text-blue-300");
+      expect(getItemColorClass("source", "all")).toBe("text-sky-700 dark:text-sky-300");
+      expect(getItemColorClass("type", "all")).toBe("text-indigo-700 dark:text-indigo-300");
+      expect(getItemColorClass(FieldType.ENTRY_STATUS, "all")).toBe(
+        "text-blue-700 dark:text-blue-300",
+      );
+      expect(getItemColorClass("verification", "all")).toBe(
+        "text-cyan-700 dark:text-cyan-300",
+      );
+      expect(getItemColorClass("role", "all")).toBe("text-indigo-700 dark:text-indigo-300");
+      expect(getItemColorClass("unit", Unit.KG)).toBe("text-blue-700 dark:text-blue-300");
+      expect(getItemColorClass("source", EntrySource.DEVICE)).toBe(
+        "text-sky-700 dark:text-sky-300",
+      );
+      expect(getItemColorClass(FieldType.ENTRY_STATUS, EntryStatus.APPROVED)).toBe(
+        "text-emerald-700 dark:text-emerald-300",
+      );
+      expect(getItemColorClass("verification", "false")).toBe("text-amber-700 dark:text-amber-300");
+      expect(getItemColorClass("auto_approve", "false")).toBe("text-red-700 dark:text-red-300");
+      expect(getItemColorClass("type", WeighmentType.OUT)).toBe(
+        "text-orange-700 dark:text-orange-300",
+      );
+      expect(getItemColorClass("role", Role.ADMIN)).toBe("text-purple-700 dark:text-purple-300");
     });
   });
 });

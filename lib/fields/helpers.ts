@@ -10,6 +10,7 @@ import {
   EntrySource,
   EntryStatus,
   FieldType,
+  Unit,
 } from "@/lib/constants/enums";
 import {
   Sprout,
@@ -45,6 +46,9 @@ import {
   Bot,
   Pencil,
   Activity,
+  Ruler,
+  Scale,
+  Weight,
   type LucideIcon,
 } from "lucide-react";
 
@@ -174,6 +178,26 @@ export function getRoleIcon(role?: string): LucideIcon {
   }
 }
 
+export function getRoleColorClass(role?: string): string {
+  switch (role?.toLowerCase().trim()) {
+    case undefined:
+    case "all":
+      return "text-indigo-700 dark:text-indigo-300";
+    case Role.ADMIN:
+      return "text-purple-700 dark:text-purple-300";
+    case Role.MANAGER:
+      return "text-blue-700 dark:text-blue-300";
+    case Role.OPERATOR:
+      return "text-amber-700 dark:text-amber-300";
+    case Role.BASE:
+      return "text-emerald-700 dark:text-emerald-300";
+    case Role.HARDWARE:
+      return "text-cyan-700 dark:text-cyan-300";
+    default:
+      return "text-muted-foreground";
+  }
+}
+
 export function getSourceIcon(sourceVal?: string): LucideIcon {
   if (!sourceVal || sourceVal === "all") return Sliders;
   const normalized = sourceVal.toLowerCase().trim();
@@ -186,6 +210,20 @@ export function getSourceIcon(sourceVal?: string): LucideIcon {
       return User;
     default:
       return Sliders;
+  }
+}
+
+export function getSourceColorClass(sourceVal?: string): string {
+  switch (sourceVal?.toLowerCase().trim()) {
+    case undefined:
+    case "all":
+      return "text-sky-700 dark:text-sky-300";
+    case EntrySource.DEVICE:
+      return "text-sky-700 dark:text-sky-300";
+    case EntrySource.MANUAL:
+      return "text-violet-700 dark:text-violet-300";
+    default:
+      return "text-muted-foreground";
   }
 }
 
@@ -208,6 +246,22 @@ export function getTypeIcon(typeVal?: string): LucideIcon {
   }
 }
 
+export function getTypeColorClass(typeVal?: string): string {
+  switch (typeVal?.toLowerCase().trim()) {
+    case undefined:
+    case "all":
+      return "text-indigo-700 dark:text-indigo-300";
+    case WeighmentType.IN:
+      return "text-sky-700 dark:text-sky-300";
+    case WeighmentType.OUT:
+      return "text-orange-700 dark:text-orange-300";
+    case WeighmentType.UNASSIGNED:
+      return "text-muted-foreground";
+    default:
+      return "text-muted-foreground";
+  }
+}
+
 export function getStatusIcon(statusVal?: string): LucideIcon {
   if (!statusVal || statusVal === "all") return Activity;
   const normalized = statusVal.toLowerCase().trim();
@@ -223,6 +277,22 @@ export function getStatusIcon(statusVal?: string): LucideIcon {
       return XCircle;
     default:
       return Activity;
+  }
+}
+
+export function getStatusColorClass(statusVal?: string): string {
+  switch (statusVal?.toLowerCase().trim()) {
+    case undefined:
+    case "all":
+      return "text-blue-700 dark:text-blue-300";
+    case EntryStatus.PENDING:
+      return "text-amber-700 dark:text-amber-300";
+    case EntryStatus.APPROVED:
+      return "text-emerald-700 dark:text-emerald-300";
+    case EntryStatus.REJECTED:
+      return "text-red-700 dark:text-red-300";
+    default:
+      return "text-muted-foreground";
   }
 }
 
@@ -248,6 +318,83 @@ export function getAutoApproveIcon(val?: string): LucideIcon {
   return ShieldCheck;
 }
 
+export function getAutoApproveColorClass(val?: string): string {
+  const normalized = val?.toLowerCase().trim();
+  if (!normalized || normalized === "all") {
+    return "text-emerald-700 dark:text-emerald-300";
+  }
+  if (
+    normalized === "true" ||
+    normalized === "system approved" ||
+    normalized === "auto approved" ||
+    normalized === "enabled"
+  ) {
+    return "text-emerald-700 dark:text-emerald-300";
+  }
+  if (
+    normalized === "false" ||
+    normalized === "user review" ||
+    normalized === "manual" ||
+    normalized === "disabled"
+  ) {
+    return "text-red-700 dark:text-red-300";
+  }
+  return "text-muted-foreground";
+}
+
+export function getVerificationColorClass(val?: string): string {
+  const normalized = val?.toLowerCase().trim();
+  if (!normalized || normalized === "all") {
+    return "text-cyan-700 dark:text-cyan-300";
+  }
+  if (
+    normalized === "true" ||
+    normalized === "system approved" ||
+    normalized === "auto approved" ||
+    normalized === "enabled"
+  ) {
+    return "text-emerald-700 dark:text-emerald-300";
+  }
+  if (
+    normalized === "false" ||
+    normalized === "user review" ||
+    normalized === "manual" ||
+    normalized === "disabled"
+  ) {
+    return "text-amber-700 dark:text-amber-300";
+  }
+  return "text-muted-foreground";
+}
+
+export function getUnitIcon(unitVal?: string): LucideIcon {
+  switch (unitVal?.toLowerCase().trim()) {
+    case Unit.KG:
+      return Weight;
+    case Unit.Q:
+      return Scale;
+    case Unit.GAL:
+      return Droplet;
+    default:
+      return Ruler;
+  }
+}
+
+export function getUnitColorClass(unitVal?: string): string {
+  switch (unitVal?.toLowerCase().trim()) {
+    case undefined:
+    case "all":
+      return "text-blue-700 dark:text-blue-300";
+    case Unit.KG:
+      return "text-blue-700 dark:text-blue-300";
+    case Unit.Q:
+      return "text-amber-700 dark:text-amber-300";
+    case Unit.GAL:
+      return "text-cyan-700 dark:text-cyan-300";
+    default:
+      return "text-muted-foreground";
+  }
+}
+
 export function getEditedIcon(val?: string): LucideIcon {
   if (!val || val === "all") return Pencil;
   const normalized = val.toLowerCase().trim();
@@ -264,6 +411,8 @@ export function getItemIcon(type: string | ProjectSlug, label: string): LucideIc
   switch (type) {
     case ProjectSlug.COMMODITIES:
       return getCommodityIcon(label);
+    case "unit":
+      return getUnitIcon(label);
     case "role":
     case "roles":
       return getRoleIcon(label);
@@ -286,6 +435,34 @@ export function getItemIcon(type: string | ProjectSlug, label: string): LucideIc
       return getEditedIcon(label);
     default:
       return null;
+  }
+}
+
+export function getItemColorClass(type: string | ProjectSlug, value?: string): string {
+  switch (type) {
+    case "unit":
+      return getUnitColorClass(value);
+    case "role":
+    case "roles":
+      return getRoleColorClass(value);
+    case "source":
+    case "sources":
+      return getSourceColorClass(value);
+    case "type":
+    case "types":
+      return getTypeColorClass(value);
+    case "status":
+    case "statuses":
+    case "entry_status":
+    case FieldType.ENTRY_STATUS:
+      return getStatusColorClass(value);
+    case "auto_approve":
+      return getAutoApproveColorClass(value);
+    case "auto_approved":
+    case "verification":
+      return getVerificationColorClass(value);
+    default:
+      return "";
   }
 }
 

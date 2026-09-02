@@ -18,7 +18,7 @@ import {
   ComboboxGroup,
   ComboboxItem,
 } from "@/components/kibo-ui/combobox";
-import { getItemIcon } from "@/lib/fields";
+import { getItemColorClass, getItemIcon } from "@/lib/fields";
 import { useCommodityIcon } from "@/hooks/use-commodity-icon";
 
 import { cn } from "@/lib/utils";
@@ -76,6 +76,8 @@ export function BaseCombobox({
   }, [data, value]);
 
   const commodityIcon = useCommodityIcon(type, selectedItem);
+  const selectedItemIcon = selectedItem ? getItemIcon(type, selectedItem.label) : null;
+  const selectedItemColor = selectedItem ? getItemColorClass(type, selectedItem.value) : undefined;
 
   const handleOpenChange = React.useCallback(
     (nextOpen: boolean) => {
@@ -111,12 +113,19 @@ export function BaseCombobox({
             React.createElement(commodityIcon, {
               className: "h-3.5 w-3.5 text-muted-foreground shrink-0",
             })
+          ) : selectedItemIcon ? (
+            React.createElement(selectedItemIcon, {
+              className: cn(
+                "h-3.5 w-3.5 shrink-0",
+                iconColorClass || selectedItemColor || "text-muted-foreground",
+              ),
+            })
           ) : Icon ? (
             <Icon
               className={cn("h-3.5 w-3.5 shrink-0", iconColorClass || "text-muted-foreground")}
             />
           ) : null}
-          <span className="truncate">
+          <span className={cn("truncate", selectedItemColor)}>
             {selectedItem ? selectedItem.label : placeholder || `Select ${type}...`}
           </span>
         </span>
@@ -146,7 +155,8 @@ export function BaseCombobox({
               <ComboboxGroup>
                 {data.map((item) => {
                   const itemIcon = getItemIcon(type, item.label);
-                  const itemIconColor = "text-muted-foreground/80";
+                  const itemColor = getItemColorClass(type, item.value);
+                  const itemIconColor = itemColor || "text-muted-foreground/80";
 
                   return (
                     <ComboboxItem
@@ -164,7 +174,7 @@ export function BaseCombobox({
                           React.createElement(itemIcon, {
                             className: cn("h-3.5 w-3.5 shrink-0", itemIconColor),
                           })}
-                        <span className="whitespace-nowrap">{item.label}</span>
+                        <span className={cn("whitespace-nowrap", itemColor)}>{item.label}</span>
                       </span>
                       {item.rightLabel && (
                         <span className="text-xs text-muted-foreground font-semibold bg-muted px-1.5 py-0.5 rounded">

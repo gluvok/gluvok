@@ -7,6 +7,7 @@
 
 import { BaseCombobox } from "./base";
 import { Unit } from "@/lib/constants/enums";
+import { getUnitColorClass, getUnitIcon } from "@/lib/fields/helpers";
 
 interface UnitComboboxProps {
   value: string;
@@ -26,12 +27,16 @@ const data = [
  * Renders a dropdown to select a unit of measurement.
  */
 export function UnitCombobox({ value, onChange, id, disabled }: UnitComboboxProps) {
+  const ActiveIcon = getUnitIcon(value);
+
   return (
     <BaseCombobox
       value={value}
       onChange={onChange}
       data={data}
       type="unit"
+      icon={ActiveIcon}
+      iconColorClass={getUnitColorClass(value)}
       placeholder="Select unit..."
       id={id}
       disabled={disabled}

@@ -11,11 +11,8 @@ import { createTextColumn, createCustomColumn } from "./helpers";
 export function getCustomersColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
     createCustomColumn<T>("name", "Name", Tag, (val) => (
-      <div className="flex items-center gap-1.5">
-        <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <span className="font-semibold text-foreground text-xs">
-          {String(val ?? "")}
-        </span>
+      <div>
+        <span className="font-semibold text-foreground text-xs">{String(val ?? "")}</span>
       </div>
     )),
     createTextColumn(

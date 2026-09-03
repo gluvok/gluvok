@@ -19,7 +19,7 @@ import { getNextParam, getNextRedirectUrl } from "@/lib/utils";
  * FullScreenStatus Component
  * Displays a minimal, centered loading or redirecting message covering the viewport.
  */
-export function FullScreenStatus({ message }: { message: string }) {
+function FullScreenStatus({ message }: { message: string }) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center text-xs font-mono text-muted-foreground">
       {message}

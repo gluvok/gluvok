@@ -12,7 +12,7 @@ import { ApiErrorMessage } from "@/lib/constants/messages";
 import { editWeighmentSchema } from "@/lib/validation";
 import { formatWeighmentRecord, deleteWeighments } from "@/lib/services/weighments";
 
-export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
+export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
   if (!hasPermission(user, ProjectSlug.WEIGHMENTS, PermissionKey.READ)) return forbiddenError();
   const { id } = await ctx.params;
   const weighmentId = Number(id);

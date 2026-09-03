@@ -28,7 +28,7 @@ interface ImageUploadProps {
  * In-memory registry mapping generated object URLs (blob URL) to raw browser File objects,
  * storing them until form submission.
  */
-export const pendingImageUploads = new Map<string, File>();
+const pendingImageUploads = new Map<string, File>();
 
 /**
  * processImageUploadsAndDeletions utility

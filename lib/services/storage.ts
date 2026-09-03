@@ -5,7 +5,7 @@
 
 import { supabase } from "@/lib/supabase";
 
-export const STORAGE_BUCKET_NAME = "gluvok";
+const STORAGE_BUCKET_NAME = "gluvok";
 const CACHE_CONTROL = "3600";
 const UPLOAD_PATH_FOLDER = "weighments";
 

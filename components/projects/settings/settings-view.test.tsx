@@ -1,6 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import * as React from "react";
 import { SettingsView } from "./settings-view";
 import { Role, ProjectSlug } from "@/lib/constants/enums";
 

@@ -5,7 +5,6 @@
  * @description Filter controls for the Centers entity table.
  */
 
-import * as React from "react";
 import { type ReactTable, type RowData } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { getAutoApproveIcon } from "@/lib/fields/helpers";

@@ -91,16 +91,5 @@ export function getNextRedirectUrl(baseUrl: string, pathname: string): string {
   return `${baseUrl}?next=${encodeURIComponent(nextParamValue)}`;
 }
 
-/**
- * appendNextParam utility
- * Appends the current 'next' parameter to a given base URL, preserving it for the next destination.
- */
-export function appendNextParam(baseUrl: string): string {
-  const nextParam = getNextParam();
-  if (!nextParam) return baseUrl;
-  const separator = baseUrl.includes("?") ? "&" : "?";
-  return `${baseUrl}${separator}next=${encodeURIComponent(nextParam)}`;
-}
-
 export { getSingularName } from "@/lib/fields";
 export { useTable } from "@tanstack/react-table";

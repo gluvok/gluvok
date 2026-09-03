@@ -17,7 +17,7 @@ import {
 } from "@/lib/services/entries";
 import { editEntrySchema } from "@/lib/validation";
 
-export const GET = withAuth<{ id: string }>(async (req, user, client, ctx) => {
+export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
   if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.READ)) return forbiddenError();
   const { id } = await ctx.params;
   const entryId = Number(id);

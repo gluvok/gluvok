@@ -206,7 +206,7 @@ export type ScopedEntityHandler<P extends Record<string, string> = Record<string
   scope: { entityId: number; factoryId: number },
 ) => Promise<NextResponse>;
 
-export function withEntityId<P extends Record<string, string> = Record<string, string>>(
+function withEntityId<P extends Record<string, string> = Record<string, string>>(
   handler: (
     req: NextRequest,
     user: JWTPayload,
@@ -234,26 +234,6 @@ export function withEntityScope<P extends Record<string, string> = Record<string
   return withEntityId(async (req, user, client, ctx, entityId) => {
     return handler(req, user, client, ctx, { entityId, factoryId: user.factory_id });
   });
-}
-
-export async function getFactory(client: typeof supabase, factoryId: number | null | undefined) {
-  if (!factoryId) return null;
-  try {
-    const { data } = await client
-      .from("factories")
-      .select("id, name, created_at, updated_at")
-      .eq("id", factoryId)
-      .maybeSingle();
-    if (!data) return null;
-    return {
-      id: data.id,
-      name: data.name,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-    };
-  } catch {
-    return null;
-  }
 }
 
 export interface SupabasePaginatedQuery {

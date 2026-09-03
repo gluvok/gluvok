@@ -6,8 +6,6 @@
 import { ComponentType, HTMLAttributes } from "react";
 import { FieldType, Role, FieldSpan } from "@/lib/constants/enums";
 
-export { FieldSpan };
-
 export interface FieldConfig {
   key: string;
   label: string;

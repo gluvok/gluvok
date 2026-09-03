@@ -7,6 +7,7 @@ import * as React from "react";
 
 import { LayoutDashboard } from "lucide-react";
 import { PROJECTS } from "@/lib/projects";
+import { cn } from "@/lib/utils";
 
 interface ProjectTitleProps {
   projectName: string;
@@ -36,11 +37,25 @@ export function ProjectTitle({
     projectMeta?.desc ||
     `Manage the directory of ${projectName.toLowerCase()}, edit records, and configure settings.`;
 
+  const theme = projectMeta?.theme;
+  const iconColor = theme?.iconColor || "text-primary";
+  const badgeBg = theme?.badgeBg || "bg-primary/10";
+  const badgeBorder = theme?.badgeBorder || "border-primary/20";
+
   return (
     <div className="flex flex-col gap-1.5 mb-6">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2 text-foreground min-w-0">
-          <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary shrink-0" />
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2.5 text-foreground min-w-0">
+          <div
+            className={cn(
+              "p-1.5 rounded-lg border shrink-0 flex items-center justify-center shadow-2xs",
+              badgeBg,
+              badgeBorder,
+              iconColor,
+            )}
+          >
+            <Icon className="h-5 w-5" />
+          </div>
           <span className="truncate">{projectName}</span>
         </h1>
         {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
@@ -49,3 +64,4 @@ export function ProjectTitle({
     </div>
   );
 }
+

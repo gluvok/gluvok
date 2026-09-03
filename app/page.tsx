@@ -69,6 +69,7 @@ export default function Page() {
               desc={project.desc}
               icon={project.icon}
               color={project.color}
+              theme={project.theme}
             />
           ))}
         </div>

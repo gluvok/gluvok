@@ -7,14 +7,14 @@ import {
   hasPermission,
   StatusCodes,
 } from "@/db/helpers";
-import { ProjectSlug, PermissionKey, EntryStatus, EntrySource, Role } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey, EntryStatus, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
+import { deleteEntries } from "@/lib/services/entries";
 import {
-  validateCenterBelongsToFactory,
-  validateCustomerBelongsToFactory,
-  deleteEntries,
-} from "@/lib/services/entries";
+  validateAndBuildEntryUpdates,
+  handleVehicleChangeSync,
+} from "@/lib/services/entries/edit-rules";
 import { editEntrySchema } from "@/lib/validation";
 
 export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
@@ -99,7 +99,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     .from("entries")
     .select("*")
     .eq("id", entryId)
-    .eq("factory_id", user.factory_id)
+    .eq("factory_id", user.factory_id!)
     .is("deleted_at", null)
     .maybeSingle();
 
@@ -107,101 +107,13 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     return apiError(ApiErrorMessage.ENTRY_NOT_FOUND, StatusCodes.NOT_FOUND);
   }
 
-  // 2. Strict Edit Lock Matrix Verification
-  if (existing.status === EntryStatus.REJECTED) {
-    return apiError(ApiErrorMessage.ENTRY_REJECTED_LOCKED, StatusCodes.FORBIDDEN);
+  // 2. Validate edit locks and compute updates
+  const validation = await validateAndBuildEntryUpdates(client, existing, body, user.factory_id!);
+  if (validation.error) {
+    return apiError(validation.error.message, validation.error.status);
   }
 
-  const isApproved = existing.status === EntryStatus.APPROVED || existing.auto_approved === true;
-  const isAutoApproved = existing.auto_approved === true;
-  const isEdited = Boolean(
-    isApproved &&
-    existing.detected_vehicle_number &&
-    existing.vehicle_number &&
-    existing.detected_vehicle_number !== existing.vehicle_number,
-  );
-  const hasCustomer = existing.customer_id !== null && existing.customer_id !== undefined;
-
-  // Fully locked if:
-  // - Approved (not auto-approved) AND already has customer
-  // - Auto-approved AND already edited AND already has customer
-  if (isApproved && hasCustomer && (!isAutoApproved || isEdited)) {
-    return apiError(ApiErrorMessage.ENTRY_FULLY_LOCKED, StatusCodes.FORBIDDEN);
-  }
-
-  const updateWeighmentPair = parsed.data.update_weighment_pair === true;
-  const updates: Record<string, unknown> = {};
-
-  if (isApproved) {
-    // 1. Vehicle number check: ONLY auto-approved entries that have NOT been edited can correct vehicle_number
-    if (body.vehicle_number !== undefined && body.vehicle_number !== existing.vehicle_number) {
-      if (!isAutoApproved) {
-        return apiError(
-          ApiErrorMessage.CANNOT_MODIFY_MANUALLY_APPROVED_VEHICLE,
-          StatusCodes.BAD_REQUEST,
-        );
-      }
-      if (isEdited) {
-        return apiError(ApiErrorMessage.VEHICLE_ALREADY_EDITED_LOCKED, StatusCodes.BAD_REQUEST);
-      }
-      updates["vehicle_number"] = body.vehicle_number;
-    }
-
-    // 2. Customer ID check: only if customer is currently null
-    if (body.customer_id !== undefined && body.customer_id !== existing.customer_id) {
-      if (hasCustomer) {
-        return apiError(ApiErrorMessage.ENTRY_APPROVED_CUSTOMER_LOCKED, StatusCodes.BAD_REQUEST);
-      }
-      if (body.customer_id) {
-        await validateCustomerBelongsToFactory(client, Number(body.customer_id), user.factory_id);
-      }
-      updates["customer_id"] = body.customer_id ? Number(body.customer_id) : null;
-    }
-
-    // 3. Locked fields check (weight, center_id, images, status cannot be modified on approved)
-    const lockedFields = ["weight", "center_id", "images", "status"] as const;
-    for (const field of lockedFields) {
-      if (body[field] !== undefined && body[field] !== existing[field]) {
-        return apiError(
-          ApiErrorMessage.CANNOT_MODIFY_APPROVED_ENTRY(field === "center_id" ? "center" : field),
-          StatusCodes.BAD_REQUEST,
-        );
-      }
-    }
-  } else if (existing.status === EntryStatus.PENDING) {
-    if (existing.source === EntrySource.MANUAL) {
-      // Manual Pending: allow vehicle_number, weight, center_id, customer_id, images, status
-      if (body.vehicle_number !== undefined) updates["vehicle_number"] = body.vehicle_number;
-      if (body.weight !== undefined) updates["weight"] = Number(body.weight);
-      if (body.images !== undefined) updates["images"] = body.images;
-      if (body.status !== undefined) updates["status"] = body.status;
-
-      if (body.center_id !== undefined) {
-        await validateCenterBelongsToFactory(client, Number(body.center_id), user.factory_id);
-        updates["center_id"] = Number(body.center_id);
-      }
-      if (body.customer_id !== undefined) {
-        if (body.customer_id) {
-          await validateCustomerBelongsToFactory(client, Number(body.customer_id), user.factory_id);
-        }
-        updates["customer_id"] = body.customer_id ? Number(body.customer_id) : null;
-      }
-    } else {
-      // Device Pending (not auto-approved): allow vehicle_number, status
-      const lockedDeviceFields = ["weight", "center_id", "images", "customer_id"] as const;
-      for (const field of lockedDeviceFields) {
-        if (body[field] !== undefined && body[field] !== existing[field]) {
-          return apiError(
-            ApiErrorMessage.CANNOT_MODIFY_DEVICE_FIELD(field === "center_id" ? "center" : field),
-            StatusCodes.BAD_REQUEST,
-          );
-        }
-      }
-      if (body.vehicle_number !== undefined) updates["vehicle_number"] = body.vehicle_number;
-      if (body.status !== undefined) updates["status"] = body.status;
-    }
-  }
-
+  const updates = validation.updates || {};
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ data: existing });
   }
@@ -209,12 +121,13 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   const newStatus = (updates["status"] as string) || existing.status;
   const targetVehicle = (updates["vehicle_number"] as string) || existing.vehicle_number;
 
-  // 3. Do not allow approving an entry with NO_PLATE_DETECTED
+  // 3. Prevent approving an entry with NO_PLATE_DETECTED
   if (newStatus === EntryStatus.APPROVED && targetVehicle === "NO_PLATE_DETECTED") {
     return apiError(ApiErrorMessage.CANNOT_APPROVE_NO_PLATE, StatusCodes.BAD_REQUEST);
   }
 
-  // 4. Sequential Approval Validation if transitioning to approved or changing vehicle plate on approved
+  // 4. Sequential Approval Validation
+  const isApproved = existing.status === EntryStatus.APPROVED || existing.auto_approved === true;
   const isTransitioningToApproved =
     newStatus === EntryStatus.APPROVED && existing.status !== EntryStatus.APPROVED;
   const isChangingVehicleOnApproved =
@@ -240,60 +153,29 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   updates["updated_at"] = new Date().toISOString();
 
+  // 5. Vehicle plate sync with linked weighments
   const isChangingVehicle =
     updates["vehicle_number"] !== undefined &&
     updates["vehicle_number"] !== existing.vehicle_number;
+  const updateWeighmentPair = parsed.data.update_weighment_pair === true;
 
   let unlinkedPartnerId: number | null = null;
-
   if (isChangingVehicle) {
-    const { data: linkedWeighment } = await client
-      .from("weighments")
-      .select("id, in_entry_id, out_entry_id")
-      .or(`in_entry_id.eq.${entryId},out_entry_id.eq.${entryId}`)
-      .is("deleted_at", null)
-      .maybeSingle();
-
-    if (linkedWeighment) {
-      const partnerEntryId =
-        linkedWeighment.in_entry_id === entryId
-          ? linkedWeighment.out_entry_id
-          : linkedWeighment.in_entry_id;
-
-      if (updateWeighmentPair) {
-        // Atomically update partner entry's vehicle_number to keep weighment intact
-        await client
-          .from("entries")
-          .update({
-            vehicle_number: updates["vehicle_number"],
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", partnerEntryId)
-          .eq("factory_id", user.factory_id);
-      } else {
-        const { data: partnerEntry } = await client
-          .from("entries")
-          .select("id, vehicle_number")
-          .eq("id", partnerEntryId)
-          .maybeSingle();
-
-        // If the partner entry has a different vehicle number from the new plate, this is a false merge
-        if (partnerEntry && updates["vehicle_number"] !== partnerEntry.vehicle_number) {
-          // Clean hard-delete of the false-merge weighment row to completely free entry IDs
-          await client.from("weighments").delete().eq("id", linkedWeighment.id);
-
-          unlinkedPartnerId = partnerEntryId;
-        }
-      }
-    }
+    unlinkedPartnerId = await handleVehicleChangeSync(
+      client,
+      user.factory_id!,
+      entryId,
+      updates["vehicle_number"],
+      updateWeighmentPair,
+    );
   }
 
-  // 4. Perform update
+  // 6. Perform entry update
   const { data: updatedEntry, error: updateErr } = await client
     .from("entries")
     .update(updates)
     .eq("id", entryId)
-    .eq("factory_id", user.factory_id)
+    .eq("factory_id", user.factory_id!)
     .is("deleted_at", null)
     .select("*")
     .single();
@@ -303,12 +185,12 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     return apiError(ApiErrorMessage.FAILED_TO_UPDATE_ENTRY, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
-  // 5. Trigger entry merging if status is approved and not keeping existing pair
+  // 7. Auto-merge triggers
   if (updatedEntry.status === EntryStatus.APPROVED && !updateWeighmentPair) {
-    await tryMergeEntries(client, user.factory_id, entryId);
+    await tryMergeEntries(client, user.factory_id!, entryId);
   }
   if (unlinkedPartnerId) {
-    await tryMergeEntries(client, user.factory_id, unlinkedPartnerId);
+    await tryMergeEntries(client, user.factory_id!, unlinkedPartnerId);
   }
 
   const isApprovedUpdated =

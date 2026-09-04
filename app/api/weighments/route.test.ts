@@ -1,6 +1,12 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { PermissionKey, ProjectSlug, Role, Unit, WeighmentType } from "@/lib/constants/enums";
+import { PermissionKey, ProjectSlug, Unit, WeighmentType } from "@/lib/constants/enums";
 import { NextRequest } from "next/server";
+import {
+  createMockQueryBuilder,
+  createMockSupabase,
+  createMockUser,
+  createMockWeighment,
+} from "@/tests/test-utils";
 
 const { mockHasPermission } = vi.hoisted(() => ({
   mockHasPermission: vi.fn(),
@@ -19,22 +25,12 @@ import { GET, DELETE } from "./route";
 
 type RawHandler = (
   request: NextRequest,
-  user: {
-    sub: string;
-    username: string;
-    role: Role;
-    factory_id: number;
-  },
+  user: ReturnType<typeof createMockUser>,
   db: unknown,
   context?: unknown,
 ) => Promise<Response>;
 
-const sampleUser = {
-  sub: "1",
-  username: "operator",
-  role: Role.OPERATOR,
-  factory_id: 1,
-};
+const sampleUser = createMockUser();
 
 describe("GET /api/weighments", () => {
   beforeEach(() => {
@@ -57,50 +53,37 @@ describe("GET /api/weighments", () => {
   });
 
   it("returns formatted list of weighments", async () => {
-    const mockDb = {
-      from: vi.fn(() => ({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            is: vi.fn(() => ({
-              order: vi.fn(() => ({
-                range: vi.fn().mockResolvedValue({
-                  data: [
-                    {
-                      id: 10,
-                      unit: Unit.KG,
-                      type: WeighmentType.UNASSIGNED,
-                      rate_id: 5,
-                      in_entry_id: 1,
-                      out_entry_id: 2,
-                      created_at: "2026-08-31T10:00:00Z",
-                      updated_at: "2026-08-31T10:00:00Z",
-                      in_entry: {
-                        center_id: 1,
-                        weight: 15000,
-                        vehicle_number: "KA01AB1234",
-                        centers: { name: "Center A" },
-                        users: { name: "Operator 1" },
-                        customers: { name: "Farmer 1" },
-                      },
-                      out_entry: {
-                        center_id: 1,
-                        weight: 5000,
-                        vehicle_number: "KA01AB1234",
-                        centers: { name: "Center A" },
-                        users: { name: "Operator 2" },
-                        customers: { name: "Farmer 1" },
-                      },
-                    },
-                  ],
-                  count: 1,
-                  error: null,
-                }),
-              })),
-            })),
-          })),
-        })),
-      })),
-    };
+    const mockDb = createMockSupabase({
+      weighments: createMockQueryBuilder({
+        data: [
+          createMockWeighment({
+            id: 10,
+            unit: Unit.KG,
+            type: WeighmentType.UNASSIGNED,
+            rate_id: 5,
+            in_entry_id: 1,
+            out_entry_id: 2,
+            in_entry: {
+              center_id: 1,
+              weight: 15000,
+              vehicle_number: "KA01AB1234",
+              centers: { name: "Center A" },
+              users: { name: "Operator 1" },
+              customers: { name: "Farmer 1" },
+            },
+            out_entry: {
+              center_id: 1,
+              weight: 5000,
+              vehicle_number: "KA01AB1234",
+              centers: { name: "Center A" },
+              users: { name: "Operator 2" },
+              customers: { name: "Farmer 1" },
+            },
+          }),
+        ],
+        count: 1,
+      }),
+    });
 
     const req = new NextRequest("http://localhost/api/weighments?page=1&limit=10");
     const handler = GET as unknown as RawHandler;
@@ -118,60 +101,26 @@ describe("GET /api/weighments", () => {
   });
 
   it("filters by user_id using entry ID pre-resolution without PostgREST syntax error", async () => {
-    const orMock = vi.fn();
-    const mockQuery: Record<string, unknown> = {};
-    mockQuery.select = vi.fn(() => mockQuery);
-    mockQuery.eq = vi.fn(() => mockQuery);
-    mockQuery.is = vi.fn(() => mockQuery);
-    mockQuery.order = vi.fn(() => mockQuery);
-    mockQuery.or = orMock.mockImplementation(() => mockQuery);
-    mockQuery.range = vi.fn().mockResolvedValue({
-      data: [],
-      count: 0,
-      error: null,
-    });
+    const weighmentsQuery = createMockQueryBuilder({ data: [], count: 0 });
 
-    const mockDb = {
-      from: vi.fn((table: string) => {
-        if (table === "entries") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                eq: vi.fn(() => ({
-                  is: vi.fn().mockResolvedValue({ data: [{ id: 101 }, { id: 102 }] }),
-                })),
-              })),
-            })),
-          };
-        }
-        return mockQuery;
-      }),
-    };
+    const mockDb = createMockSupabase({
+      entries: createMockQueryBuilder({ data: [{ id: 101 }, { id: 102 }] }),
+      weighments: weighmentsQuery,
+    });
 
     const req = new NextRequest("http://localhost/api/weighments?user_id=5&page=1&limit=10");
     const handler = GET as unknown as RawHandler;
     const response = await handler(req, sampleUser, mockDb);
 
     expect(response.status).toBe(200);
-    expect(orMock).toHaveBeenCalledWith("in_entry_id.in.(101,102),out_entry_id.in.(101,102)");
+    expect(weighmentsQuery.or).toHaveBeenCalledWith(
+      "in_entry_id.in.(101,102),out_entry_id.in.(101,102)",
+    );
   });
 
   it("sorts by in_entry.vehicle_number when sort_column is vehicle_number", async () => {
-    const orderMock = vi.fn();
-    const mockQuery: Record<string, unknown> = {};
-    mockQuery.select = vi.fn(() => mockQuery);
-    mockQuery.eq = vi.fn(() => mockQuery);
-    mockQuery.is = vi.fn(() => mockQuery);
-    mockQuery.order = orderMock.mockImplementation(() => mockQuery);
-    mockQuery.range = vi.fn().mockResolvedValue({
-      data: [],
-      count: 0,
-      error: null,
-    });
-
-    const mockDb = {
-      from: vi.fn(() => mockQuery),
-    };
+    const weighmentsQuery = createMockQueryBuilder({ data: [], count: 0 });
+    const mockDb = createMockSupabase({ weighments: weighmentsQuery });
 
     const req = new NextRequest(
       "http://localhost/api/weighments?sort_column=vehicle_number&sort_desc=false",
@@ -180,7 +129,9 @@ describe("GET /api/weighments", () => {
     const response = await handler(req, sampleUser, mockDb);
 
     expect(response.status).toBe(200);
-    expect(orderMock).toHaveBeenCalledWith("in_entry.vehicle_number", { ascending: true });
+    expect(weighmentsQuery.order).toHaveBeenCalledWith("in_entry.vehicle_number", {
+      ascending: true,
+    });
   });
 });
 
@@ -223,15 +174,9 @@ describe("DELETE /api/weighments", () => {
   });
 
   it("returns 404 when no weighments found", async () => {
-    const mockDb = {
-      from: vi.fn(() => ({
-        select: vi.fn(() => ({
-          in: vi.fn(() => ({
-            is: vi.fn().mockResolvedValue({ data: [], error: null }),
-          })),
-        })),
-      })),
-    };
+    const mockDb = createMockSupabase({
+      weighments: createMockQueryBuilder({ data: [] }),
+    });
 
     const req = new NextRequest("http://localhost/api/weighments", {
       method: "DELETE",
@@ -246,42 +191,18 @@ describe("DELETE /api/weighments", () => {
   });
 
   it("successfully soft deletes weighments and returns count", async () => {
-    const mockDb = {
-      from: vi.fn((table: string) => {
-        if (table === "weighments") {
-          return {
-            select: vi.fn(() => ({
-              in: vi.fn(() => ({
-                is: vi.fn().mockResolvedValue({
-                  data: [
-                    { id: 10, in_entry_id: 1, out_entry_id: 2, in_entry: { factory_id: 1 } },
-                    { id: 20, in_entry_id: 3, out_entry_id: 4, in_entry: { factory_id: 1 } },
-                  ],
-                  error: null,
-                }),
-              })),
-            })),
-            update: vi.fn(() => ({
-              in: vi.fn(() => ({
-                is: vi.fn().mockResolvedValue({ error: null }),
-              })),
-            })),
-          };
-        }
-        if (table === "entries") {
-          return {
-            update: vi.fn(() => ({
-              in: vi.fn(() => ({
-                eq: vi.fn(() => ({
-                  is: vi.fn().mockResolvedValue({ error: null }),
-                })),
-              })),
-            })),
-          };
-        }
-        return {};
-      }),
-    };
+    const weighmentsQuery = createMockQueryBuilder({
+      data: [
+        { id: 10, in_entry_id: 1, out_entry_id: 2, in_entry: { factory_id: 1 } },
+        { id: 20, in_entry_id: 3, out_entry_id: 4, in_entry: { factory_id: 1 } },
+      ],
+    });
+    const entriesQuery = createMockQueryBuilder();
+
+    const mockDb = createMockSupabase({
+      weighments: weighmentsQuery,
+      entries: entriesQuery,
+    });
 
     const req = new NextRequest("http://localhost/api/weighments", {
       method: "DELETE",

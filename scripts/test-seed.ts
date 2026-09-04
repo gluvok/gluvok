@@ -7,15 +7,22 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import {
-  Role,
-  Unit,
-  EntryStatus,
-  EntrySource,
-  WeighmentType,
-  TicketStatus,
-} from "../lib/constants/enums";
+import { EntryStatus } from "../lib/constants/enums";
 import { hashPassword } from "../lib/auth/password";
+import {
+  TABLES_IN_CLEAR_ORDER,
+  DEFAULT_COMMODITIES,
+  MOCK_IMAGES,
+  FACTORY_CONFIGS,
+  getUserConfigs,
+  getCenterConfigs,
+  getRateConfigs,
+  getCustomerConfigs,
+  getWeighmentPairScenarios,
+  getStandaloneEntries,
+  getSampleTickets,
+  getRelativeDate,
+} from "./fixtures/seed-data";
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey =
@@ -30,48 +37,6 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Tables in reverse dependency order for clearing
-const TABLES_IN_CLEAR_ORDER = [
-  "tickets",
-  "weighments",
-  "entries",
-  "rates",
-  "customers",
-  "commodities",
-  "centers",
-  "users",
-  "factories",
-];
-
-// Helper to generate ISO timestamps relative to now
-function getRelativeDate(daysAgo: number, hoursAgo = 0, minutesAgo = 0): string {
-  const date = new Date();
-  date.setDate(date.getDate() - daysAgo);
-  date.setHours(date.getHours() - hoursAgo);
-  date.setMinutes(date.getMinutes() - minutesAgo);
-  return date.toISOString();
-}
-
-const DEFAULT_COMMODITIES = [
-  { name: "Wheat" },
-  { name: "Scrap Copper" },
-  { name: "Corn" },
-  { name: "Crude Oil" },
-  { name: "Barley" },
-  { name: "Wine" },
-  { name: "Cable" },
-  { name: "Sugarcane" },
-  { name: "Soybeans" },
-  { name: "Sunflower Seeds" },
-  { name: "Cotton" },
-  { name: "Mustard" },
-];
-
-const MOCK_IMAGES = [
-  "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=600&auto=format&fit=crop&q=60",
-  "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&auto=format&fit=crop&q=60",
-];
 
 async function clearDatabase() {
   console.log("🧹 [Clean Mode] Clearing all existing records from database...");
@@ -119,11 +84,9 @@ async function main() {
 
   // 1. FACTORIES
   console.log("\n🏭 [1/8] Seeding Factories...");
-  const factoryConfigs = [{ name: "Default Factory" }, { name: "Apex Agro Logistics" }];
-
   const factoryMap = new Map<string, number>();
 
-  for (const f of factoryConfigs) {
+  for (const f of FACTORY_CONFIGS) {
     const { data: existing } = await supabase
       .from("factories")
       .select("id")
@@ -151,114 +114,22 @@ async function main() {
   // 2. USERS
   console.log("\n👥 [2/8] Seeding Users across all 5 roles...");
   console.log("  🔒 Hashing passwords with Argon2id...");
-  const adminPassHash = await hashPassword("admin123");
-  const managerPassHash = await hashPassword("manager123");
-  const operatorPassHash = await hashPassword("operator123");
-  const basePassHash = await hashPassword("user123");
-  const hardwarePassHash = await hashPassword("hardware123");
+  const [adminPassHash, managerPassHash, operatorPassHash, basePassHash, hardwarePassHash] =
+    await Promise.all([
+      hashPassword("admin123"),
+      hashPassword("manager123"),
+      hashPassword("operator123"),
+      hashPassword("user123"),
+      hashPassword("hardware123"),
+    ]);
 
-  const userConfigs = [
-    // Primary Factory Users
-    {
-      username: "admin1",
-      name: "System Administrator 1",
-      role: Role.ADMIN,
-      pass: adminPassHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "manager_alice",
-      name: "Alice Morgan (Plant Manager)",
-      role: Role.MANAGER,
-      pass: managerPassHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "operator_bob",
-      name: "Bob Jenkins (Lead Operator)",
-      role: Role.OPERATOR,
-      pass: operatorPassHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "operator_charlie",
-      name: "Charlie Davis (Scale Operator)",
-      role: Role.OPERATOR,
-      pass: operatorPassHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "pi1",
-      name: "Pi 1",
-      role: Role.HARDWARE,
-      pass: hardwarePassHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "pi2",
-      name: "Pi 2",
-      role: Role.HARDWARE,
-      pass: hardwarePassHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "cust_ramesh",
-      name: "Ramesh Kumar",
-      role: Role.BASE,
-      pass: basePassHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "cust_anita",
-      name: "Anita Patel",
-      role: Role.BASE,
-      pass: basePassHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "cust_vikram",
-      name: "Vikram Singh",
-      role: Role.BASE,
-      pass: basePassHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "cust_priya",
-      name: "Priya Sharma",
-      role: Role.BASE,
-      pass: basePassHash,
-      factoryId: primaryFactoryId,
-    },
-    // Secondary Factory Users
-    {
-      username: "admin2",
-      name: "Apex Site Admin",
-      role: Role.ADMIN,
-      pass: adminPassHash,
-      factoryId: secondaryFactoryId,
-    },
-    {
-      username: "manager_bob",
-      name: "Bob Vance (Apex Logistics Manager)",
-      role: Role.MANAGER,
-      pass: managerPassHash,
-      factoryId: secondaryFactoryId,
-    },
-    {
-      username: "operator_edward",
-      name: "Edward Norton (Apex Operator)",
-      role: Role.OPERATOR,
-      pass: operatorPassHash,
-      factoryId: secondaryFactoryId,
-    },
-    {
-      username: "pi3",
-      name: "Apex Scale Terminal 1",
-      role: Role.HARDWARE,
-      pass: hardwarePassHash,
-      factoryId: secondaryFactoryId,
-    },
-  ];
+  const userConfigs = getUserConfigs(primaryFactoryId, secondaryFactoryId, {
+    admin: adminPassHash,
+    manager: managerPassHash,
+    operator: operatorPassHash,
+    base: basePassHash,
+    hardware: hardwarePassHash,
+  });
 
   const userMap = new Map<string, number>();
 
@@ -292,15 +163,7 @@ async function main() {
 
   // 3. CENTERS
   console.log("\n🏢 [3/8] Seeding Centers (Auto-Approve & Manual)...");
-  const centerConfigs = [
-    { name: "Main Weighbridge", auto_approve: false, factoryId: primaryFactoryId },
-    { name: "North Automatic Scale", auto_approve: true, factoryId: primaryFactoryId },
-    { name: "East Grain Terminal", auto_approve: false, factoryId: primaryFactoryId },
-    { name: "South Express Bay", auto_approve: true, factoryId: primaryFactoryId },
-    { name: "Apex Inbound Scale", auto_approve: true, factoryId: secondaryFactoryId },
-    { name: "Apex Outbound Gate", auto_approve: false, factoryId: secondaryFactoryId },
-  ];
-
+  const centerConfigs = getCenterConfigs(primaryFactoryId, secondaryFactoryId);
   const centerMap = new Map<string, number>();
 
   for (const c of centerConfigs) {
@@ -361,26 +224,7 @@ async function main() {
 
   // 5. RATES
   console.log("\n💰 [5/8] Seeding Commodity Rates...");
-  const rateConfigs = [
-    { commodity: "Wheat", unit_price: "28.50", unit: Unit.KG, factoryId: primaryFactoryId },
-    { commodity: "Wheat", unit_price: "2850.00", unit: Unit.Q, factoryId: primaryFactoryId },
-    { commodity: "Scrap Copper", unit_price: "650.00", unit: Unit.KG, factoryId: primaryFactoryId },
-    { commodity: "Corn", unit_price: "22.00", unit: Unit.KG, factoryId: primaryFactoryId },
-    { commodity: "Corn", unit_price: "2200.00", unit: Unit.Q, factoryId: primaryFactoryId },
-    { commodity: "Crude Oil", unit_price: "85.00", unit: Unit.GAL, factoryId: primaryFactoryId },
-    { commodity: "Barley", unit_price: "19.50", unit: Unit.KG, factoryId: primaryFactoryId },
-    { commodity: "Wine", unit_price: "140.00", unit: Unit.GAL, factoryId: primaryFactoryId },
-    { commodity: "Cable", unit_price: "420.00", unit: Unit.KG, factoryId: primaryFactoryId },
-    { commodity: "Sugarcane", unit_price: "3.80", unit: Unit.KG, factoryId: primaryFactoryId },
-    { commodity: "Sugarcane", unit_price: "380.00", unit: Unit.Q, factoryId: primaryFactoryId },
-    { commodity: "Soybeans", unit_price: "48.00", unit: Unit.KG, factoryId: primaryFactoryId },
-    { commodity: "Cotton", unit_price: "72.00", unit: Unit.KG, factoryId: primaryFactoryId },
-    // Factory 2 Rates
-    { commodity: "Wheat", unit_price: "29.00", unit: Unit.KG, factoryId: secondaryFactoryId },
-    { commodity: "Corn", unit_price: "21.50", unit: Unit.KG, factoryId: secondaryFactoryId },
-    { commodity: "Soybeans", unit_price: "47.50", unit: Unit.KG, factoryId: secondaryFactoryId },
-  ];
-
+  const rateConfigs = getRateConfigs(primaryFactoryId, secondaryFactoryId);
   const rateMap = new Map<string, number>();
 
   for (const r of rateConfigs) {
@@ -417,67 +261,7 @@ async function main() {
 
   // 6. CUSTOMERS
   console.log("\n🧑‍🌾 [6/8] Seeding Customers (Linked to Base Users and Standalone)...");
-  const customerConfigs = [
-    // Linked customers (Factory 1)
-    {
-      name: "Ramesh Kumar",
-      father_name: "Suresh Kumar",
-      username: "cust_ramesh",
-      factoryId: primaryFactoryId,
-    },
-    {
-      name: "Anita Patel",
-      father_name: "Mahesh Patel",
-      username: "cust_anita",
-      factoryId: primaryFactoryId,
-    },
-    {
-      name: "Vikram Singh",
-      father_name: "Balwan Singh",
-      username: "cust_vikram",
-      factoryId: primaryFactoryId,
-    },
-    {
-      name: "Priya Sharma",
-      father_name: "Rajendra Sharma",
-      username: "cust_priya",
-      factoryId: primaryFactoryId,
-    },
-    // Standalone unlinked customers (Factory 1)
-    {
-      name: "Sunil Verma",
-      father_name: "Kishan Verma",
-      username: null,
-      factoryId: primaryFactoryId,
-    },
-    {
-      name: "Deepak Choudhary",
-      father_name: "Ram Niwas",
-      username: null,
-      factoryId: primaryFactoryId,
-    },
-    {
-      name: "Meena Devi",
-      father_name: "Gopal Prasad",
-      username: null,
-      factoryId: primaryFactoryId,
-    },
-    { name: "Kavita Rao", father_name: "Jagdish Rao", username: null, factoryId: primaryFactoryId },
-    // Factory 2 customers
-    {
-      name: "Harpreet Singh",
-      father_name: "Gurdeep Singh",
-      username: null,
-      factoryId: secondaryFactoryId,
-    },
-    {
-      name: "Amit Shah",
-      father_name: "Jayantilal Shah",
-      username: null,
-      factoryId: secondaryFactoryId,
-    },
-  ];
-
+  const customerConfigs = getCustomerConfigs(primaryFactoryId, secondaryFactoryId);
   const customerMap = new Map<string, number>();
 
   for (const cust of customerConfigs) {
@@ -508,9 +292,8 @@ async function main() {
   }
   console.log(`  ✓ Seeded ${customerMap.size} customer profiles.`);
 
-  // 7. ENTRIES & WEIGHMENTS (Rich scenarios spanning dates, statuses, and types)
+  // 7. ENTRIES & WEIGHMENTS
   console.log("\n🚛 [7/8] Seeding Paired Entries and Weighments across date presets...");
-
   const defaultOperatorId = userMap.get("operator_bob") || userMap.get("admin1")!;
   const charlieOperatorId = userMap.get("operator_charlie") || defaultOperatorId;
   const hardwareDevice1Id = userMap.get("pi1") || defaultOperatorId;
@@ -520,196 +303,21 @@ async function main() {
   const eastTerminalCenterId = centerMap.get("East Grain Terminal")!;
   const southExpressCenterId = centerMap.get("South Express Bay")!;
 
-  const wheatRateKg = rateMap.get(`Wheat_${Unit.KG}_${primaryFactoryId}`);
-  const copperRateKg = rateMap.get(`Scrap Copper_${Unit.KG}_${primaryFactoryId}`);
-  const cornRateKg = rateMap.get(`Corn_${Unit.KG}_${primaryFactoryId}`);
-  const wineRateGal = rateMap.get(`Wine_${Unit.GAL}_${primaryFactoryId}`);
-  const sugarRateQ = rateMap.get(`Sugarcane_${Unit.Q}_${primaryFactoryId}`);
-  const soyRateKg = rateMap.get(`Soybeans_${Unit.KG}_${primaryFactoryId}`);
-
-  // Test scenarios for paired weighments
-  interface WeighmentPairScenario {
-    vehicleNumber: string;
-    detectedVehicle?: string;
-    inWeight: number;
-    outWeight: number;
-    customerName: string;
-    centerId: number;
-    userId: number;
-    source: EntrySource;
-    autoApproved: boolean;
-    weighmentType: WeighmentType;
-    unit: Unit;
-    rateId?: number;
-    daysAgo: number;
-    inHoursAgo: number;
-    outHoursAgo: number;
-  }
-
-  const weighmentPairScenarios: WeighmentPairScenario[] = [
-    // Today - Wheat Inbound (Gross In -> Tare Out)
-    {
-      vehicleNumber: "KA01EA1024",
-      detectedVehicle: "KA01EA1024",
-      inWeight: 42500,
-      outWeight: 14200,
-      customerName: "Ramesh Kumar",
-      centerId: northAutoCenterId,
-      userId: hardwareDevice1Id,
-      source: EntrySource.DEVICE,
-      autoApproved: true,
-      weighmentType: WeighmentType.IN,
-      unit: Unit.KG,
-      rateId: wheatRateKg,
-      daysAgo: 0,
-      inHoursAgo: 4,
-      outHoursAgo: 2,
-    },
-    // Today - Scrap Copper Inbound (Manual Scale)
-    {
-      vehicleNumber: "MH12PQ9080",
-      detectedVehicle: "MH12PQ9080",
-      inWeight: 31200,
-      outWeight: 12100,
-      customerName: "Anita Patel",
-      centerId: mainCenterId,
-      userId: defaultOperatorId,
-      source: EntrySource.MANUAL,
-      autoApproved: false,
-      weighmentType: WeighmentType.IN,
-      unit: Unit.KG,
-      rateId: copperRateKg,
-      daysAgo: 0,
-      inHoursAgo: 6,
-      outHoursAgo: 3,
-    },
-    // Yesterday - Corn Delivery (Automatic Scale)
-    {
-      vehicleNumber: "DL03CC4421",
-      detectedVehicle: "DL03CC4421",
-      inWeight: 38900,
-      outWeight: 13400,
-      customerName: "Vikram Singh",
-      centerId: northAutoCenterId,
-      userId: hardwareDevice1Id,
-      source: EntrySource.DEVICE,
-      autoApproved: true,
-      weighmentType: WeighmentType.IN,
-      unit: Unit.KG,
-      rateId: cornRateKg,
-      daysAgo: 1,
-      inHoursAgo: 8,
-      outHoursAgo: 5,
-    },
-    // 2 Days Ago - Wine Tanker Outbound (Tare In -> Gross Out)
-    {
-      vehicleNumber: "HR26BR7711",
-      detectedVehicle: "HR26BR7711",
-      inWeight: 15600,
-      outWeight: 44200,
-      customerName: "Priya Sharma",
-      centerId: southExpressCenterId,
-      userId: defaultOperatorId,
-      source: EntrySource.DEVICE,
-      autoApproved: true,
-      weighmentType: WeighmentType.OUT,
-      unit: Unit.GAL,
-      rateId: wineRateGal,
-      daysAgo: 2,
-      inHoursAgo: 7,
-      outHoursAgo: 4,
-    },
-    // 4 Days Ago (Last 7 Days) - Sugarcane Inbound (Quintals)
-    {
-      vehicleNumber: "GJ06ZZ3312",
-      detectedVehicle: "GJ06ZZ3312",
-      inWeight: 46800,
-      outWeight: 15300,
-      customerName: "Sunil Verma",
-      centerId: eastTerminalCenterId,
-      userId: charlieOperatorId,
-      source: EntrySource.MANUAL,
-      autoApproved: false,
-      weighmentType: WeighmentType.IN,
-      unit: Unit.Q,
-      rateId: sugarRateQ,
-      daysAgo: 4,
-      inHoursAgo: 9,
-      outHoursAgo: 6,
-    },
-    // 6 Days Ago (Last 7 Days) - Soybeans Inbound
-    {
-      vehicleNumber: "RJ14GH6655",
-      detectedVehicle: "RJ14GH6655",
-      inWeight: 39500,
-      outWeight: 14100,
-      customerName: "Deepak Choudhary",
-      centerId: mainCenterId,
-      userId: defaultOperatorId,
-      source: EntrySource.MANUAL,
-      autoApproved: false,
-      weighmentType: WeighmentType.IN,
-      unit: Unit.KG,
-      rateId: soyRateKg,
-      daysAgo: 6,
-      inHoursAgo: 5,
-      outHoursAgo: 2,
-    },
-    // 12 Days Ago (This Month) - Wheat Inbound
-    {
-      vehicleNumber: "UP32AB5544",
-      detectedVehicle: "UP32AB5544",
-      inWeight: 45100,
-      outWeight: 14800,
-      customerName: "Meena Devi",
-      centerId: northAutoCenterId,
-      userId: hardwareDevice1Id,
-      source: EntrySource.DEVICE,
-      autoApproved: true,
-      weighmentType: WeighmentType.IN,
-      unit: Unit.KG,
-      rateId: wheatRateKg,
-      daysAgo: 12,
-      inHoursAgo: 6,
-      outHoursAgo: 3,
-    },
-    // 20 Days Ago (This Month) - Scrap Copper
-    {
-      vehicleNumber: "PB10XY8899",
-      detectedVehicle: "PB10XY8899",
-      inWeight: 28400,
-      outWeight: 11900,
-      customerName: "Kavita Rao",
-      centerId: eastTerminalCenterId,
-      userId: charlieOperatorId,
-      source: EntrySource.MANUAL,
-      autoApproved: false,
-      weighmentType: WeighmentType.IN,
-      unit: Unit.KG,
-      rateId: copperRateKg,
-      daysAgo: 20,
-      inHoursAgo: 8,
-      outHoursAgo: 5,
-    },
-    // 35 Days Ago (Past Month) - Corn Inbound
-    {
-      vehicleNumber: "WB02MM1122",
-      detectedVehicle: "WB02MM1122",
-      inWeight: 41200,
-      outWeight: 13900,
-      customerName: "Ramesh Kumar",
-      centerId: mainCenterId,
-      userId: defaultOperatorId,
-      source: EntrySource.MANUAL,
-      autoApproved: false,
-      weighmentType: WeighmentType.IN,
-      unit: Unit.KG,
-      rateId: cornRateKg,
-      daysAgo: 35,
-      inHoursAgo: 7,
-      outHoursAgo: 4,
-    },
-  ];
+  const weighmentPairScenarios = getWeighmentPairScenarios({
+    defaultOperatorId,
+    charlieOperatorId,
+    hardwareDevice1Id,
+    mainCenterId,
+    northAutoCenterId,
+    eastTerminalCenterId,
+    southExpressCenterId,
+    wheatRateKg: rateMap.get(`Wheat_kg_${primaryFactoryId}`),
+    copperRateKg: rateMap.get(`Scrap Copper_kg_${primaryFactoryId}`),
+    cornRateKg: rateMap.get(`Corn_kg_${primaryFactoryId}`),
+    wineRateGal: rateMap.get(`Wine_gal_${primaryFactoryId}`),
+    sugarRateQ: rateMap.get(`Sugarcane_q_${primaryFactoryId}`),
+    soyRateKg: rateMap.get(`Soybeans_kg_${primaryFactoryId}`),
+  });
 
   let seededWeighmentsCount = 0;
   const sampleEntryIds: number[] = [];
@@ -773,7 +381,7 @@ async function main() {
       continue;
     }
 
-    // Insert Weighment linking In + Out (type defaults to unassigned via DB column default)
+    // Insert Weighment linking In + Out
     const { data: createdW, error: wErr } = await supabase
       .from("weighments")
       .insert({
@@ -797,118 +405,25 @@ async function main() {
 
   console.log(`  ✓ Successfully created ${seededWeighmentsCount} merged double-entry weighments.`);
 
-  // 8. UNPAIRED ENTRIES (Pending, Rejected, In-Progress Approved)
+  // 8. UNPAIRED ENTRIES
   console.log(
     "\n📋 [8/8] Seeding Standalone Unpaired Entries (Pending, Rejected, Active On-Site)...",
   );
 
-  const standaloneEntries = [
-    // 1. Pending Manual Entry (Needs operator approval) - Today
-    {
-      vehicle_number: "TN09KK4455",
-      detected_vehicle_number: "TN09KK4455",
-      weight: 38200,
-      source: EntrySource.MANUAL,
-      status: EntryStatus.PENDING,
-      auto_approved: false,
-      center_id: mainCenterId,
-      user_id: defaultOperatorId,
-      customer_id: customerMap.get("Anita Patel"),
-      factory_id: primaryFactoryId,
-      images: MOCK_IMAGES,
-      created_at: getRelativeDate(0, 1),
-    },
-    // 2. Pending Automatic Entry (Manual review queue due to OCR mismatch) - Today
-    {
-      vehicle_number: "TS07EE9988",
-      detected_vehicle_number: "TS07EE9988",
-      weight: 44100,
-      source: EntrySource.DEVICE,
-      status: EntryStatus.PENDING,
-      auto_approved: false,
-      center_id: northAutoCenterId,
-      user_id: hardwareDevice1Id,
-      customer_id: customerMap.get("Vikram Singh"),
-      factory_id: primaryFactoryId,
-      images: MOCK_IMAGES,
-      created_at: getRelativeDate(0, 2),
-    },
-    // 3. Rejected Entry (Excess weight / Security flag) - Yesterday
-    {
-      vehicle_number: "AP28FF6677",
-      detected_vehicle_number: "AP28FF6677",
-      weight: 62500, // Gross overload
-      source: EntrySource.DEVICE,
-      status: EntryStatus.REJECTED,
-      auto_approved: false,
-      center_id: southExpressCenterId,
-      user_id: charlieOperatorId,
-      customer_id: customerMap.get("Sunil Verma"),
-      factory_id: primaryFactoryId,
-      images: MOCK_IMAGES,
-      created_at: getRelativeDate(1, 4),
-    },
-    // 4. Rejected Manual Entry (Plate mismatch / bad manifest) - 3 Days Ago
-    {
-      vehicle_number: "KL07CD3344",
-      detected_vehicle_number: "KL07CD3300",
-      weight: 29800,
-      source: EntrySource.MANUAL,
-      status: EntryStatus.REJECTED,
-      auto_approved: false,
-      center_id: eastTerminalCenterId,
-      user_id: defaultOperatorId,
-      customer_id: customerMap.get("Deepak Choudhary"),
-      factory_id: primaryFactoryId,
-      images: [],
-      created_at: getRelativeDate(3, 6),
-    },
-    // 5. Active On-Site Entry (Approved Gross Inbound, awaiting exit Tare weighment) - Today
-    {
-      vehicle_number: "MH04AB1212",
-      detected_vehicle_number: "MH04AB1212",
-      weight: 41900,
-      source: EntrySource.DEVICE,
-      status: EntryStatus.APPROVED,
-      auto_approved: true,
-      center_id: northAutoCenterId,
-      user_id: hardwareDevice1Id,
-      customer_id: customerMap.get("Ramesh Kumar"),
-      factory_id: primaryFactoryId,
-      images: MOCK_IMAGES,
-      created_at: getRelativeDate(0, 1, 30),
-    },
-    // 6. Active On-Site Entry (Approved Tare Inbound for loading, awaiting gross weighment) - Today
-    {
-      vehicle_number: "DL01XY7890",
-      detected_vehicle_number: "DL01XY7890",
-      weight: 13800,
-      source: EntrySource.MANUAL,
-      status: EntryStatus.APPROVED,
-      auto_approved: false,
-      center_id: mainCenterId,
-      user_id: defaultOperatorId,
-      customer_id: customerMap.get("Priya Sharma"),
-      factory_id: primaryFactoryId,
-      images: [],
-      created_at: getRelativeDate(0, 0, 45),
-    },
-    // 7. Secondary Factory Entry (Apex Inbound) - Yesterday
-    {
-      vehicle_number: "GJ01AB9900",
-      detected_vehicle_number: "GJ01AB9900",
-      weight: 37600,
-      source: EntrySource.DEVICE,
-      status: EntryStatus.APPROVED,
-      auto_approved: true,
-      center_id: centerMap.get("Apex Inbound Scale")!,
-      user_id: userMap.get("pi3")!,
-      customer_id: customerMap.get("Harpreet Singh"),
-      factory_id: secondaryFactoryId,
-      images: MOCK_IMAGES,
-      created_at: getRelativeDate(1, 3),
-    },
-  ];
+  const standaloneEntries = getStandaloneEntries({
+    primaryFactoryId,
+    secondaryFactoryId,
+    userMap,
+    centerMap,
+    customerMap,
+    defaultOperatorId,
+    charlieOperatorId,
+    hardwareDevice1Id,
+    mainCenterId,
+    northAutoCenterId,
+    eastTerminalCenterId,
+    southExpressCenterId,
+  });
 
   let standaloneCount = 0;
   for (const ent of standaloneEntries) {
@@ -920,43 +435,13 @@ async function main() {
   }
   console.log(`  ✓ Seeded ${standaloneCount} standalone and edge-case entries.`);
 
-  // 9. SUPPORT TICKETS (Pending, Approved, Rejected)
+  // 9. SUPPORT TICKETS
   console.log("\n🎫 [9/9] Seeding Support Tickets (Pending, Approved, Rejected)...");
-
-  const sampleTickets = [
-    {
-      entry_id: sampleEntryIds[0] || null,
-      weighment_id: null,
-      user_id: userMap.get("operator_bob")!,
-      concern:
-        "Camera OCR misread rear vehicle plate due to dried mud; requested manual number correction.",
-      status: TicketStatus.PENDING,
-      reply: null,
-      created_at: getRelativeDate(1, 2),
-    },
-    {
-      entry_id: null,
-      weighment_id: sampleWeighmentIds[0] || null,
-      user_id: userMap.get("operator_charlie")!,
-      concern:
-        "Discrepancy in tare weight recorded on double-axle trailer vs printed scale ticket.",
-      status: TicketStatus.APPROVED,
-      reply:
-        "Verified scale calibration log for 09:30 AM; tare adjusted and approved by DB administrator.",
-      created_at: getRelativeDate(3, 4),
-    },
-    {
-      entry_id: sampleEntryIds[1] || null,
-      weighment_id: null,
-      user_id: userMap.get("manager_alice")!,
-      concern:
-        "Suspected duplicate entry created due to network reconnect loop on weighbridge sensor.",
-      status: TicketStatus.REJECTED,
-      reply:
-        "Reviewed scale camera stills; two distinct vehicles crossed the sensor within 45 seconds. Rejected.",
-      created_at: getRelativeDate(7, 5),
-    },
-  ];
+  const sampleTickets = getSampleTickets({
+    sampleEntryIds,
+    sampleWeighmentIds,
+    userMap,
+  });
 
   let seededTicketsCount = 0;
   for (const t of sampleTickets) {

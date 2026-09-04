@@ -7,6 +7,7 @@ import {
 } from "./weighments";
 import { EntryStatus, EntrySource, Unit } from "@/lib/constants/enums";
 import type { supabase } from "@/db";
+import { createMockQueryBuilder } from "@/tests/test-utils";
 
 type MockSupabaseClient = typeof supabase & {
   from: Mock;
@@ -23,17 +24,8 @@ describe("Weighments Service", () => {
 
   describe("validateSequentialApproval", () => {
     it("should pass if no earlier pending entries exist for the vehicle in the same center", async () => {
-      const eqMock = vi.fn().mockReturnThis();
-      mockClient.from.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: eqMock,
-        lt: vi.fn().mockReturnThis(),
-        neq: vi.fn().mockReturnThis(),
-        is: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-      });
+      const query = createMockQueryBuilder({ maybeSingleData: null });
+      mockClient.from.mockReturnValue(query);
 
       await expect(
         validateSequentialApproval(
@@ -47,30 +39,21 @@ describe("Weighments Service", () => {
       ).resolves.toBeUndefined();
 
       expect(mockClient.from).toHaveBeenCalledWith("entries");
-      expect(eqMock).toHaveBeenCalledWith("center_id", 1);
-      expect(eqMock).toHaveBeenCalledWith("vehicle_number", "MH12AB1234");
-      expect(eqMock).toHaveBeenCalledWith("status", EntryStatus.PENDING);
-      expect(eqMock).toHaveBeenCalledWith("source", EntrySource.DEVICE);
+      expect(query.eq).toHaveBeenCalledWith("center_id", 1);
+      expect(query.eq).toHaveBeenCalledWith("vehicle_number", "MH12AB1234");
+      expect(query.eq).toHaveBeenCalledWith("status", EntryStatus.PENDING);
+      expect(query.eq).toHaveBeenCalledWith("source", EntrySource.DEVICE);
     });
 
     it("should throw an error if an earlier pending entry exists for the vehicle in the same center", async () => {
-      mockClient.from.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        lt: vi.fn().mockReturnThis(),
-        neq: vi.fn().mockReturnThis(),
-        is: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({
-          data: {
-            id: 1,
-            created_at: "2026-08-09T12:00:00Z",
-            source: EntrySource.DEVICE,
-          },
-          error: null,
-        }),
+      const query = createMockQueryBuilder({
+        maybeSingleData: {
+          id: 1,
+          created_at: "2026-08-09T12:00:00Z",
+          source: EntrySource.DEVICE,
+        },
       });
+      mockClient.from.mockReturnValue(query);
 
       await expect(
         validateSequentialApproval(
@@ -105,64 +88,31 @@ describe("Weighments Service", () => {
       };
 
       let entriesCallCount = 0;
-      const eqMock = vi.fn().mockReturnThis();
+      const entriesQuery2 = createMockQueryBuilder({ data: [e1Data] });
 
       mockClient.from.mockImplementation((table: string) => {
         if (table === "factories") {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                is: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({
-                    data: { check_center_on_merge: false },
-                    error: null,
-                  }),
-                }),
-              }),
-            }),
-          };
+          return createMockQueryBuilder({
+            maybeSingleData: { check_center_on_merge: false },
+          });
         }
         if (table === "entries") {
           entriesCallCount++;
           if (entriesCallCount === 1) {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              is: vi.fn().mockReturnThis(),
-              maybeSingle: vi.fn().mockResolvedValue({ data: e2Data, error: null }),
-            };
-          } else {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: eqMock,
-              lt: vi.fn().mockReturnThis(),
-              neq: vi.fn().mockReturnThis(),
-              is: vi.fn().mockReturnThis(),
-              order: vi.fn().mockReturnThis(),
-              limit: vi.fn().mockResolvedValue({ data: [e1Data], error: null }),
-            };
+            return createMockQueryBuilder({ maybeSingleData: e2Data });
           }
+          return entriesQuery2;
         }
         if (table === "weighments") {
-          return {
-            select: vi.fn().mockReturnThis(),
-            or: vi.fn().mockReturnThis(),
-            is: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-            insert: vi.fn().mockReturnValue({
-              select: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: {
-                    id: 100,
-                    in_entry_id: 1,
-                    out_entry_id: 2,
-                    unit: Unit.KG,
-                  },
-                  error: null,
-                }),
-              }),
-            }),
-          };
+          return createMockQueryBuilder({
+            maybeSingleData: null,
+            singleData: {
+              id: 100,
+              in_entry_id: 1,
+              out_entry_id: 2,
+              unit: Unit.KG,
+            },
+          });
         }
       });
 
@@ -174,7 +124,7 @@ describe("Weighments Service", () => {
         unit: Unit.KG,
       });
       // Should NOT filter by center_id when check_center_on_merge is false
-      expect(eqMock).not.toHaveBeenCalledWith("center_id", 10);
+      expect(entriesQuery2.eq).not.toHaveBeenCalledWith("center_id", 10);
     });
 
     it("should filter by center_id when check_center_on_merge is true", async () => {
@@ -196,64 +146,31 @@ describe("Weighments Service", () => {
       };
 
       let entriesCallCount = 0;
-      const eqMock = vi.fn().mockReturnThis();
+      const entriesQuery2 = createMockQueryBuilder({ data: [e1Data] });
 
       mockClient.from.mockImplementation((table: string) => {
         if (table === "factories") {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                is: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({
-                    data: { check_center_on_merge: true },
-                    error: null,
-                  }),
-                }),
-              }),
-            }),
-          };
+          return createMockQueryBuilder({
+            maybeSingleData: { check_center_on_merge: true },
+          });
         }
         if (table === "entries") {
           entriesCallCount++;
           if (entriesCallCount === 1) {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              is: vi.fn().mockReturnThis(),
-              maybeSingle: vi.fn().mockResolvedValue({ data: e2Data, error: null }),
-            };
-          } else {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: eqMock,
-              lt: vi.fn().mockReturnThis(),
-              neq: vi.fn().mockReturnThis(),
-              is: vi.fn().mockReturnThis(),
-              order: vi.fn().mockReturnThis(),
-              limit: vi.fn().mockResolvedValue({ data: [e1Data], error: null }),
-            };
+            return createMockQueryBuilder({ maybeSingleData: e2Data });
           }
+          return entriesQuery2;
         }
         if (table === "weighments") {
-          return {
-            select: vi.fn().mockReturnThis(),
-            or: vi.fn().mockReturnThis(),
-            is: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-            insert: vi.fn().mockReturnValue({
-              select: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: {
-                    id: 100,
-                    in_entry_id: 1,
-                    out_entry_id: 2,
-                    unit: Unit.KG,
-                  },
-                  error: null,
-                }),
-              }),
-            }),
-          };
+          return createMockQueryBuilder({
+            maybeSingleData: null,
+            singleData: {
+              id: 100,
+              in_entry_id: 1,
+              out_entry_id: 2,
+              unit: Unit.KG,
+            },
+          });
         }
       });
 
@@ -265,7 +182,7 @@ describe("Weighments Service", () => {
         unit: Unit.KG,
       });
       // Should filter by center_id when check_center_on_merge is true
-      expect(eqMock).toHaveBeenCalledWith("center_id", 10);
+      expect(entriesQuery2.eq).toHaveBeenCalledWith("center_id", 10);
     });
 
     it("should return null if no matching entry of the same source is found", async () => {
@@ -281,48 +198,19 @@ describe("Weighments Service", () => {
       let callCount = 0;
       mockClient.from.mockImplementation((table: string) => {
         if (table === "factories") {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                is: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({
-                    data: { check_center_on_merge: false },
-                    error: null,
-                  }),
-                }),
-              }),
-            }),
-          };
+          return createMockQueryBuilder({
+            maybeSingleData: { check_center_on_merge: false },
+          });
         }
         if (table === "entries") {
           callCount++;
           if (callCount === 1) {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              is: vi.fn().mockReturnThis(),
-              maybeSingle: vi.fn().mockResolvedValue({ data: e2Data, error: null }),
-            };
-          } else {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              lt: vi.fn().mockReturnThis(),
-              gt: vi.fn().mockReturnThis(),
-              neq: vi.fn().mockReturnThis(),
-              is: vi.fn().mockReturnThis(),
-              order: vi.fn().mockReturnThis(),
-              limit: vi.fn().mockResolvedValue({ data: [], error: null }),
-            };
+            return createMockQueryBuilder({ maybeSingleData: e2Data });
           }
+          return createMockQueryBuilder({ data: [] });
         }
         if (table === "weighments") {
-          return {
-            select: vi.fn().mockReturnThis(),
-            or: vi.fn().mockReturnThis(),
-            is: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-          };
+          return createMockQueryBuilder({ maybeSingleData: null });
         }
       });
 
@@ -351,70 +239,30 @@ describe("Weighments Service", () => {
       let entriesCallCount = 0;
       mockClient.from.mockImplementation((table: string) => {
         if (table === "factories") {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                is: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({
-                    data: { check_center_on_merge: false },
-                    error: null,
-                  }),
-                }),
-              }),
-            }),
-          };
+          return createMockQueryBuilder({
+            maybeSingleData: { check_center_on_merge: false },
+          });
         }
         if (table === "entries") {
           entriesCallCount++;
           if (entriesCallCount === 1) {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              is: vi.fn().mockReturnThis(),
-              maybeSingle: vi.fn().mockResolvedValue({ data: e1Data, error: null }),
-            };
-          } else if (entriesCallCount === 2) {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              lt: vi.fn().mockReturnThis(),
-              neq: vi.fn().mockReturnThis(),
-              is: vi.fn().mockReturnThis(),
-              order: vi.fn().mockReturnThis(),
-              limit: vi.fn().mockResolvedValue({ data: [], error: null }),
-            };
-          } else {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              gt: vi.fn().mockReturnThis(),
-              neq: vi.fn().mockReturnThis(),
-              is: vi.fn().mockReturnThis(),
-              order: vi.fn().mockReturnThis(),
-              limit: vi.fn().mockResolvedValue({ data: [e2Data], error: null }),
-            };
+            return createMockQueryBuilder({ maybeSingleData: e1Data });
           }
+          if (entriesCallCount === 2) {
+            return createMockQueryBuilder({ data: [] });
+          }
+          return createMockQueryBuilder({ data: [e2Data] });
         }
         if (table === "weighments") {
-          return {
-            select: vi.fn().mockReturnThis(),
-            or: vi.fn().mockReturnThis(),
-            is: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-            insert: vi.fn().mockReturnValue({
-              select: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: {
-                    id: 101,
-                    in_entry_id: 1,
-                    out_entry_id: 2,
-                    unit: Unit.KG,
-                  },
-                  error: null,
-                }),
-              }),
-            }),
-          };
+          return createMockQueryBuilder({
+            maybeSingleData: null,
+            singleData: {
+              id: 101,
+              in_entry_id: 1,
+              out_entry_id: 2,
+              unit: Unit.KG,
+            },
+          });
         }
       });
 
@@ -513,54 +361,24 @@ describe("Weighments Service", () => {
         },
       ];
 
-      const weighmentsUpdateMock = vi.fn(() => ({
-        in: vi.fn(() => ({
-          is: vi.fn().mockResolvedValue({ error: null }),
-        })),
-      }));
-
-      const entriesUpdateMock = vi.fn(() => ({
-        in: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            is: vi.fn().mockResolvedValue({ error: null }),
-          })),
-        })),
-      }));
+      const weighmentsQuery = createMockQueryBuilder({ data: weighmentsData });
+      const entriesQuery = createMockQueryBuilder();
 
       mockClient.from.mockImplementation((table: string) => {
-        if (table === "weighments") {
-          return {
-            select: vi.fn(() => ({
-              in: vi.fn(() => ({
-                is: vi.fn().mockResolvedValue({ data: weighmentsData, error: null }),
-              })),
-            })),
-            update: weighmentsUpdateMock,
-          };
-        }
-        if (table === "entries") {
-          return {
-            update: entriesUpdateMock,
-          };
-        }
-        return {};
+        if (table === "weighments") return weighmentsQuery;
+        if (table === "entries") return entriesQuery;
+        return createMockQueryBuilder();
       });
 
       const result = await deleteWeighments(mockClient, 1, [10, 20]);
       expect(result.deletedIds).toEqual([10, 20]);
       expect(result.cascadedEntryIds).toEqual([1, 2, 3, 4]);
-      expect(weighmentsUpdateMock).toHaveBeenCalled();
-      expect(entriesUpdateMock).toHaveBeenCalled();
+      expect(weighmentsQuery.update).toHaveBeenCalled();
+      expect(entriesQuery.update).toHaveBeenCalled();
     });
 
     it("should return empty deletedIds when no matching weighments exist for factory", async () => {
-      mockClient.from.mockReturnValue({
-        select: vi.fn(() => ({
-          in: vi.fn(() => ({
-            is: vi.fn().mockResolvedValue({ data: [], error: null }),
-          })),
-        })),
-      });
+      mockClient.from.mockReturnValue(createMockQueryBuilder({ data: [] }));
 
       const result = await deleteWeighments(mockClient, 1, [999]);
       expect(result.deletedIds).toEqual([]);

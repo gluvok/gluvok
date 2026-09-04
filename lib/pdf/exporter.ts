@@ -1,6 +1,6 @@
 /**
  * @file lib/pdf/exporter.ts
- * @description PDF export utilities and print handlers for table records with scan attachments and executive formatting.
+ * @description PDF export utilities for table records with scan attachments and executive formatting.
  */
 
 import { type RowData, type Table, type Row } from "@tanstack/react-table";
@@ -8,126 +8,11 @@ import { type ProjectTableFeatures } from "@/components/data-table/features";
 import { useAuthStore } from "@/lib/store";
 import { formatDateTime } from "@/lib/utils";
 import { DATE_COLUMN_IDS, getExportFileName } from "@/lib/utils/export";
-import { ProjectSlug } from "@/lib/constants/enums";
 import { generatePdfHtml } from "./template";
-import { toast } from "sonner";
+import { MANDATORY_PDF_FIELDS, inferProjectSlug, type MandatoryPdfField } from "./config";
+import { printPdf } from "./print";
 
-export interface MandatoryPdfField {
-  id: string;
-  label: string;
-}
-
-export const MANDATORY_PDF_FIELDS: Record<string, MandatoryPdfField[]> = {
-  [ProjectSlug.WEIGHMENTS]: [
-    { id: "id", label: "ID" },
-    { id: "vehicle_number", label: "Vehicle Number" },
-    { id: "unit", label: "Unit" },
-    { id: "gross_weight", label: "Gross Weight" },
-    { id: "tare_weight", label: "Tare Weight" },
-    { id: "net_weight", label: "Net Weight" },
-    { id: "images", label: "Images" },
-    { id: "created_at", label: "Created At" },
-  ],
-  [ProjectSlug.ENTRIES]: [
-    { id: "id", label: "ID" },
-    { id: "vehicle_number", label: "Vehicle Number" },
-    { id: "weight", label: "Weight" },
-    { id: "source", label: "Source" },
-    { id: "status", label: "Status" },
-    { id: "images", label: "Images" },
-    { id: "created_at", label: "Created At" },
-  ],
-  [ProjectSlug.CENTERS]: [
-    { id: "id", label: "ID" },
-    { id: "name", label: "Name" },
-    { id: "auto_approve", label: "Auto Approve" },
-    { id: "created_at", label: "Created At" },
-  ],
-  [ProjectSlug.COMMODITIES]: [
-    { id: "id", label: "ID" },
-    { id: "name", label: "Name" },
-    { id: "created_at", label: "Created At" },
-  ],
-  [ProjectSlug.RATES]: [
-    { id: "id", label: "ID" },
-    { id: "commodity_name", label: "Commodity" },
-    { id: "rate", label: "Rate" },
-    { id: "created_at", label: "Created At" },
-  ],
-  [ProjectSlug.CUSTOMERS]: [
-    { id: "id", label: "ID" },
-    { id: "name", label: "Customer Name" },
-    { id: "phone", label: "Phone" },
-    { id: "created_at", label: "Created At" },
-  ],
-  [ProjectSlug.USERS]: [
-    { id: "id", label: "ID" },
-    { id: "name", label: "Name" },
-    { id: "username", label: "Username" },
-    { id: "role", label: "Role" },
-    { id: "created_at", label: "Created At" },
-  ],
-  [ProjectSlug.SETTINGS]: [
-    { id: "id", label: "ID" },
-    { id: "key", label: "Key" },
-    { id: "value", label: "Value" },
-    { id: "created_at", label: "Created At" },
-  ],
-};
-
-function inferProjectSlug(projectName: string): string {
-  const norm = projectName.trim().toLowerCase();
-  for (const slug of Object.values(ProjectSlug)) {
-    if (norm === slug || norm.includes(slug) || slug.includes(norm)) {
-      return slug;
-    }
-  }
-  return norm;
-}
-
-/**
- * Triggers the browser print dialog for an HTML content string via an invisible iframe.
- */
-export function printPdf(htmlContent: string, fileName?: string) {
-  const originalTitle = typeof document !== "undefined" ? document.title : "";
-  const exportTitle = fileName ? fileName.replace(/\.pdf$/i, "") : "";
-
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  iframe.style.visibility = "hidden";
-
-  iframe.onload = () => {
-    try {
-      if (exportTitle && typeof document !== "undefined") {
-        document.title = exportTitle;
-        if (iframe.contentDocument) {
-          iframe.contentDocument.title = exportTitle;
-        }
-      }
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-    } catch {
-      toast.error("Failed to trigger print dialog.");
-    } finally {
-      setTimeout(() => {
-        if (typeof document !== "undefined" && originalTitle) {
-          document.title = originalTitle;
-        }
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
-      }, 1000);
-    }
-  };
-
-  iframe.srcdoc = htmlContent;
-  document.body.appendChild(iframe);
-}
+export { MANDATORY_PDF_FIELDS, printPdf, type MandatoryPdfField };
 
 /**
  * Downloads the selected rows in a table as a styled PDF with company branding,
@@ -246,7 +131,7 @@ export function downloadPDF<TData extends RowData>(
     if (!rawImages) {
       rawImages = rowOrig["images"];
     }
-    if (Array.isArray(rawImages) && rawImages.length > 0) {
+    if (Array.isArray(rawImages) && Array.isArray(rawImages) && rawImages.length > 0) {
       const id = String(rowOrig["id"] ?? row.id);
       const vehicleNumber = (rowOrig["vehicle_number"] as string) || undefined;
       imagesList.push({ id, vehicleNumber, images: rawImages as string[] });

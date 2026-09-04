@@ -80,7 +80,15 @@ pnpm seed
 Other available database utilities:
 
 - `pnpm db:clear`: Safely truncate database tables in reverse dependency order.
-- `pnpm seed:test`: Seed controlled data fixtures for test environments.
+- `pnpm seed:test`: Seed controlled data fixtures for test environments (configured via `scripts/fixtures/seed-data.ts`).
+
+### Testing & Utilities
+
+The test suite leverages shared mock utilities and fixtures located in `tests/test-utils.ts`:
+
+- `createMockSupabase`: Pre-configured Supabase client with chainable query mocks (`select`, `eq`, `maybeSingle`, etc.).
+- `createMockUser`, `createMockEntry`, `createMockWeighment`: Type-safe test factories.
+- `createMockJsonRequest`: Request helper for route handler tests.
 
 ### Development Server
 

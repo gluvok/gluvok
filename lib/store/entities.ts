@@ -9,16 +9,15 @@ import { create } from "zustand";
 import axios from "axios";
 import { ProjectSlug } from "@/lib/constants/enums";
 import { insertRow, updateRow, deleteRow, deleteRows } from "@/lib/services/common";
+import {
+  type IdNamePair,
+  type RateOption,
+  applyAddEntity,
+  applyUpdateEntity,
+  applyDeleteEntities,
+} from "./entities-cache";
 
-export interface IdNamePair {
-  id: number;
-  name: string;
-}
-
-export interface RateOption {
-  id: number;
-  label: string;
-}
+export { type IdNamePair, type RateOption };
 
 interface EntitiesState {
   addEntity: (slug: ProjectSlug, newE: Record<string, unknown>) => Promise<void>;
@@ -109,12 +108,12 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
   fetchRates: async () => {
     try {
       const res = await axios.get<{
-        data: { id: number; unit_price: string; unit: string; commodity_name?: string }[];
+        data: { id: number; commodity_name: string; unit_price: string; unit: string }[];
       }>("/api/rates");
-      const ratesData = res.data.data || [];
-      const rateOpts: RateOption[] = ratesData.map((rate) => ({
-        id: rate.id,
-        label: `${rate.commodity_name ?? "Rate"} · ₹${rate.unit_price}/${rate.unit} (ID: ${rate.id})`,
+      const list = res.data.data || [];
+      const rateOpts = list.map((r) => ({
+        id: r.id,
+        label: `${r.commodity_name || "Rate"} · ₹${r.unit_price || "0"}/${r.unit || "kg"} (ID: ${r.id})`,
       }));
       set({ rates: rateOpts });
       return rateOpts;
@@ -126,70 +125,10 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
 
   addEntity: async (slug, newE) => {
     const created = (await insertRow(slug, newE)) as unknown as Record<string, unknown> | undefined;
-    const createdId = Number(created?.id || newE.id);
-    const state = get();
-
     if (created && typeof created === "object") {
-      const name = String(created.name || newE.name || "");
-
-      switch (slug) {
-        case ProjectSlug.COMMODITIES:
-          if (createdId) {
-            set({
-              commodities: [
-                ...state.commodities.filter((c) => c.id !== createdId),
-                { id: createdId, name },
-              ],
-            });
-          }
-          break;
-        case ProjectSlug.CENTERS:
-          if (createdId) {
-            set({
-              centers: [
-                ...state.centers.filter((c) => c.id !== createdId),
-                { id: createdId, name, auto_approve: Boolean(created.auto_approve) },
-              ],
-            });
-          }
-          break;
-        case ProjectSlug.USERS:
-          if (createdId) {
-            set({
-              users: [...state.users.filter((u) => u.id !== createdId), { id: createdId, name }],
-            });
-          }
-          break;
-        case ProjectSlug.CUSTOMERS:
-          if (createdId) {
-            set({
-              customers: [
-                ...state.customers.filter((c) => c.id !== createdId),
-                { id: createdId, name },
-              ],
-            });
-          }
-          break;
-        case ProjectSlug.RATES: {
-          if (createdId) {
-            const commodityId = Number(created.commodity_id || newE.commodity_id);
-            const foundCommodity = state.commodities.find((c) => c.id === commodityId);
-            const commodityName = String(created.commodity_name || foundCommodity?.name || "Rate");
-            const unitPrice = String(created.unit_price || newE.unit_price || "");
-            const unit = String(created.unit || newE.unit || "");
-            const label = `${commodityName} · ₹${unitPrice}/${unit} (ID: ${createdId})`;
-
-            set({
-              rates: [...state.rates.filter((r) => r.id !== createdId), { id: createdId, label }],
-            });
-          }
-          break;
-        }
-        default:
-          break;
-      }
+      const patch = applyAddEntity(get(), slug, created, newE);
+      set(patch);
     }
-
     get().triggerEntitiesUpdate();
   },
 
@@ -197,121 +136,26 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
     const updated = (await updateRow(slug, Number(id), fields)) as unknown as
       | Record<string, unknown>
       | undefined;
-    const targetId = Number(id);
-    const state = get();
-
     if (updated && typeof updated === "object") {
-      const name = String(updated.name || fields.name || "");
-
-      switch (slug) {
-        case ProjectSlug.COMMODITIES:
-          set({
-            commodities: state.commodities.map((c) =>
-              c.id === targetId ? { id: targetId, name } : c,
-            ),
-          });
-          break;
-        case ProjectSlug.CENTERS:
-          set({
-            centers: state.centers.map((c) =>
-              c.id === targetId
-                ? {
-                    id: targetId,
-                    name,
-                    auto_approve:
-                      updated.auto_approve !== undefined
-                        ? Boolean(updated.auto_approve)
-                        : c.auto_approve,
-                  }
-                : c,
-            ),
-          });
-          break;
-        case ProjectSlug.USERS:
-          set({
-            users: state.users.map((u) => (u.id === targetId ? { id: targetId, name } : u)),
-          });
-          break;
-        case ProjectSlug.CUSTOMERS:
-          set({
-            customers: state.customers.map((c) => (c.id === targetId ? { id: targetId, name } : c)),
-          });
-          break;
-        case ProjectSlug.RATES: {
-          const commodityId = Number(updated.commodity_id || fields.commodity_id);
-          const foundCommodity = state.commodities.find((c) => c.id === commodityId);
-          const commodityName = String(updated.commodity_name || foundCommodity?.name || "Rate");
-          const unitPrice = String(updated.unit_price || fields.unit_price || "");
-          const unit = String(updated.unit || fields.unit || "");
-          const label = `${commodityName} · ₹${unitPrice}/${unit} (ID: ${targetId})`;
-
-          set({
-            rates: state.rates.map((r) => (r.id === targetId ? { id: targetId, label } : r)),
-          });
-          break;
-        }
-        default:
-          break;
-      }
+      const patch = applyUpdateEntity(get(), slug, Number(id), updated, fields);
+      set(patch);
     }
-
     get().triggerEntitiesUpdate();
   },
 
   deleteEntity: async (slug, id) => {
     const targetId = Number(id);
     await deleteRow(slug, targetId);
-    const state = get();
-
-    switch (slug) {
-      case ProjectSlug.COMMODITIES:
-        set({ commodities: state.commodities.filter((c) => c.id !== targetId) });
-        break;
-      case ProjectSlug.CENTERS:
-        set({ centers: state.centers.filter((c) => c.id !== targetId) });
-        break;
-      case ProjectSlug.USERS:
-        set({ users: state.users.filter((u) => u.id !== targetId) });
-        break;
-      case ProjectSlug.CUSTOMERS:
-        set({ customers: state.customers.filter((c) => c.id !== targetId) });
-        break;
-      case ProjectSlug.RATES:
-        set({ rates: state.rates.filter((r) => r.id !== targetId) });
-        break;
-      default:
-        break;
-    }
-
+    const patch = applyDeleteEntities(get(), slug, [targetId]);
+    set(patch);
     get().triggerEntitiesUpdate();
   },
 
   deleteEntities: async (slug, ids) => {
     const uniqueIds = [...new Set(ids.map(Number))];
     await deleteRows(slug, uniqueIds);
-    const idSet = new Set(uniqueIds);
-    const state = get();
-
-    switch (slug) {
-      case ProjectSlug.COMMODITIES:
-        set({ commodities: state.commodities.filter((c) => !idSet.has(c.id)) });
-        break;
-      case ProjectSlug.CENTERS:
-        set({ centers: state.centers.filter((c) => !idSet.has(c.id)) });
-        break;
-      case ProjectSlug.USERS:
-        set({ users: state.users.filter((u) => !idSet.has(u.id)) });
-        break;
-      case ProjectSlug.CUSTOMERS:
-        set({ customers: state.customers.filter((c) => !idSet.has(c.id)) });
-        break;
-      case ProjectSlug.RATES:
-        set({ rates: state.rates.filter((r) => !idSet.has(r.id)) });
-        break;
-      default:
-        break;
-    }
-
+    const patch = applyDeleteEntities(get(), slug, uniqueIds);
+    set(patch);
     get().triggerEntitiesUpdate();
   },
 }));

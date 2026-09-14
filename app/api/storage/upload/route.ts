@@ -25,7 +25,11 @@ const ALLOWED_MIME_TYPES = new Set([
 
 import { verifyDeviceRequest } from "@/lib/auth/device";
 
-async function processUpload(formData: FormData, factoryPrefix: string) {
+async function processUpload(
+  formData: FormData,
+  factoryPrefix: string,
+  centerPrefix: string = "0",
+) {
   const files = formData.getAll("files") as File[];
   const singleFile = formData.get("file") as File | null;
 
@@ -56,7 +60,7 @@ async function processUpload(formData: FormData, factoryPrefix: string) {
 
     const fileExt = file.name.split(".").pop() || "jpg";
     const uniqueId = `${Math.random().toString(36).substring(2, 15)}-${Date.now()}`;
-    const filePath = `f_${factoryPrefix}/${UPLOAD_PATH_FOLDER}/${uniqueId}.${fileExt}`;
+    const filePath = `f_${factoryPrefix}/c_${centerPrefix}/${UPLOAD_PATH_FOLDER}/${uniqueId}.${fileExt}`;
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -94,7 +98,8 @@ const userUploadHandler = withAuth(async (req, user) => {
   try {
     const formData = await req.formData();
     const factoryPrefix = String(user.factory_id ?? "default");
-    return processUpload(formData, factoryPrefix);
+    const centerPrefix = String(formData.get("center_id") || "0");
+    return processUpload(formData, factoryPrefix, centerPrefix);
   } catch (err: unknown) {
     console.error("Storage upload handler error:", err);
     const msg = err instanceof Error ? err.message : "Failed to process image upload";
@@ -113,9 +118,29 @@ export async function POST(req: any, ...rest: unknown[]) {
           authResult.status || StatusCodes.FORBIDDEN,
         );
       }
+      const device = authResult.device;
+      let factoryPrefix = "default";
+      const centerPrefix = String(device.center_id || "0");
+
+      if (device.center_id) {
+        const { data: centerRecord } = await (supabase as any)
+          .from("centers")
+          .select("id, factory_id")
+          .eq("id", device.center_id)
+          .is("deleted_at", null)
+          .maybeSingle();
+
+        if (centerRecord?.factory_id) {
+          factoryPrefix = String(centerRecord.factory_id);
+        }
+      }
+
+      if (factoryPrefix === "default" && req.headers.get("x-factory-id")) {
+        factoryPrefix = String(req.headers.get("x-factory-id"));
+      }
+
       const formData = await req.formData();
-      const factoryPrefix = String(req.headers.get("x-factory-id") || "devices");
-      return processUpload(formData, factoryPrefix);
+      return processUpload(formData, factoryPrefix, centerPrefix);
     }
 
     // Direct invocation support in unit test environments
@@ -127,7 +152,8 @@ export async function POST(req: any, ...rest: unknown[]) {
     ) {
       const user = rest[0] as { factory_id?: number };
       const formData = await req.formData();
-      return processUpload(formData, String(user.factory_id ?? "default"));
+      const centerPrefix = String(formData.get("center_id") || "0");
+      return processUpload(formData, String(user.factory_id ?? "default"), centerPrefix);
     }
 
     return userUploadHandler(req, rest[0] as any);

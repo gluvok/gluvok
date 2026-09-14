@@ -168,7 +168,8 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
         return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
       }
 
-      const centerId = (parsed.data as AddDeviceEntryInput).center_id;
+      const inputCenterId = (parsed.data as AddDeviceEntryInput).center_id;
+      const centerId = inputCenterId ?? device.center_id;
       const { data: centerRecord } = await supabase
         .from("centers")
         .select("id, factory_id")

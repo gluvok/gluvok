@@ -67,6 +67,15 @@ describe("entries validation", () => {
     expect(withNoPlate.detected_vehicle_number).toBe("NO_PLATE_DETECTED");
   });
 
+  it("allows omitting center_id in device entry schema (since device is bound to center in db)", () => {
+    const withoutCenter = addDeviceEntrySchema.parse({
+      detected_vehicle_number: "MH12AB1234",
+      weight: 18000,
+    });
+    expect(withoutCenter.detected_vehicle_number).toBe("MH12AB1234");
+    expect(withoutCenter.center_id).toBeUndefined();
+  });
+
   it("rejects device entry when detected_vehicle_number is missing", () => {
     expect(() =>
       addDeviceEntrySchema.parse({

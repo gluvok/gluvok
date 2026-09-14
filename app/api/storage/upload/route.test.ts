@@ -133,7 +133,11 @@ describe("Storage Upload & Deletion API Routes", () => {
       expect(json.data.urls).toEqual([
         "https://test.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/photo-123.jpg",
       ]);
-      expect(mockUpload).toHaveBeenCalled();
+      expect(mockUpload).toHaveBeenCalledWith(
+        expect.stringMatching(/^f_1\/c_0\/weighments\/.+\.jpg$/),
+        expect.any(Buffer),
+        expect.anything(),
+      );
     });
   });
 
@@ -146,8 +150,8 @@ describe("Storage Upload & Deletion API Routes", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           urls: [
-            "https://test.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/photo1.jpg",
-            "https://test.supabase.co/storage/v1/object/public/gluvok/f_2/weighments/other-factory.jpg", // should be ignored
+            "https://test.supabase.co/storage/v1/object/public/gluvok/f_1/c_3/weighments/photo1.jpg",
+            "https://test.supabase.co/storage/v1/object/public/gluvok/f_2/c_1/weighments/other-factory.jpg", // should be ignored
           ],
         }),
       });
@@ -159,7 +163,7 @@ describe("Storage Upload & Deletion API Routes", () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.count).toBe(1);
-      expect(mockRemove).toHaveBeenCalledWith(["f_1/weighments/photo1.jpg"]);
+      expect(mockRemove).toHaveBeenCalledWith(["f_1/c_3/weighments/photo1.jpg"]);
     });
   });
 });

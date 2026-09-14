@@ -50,10 +50,10 @@ describe("uploadBase64ImagesToStorage", () => {
     const base64Img =
       "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=";
 
-    const res = await uploadBase64ImagesToStorage([base64Img], 1);
+    const res = await uploadBase64ImagesToStorage([base64Img], 1, 5);
 
     expect(mockUpload).toHaveBeenCalledWith(
-      expect.stringMatching(/^f_1\/weighments\/.+\.jpg$/),
+      expect.stringMatching(/^f_1\/c_5\/weighments\/.+\.jpg$/),
       expect.any(Buffer),
       expect.objectContaining({
         contentType: "image/jpeg",
@@ -81,7 +81,7 @@ describe("uploadBase64ImagesToStorage", () => {
     const res = await uploadBase64ImagesToStorage([base64Png], 2);
 
     expect(mockUpload).toHaveBeenCalledWith(
-      expect.stringMatching(/^f_2\/weighments\/.+\.png$/),
+      expect.stringMatching(/^f_2\/c_0\/weighments\/.+\.png$/),
       expect.any(Buffer),
       expect.objectContaining({
         contentType: "image/png",

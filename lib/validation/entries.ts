@@ -38,7 +38,9 @@ export const addEntrySchema = baseEntrySchema.extend({
   images: z.array(z.string()).optional(),
 });
 
-export const addDeviceEntrySchema = baseEntrySchema.extend({
+export const addDeviceEntrySchema = z.object({
+  weight: positiveWeightSchema("Weight"),
+  center_id: optionalIntegerIdSchema("Center").optional(),
   detected_vehicle_number: deviceVehicleNumberSchema("Detected vehicle number"),
   images: z.array(z.string()).optional().default([]),
 });

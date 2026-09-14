@@ -16,11 +16,11 @@ Gluvok is a high-performance operations platform designed for factories, weighbr
   - Indian vehicle registration number validation (e.g. `MH12AB1234`, `22BH1234AA`).
 - **Ticketing & Approval Workflow**: Automated ticket generation for center entries with status tracking (`pending`, `approved`, `rejected`).
 - **Commodity & Rate Masters**: Dynamic rate configuration per commodity and center.
-- **Hardware & IoT Ingestion**: Dedicated header-authenticated API workflows for Raspberry Pi scales and automated license plate recognition (ALPR) cameras. See [raspberry_pi_curl.md](raspberry_pi_curl.md).
+- **Hardware & IoT Ingestion**: Dedicated header-authenticated API workflows for Raspberry Pi scales and automated license plate recognition (ALPR) cameras. Devices are bound to physical collection centers, and weighment events capture an immutable point-in-time center snapshot. See [docs/raspberry_pi_curl.md](docs/raspberry_pi_curl.md).
 - **Data Export**: Built-in CSV and PDF export capabilities for audit reports and center registries.
 - **Dual Authentication Model**:
   - Web UI Personnel: HTTP-only Secure Cookie-based JWT sessions (`admin`, `manager`, `operator`, `base`).
-  - Edge Ingestion Devices: Constant-time SHA-256 verified header authentication (`x-device-id` and `x-device-key`) with heartbeat tracking (`last_seen_at`) and central deactivation (`deleted_at = NOW()`).
+  - Edge Ingestion Devices: Constant-time SHA-256 verified header authentication (`x-device-id` and `x-device-key`) with heartbeat tracking (`last_seen_at`), center assignment, and central deactivation (`deleted_at = NOW()`).
 
 ---
 
@@ -70,7 +70,7 @@ pnpm install
 ### Database Setup
 
 1. Execute [schema.sql](schema.sql) in your Supabase SQL Editor to provision tables, enums, indexes, and RLS policies.
-2. Execute [storage.sql](storage.sql) to create the required storage buckets (`gluvok-images`) and access policies.
+2. Execute [storage.sql](storage.sql) to create the required storage bucket (`gluvok`) and hierarchical object policies (`f_<factory_id>/c_<center_id>/weighments/...`).
 3. Seed default factory data, commodities, and administrative accounts:
 
 ```bash
@@ -174,4 +174,4 @@ pnpm run build
 
 - [AGENTS.md](AGENTS.md) — Agent coding guidelines, simplicity standards, and verification gates.
 - [PERMISSIONS.md](PERMISSIONS.md) — Role-based access control (RBAC) permission matrix.
-- [raspberry_pi_curl.md](raspberry_pi_curl.md) — Hardware device integration guide and sample curl commands.
+- [docs/raspberry_pi_curl.md](docs/raspberry_pi_curl.md) — Hardware device integration guide and sample curl commands.

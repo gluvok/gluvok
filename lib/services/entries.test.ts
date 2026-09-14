@@ -156,7 +156,7 @@ describe("Entries Service", () => {
       });
 
       expect(res).toEqual({ ...insertedEntry, source: EntrySource.MANUAL });
-      expect(mockUploadImages).toHaveBeenCalledWith(["data:image/jpeg;base64,..."], 10);
+      expect(mockUploadImages).toHaveBeenCalledWith(["data:image/jpeg;base64,..."], 10, 1);
       expect(mockValidateSeq).not.toHaveBeenCalled();
       expect(mockTryMerge).not.toHaveBeenCalled();
     });

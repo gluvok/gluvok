@@ -109,7 +109,7 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
   const nowStr = new Date().toISOString();
 
   // 4. Upload base64 images to storage
-  const uploadedImageUrls = await uploadBase64ImagesToStorage(images, factoryId);
+  const uploadedImageUrls = await uploadBase64ImagesToStorage(images, factoryId, Number(centerId));
 
   // 5. Validate sequential approval if approved
   if (finalStatus === EntryStatus.APPROVED) {

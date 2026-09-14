@@ -162,36 +162,6 @@ async function main() {
     }
   }
 
-  // 2b. DEVICES
-  console.log("\n📟 Seeding Edge Ingestion Devices...");
-  const deviceConfigs = getDeviceConfigs();
-  const deviceMap = new Map<string, number>();
-
-  for (const d of deviceConfigs) {
-    const { data: existing } = await supabase
-      .from("devices")
-      .select("id")
-      .eq("name", d.name)
-      .maybeSingle();
-
-    if (existing) {
-      deviceMap.set(d.name, existing.id);
-      console.log(`  ✓ Found device: '${d.name}' (id: ${existing.id})`);
-    } else {
-      const { data: created, error } = await supabase
-        .from("devices")
-        .insert({
-          name: d.name,
-          hashed_key: hashDeviceKey(d.rawKey),
-        })
-        .select("id")
-        .single();
-      if (error || !created) throw error || new Error(`Failed to create device ${d.name}`);
-      deviceMap.set(d.name, created.id);
-      console.log(`  + Created device: '${d.name}' (id: ${created.id})`);
-    }
-  }
-
   // 3. CENTERS
   console.log("\n🏢 [3/8] Seeding Centers (Auto-Approve & Manual)...");
   const centerConfigs = getCenterConfigs(primaryFactoryId, secondaryFactoryId);
@@ -224,6 +194,40 @@ async function main() {
       centerMap.set(c.name, created.id);
       console.log(
         `  + Created center: '${c.name}' (auto_approve: ${c.auto_approve}, id: ${created.id})`,
+      );
+    }
+  }
+
+  // 3b. DEVICES
+  console.log("\n📟 Seeding Edge Ingestion Devices...");
+  const deviceConfigs = getDeviceConfigs();
+  const deviceMap = new Map<string, number>();
+
+  for (const d of deviceConfigs) {
+    const assignedCenterId = centerMap.get(d.centerName) || 1;
+    const { data: existing } = await supabase
+      .from("devices")
+      .select("id")
+      .eq("name", d.name)
+      .maybeSingle();
+
+    if (existing) {
+      deviceMap.set(d.name, existing.id);
+      console.log(`  ✓ Found device: '${d.name}' (id: ${existing.id})`);
+    } else {
+      const { data: created, error } = await supabase
+        .from("devices")
+        .insert({
+          name: d.name,
+          hashed_key: hashDeviceKey(d.rawKey),
+          center_id: assignedCenterId,
+        })
+        .select("id")
+        .single();
+      if (error || !created) throw error || new Error(`Failed to create device ${d.name}`);
+      deviceMap.set(d.name, created.id);
+      console.log(
+        `  + Created device: '${d.name}' (id: ${created.id}, center_id: ${assignedCenterId})`,
       );
     }
   }

@@ -123,11 +123,16 @@ CREATE TABLE IF NOT EXISTS devices (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     hashed_key TEXT NOT NULL,
+    center_id INT NOT NULL REFERENCES centers(id) ON DELETE RESTRICT,
     last_seen_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
 );
+
+CREATE INDEX IF NOT EXISTS idx_devices_center
+ON devices (center_id)
+WHERE deleted_at IS NULL;
 
 -- ENTRIES TABLE (Raw weighment events)
 CREATE TABLE IF NOT EXISTS entries (

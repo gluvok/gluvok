@@ -2,6 +2,8 @@
 -- SUPABASE STORAGE BUCKET & POLICIES SETUP
 -- Fully Idempotent Script (Safe to re-run)
 -- Target Bucket: 'gluvok'
+-- Object Key Structure:
+--   f_<factory_id>/c_<center_id>/weighments/<file_id>.<ext>
 -- ==========================================
 
 -- 1. Create Public Storage Bucket 'gluvok'

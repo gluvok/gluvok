@@ -67,13 +67,22 @@ async function main() {
     .eq("factory_id", factoryId)
     .maybeSingle();
 
+  let centerId: number;
   if (!existingCenter) {
-    await supabase.from("centers").insert({
-      name: centerName,
-      auto_approve: false,
-      factory_id: factoryId,
-    });
-    console.log(`Created center '${centerName}' for factory id=${factoryId}`);
+    const { data: newCenter, error: centerErr } = await supabase
+      .from("centers")
+      .insert({
+        name: centerName,
+        auto_approve: false,
+        factory_id: factoryId,
+      })
+      .select("id")
+      .single();
+    if (centerErr || !newCenter) throw centerErr || new Error("Failed to create center");
+    centerId = newCenter.id;
+    console.log(`Created center '${centerName}' with id=${centerId} for factory id=${factoryId}`);
+  } else {
+    centerId = existingCenter.id;
   }
 
   console.log("Hashing passwords for users...");
@@ -118,6 +127,7 @@ async function main() {
       .insert({
         name: "Default Weighbridge Terminal",
         hashed_key: defaultDeviceKeyHash,
+        center_id: centerId,
       })
       .select("id")
       .single();

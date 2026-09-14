@@ -149,13 +149,18 @@ export function getUserConfigs(
 export interface SeedDeviceConfig {
   name: string;
   rawKey: string;
+  centerName: string;
 }
 
 export function getDeviceConfigs(): SeedDeviceConfig[] {
   return [
-    { name: "North Weighbridge Terminal", rawKey: "hardware123" },
-    { name: "South Scale Bay", rawKey: "hardware456" },
-    { name: "Apex Weighbridge Camera", rawKey: "hardware789" },
+    {
+      name: "North Weighbridge Terminal",
+      rawKey: "hardware123",
+      centerName: "North Automatic Scale",
+    },
+    { name: "South Scale Bay", rawKey: "hardware456", centerName: "South Express Bay" },
+    { name: "Apex Weighbridge Camera", rawKey: "hardware789", centerName: "Apex Inbound Scale" },
   ];
 }
 

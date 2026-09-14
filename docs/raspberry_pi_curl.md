@@ -63,8 +63,8 @@ curl -X POST "https://gluvok.vercel.app/api/storage/upload" \
 {
   "data": {
     "urls": [
-      "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/abc12345-1725210000.jpg",
-      "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/def67890-1725210001.jpg"
+      "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/f_1/c_1/weighments/abc12345-1725210000.jpg",
+      "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/f_1/c_1/weighments/def67890-1725210001.jpg"
     ]
   }
 }
@@ -74,7 +74,7 @@ curl -X POST "https://gluvok.vercel.app/api/storage/upload" \
 
 ## 3. Step 2: Create Device Entry
 
-Submit the vehicle weighment event with weight, collection center ID, detected plate number, and uploaded image URLs.
+Submit the vehicle weighment event with weight, detected plate number, and uploaded image URLs. Collection center ID is automatically resolved from the device's assigned center (or can be passed optionally).
 
 ### cURL Request
 
@@ -86,15 +86,15 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
   -d '{
     "detected_vehicle_number": "MH12AB1234",
     "weight": 14250.5,
-    "center_id": 1,
     "images": [
-      "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/abc12345-1725210000.jpg"
+      "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/f_1/c_1/weighments/abc12345-1725210000.jpg"
     ]
   }'
 ```
 
 > [!NOTE]
 >
+> - **Center Resolution & Point-in-Time Snapshot**: The server reads the device's assigned `center_id` from the database and records it as an immutable snapshot on `entries.center_id`. If the scale is moved in the future, past entries retain their original center.
 > - **Auto-Approval**: If the collection center has `auto_approve: true` and a valid vehicle plate was detected, the entry is automatically marked `approved` with `auto_approved: true`.
 > - **Operator Tracking (Approach A)**: For automated device entries, `user_id` is initially `null` and `device_id` is populated. If an operator later edits the plate or assigns a customer, `user_id` is updated to the operator's account.
 
@@ -104,7 +104,7 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 | :------------------------ | :------ | :------- | :-------------------------------------------------------------------- |
 | `detected_vehicle_number` | String  | **Yes**  | Raw OCR/ANPR text recognized by the camera (or `"NO_PLATE_DETECTED"`) |
 | `weight`                  | Number  | **Yes**  | Positive numeric weight (kg/tons)                                     |
-| `center_id`               | Integer | **Yes**  | Collection center / weighbridge ID (resolves `factory_id`)            |
+| `center_id`               | Integer | No       | Optional. Defaults to the device's assigned `center_id` in database.  |
 | `images`                  | Array   | No       | Array of uploaded image URLs or Base64 data URIs                      |
 
 ### Response (`201 Created`)
@@ -126,7 +126,7 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
     "status": "approved",
     "auto_approved": true,
     "images": [
-      "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/abc12345-1725210000.jpg"
+      "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/f_1/c_1/weighments/abc12345-1725210000.jpg"
     ],
     "created_at": "2026-09-01T17:45:00.000Z",
     "updated_at": "2026-09-01T17:45:00.000Z"
@@ -148,7 +148,6 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
   -d '{
     "detected_vehicle_number": "MH12AB1234",
     "weight": 14250.5,
-    "center_id": 1,
     "images": [
       "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/..."
     ]
@@ -159,12 +158,15 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 
 ## 5. Device Management & Deactivation
 
-Edge devices are managed centrally in the database `devices` table:
+Edge devices are managed centrally in the database `devices` table with their assigned collection center:
 
 ```sql
--- Provision a new device
-INSERT INTO devices (name, hashed_key)
-VALUES ('South Express Scale', encode(sha256('your_secure_device_key'::bytea), 'hex'));
+-- Provision a new device bound to a center
+INSERT INTO devices (name, hashed_key, center_id)
+VALUES ('South Express Scale', encode(sha256('your_secure_device_key'::bytea), 'hex'), 1);
+
+-- Move a device to another collection center (past entries remain linked to original center)
+UPDATE devices SET center_id = 2 WHERE id = 1;
 
 -- Deactivate a device immediately (DataGrip or SQL editor)
 UPDATE devices SET deleted_at = NOW() WHERE id = 1;

@@ -77,10 +77,12 @@ export interface Device {
   id: number;
   name: string;
   hashed_key: string;
+  center_id: number;
   last_seen_at?: string | null;
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;
+  center_name?: string;
 }
 
 export interface Entry {

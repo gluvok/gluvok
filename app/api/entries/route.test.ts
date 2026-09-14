@@ -294,7 +294,7 @@ describe("Entries route handlers (/api/entries)", () => {
     it("creates DEVICE entry when caller provides valid device headers", async () => {
       mockVerifyDeviceRequest.mockResolvedValue({
         success: true,
-        device: { id: 5, name: "North Terminal" },
+        device: { id: 5, name: "North Terminal", center_id: 1 },
       });
 
       mockDb.from.mockReturnValue({
@@ -356,10 +356,10 @@ describe("Entries route handlers (/api/entries)", () => {
       );
     });
 
-    it("creates DEVICE entry when device sends NO_PLATE_DETECTED", async () => {
+    it("creates DEVICE entry when device sends NO_PLATE_DETECTED and omits center_id", async () => {
       mockVerifyDeviceRequest.mockResolvedValue({
         success: true,
-        device: { id: 5, name: "North Terminal" },
+        device: { id: 5, name: "North Terminal", center_id: 1 },
       });
 
       mockDb.from.mockReturnValue({
@@ -398,7 +398,6 @@ describe("Entries route handlers (/api/entries)", () => {
         body: JSON.stringify({
           detected_vehicle_number: "NO_PLATE_DETECTED",
           weight: 15000,
-          center_id: 1,
         }),
       });
 

@@ -12,6 +12,7 @@ vi.mock("@/db/helpers", async (importOriginal) => {
 const mockUpload = vi.fn();
 const mockGetPublicUrl = vi.fn();
 const mockRemove = vi.fn();
+const mockFrom = vi.fn();
 
 vi.mock("@/lib/supabase", () => ({
   supabase: {
@@ -22,6 +23,7 @@ vi.mock("@/lib/supabase", () => ({
         remove: mockRemove,
       })),
     },
+    from: (...args: unknown[]) => mockFrom(...args),
   },
 }));
 
@@ -47,11 +49,32 @@ const sampleUser = {
 describe("Storage Upload & Deletion API Routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            is: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: 1, factory_id: 1 },
+                error: null,
+              }),
+            }),
+          }),
+          is: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { id: 1, factory_id: 1 },
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    });
   });
 
   describe("POST /api/storage/upload", () => {
     it("rejects when no files are provided", async () => {
       const formData = new FormData();
+      formData.append("center_id", "1");
       const req = new Request("http://localhost/api/storage/upload", {
         method: "POST",
         body: formData,
@@ -65,12 +88,69 @@ describe("Storage Upload & Deletion API Routes", () => {
       expect(json.error).toBe("No image files provided for upload.");
     });
 
+    it("rejects when center_id is missing", async () => {
+      const imageBlob = new Blob(["fake-image-bytes"], { type: "image/jpeg" });
+      const file = new File([imageBlob], "photo.jpg", { type: "image/jpeg" });
+
+      const formData = new FormData();
+      formData.append("files", file);
+
+      const req = new Request("http://localhost/api/storage/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const handler = POST as unknown as RawHandler;
+      const res = await handler(req, sampleUser);
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error).toBe("Collection center ID is required for image uploads.");
+    });
+
+    it("rejects when center does not belong to user factory", async () => {
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              is: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: null,
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        }),
+      });
+
+      const imageBlob = new Blob(["fake-image-bytes"], { type: "image/jpeg" });
+      const file = new File([imageBlob], "photo.jpg", { type: "image/jpeg" });
+
+      const formData = new FormData();
+      formData.append("files", file);
+      formData.append("center_id", "99");
+
+      const req = new Request("http://localhost/api/storage/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const handler = POST as unknown as RawHandler;
+      const res = await handler(req, sampleUser);
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error).toBe("Selected center not found");
+    });
+
     it("rejects when file exceeds 10MB", async () => {
       const oversizedBlob = new Blob([new Uint8Array(11 * 1024 * 1024)], { type: "image/jpeg" });
       const file = new File([oversizedBlob], "large.jpg", { type: "image/jpeg" });
 
       const formData = new FormData();
       formData.append("files", file);
+      formData.append("center_id", "1");
 
       const req = new Request("http://localhost/api/storage/upload", {
         method: "POST",
@@ -91,6 +171,7 @@ describe("Storage Upload & Deletion API Routes", () => {
 
       const formData = new FormData();
       formData.append("files", file);
+      formData.append("center_id", "1");
 
       const req = new Request("http://localhost/api/storage/upload", {
         method: "POST",
@@ -111,12 +192,13 @@ describe("Storage Upload & Deletion API Routes", () => {
 
       const formData = new FormData();
       formData.append("files", file);
+      formData.append("center_id", "1");
 
       mockUpload.mockResolvedValue({ error: null });
       mockGetPublicUrl.mockReturnValue({
         data: {
           publicUrl:
-            "https://test.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/photo-123.jpg",
+            "https://test.supabase.co/storage/v1/object/public/gluvok/f_1/c_1/weighments/photo-123.jpg",
         },
       });
 
@@ -131,10 +213,10 @@ describe("Storage Upload & Deletion API Routes", () => {
       expect(res.status).toBe(201);
       const json = await res.json();
       expect(json.data.urls).toEqual([
-        "https://test.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/photo-123.jpg",
+        "https://test.supabase.co/storage/v1/object/public/gluvok/f_1/c_1/weighments/photo-123.jpg",
       ]);
       expect(mockUpload).toHaveBeenCalledWith(
-        expect.stringMatching(/^f_1\/c_0\/weighments\/.+\.jpg$/),
+        expect.stringMatching(/^f_1\/c_1\/weighments\/.+\.jpg$/),
         expect.any(Buffer),
         expect.anything(),
       );

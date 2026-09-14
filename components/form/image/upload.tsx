@@ -38,6 +38,7 @@ const pendingImageUploads = new Map<string, File>();
 export async function processImageUploadsAndDeletions(
   submittedImages: string[],
   originalImages: string[] = [],
+  centerId?: number | string,
 ): Promise<string[]> {
   // 1. Identify which images to delete (present in original, but not in submitted)
   const imagesToDelete = originalImages.filter((img) => !submittedImages.includes(img));
@@ -55,6 +56,9 @@ export async function processImageUploadsAndDeletions(
   const blobImages = submittedImages.filter((img) => img.startsWith("blob:"));
   if (blobImages.length > 0) {
     const formData = new FormData();
+    if (centerId !== undefined && centerId !== null) {
+      formData.append("center_id", String(centerId));
+    }
     for (const blobUrl of blobImages) {
       const file = pendingImageUploads.get(blobUrl);
       if (file) {

@@ -62,7 +62,8 @@ export async function prepareSubmitPayload(
   if (!isEdit) {
     const payload = { ...values };
     if (Array.isArray(payload["images"])) {
-      payload["images"] = await processImageUploadsAndDeletions(payload["images"], []);
+      const centerId = payload["center_id"] as number | string | undefined;
+      payload["images"] = await processImageUploadsAndDeletions(payload["images"], [], centerId);
     }
     return { payload };
   }
@@ -114,9 +115,14 @@ export async function prepareSubmitPayload(
 
     if (Array.isArray(updateValues["images"])) {
       const originalImages = (getField(item, "images") || []) as string[];
+      const centerId = (updateValues["center_id"] ?? getField(item, "center_id")) as
+        | number
+        | string
+        | undefined;
       updateValues["images"] = await processImageUploadsAndDeletions(
         updateValues["images"],
         originalImages,
+        centerId,
       );
     }
   }

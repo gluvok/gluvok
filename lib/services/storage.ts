@@ -20,12 +20,17 @@ const UPLOAD_PATH_FOLDER = "weighments";
 export async function uploadBase64ImagesToStorage(
   images: string[],
   factoryId: number | string,
-  centerId?: number | string,
+  centerId: number | string,
 ): Promise<string[]> {
   if (!images || images.length === 0) return [];
 
+  const parsedCenterId = Number(centerId);
+  if (!Number.isSafeInteger(parsedCenterId) || parsedCenterId <= 0) {
+    throw new Error("Valid centerId is required for image uploads");
+  }
+
   const factoryPrefix = String(factoryId ?? "default");
-  const centerPrefix = String(centerId ?? "0");
+  const centerPrefix = String(parsedCenterId);
 
   return Promise.all(
     images.map(async (img) => {

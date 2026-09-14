@@ -160,6 +160,8 @@ export const ApiErrorMessage = {
     `Invalid file type "${fileType}". Only image files are permitted.`,
   FAILED_TO_UPLOAD_IMAGE: "Failed to upload image to storage.",
   FAILED_TO_DELETE_IMAGES: "Failed to delete images from storage.",
+  CENTER_ID_REQUIRED_FOR_UPLOAD: "Collection center ID is required for image uploads.",
+  DEVICE_NOT_ASSIGNED_TO_CENTER: "Device is not assigned to a collection center.",
 
   DATABASE_QUERY_FAILED: "Database query failed",
 } as const;

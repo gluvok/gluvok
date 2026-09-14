@@ -24,7 +24,7 @@ describe("uploadBase64ImagesToStorage", () => {
   });
 
   it("returns empty array when given empty or null images", async () => {
-    const res = await uploadBase64ImagesToStorage([], 1);
+    const res = await uploadBase64ImagesToStorage([], 1, 1);
     expect(res).toEqual([]);
   });
 
@@ -33,7 +33,7 @@ describe("uploadBase64ImagesToStorage", () => {
       "https://example.com/images/capture1.jpg",
       "http://storage.googleapis.com/test.png",
     ];
-    const res = await uploadBase64ImagesToStorage(urls, 1);
+    const res = await uploadBase64ImagesToStorage(urls, 1, 1);
     expect(res).toEqual(urls);
     expect(mockUpload).not.toHaveBeenCalled();
   });
@@ -78,10 +78,10 @@ describe("uploadBase64ImagesToStorage", () => {
     const base64Png =
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
-    const res = await uploadBase64ImagesToStorage([base64Png], 2);
+    const res = await uploadBase64ImagesToStorage([base64Png], 2, 3);
 
     expect(mockUpload).toHaveBeenCalledWith(
-      expect.stringMatching(/^f_2\/c_0\/weighments\/.+\.png$/),
+      expect.stringMatching(/^f_2\/c_3\/weighments\/.+\.png$/),
       expect.any(Buffer),
       expect.objectContaining({
         contentType: "image/png",
@@ -92,11 +92,24 @@ describe("uploadBase64ImagesToStorage", () => {
     ]);
   });
 
+  it("throws error when centerId is missing or invalid", async () => {
+    const base64Img = "data:image/jpeg;base64,aGVsbG8=";
+    await expect(uploadBase64ImagesToStorage([base64Img], 1, 0)).rejects.toThrow(
+      "Valid centerId is required for image uploads",
+    );
+    await expect(uploadBase64ImagesToStorage([base64Img], 1, -1)).rejects.toThrow(
+      "Valid centerId is required for image uploads",
+    );
+    await expect(
+      uploadBase64ImagesToStorage([base64Img], 1, undefined as unknown as number),
+    ).rejects.toThrow("Valid centerId is required for image uploads");
+  });
+
   it("handles storage upload errors gracefully by returning original string", async () => {
     mockUpload.mockResolvedValue({ error: new Error("Storage quota exceeded") });
 
     const base64Img = "data:image/jpeg;base64,aGVsbG8=";
-    const res = await uploadBase64ImagesToStorage([base64Img], 1);
+    const res = await uploadBase64ImagesToStorage([base64Img], 1, 1);
 
     expect(res).toEqual([base64Img]);
   });

@@ -105,6 +105,19 @@ describe("uploadBase64ImagesToStorage", () => {
     ).rejects.toThrow("Valid centerId is required for image uploads");
   });
 
+  it("throws error when factoryId is missing or invalid", async () => {
+    const base64Img = "data:image/jpeg;base64,aGVsbG8=";
+    await expect(uploadBase64ImagesToStorage([base64Img], 0, 1)).rejects.toThrow(
+      "Valid factoryId is required for image uploads",
+    );
+    await expect(uploadBase64ImagesToStorage([base64Img], -1, 1)).rejects.toThrow(
+      "Valid factoryId is required for image uploads",
+    );
+    await expect(
+      uploadBase64ImagesToStorage([base64Img], undefined as unknown as number, 1),
+    ).rejects.toThrow("Valid factoryId is required for image uploads");
+  });
+
   it("handles storage upload errors gracefully by returning original string", async () => {
     mockUpload.mockResolvedValue({ error: new Error("Storage quota exceeded") });
 

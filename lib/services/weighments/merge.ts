@@ -78,7 +78,7 @@ export async function tryMergeEntries(
       .is("deleted_at", null)
       .maybeSingle();
 
-    if (!existingW1) {
+    if (!existingW1 && e1.id !== e2.id) {
       const { data: newWeighment, error: insertErr } = await client
         .from("weighments")
         .insert({
@@ -133,7 +133,7 @@ export async function tryMergeEntries(
       .is("deleted_at", null)
       .maybeSingle();
 
-    if (!existingWNext) {
+    if (!existingWNext && e2.id !== eNext.id) {
       const { data: newWeighment, error: insertErr } = await client
         .from("weighments")
         .insert({

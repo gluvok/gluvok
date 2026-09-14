@@ -7,6 +7,7 @@ import {
   hasPermission,
   StatusCodes,
   formatEntityResponse,
+  isUniqueConstraintError,
 } from "@/db/helpers";
 import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
@@ -73,7 +74,13 @@ export const PATCH = withAuth(
       .is("deleted_at", null);
 
     const { data: updated, error } = await query.select().maybeSingle();
-    if (error || !updated) return apiError(ApiErrorMessage.RATE_NOT_FOUND, StatusCodes.NOT_FOUND);
+    if (error) {
+      if (isUniqueConstraintError(error)) {
+        return apiError(ApiErrorMessage.RATE_EXISTS, StatusCodes.CONFLICT);
+      }
+      return apiError(error.message, StatusCodes.BAD_REQUEST);
+    }
+    if (!updated) return apiError(ApiErrorMessage.RATE_NOT_FOUND, StatusCodes.NOT_FOUND);
 
     return formatEntityResponse(updated);
   }),

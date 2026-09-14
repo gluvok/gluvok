@@ -93,6 +93,8 @@ export const ApiErrorMessage = {
   USERNAME_TAKEN: "Username is already taken",
   GOVT_ID_EXISTS: "Govt ID already exists in this factory",
   AADHAR_NUMBER_EXISTS: "Aadhar number is already registered in this factory",
+  CENTER_NAME_EXISTS: "A collection center with this name already exists in this factory.",
+  RATE_EXISTS: "A rate for this commodity and unit already exists in this factory.",
 
   // Creation Failures
   CREATE_USER_RECORD_FAILED: "Failed to create user record",

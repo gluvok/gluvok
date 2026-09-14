@@ -19,6 +19,23 @@ export type RouteContext<P extends Record<string, string> = Record<string, strin
 
 export { StatusCodes };
 
+export function isUniqueConstraintError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const e = error as Record<string, unknown>;
+  return (
+    e.code === "23505" || (typeof e.message === "string" && e.message.includes("unique constraint"))
+  );
+}
+
+export function isCheckConstraintError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const e = error as Record<string, unknown>;
+  return (
+    e.code === "23514" ||
+    (typeof e.message === "string" && e.message.includes("violates check constraint"))
+  );
+}
+
 export function apiError(message: string, status: StatusCodes): NextResponse {
   return NextResponse.json({ error: message }, { status });
 }

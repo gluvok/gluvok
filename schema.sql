@@ -97,6 +97,10 @@ CREATE TABLE IF NOT EXISTS centers (
     deleted_at TIMESTAMPTZ
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_centers_factory_name
+ON centers (factory_id, name)
+WHERE deleted_at IS NULL;
+
 -- COMMODITIES TABLE
 CREATE TABLE IF NOT EXISTS commodities (
     id SERIAL PRIMARY KEY,
@@ -105,6 +109,10 @@ CREATE TABLE IF NOT EXISTS commodities (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_commodities_name_active
+ON commodities (name)
+WHERE deleted_at IS NULL;
 
 -- RATES TABLE
 CREATE TABLE IF NOT EXISTS rates (
@@ -115,8 +123,13 @@ CREATE TABLE IF NOT EXISTS rates (
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ
+    deleted_at TIMESTAMPTZ,
+    CONSTRAINT chk_rates_price_non_negative CHECK (unit_price >= 0)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_rates_factory_commodity_unit
+ON rates (factory_id, commodity_id, unit)
+WHERE deleted_at IS NULL;
 
 -- DEVICES TABLE (Edge capture hardware devices)
 CREATE TABLE IF NOT EXISTS devices (
@@ -129,6 +142,10 @@ CREATE TABLE IF NOT EXISTS devices (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_name_active
+ON devices (name)
+WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_devices_center
 ON devices (center_id)
@@ -150,11 +167,17 @@ CREATE TABLE IF NOT EXISTS entries (
     images TEXT[] DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ
+    deleted_at TIMESTAMPTZ,
+    CONSTRAINT chk_entries_weight_positive CHECK (weight > 0)
 );
 
 CREATE INDEX IF NOT EXISTS idx_entries_factory_vehicle 
-ON entries (factory_id, vehicle_number, status, created_at DESC);
+ON entries (factory_id, vehicle_number, status, created_at DESC)
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_entries_factory_center_created
+ON entries (factory_id, center_id, created_at DESC)
+WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_entries_factory_created
 ON entries (factory_id, created_at DESC)
@@ -186,7 +209,8 @@ CREATE TABLE IF NOT EXISTS weighments (
     rate_id INT REFERENCES rates(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ
+    deleted_at TIMESTAMPTZ,
+    CONSTRAINT chk_weighments_distinct_entries CHECK (in_entry_id <> out_entry_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_weighments_created
@@ -248,50 +272,94 @@ WHERE deleted_at IS NULL;
 DROP FUNCTION IF EXISTS public.gross_weight(weighments);
 CREATE OR REPLACE FUNCTION gross_weight(w weighments) 
 RETURNS numeric 
-LANGUAGE plpgsql 
-STABLE
+LANGUAGE sql 
+STABLE PARALLEL SAFE
 AS $$
-BEGIN
-    RETURN (
-        SELECT GREATEST(e1.weight, e2.weight)
-        FROM entries e1
-        JOIN entries e2 ON e2.id = w.out_entry_id
-        WHERE e1.id = w.in_entry_id
-    );
-END;
+    SELECT GREATEST(e1.weight, e2.weight)
+    FROM entries e1, entries e2
+    WHERE e1.id = w.in_entry_id AND e2.id = w.out_entry_id;
 $$;
 
 DROP FUNCTION IF EXISTS public.tare_weight(weighments);
 CREATE OR REPLACE FUNCTION tare_weight(w weighments) 
 RETURNS numeric 
-LANGUAGE plpgsql 
-STABLE
+LANGUAGE sql 
+STABLE PARALLEL SAFE
 AS $$
-BEGIN
-    RETURN (
-        SELECT LEAST(e1.weight, e2.weight)
-        FROM entries e1
-        JOIN entries e2 ON e2.id = w.out_entry_id
-        WHERE e1.id = w.in_entry_id
-    );
-END;
+    SELECT LEAST(e1.weight, e2.weight)
+    FROM entries e1, entries e2
+    WHERE e1.id = w.in_entry_id AND e2.id = w.out_entry_id;
 $$;
 
 DROP FUNCTION IF EXISTS public.net_weight(weighments);
 CREATE OR REPLACE FUNCTION net_weight(w weighments) 
 RETURNS numeric 
-LANGUAGE plpgsql 
-STABLE
+LANGUAGE sql 
+STABLE PARALLEL SAFE
 AS $$
-BEGIN
-    RETURN (
-        SELECT ABS(e1.weight - e2.weight)
-        FROM entries e1
-        JOIN entries e2 ON e2.id = w.out_entry_id
-        WHERE e1.id = w.in_entry_id
-    );
-END;
+    SELECT ABS(e1.weight - e2.weight)
+    FROM entries e1, entries e2
+    WHERE e1.id = w.in_entry_id AND e2.id = w.out_entry_id;
 $$;
+
+-- 2.1 AUTOMATIC UPDATED_AT TIMESTAMP TRIGGER
+CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_factories_updated_at ON factories;
+CREATE TRIGGER trg_factories_updated_at
+BEFORE UPDATE ON factories
+FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
+
+DROP TRIGGER IF EXISTS trg_users_updated_at ON users;
+CREATE TRIGGER trg_users_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
+
+DROP TRIGGER IF EXISTS trg_customers_updated_at ON customers;
+CREATE TRIGGER trg_customers_updated_at
+BEFORE UPDATE ON customers
+FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
+
+DROP TRIGGER IF EXISTS trg_centers_updated_at ON centers;
+CREATE TRIGGER trg_centers_updated_at
+BEFORE UPDATE ON centers
+FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
+
+DROP TRIGGER IF EXISTS trg_commodities_updated_at ON commodities;
+CREATE TRIGGER trg_commodities_updated_at
+BEFORE UPDATE ON commodities
+FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
+
+DROP TRIGGER IF EXISTS trg_rates_updated_at ON rates;
+CREATE TRIGGER trg_rates_updated_at
+BEFORE UPDATE ON rates
+FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
+
+DROP TRIGGER IF EXISTS trg_devices_updated_at ON devices;
+CREATE TRIGGER trg_devices_updated_at
+BEFORE UPDATE ON devices
+FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
+
+DROP TRIGGER IF EXISTS trg_entries_updated_at ON entries;
+CREATE TRIGGER trg_entries_updated_at
+BEFORE UPDATE ON entries
+FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
+
+DROP TRIGGER IF EXISTS trg_weighments_updated_at ON weighments;
+CREATE TRIGGER trg_weighments_updated_at
+BEFORE UPDATE ON weighments
+FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
+
+DROP TRIGGER IF EXISTS trg_tickets_updated_at ON tickets;
+CREATE TRIGGER trg_tickets_updated_at
+BEFORE UPDATE ON tickets
+FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 
 -- 3. ENABLE ROW LEVEL SECURITY (RLS)
 ALTER TABLE IF EXISTS factories ENABLE ROW LEVEL SECURITY;
@@ -317,16 +385,16 @@ DROP POLICY IF EXISTS "Allow access weighments" ON weighments;
 DROP POLICY IF EXISTS "Allow access entries" ON entries;
 DROP POLICY IF EXISTS "Allow access tickets" ON tickets;
 
-CREATE POLICY "Allow access factories" ON factories FOR ALL USING (true);
-CREATE POLICY "Allow access users" ON users FOR ALL USING (true);
-CREATE POLICY "Allow access devices" ON devices FOR ALL USING (true);
-CREATE POLICY "Allow access customers" ON customers FOR ALL USING (true);
-CREATE POLICY "Allow access centers" ON centers FOR ALL USING (true);
-CREATE POLICY "Allow access commodities" ON commodities FOR ALL USING (true);
-CREATE POLICY "Allow access rates" ON rates FOR ALL USING (true);
-CREATE POLICY "Allow access weighments" ON weighments FOR ALL USING (true);
-CREATE POLICY "Allow access entries" ON entries FOR ALL USING (true);
-CREATE POLICY "Allow access tickets" ON tickets FOR ALL USING (true);
+CREATE POLICY "Allow access factories" ON factories FOR ALL TO authenticated, service_role USING (true);
+CREATE POLICY "Allow access users" ON users FOR ALL TO authenticated, service_role USING (true);
+CREATE POLICY "Allow access devices" ON devices FOR ALL TO authenticated, service_role USING (true);
+CREATE POLICY "Allow access customers" ON customers FOR ALL TO authenticated, service_role USING (true);
+CREATE POLICY "Allow access centers" ON centers FOR ALL TO authenticated, service_role USING (true);
+CREATE POLICY "Allow access commodities" ON commodities FOR ALL TO authenticated, service_role USING (true);
+CREATE POLICY "Allow access rates" ON rates FOR ALL TO authenticated, service_role USING (true);
+CREATE POLICY "Allow access weighments" ON weighments FOR ALL TO authenticated, service_role USING (true);
+CREATE POLICY "Allow access entries" ON entries FOR ALL TO authenticated, service_role USING (true);
+CREATE POLICY "Allow access tickets" ON tickets FOR ALL TO authenticated, service_role USING (true);
 
 -- 5. AUTO-INCREMENT SEQUENCE RESET FUNCTIONS
 DROP FUNCTION IF EXISTS public.reset_table_sequence(text);

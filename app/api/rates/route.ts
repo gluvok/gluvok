@@ -8,6 +8,7 @@ import {
   StatusCodes,
   formatEntityResponse,
   parseBulkIds,
+  isUniqueConstraintError,
 } from "@/db/helpers";
 import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
@@ -106,6 +107,9 @@ export const POST = withAuth(async (req, user, client) => {
 
   if (error) {
     console.error("POST rate error:", error);
+    if (isUniqueConstraintError(error)) {
+      return apiError(ApiErrorMessage.RATE_EXISTS, StatusCodes.CONFLICT);
+    }
     return apiError(error.message || ApiErrorMessage.CREATE_RATE_FAILED, StatusCodes.BAD_REQUEST);
   }
 

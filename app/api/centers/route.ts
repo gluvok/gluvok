@@ -9,6 +9,7 @@ import {
   fetchPaginatedResult,
   formatEntityResponse,
   parseBulkIds,
+  isUniqueConstraintError,
 } from "@/db/helpers";
 import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
@@ -70,6 +71,9 @@ export const POST = withAuth(async (req, user, client) => {
 
   if (error) {
     console.error("POST center error:", error);
+    if (isUniqueConstraintError(error)) {
+      return apiError(ApiErrorMessage.CENTER_NAME_EXISTS, StatusCodes.CONFLICT);
+    }
     return apiError(error.message || ApiErrorMessage.CREATE_CENTER_FAILED, StatusCodes.BAD_REQUEST);
   }
 

@@ -24,12 +24,17 @@ export async function uploadBase64ImagesToStorage(
 ): Promise<string[]> {
   if (!images || images.length === 0) return [];
 
+  const parsedFactoryId = Number(factoryId);
+  if (!Number.isSafeInteger(parsedFactoryId) || parsedFactoryId <= 0) {
+    throw new Error("Valid factoryId is required for image uploads");
+  }
+
   const parsedCenterId = Number(centerId);
   if (!Number.isSafeInteger(parsedCenterId) || parsedCenterId <= 0) {
     throw new Error("Valid centerId is required for image uploads");
   }
 
-  const factoryPrefix = String(factoryId ?? "default");
+  const factoryPrefix = String(parsedFactoryId);
   const centerPrefix = String(parsedCenterId);
 
   return Promise.all(

@@ -69,8 +69,15 @@ pnpm install
 
 ### Database Setup
 
-1. Execute [schema.sql](schema.sql) in your Supabase SQL Editor to provision tables, enums, indexes, and RLS policies.
-2. Execute [storage.sql](storage.sql) to create the required storage bucket (`gluvok`) and hierarchical object policies (`f_<factory_id>/c_<center_id>/weighments/...`).
+1. Execute [schema.sql](schema.sql) in your Supabase SQL Editor to provision tables, enums, indexes, integrity constraints, and RLS policies:
+   - **Data Integrity Constraints**: Enforces positive weights (`weight > 0`), non-negative pricing (`unit_price >= 0`), and distinct weighment entries (`in_entry_id <> out_entry_id`).
+   - **Partial Unique Indexes**: Enforces uniqueness on active (`WHERE deleted_at IS NULL`) records for commodities, centers per factory, rates per commodity/unit, and device names.
+   - **Query Optimization**: Includes composite indexes on `(factory_id, center_id, created_at DESC)` and `(factory_id, vehicle_number, status, created_at DESC)` to eliminate in-memory sorting.
+   - **Inlined Computed Columns**: High-performance `LANGUAGE sql STABLE PARALLEL SAFE` functions for `gross_weight`, `tare_weight`, and `net_weight`.
+   - **Automatic Timestamps**: Automated `BEFORE UPDATE` trigger on all tables keeping `updated_at` timestamps accurate.
+2. Execute [storage.sql](storage.sql) to create the required storage bucket (`gluvok`) and hierarchical object policies (`f_<factory_id>/c_<center_id>/weighments/...`):
+   - **Public CDN Reads**: Open for rapid image delivery.
+   - **Restricted Mutations**: `INSERT`, `UPDATE`, and `DELETE` restricted to `authenticated` and `service_role` clients with regex validation on folder prefixes.
 3. Seed default factory data, commodities, and administrative accounts:
 
 ```bash

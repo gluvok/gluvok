@@ -96,6 +96,34 @@ describe("Centers [id] route handlers", () => {
       const json = await response.json();
       expect(json.data.name).toBe("Renamed Center");
     });
+
+    it("returns 409 Conflict when new name violates unique constraint", async () => {
+      const mockQuery: Record<string, unknown> = {};
+      mockQuery.update = vi.fn(() => mockQuery);
+      mockQuery.eq = vi.fn(() => mockQuery);
+      mockQuery.is = vi.fn(() => mockQuery);
+      mockQuery.select = vi.fn(() => mockQuery);
+      mockQuery.maybeSingle = vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: "23505", message: "duplicate key value violates unique constraint" },
+      });
+      const mockDb = { from: vi.fn(() => mockQuery) };
+
+      const patchReq = new Request("http://localhost/api/centers/5", {
+        method: "PATCH",
+        body: JSON.stringify({ name: "Existing Center" }),
+      });
+      const response = await (PATCH as unknown as RawHandler)(
+        patchReq,
+        sampleUser,
+        mockDb,
+        context,
+        scope,
+      );
+      expect(response.status).toBe(409);
+      const json = await response.json();
+      expect(json.error).toContain("already exists in this factory");
+    });
   });
 
   describe("DELETE /api/centers/:id", () => {

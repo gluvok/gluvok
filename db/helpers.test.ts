@@ -8,6 +8,8 @@ import {
   parseBulkIds,
   withAuth,
   withEntityScope,
+  isUniqueConstraintError,
+  isCheckConstraintError,
 } from "./helpers";
 
 const { mockDb } = vi.hoisted(() => ({
@@ -206,5 +208,41 @@ describe("withAuth and server-side auto-refresh", () => {
 
     expect(response.status).toBe(401);
     expect(handler).not.toHaveBeenCalled();
+  });
+});
+
+describe("isUniqueConstraintError", () => {
+  it("identifies code 23505 as unique constraint error", () => {
+    expect(isUniqueConstraintError({ code: "23505" })).toBe(true);
+  });
+
+  it("identifies error message mentioning unique constraint", () => {
+    expect(
+      isUniqueConstraintError({ message: "duplicate key value violates unique constraint" }),
+    ).toBe(true);
+  });
+
+  it("returns false for non-unique errors or invalid inputs", () => {
+    expect(isUniqueConstraintError({ code: "23503" })).toBe(false);
+    expect(isUniqueConstraintError(null)).toBe(false);
+    expect(isUniqueConstraintError("string error")).toBe(false);
+  });
+});
+
+describe("isCheckConstraintError", () => {
+  it("identifies code 23514 as check constraint error", () => {
+    expect(isCheckConstraintError({ code: "23514" })).toBe(true);
+  });
+
+  it("identifies error message mentioning check constraint", () => {
+    expect(
+      isCheckConstraintError({ message: "new row violates check constraint 'chk_weight'" }),
+    ).toBe(true);
+  });
+
+  it("returns false for non-check errors or invalid inputs", () => {
+    expect(isCheckConstraintError({ code: "23505" })).toBe(false);
+    expect(isCheckConstraintError(null)).toBe(false);
+    expect(isCheckConstraintError(undefined)).toBe(false);
   });
 });

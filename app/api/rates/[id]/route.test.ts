@@ -136,6 +136,48 @@ describe("Rates [id] route handlers", () => {
       const json = await response.json();
       expect(json.data.unit_price).toBe("45");
     });
+
+    it("returns 409 Conflict when new commodity/unit violates unique constraint", async () => {
+      let callCount = 0;
+      const mockDb = {
+        from: vi.fn(() => {
+          callCount++;
+          if (callCount === 1) {
+            const checkChain: Record<string, unknown> = {};
+            checkChain.select = vi.fn(() => checkChain);
+            checkChain.eq = vi.fn(() => checkChain);
+            checkChain.is = vi.fn(() => checkChain);
+            checkChain.limit = vi.fn().mockResolvedValue({ data: [], error: null });
+            return checkChain;
+          }
+          const updateChain: Record<string, unknown> = {};
+          updateChain.update = vi.fn(() => updateChain);
+          updateChain.eq = vi.fn(() => updateChain);
+          updateChain.is = vi.fn(() => updateChain);
+          updateChain.select = vi.fn(() => updateChain);
+          updateChain.maybeSingle = vi.fn().mockResolvedValue({
+            data: null,
+            error: { code: "23505", message: "duplicate key value violates unique constraint" },
+          });
+          return updateChain;
+        }),
+      };
+
+      const patchReq = new Request("http://localhost/api/rates/3", {
+        method: "PATCH",
+        body: JSON.stringify({ commodity_id: 2, unit_price: "45", unit: Unit.KG }),
+      });
+      const response = await (PATCH as unknown as RawHandler)(
+        patchReq,
+        sampleUser,
+        mockDb,
+        context,
+        scope,
+      );
+      expect(response.status).toBe(409);
+      const json = await response.json();
+      expect(json.error).toContain("already exists in this factory");
+    });
   });
 
   describe("DELETE /api/rates/:id", () => {

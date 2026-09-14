@@ -145,5 +145,33 @@ describe("Centers route handlers (/api/centers)", () => {
         factory_id: 1,
       });
     });
+
+    it("returns 409 Conflict when center name already exists in factory", async () => {
+      const mockQuery: Record<string, unknown> = {};
+      mockQuery.insert = vi.fn(() => mockQuery);
+      mockQuery.select = vi.fn(() => mockQuery);
+      mockQuery.single = vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: "23505", message: "duplicate key value violates unique constraint" },
+      });
+
+      const mockDb = {
+        from: vi.fn(() => mockQuery),
+      };
+
+      const req = new NextRequest("http://localhost/api/centers", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Existing Center",
+        }),
+      });
+
+      const handler = POST as unknown as RawHandler;
+      const response = await handler(req, sampleUser, mockDb, context);
+
+      expect(response.status).toBe(409);
+      const json = await response.json();
+      expect(json.error).toContain("already exists in this factory");
+    });
   });
 });

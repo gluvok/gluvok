@@ -93,6 +93,26 @@ describe("Rates collection route handlers (/api/rates)", () => {
       const json = await response.json();
       expect(json.data.unit_price).toBe("25");
     });
+
+    it("returns 409 Conflict when rate for commodity and unit already exists", async () => {
+      const mockQuery: Record<string, unknown> = {};
+      mockQuery.insert = vi.fn(() => mockQuery);
+      mockQuery.select = vi.fn(() => mockQuery);
+      mockQuery.single = vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: "23505", message: "duplicate key value violates unique constraint" },
+      });
+
+      const mockDb = { from: vi.fn(() => mockQuery) };
+      const req = new Request("http://localhost/api/rates", {
+        method: "POST",
+        body: JSON.stringify({ commodity_id: 1, unit_price: "25", unit: Unit.KG }),
+      });
+      const response = await (POST as unknown as RawHandler)(req, sampleUser, mockDb, context);
+      expect(response.status).toBe(409);
+      const json = await response.json();
+      expect(json.error).toContain("already exists in this factory");
+    });
   });
 
   describe("DELETE /api/rates (bulk)", () => {

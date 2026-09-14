@@ -24,7 +24,7 @@ describe("uploadBase64ImagesToStorage", () => {
   });
 
   it("returns empty array when given empty or null images", async () => {
-    const res = await uploadBase64ImagesToStorage([], 1, 1);
+    const res = await uploadBase64ImagesToStorage([], 1);
     expect(res).toEqual([]);
   });
 
@@ -33,7 +33,7 @@ describe("uploadBase64ImagesToStorage", () => {
       "https://example.com/images/capture1.jpg",
       "http://storage.googleapis.com/test.png",
     ];
-    const res = await uploadBase64ImagesToStorage(urls, 1, 1);
+    const res = await uploadBase64ImagesToStorage(urls, 1);
     expect(res).toEqual(urls);
     expect(mockUpload).not.toHaveBeenCalled();
   });
@@ -50,10 +50,10 @@ describe("uploadBase64ImagesToStorage", () => {
     const base64Img =
       "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=";
 
-    const res = await uploadBase64ImagesToStorage([base64Img], 1, 5);
+    const res = await uploadBase64ImagesToStorage([base64Img], 1);
 
     expect(mockUpload).toHaveBeenCalledWith(
-      expect.stringMatching(/^f_1\/c_5\/weighments\/.+\.jpg$/),
+      expect.stringMatching(/^f_1\/weighments\/.+\.jpg$/),
       expect.any(Buffer),
       expect.objectContaining({
         contentType: "image/jpeg",
@@ -78,10 +78,10 @@ describe("uploadBase64ImagesToStorage", () => {
     const base64Png =
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
-    const res = await uploadBase64ImagesToStorage([base64Png], 2, 3);
+    const res = await uploadBase64ImagesToStorage([base64Png], 2);
 
     expect(mockUpload).toHaveBeenCalledWith(
-      expect.stringMatching(/^f_2\/c_3\/weighments\/.+\.png$/),
+      expect.stringMatching(/^f_2\/weighments\/.+\.png$/),
       expect.any(Buffer),
       expect.objectContaining({
         contentType: "image/png",
@@ -92,29 +92,16 @@ describe("uploadBase64ImagesToStorage", () => {
     ]);
   });
 
-  it("throws error when centerId is missing or invalid", async () => {
-    const base64Img = "data:image/jpeg;base64,aGVsbG8=";
-    await expect(uploadBase64ImagesToStorage([base64Img], 1, 0)).rejects.toThrow(
-      "Valid centerId is required for image uploads",
-    );
-    await expect(uploadBase64ImagesToStorage([base64Img], 1, -1)).rejects.toThrow(
-      "Valid centerId is required for image uploads",
-    );
-    await expect(
-      uploadBase64ImagesToStorage([base64Img], 1, undefined as unknown as number),
-    ).rejects.toThrow("Valid centerId is required for image uploads");
-  });
-
   it("throws error when factoryId is missing or invalid", async () => {
     const base64Img = "data:image/jpeg;base64,aGVsbG8=";
-    await expect(uploadBase64ImagesToStorage([base64Img], 0, 1)).rejects.toThrow(
+    await expect(uploadBase64ImagesToStorage([base64Img], 0)).rejects.toThrow(
       "Valid factoryId is required for image uploads",
     );
-    await expect(uploadBase64ImagesToStorage([base64Img], -1, 1)).rejects.toThrow(
+    await expect(uploadBase64ImagesToStorage([base64Img], -1)).rejects.toThrow(
       "Valid factoryId is required for image uploads",
     );
     await expect(
-      uploadBase64ImagesToStorage([base64Img], undefined as unknown as number, 1),
+      uploadBase64ImagesToStorage([base64Img], undefined as unknown as number),
     ).rejects.toThrow("Valid factoryId is required for image uploads");
   });
 
@@ -122,7 +109,7 @@ describe("uploadBase64ImagesToStorage", () => {
     mockUpload.mockResolvedValue({ error: new Error("Storage quota exceeded") });
 
     const base64Img = "data:image/jpeg;base64,aGVsbG8=";
-    const res = await uploadBase64ImagesToStorage([base64Img], 1, 1);
+    const res = await uploadBase64ImagesToStorage([base64Img], 1);
 
     expect(res).toEqual([base64Img]);
   });

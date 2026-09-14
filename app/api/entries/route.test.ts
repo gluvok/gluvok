@@ -354,10 +354,10 @@ describe("Entries route handlers (/api/entries)", () => {
       );
     });
 
-    it("creates DEVICE entry when device sends NO_PLATE_DETECTED and omits center_id", async () => {
+    it("creates DEVICE entry when device sends NO_PLATE_DETECTED", async () => {
       mockVerifyDeviceRequest.mockResolvedValue({
         success: true,
-        device: { id: 5, name: "North Terminal", center_id: 1 },
+        device: { id: 5, name: "North Terminal", factory_id: 1 },
       });
 
       mockDb.from.mockReturnValue({
@@ -396,6 +396,7 @@ describe("Entries route handlers (/api/entries)", () => {
         body: JSON.stringify({
           detected_vehicle_number: "NO_PLATE_DETECTED",
           weight: 15000,
+          center_id: 1,
         }),
       });
 
@@ -415,6 +416,29 @@ describe("Entries route handlers (/api/entries)", () => {
           centerId: 1,
         }),
       );
+    });
+
+    it("rejects DEVICE entry when device omits center_id", async () => {
+      mockVerifyDeviceRequest.mockResolvedValue({
+        success: true,
+        device: { id: 5, name: "North Terminal", factory_id: 1 },
+      });
+
+      const req = new NextRequest("http://localhost/api/entries", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-device-id": "5",
+          "x-device-key": "hardware123",
+        },
+        body: JSON.stringify({
+          detected_vehicle_number: "NO_PLATE_DETECTED",
+          weight: 15000,
+        }),
+      });
+
+      const response = await POST(req);
+      expect(response.status).toBe(400);
     });
 
     it("rejects device request when verifyDeviceRequest fails", async () => {

@@ -3,7 +3,7 @@
 -- Fully Idempotent Script (Safe to re-run)
 -- Target Bucket: 'gluvok'
 -- Object Key Structure:
---   f_<factory_id>/c_<center_id>/weighments/<file_id>.<ext>
+--   f_<factory_id>/weighments/<file_id>.<ext>
 -- ==========================================
 
 -- 1. Create Public Storage Bucket 'gluvok'
@@ -29,7 +29,7 @@ CREATE POLICY "Allow insert access for gluvok bucket"
 ON storage.objects FOR INSERT TO anon, authenticated, service_role
 WITH CHECK (
     bucket_id = 'gluvok' AND
-    name ~ '^f_[0-9]+/c_[0-9]+/weighments/'
+    name ~ '^f_[0-9]+/weighments/'
 );
 
 -- UPDATE Policy

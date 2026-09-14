@@ -41,7 +41,7 @@ export const addEntrySchema = baseEntrySchema.extend({
 
 export const addDeviceEntrySchema = z.object({
   weight: positiveWeightSchema("Weight"),
-  center_id: optionalIntegerIdSchema("Center").optional(),
+  center_id: integerIdSchema("Center"),
   detected_vehicle_number: deviceVehicleNumberSchema("Detected vehicle number"),
   images: z.array(z.string()).optional().default([]),
 });

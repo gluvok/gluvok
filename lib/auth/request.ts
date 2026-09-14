@@ -24,7 +24,6 @@ export async function getAuthUser(
   const rawName = req.headers.get("x-user-name");
   const role = req.headers.get("x-user-role");
   const factoryIdStr = req.headers.get("x-user-factory-id");
-  const centerIdStr = req.headers.get("x-user-center-id");
 
   if (userId && username && role && rawName) {
     return {
@@ -34,7 +33,6 @@ export async function getAuthUser(
         name: decodeURIComponent(rawName),
         role: role as Role,
         factory_id: factoryIdStr ? parseInt(factoryIdStr, 10) : 1,
-        center_id: centerIdStr ? parseInt(centerIdStr, 10) : null,
         token_version: 1,
       },
     };
@@ -116,7 +114,6 @@ export async function getAuthUser(
           role: user.role,
           factory_id: user.factory_id,
           factory_name: user.factories?.name,
-          center_id: user.center_id,
           token_version: user.token_version,
         };
 

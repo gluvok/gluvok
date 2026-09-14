@@ -20,7 +20,6 @@ const UPLOAD_PATH_FOLDER = "weighments";
 export async function uploadBase64ImagesToStorage(
   images: string[],
   factoryId: number | string,
-  centerId: number | string,
 ): Promise<string[]> {
   if (!images || images.length === 0) return [];
 
@@ -29,13 +28,7 @@ export async function uploadBase64ImagesToStorage(
     throw new Error("Valid factoryId is required for image uploads");
   }
 
-  const parsedCenterId = Number(centerId);
-  if (!Number.isSafeInteger(parsedCenterId) || parsedCenterId <= 0) {
-    throw new Error("Valid centerId is required for image uploads");
-  }
-
   const factoryPrefix = String(parsedFactoryId);
-  const centerPrefix = String(parsedCenterId);
 
   return Promise.all(
     images.map(async (img) => {
@@ -64,7 +57,7 @@ export async function uploadBase64ImagesToStorage(
       try {
         const buffer = Buffer.from(base64Content, "base64");
         const uniqueId = `${Math.random().toString(36).substring(2, 15)}-${Date.now()}`;
-        const filePath = `f_${factoryPrefix}/c_${centerPrefix}/${UPLOAD_PATH_FOLDER}/${uniqueId}.${ext}`;
+        const filePath = `f_${factoryPrefix}/${UPLOAD_PATH_FOLDER}/${uniqueId}.${ext}`;
 
         const { error } = await supabase.storage
           .from(STORAGE_BUCKET_NAME)

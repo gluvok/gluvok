@@ -16,7 +16,6 @@ export interface AuthenticatedUserRecord {
   password_hash: string;
   role: Role;
   factory_id: number;
-  center_id?: number | null;
   token_version?: number;
   factories?: { name?: string };
 }
@@ -27,7 +26,6 @@ export interface UserSessionPayload {
   name: string;
   role: Role;
   factory_id: number;
-  center_id?: number | null;
   factory_name?: string;
 }
 
@@ -54,7 +52,6 @@ export function toUserSessionPayload(
     name: user.name,
     role: user.role,
     factory_id: user.factory_id,
-    center_id: user.center_id,
     factory_name: factoryName || user.factories?.name,
   };
 }

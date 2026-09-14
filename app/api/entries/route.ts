@@ -133,8 +133,7 @@ async function handleEntryPost(req: NextRequest, user: JWTPayload, client: typeo
   }
 
   const rawData = body as Record<string, unknown>;
-  const inputCenterId = rawData.center_id ? Number(rawData.center_id) : undefined;
-  const centerId = inputCenterId ?? (user.center_id ? Number(user.center_id) : undefined);
+  const centerId = rawData.center_id ? Number(rawData.center_id) : undefined;
 
   if (!centerId) {
     return apiError(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND, StatusCodes.BAD_REQUEST);
@@ -185,12 +184,11 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
         return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
       }
 
-      const inputCenterId = (parsed.data as AddDeviceEntryInput).center_id;
-      const centerId = inputCenterId ?? device.center_id;
+      const centerId = (parsed.data as AddDeviceEntryInput).center_id;
       const { data: centerRecord } = await supabase
         .from("centers")
         .select("id, factory_id")
-        .eq("id", centerId!)
+        .eq("id", centerId)
         .is("deleted_at", null)
         .maybeSingle();
 
@@ -200,7 +198,7 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
 
       const newEntry = await createEntry(supabase, {
         factoryId: centerRecord.factory_id,
-        centerId: centerId!,
+        centerId,
         createdBy: device.id,
         detectedVehicleNumber: (parsed.data as AddDeviceEntryInput).detected_vehicle_number,
         vehicleNumber: (parsed.data as AddDeviceEntryInput).detected_vehicle_number,

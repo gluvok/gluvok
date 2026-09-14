@@ -136,13 +136,11 @@ export interface User {
   name: string;
   role: Role;
   factory_id: number;
-  center_id?: number | null;
   token_version?: number;
   created_at: string;
   updated_at: string;
   // Flattened join/view fields
   factory_name?: string;
-  center_name?: string;
 }
 
 export interface Ticket {

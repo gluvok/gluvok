@@ -80,7 +80,6 @@ CREATE TABLE IF NOT EXISTS users (
     role role_enum NOT NULL DEFAULT 'base',
     token_version INT NOT NULL DEFAULT 1,
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
-    center_id INT REFERENCES centers(id) ON DELETE RESTRICT DEFAULT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
@@ -88,10 +87,6 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_active 
 ON users (username) 
-WHERE deleted_at IS NULL;
-
-CREATE INDEX IF NOT EXISTS idx_users_center
-ON users (center_id)
 WHERE deleted_at IS NULL;
 
 -- SESSIONS TABLE (Server-side user sessions for immediate revocation)

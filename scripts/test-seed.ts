@@ -205,7 +205,6 @@ async function main() {
   const hardwareUserMap = new Map<string, number>();
 
   for (const d of hardwareConfigs) {
-    const assignedCenterId = centerMap.get(d.centerName) || 1;
     const centerFactoryId = centerFactoryMap.get(d.centerName) || primaryFactoryId;
     const { data: existing } = await supabase
       .from("users")
@@ -229,7 +228,6 @@ async function main() {
           password_hash: hashedPass,
           role: Role.HARDWARE,
           factory_id: centerFactoryId,
-          center_id: assignedCenterId,
         })
         .select("id")
         .single();
@@ -238,7 +236,7 @@ async function main() {
       hardwareUserMap.set(d.rawKey, created.id);
       hardwareUserMap.set(d.centerName, created.id);
       console.log(
-        `  + Created hardware user: id=${created.id} (username: ${d.username}, center_id: ${assignedCenterId}, center: ${d.centerName})`,
+        `  + Created hardware user: id=${created.id} (username: ${d.username}, center: ${d.centerName})`,
       );
     }
   }

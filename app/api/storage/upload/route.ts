@@ -25,7 +25,7 @@ const ALLOWED_MIME_TYPES = new Set([
 
 import { verifyDeviceRequest } from "@/lib/auth/device";
 
-async function processUpload(formData: FormData, factoryPrefix: string, centerPrefix: string) {
+async function processUpload(formData: FormData, factoryPrefix: string) {
   const files = formData.getAll("files") as File[];
   const singleFile = formData.get("file") as File | null;
 
@@ -56,7 +56,7 @@ async function processUpload(formData: FormData, factoryPrefix: string, centerPr
 
     const fileExt = file.name.split(".").pop() || "jpg";
     const uniqueId = `${Math.random().toString(36).substring(2, 15)}-${Date.now()}`;
-    const filePath = `f_${factoryPrefix}/c_${centerPrefix}/${UPLOAD_PATH_FOLDER}/${uniqueId}.${fileExt}`;
+    const filePath = `f_${factoryPrefix}/${UPLOAD_PATH_FOLDER}/${uniqueId}.${fileExt}`;
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -93,29 +93,8 @@ async function processUpload(formData: FormData, factoryPrefix: string, centerPr
 const userUploadHandler = withAuth(async (req, user) => {
   try {
     const formData = await req.formData();
-    const rawCenterId = formData.get("center_id");
-    const centerId = Number(rawCenterId);
-
-    if (!Number.isSafeInteger(centerId) || centerId <= 0) {
-      return apiError(ApiErrorMessage.CENTER_ID_REQUIRED_FOR_UPLOAD, StatusCodes.BAD_REQUEST);
-    }
-
-    // Verify that center exists and belongs to user's factory (guardrail parity with /api/entries)
-    const { data: centerRecord } = await (supabase as any)
-      .from("centers")
-      .select("id")
-      .eq("id", centerId)
-      .eq("factory_id", user.factory_id)
-      .is("deleted_at", null)
-      .maybeSingle();
-
-    if (!centerRecord) {
-      return apiError(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND, StatusCodes.BAD_REQUEST);
-    }
-
     const factoryPrefix = String(user.factory_id);
-    const centerPrefix = String(centerId);
-    return processUpload(formData, factoryPrefix, centerPrefix);
+    return processUpload(formData, factoryPrefix);
   } catch (err: unknown) {
     console.error("Storage upload handler error:", err);
     const msg = err instanceof Error ? err.message : "Failed to process image upload";
@@ -135,27 +114,10 @@ export async function POST(req: any, ...rest: unknown[]) {
         );
       }
       const device = authResult.device;
-
-      if (!device.center_id || device.center_id <= 0) {
-        return apiError(ApiErrorMessage.DEVICE_NOT_ASSIGNED_TO_CENTER, StatusCodes.BAD_REQUEST);
-      }
-
-      const { data: centerRecord } = await (supabase as any)
-        .from("centers")
-        .select("id, factory_id")
-        .eq("id", device.center_id)
-        .is("deleted_at", null)
-        .maybeSingle();
-
-      if (!centerRecord) {
-        return apiError(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND, StatusCodes.BAD_REQUEST);
-      }
-
-      const factoryPrefix = String(centerRecord.factory_id);
-      const centerPrefix = String(device.center_id);
+      const factoryPrefix = String(device.factory_id);
 
       const formData = await req.formData();
-      return processUpload(formData, factoryPrefix, centerPrefix);
+      return processUpload(formData, factoryPrefix);
     }
 
     // Direct invocation support in unit test environments
@@ -167,26 +129,7 @@ export async function POST(req: any, ...rest: unknown[]) {
     ) {
       const user = rest[0] as { factory_id?: number };
       const formData = await req.formData();
-      const rawCenterId = formData.get("center_id");
-      const centerId = Number(rawCenterId);
-
-      if (!Number.isSafeInteger(centerId) || centerId <= 0) {
-        return apiError(ApiErrorMessage.CENTER_ID_REQUIRED_FOR_UPLOAD, StatusCodes.BAD_REQUEST);
-      }
-
-      const { data: centerRecord } = await (supabase as any)
-        .from("centers")
-        .select("id")
-        .eq("id", centerId)
-        .eq("factory_id", user.factory_id)
-        .is("deleted_at", null)
-        .maybeSingle();
-
-      if (!centerRecord) {
-        return apiError(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND, StatusCodes.BAD_REQUEST);
-      }
-
-      return processUpload(formData, String(user.factory_id ?? "default"), String(centerId));
+      return processUpload(formData, String(user.factory_id ?? "default"));
     }
 
     return userUploadHandler(req, rest[0] as any);

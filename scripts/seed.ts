@@ -129,7 +129,6 @@ async function main() {
         name: "Main Weighbridge Device",
         role: Role.HARDWARE,
         factory_id: factoryId,
-        center_id: centerId,
       })
       .select("id")
       .single();

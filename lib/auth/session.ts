@@ -89,7 +89,6 @@ export async function validateSession(
         name,
         role,
         factory_id,
-        center_id,
         deleted_at,
         factories (
           name
@@ -122,7 +121,6 @@ export async function validateSession(
       name: string;
       role: string;
       factory_id: number;
-      center_id?: number | null;
       deleted_at?: string | null;
       factories?: { name?: string } | null;
     } | null;
@@ -138,7 +136,6 @@ export async function validateSession(
       role: user.role,
       factory_id: user.factory_id,
       factory_name: user.factories?.name,
-      center_id: user.center_id,
     };
   } catch {
     return null;

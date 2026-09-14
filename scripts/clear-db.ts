@@ -4,6 +4,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { TABLES_IN_CLEAR_ORDER } from "./fixtures/seed-data";
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -15,22 +16,9 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Order: Dependent child tables first -> Independent/parent tables last
-const tables = [
-  "tickets",
-  "weighments",
-  "entries",
-  "rates",
-  "customers",
-  "commodities",
-  "centers",
-  "users",
-  "factories",
-];
-
 async function main() {
   console.log("Clearing all data from Supabase tables...");
-  for (const table of tables) {
+  for (const table of TABLES_IN_CLEAR_ORDER) {
     const { error } = await supabase.from(table).delete().neq("id", 0);
     if (error) {
       if (error.code === "PGRST205") {

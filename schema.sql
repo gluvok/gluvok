@@ -385,16 +385,16 @@ DROP POLICY IF EXISTS "Allow access weighments" ON weighments;
 DROP POLICY IF EXISTS "Allow access entries" ON entries;
 DROP POLICY IF EXISTS "Allow access tickets" ON tickets;
 
-CREATE POLICY "Allow access factories" ON factories FOR ALL TO authenticated, service_role USING (true);
-CREATE POLICY "Allow access users" ON users FOR ALL TO authenticated, service_role USING (true);
-CREATE POLICY "Allow access devices" ON devices FOR ALL TO authenticated, service_role USING (true);
-CREATE POLICY "Allow access customers" ON customers FOR ALL TO authenticated, service_role USING (true);
-CREATE POLICY "Allow access centers" ON centers FOR ALL TO authenticated, service_role USING (true);
-CREATE POLICY "Allow access commodities" ON commodities FOR ALL TO authenticated, service_role USING (true);
-CREATE POLICY "Allow access rates" ON rates FOR ALL TO authenticated, service_role USING (true);
-CREATE POLICY "Allow access weighments" ON weighments FOR ALL TO authenticated, service_role USING (true);
-CREATE POLICY "Allow access entries" ON entries FOR ALL TO authenticated, service_role USING (true);
-CREATE POLICY "Allow access tickets" ON tickets FOR ALL TO authenticated, service_role USING (true);
+CREATE POLICY "Allow access factories" ON factories FOR ALL USING (true);
+CREATE POLICY "Allow access users" ON users FOR ALL USING (true);
+CREATE POLICY "Allow access devices" ON devices FOR ALL USING (true);
+CREATE POLICY "Allow access customers" ON customers FOR ALL USING (true);
+CREATE POLICY "Allow access centers" ON centers FOR ALL USING (true);
+CREATE POLICY "Allow access commodities" ON commodities FOR ALL USING (true);
+CREATE POLICY "Allow access rates" ON rates FOR ALL USING (true);
+CREATE POLICY "Allow access weighments" ON weighments FOR ALL USING (true);
+CREATE POLICY "Allow access entries" ON entries FOR ALL USING (true);
+CREATE POLICY "Allow access tickets" ON tickets FOR ALL USING (true);
 
 -- 5. AUTO-INCREMENT SEQUENCE RESET FUNCTIONS
 DROP FUNCTION IF EXISTS public.reset_table_sequence(text);

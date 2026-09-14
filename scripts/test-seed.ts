@@ -504,9 +504,10 @@ async function main() {
   console.log("  • Customer:   cust_ramesh / user123 (Factory 1)");
   console.log("  • Admin 2:    admin2 / admin123 (Factory 2)");
   console.log("📋 Test Ingestion Devices Summary:");
-  console.log("  • Device 1:   North Weighbridge Terminal (Key: hardware123)");
-  console.log("  • Device 2:   South Scale Bay (Key: hardware456)");
-  console.log("  • Device 3:   Apex Weighbridge Camera (Key: hardware789)");
+  for (const d of deviceConfigs) {
+    const id = deviceMap.get(d.name);
+    console.log(`  • Device ${id}:   ${d.name} [Center: '${d.centerName}'] (Key: ${d.rawKey})`);
+  }
   console.log("=================================================");
 }
 

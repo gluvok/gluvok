@@ -32,6 +32,7 @@ export const baseEntrySchema = z.object({
 export const addEntrySchema = baseEntrySchema.extend({
   vehicle_number: indianPlateSchema("Vehicle Number"),
   source: z.enum([EntrySource.MANUAL, EntrySource.DEVICE]).optional(),
+  created_by: optionalIntegerIdSchema("Created By").default(null),
   user_id: optionalIntegerIdSchema("User").default(null),
   customer_id: optionalIntegerIdSchema("Customer").default(null),
   status: entryStatusSchema,

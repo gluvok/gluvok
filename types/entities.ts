@@ -73,15 +73,13 @@ export interface Factory {
   updated_at: string;
 }
 
-export interface Device {
+export interface Session {
   id: number;
-  hashed_key: string;
-  center_id: number;
-  last_seen_at?: string | null;
+  token: string;
+  user_id: number;
+  expires_at: string;
   created_at: string;
-  updated_at: string;
-  deleted_at?: string | null;
-  center_name?: string;
+  last_active_at: string;
 }
 
 export interface Entry {
@@ -90,11 +88,11 @@ export interface Entry {
   vehicle_number: string;
   weight: number | string;
   source: EntrySource;
-  device_id?: number | null;
   center_id: number;
-  user_id?: number | null;
   customer_id?: number | null;
   factory_id: number;
+  created_by: number;
+  approved_by?: number | null;
   status: EntryStatus;
   auto_approved: boolean;
   edited?: boolean;
@@ -103,6 +101,8 @@ export interface Entry {
   updated_at: string;
   // Flattened join fields
   center_name?: string;
+  created_by_name?: string;
+  approved_by_name?: string;
   user_name?: string;
   customer_name?: string;
   linked_weighment?: { id: number; partner_entry_id: number } | null;
@@ -135,11 +135,13 @@ export interface User {
   name: string;
   role: Role;
   factory_id: number;
+  center_id?: number | null;
   token_version?: number;
   created_at: string;
   updated_at: string;
   // Flattened join/view fields
   factory_name?: string;
+  center_name?: string;
 }
 
 export interface Ticket {

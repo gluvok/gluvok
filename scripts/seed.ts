@@ -7,7 +7,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { Role } from "../lib/constants/enums";
 import { hashPassword } from "../lib/auth/password";
-import { hashDeviceKey } from "../lib/auth/device";
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey =
@@ -113,27 +112,31 @@ async function main() {
     console.log("Admin user ('admin1') already exists.");
   }
 
-  console.log("Inserting default weighbridge edge device...");
-  const defaultDeviceKeyHash = hashDeviceKey("hardware123");
-  const { data: existingDevice } = await supabase
-    .from("devices")
+  console.log("Inserting default weighbridge edge device user...");
+  const defaultHardwareHash = await hashPassword("hardware123");
+  const { data: existingDeviceUser } = await supabase
+    .from("users")
     .select("id")
-    .eq("hashed_key", defaultDeviceKeyHash)
+    .eq("username", "device_center_1")
     .maybeSingle();
 
-  if (!existingDevice) {
-    const { data: newDevice, error: devErr } = await supabase
-      .from("devices")
+  if (!existingDeviceUser) {
+    const { data: newDeviceUser, error: devErr } = await supabase
+      .from("users")
       .insert({
-        hashed_key: defaultDeviceKeyHash,
+        username: "device_center_1",
+        password_hash: defaultHardwareHash,
+        name: "Main Weighbridge Device",
+        role: Role.HARDWARE,
+        factory_id: factoryId,
         center_id: centerId,
       })
       .select("id")
       .single();
-    if (devErr || !newDevice) throw devErr || new Error("Failed to create default device");
-    console.log(`Default device inserted with id=${newDevice.id}`);
+    if (devErr || !newDeviceUser) throw devErr || new Error("Failed to create default device user");
+    console.log(`Default device user inserted with id=${newDeviceUser.id}`);
   } else {
-    console.log("Default device already exists.");
+    console.log("Default device user ('device_center_1') already exists.");
   }
 
   console.log("Seeding default commodities catalog...");

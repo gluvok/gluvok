@@ -4,7 +4,7 @@
  */
 
 import { supabase } from "@/db";
-import { EntryStatus, Unit } from "@/lib/constants/enums";
+import { EntryStatus, Role, Unit } from "@/lib/constants/enums";
 
 export async function tryMergeEntries(
   client: typeof supabase,
@@ -14,7 +14,9 @@ export async function tryMergeEntries(
   // 1. Fetch current entry E2
   const { data: e2, error: fetchErr } = await client
     .from("entries")
-    .select("id, status, vehicle_number, created_at, device_id, center_id")
+    .select(
+      "id, status, vehicle_number, created_at, created_by, center_id, creator:users!created_by(role)",
+    )
     .eq("id", entryId)
     .eq("factory_id", factoryId)
     .is("deleted_at", null)
@@ -23,6 +25,10 @@ export async function tryMergeEntries(
   if (fetchErr || !e2 || e2.status !== EntryStatus.APPROVED) {
     return null;
   }
+
+  const isDevice =
+    (e2.creator as { role?: string } | undefined)?.role === Role.HARDWARE ||
+    (e2 as { device_id?: number | null }).device_id != null;
 
   // 2. Fetch factory configuration to check if center scoping is enabled
   const { data: factory } = await client
@@ -35,7 +41,9 @@ export async function tryMergeEntries(
   // 3. Check if E2 is already linked in weighments AND query E1 candidates in parallel
   let e1Query = client
     .from("entries")
-    .select("id, vehicle_number, weight, created_at, device_id, center_id")
+    .select(
+      "id, vehicle_number, weight, created_at, created_by, center_id, creator:users!created_by!inner(role)",
+    )
     .eq("factory_id", factoryId)
     .eq("vehicle_number", e2.vehicle_number)
     .eq("status", EntryStatus.APPROVED)
@@ -43,10 +51,10 @@ export async function tryMergeEntries(
     .neq("id", entryId)
     .is("deleted_at", null);
 
-  if (e2.device_id != null) {
-    e1Query = e1Query.not("device_id", "is", null);
+  if (isDevice) {
+    e1Query = e1Query.eq("creator.role", Role.HARDWARE);
   } else {
-    e1Query = e1Query.is("device_id", null);
+    e1Query = e1Query.neq("creator.role", Role.HARDWARE);
   }
 
   if (factory?.check_center_on_merge) {
@@ -101,7 +109,9 @@ export async function tryMergeEntries(
   // 5. Try forward merge: look for a later unmerged entry (E2 In, E_next Out)
   let eNextQuery = client
     .from("entries")
-    .select("id, vehicle_number, weight, created_at, device_id, center_id")
+    .select(
+      "id, vehicle_number, weight, created_at, created_by, center_id, creator:users!created_by!inner(role)",
+    )
     .eq("factory_id", factoryId)
     .eq("vehicle_number", e2.vehicle_number)
     .eq("status", EntryStatus.APPROVED)
@@ -109,10 +119,10 @@ export async function tryMergeEntries(
     .neq("id", entryId)
     .is("deleted_at", null);
 
-  if (e2.device_id != null) {
-    eNextQuery = eNextQuery.not("device_id", "is", null);
+  if (isDevice) {
+    eNextQuery = eNextQuery.eq("creator.role", Role.HARDWARE);
   } else {
-    eNextQuery = eNextQuery.is("device_id", null);
+    eNextQuery = eNextQuery.neq("creator.role", Role.HARDWARE);
   }
 
   if (factory?.check_center_on_merge) {

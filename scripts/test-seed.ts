@@ -7,16 +7,15 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { EntryStatus } from "../lib/constants/enums";
+import { EntryStatus, Role } from "../lib/constants/enums";
 import { hashPassword } from "../lib/auth/password";
-import { hashDeviceKey } from "../lib/auth/device";
 import {
   TABLES_IN_CLEAR_ORDER,
   DEFAULT_COMMODITIES,
   MOCK_IMAGES,
   FACTORY_CONFIGS,
   getUserConfigs,
-  getDeviceConfigs,
+  getHardwareUserConfigs,
   getCenterConfigs,
   getRateConfigs,
   getCustomerConfigs,
@@ -166,8 +165,10 @@ async function main() {
   console.log("\n🏢 [3/8] Seeding Centers (Auto-Approve & Manual)...");
   const centerConfigs = getCenterConfigs(primaryFactoryId, secondaryFactoryId);
   const centerMap = new Map<string, number>();
+  const centerFactoryMap = new Map<string, number>();
 
   for (const c of centerConfigs) {
+    centerFactoryMap.set(c.name, c.factoryId);
     const { data: existing } = await supabase
       .from("centers")
       .select("id")
@@ -198,37 +199,46 @@ async function main() {
     }
   }
 
-  // 3b. DEVICES
-  console.log("\n📟 Seeding Edge Ingestion Devices...");
-  const deviceConfigs = getDeviceConfigs();
-  const deviceMap = new Map<string, number>();
+  // 3b. HARDWARE USERS (EDGE INGESTION DEVICES)
+  console.log("\n📟 Seeding Edge Ingestion Hardware Users...");
+  const hardwareConfigs = getHardwareUserConfigs();
+  const hardwareUserMap = new Map<string, number>();
 
-  for (const d of deviceConfigs) {
+  for (const d of hardwareConfigs) {
     const assignedCenterId = centerMap.get(d.centerName) || 1;
-    const hashedKey = hashDeviceKey(d.rawKey);
+    const centerFactoryId = centerFactoryMap.get(d.centerName) || primaryFactoryId;
     const { data: existing } = await supabase
-      .from("devices")
+      .from("users")
       .select("id")
-      .eq("hashed_key", hashedKey)
+      .eq("username", d.username)
       .maybeSingle();
 
     if (existing) {
-      deviceMap.set(d.rawKey, existing.id);
-      console.log(`  ✓ Found device: id=${existing.id} (center: ${d.centerName})`);
+      hardwareUserMap.set(d.rawKey, existing.id);
+      hardwareUserMap.set(d.centerName, existing.id);
+      console.log(
+        `  ✓ Found hardware user: id=${existing.id} (username: ${d.username}, center: ${d.centerName})`,
+      );
     } else {
+      const hashedPass = await hashPassword(d.rawKey);
       const { data: created, error } = await supabase
-        .from("devices")
+        .from("users")
         .insert({
-          hashed_key: hashedKey,
+          username: d.username,
+          name: `${d.centerName} Scale`,
+          password_hash: hashedPass,
+          role: Role.HARDWARE,
+          factory_id: centerFactoryId,
           center_id: assignedCenterId,
         })
         .select("id")
         .single();
       if (error || !created)
-        throw error || new Error(`Failed to create device for center ${d.centerName}`);
-      deviceMap.set(d.rawKey, created.id);
+        throw error || new Error(`Failed to create hardware user for center ${d.centerName}`);
+      hardwareUserMap.set(d.rawKey, created.id);
+      hardwareUserMap.set(d.centerName, created.id);
       console.log(
-        `  + Created device: id=${created.id} (center_id: ${assignedCenterId}, center: ${d.centerName})`,
+        `  + Created hardware user: id=${created.id} (username: ${d.username}, center_id: ${assignedCenterId}, center: ${d.centerName})`,
       );
     }
   }
@@ -332,8 +342,8 @@ async function main() {
   console.log("\n🚛 [7/8] Seeding Paired Entries and Weighments across date presets...");
   const defaultOperatorId = userMap.get("operator_bob") || userMap.get("admin1")!;
   const charlieOperatorId = userMap.get("operator_charlie") || defaultOperatorId;
-  const defaultDeviceId = deviceMap.get("hardware123") || 1;
-  const apexDeviceId = deviceMap.get("hardware789") || 2;
+  const defaultHardwareUserId = hardwareUserMap.get("hardware123") || 1;
+  const apexHardwareUserId = hardwareUserMap.get("hardware789") || 2;
 
   const mainCenterId = centerMap.get("Main Weighbridge")!;
   const northAutoCenterId = centerMap.get("North Automatic Scale")!;
@@ -343,7 +353,7 @@ async function main() {
   const weighmentPairScenarios = getWeighmentPairScenarios({
     defaultOperatorId,
     charlieOperatorId,
-    defaultDeviceId,
+    defaultDeviceId: defaultHardwareUserId,
     mainCenterId,
     northAutoCenterId,
     eastTerminalCenterId,
@@ -365,6 +375,12 @@ async function main() {
     const inCreatedAt = getRelativeDate(pair.daysAgo, pair.inHoursAgo);
     const outCreatedAt = getRelativeDate(pair.daysAgo, pair.outHoursAgo);
 
+    const isDevice = Boolean(pair.deviceId);
+    const createdBy =
+      pair.createdBy ?? (isDevice ? defaultHardwareUserId : (pair.userId ?? defaultOperatorId));
+    const approvedBy =
+      pair.approvedBy ?? (pair.autoApproved ? createdBy : (pair.userId ?? defaultOperatorId));
+
     // Insert In Entry
     const { data: inEntry, error: inErr } = await supabase
       .from("entries")
@@ -372,11 +388,11 @@ async function main() {
         detected_vehicle_number: pair.detectedVehicle || pair.vehicleNumber,
         vehicle_number: pair.vehicleNumber,
         weight: pair.inWeight,
-        device_id: pair.deviceId ?? null,
         status: EntryStatus.APPROVED,
         auto_approved: pair.autoApproved,
         center_id: pair.centerId,
-        user_id: pair.userId ?? null,
+        created_by: createdBy,
+        approved_by: approvedBy,
         customer_id: custId || null,
         factory_id: primaryFactoryId,
         images: MOCK_IMAGES,
@@ -399,11 +415,11 @@ async function main() {
         detected_vehicle_number: pair.vehicleNumber,
         vehicle_number: pair.vehicleNumber,
         weight: pair.outWeight,
-        device_id: pair.deviceId ?? null,
         status: EntryStatus.APPROVED,
         auto_approved: pair.autoApproved,
         center_id: pair.centerId,
-        user_id: pair.userId ?? null,
+        created_by: createdBy,
+        approved_by: approvedBy,
         customer_id: custId || null,
         factory_id: primaryFactoryId,
         images: MOCK_IMAGES,
@@ -455,8 +471,8 @@ async function main() {
     customerMap,
     defaultOperatorId,
     charlieOperatorId,
-    defaultDeviceId,
-    apexDeviceId,
+    defaultDeviceId: defaultHardwareUserId,
+    apexDeviceId: apexHardwareUserId,
     mainCenterId,
     northAutoCenterId,
     eastTerminalCenterId,
@@ -504,10 +520,12 @@ async function main() {
   console.log("  • Operator 2: operator_charlie / operator123 (Factory 1)");
   console.log("  • Customer:   cust_ramesh / user123 (Factory 1)");
   console.log("  • Admin 2:    admin2 / admin123 (Factory 2)");
-  console.log("📋 Test Ingestion Devices Summary:");
-  for (const d of deviceConfigs) {
-    const id = deviceMap.get(d.rawKey);
-    console.log(`  • Device ${id}:   [Center: '${d.centerName}'] (Key: ${d.rawKey})`);
+  console.log("📋 Test Edge Ingestion Hardware Users Summary:");
+  for (const d of hardwareConfigs) {
+    const id = hardwareUserMap.get(d.rawKey);
+    console.log(
+      `  • Hardware User ${id}: [Center: '${d.centerName}'] (Username: ${d.username}, Password: ${d.rawKey})`,
+    );
   }
   console.log("=================================================");
 }

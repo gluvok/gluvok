@@ -30,11 +30,12 @@ export const GET = withAuth(async (req, user, client) => {
 
   let query = client
     .from("users")
-    .select("id, username, name, role, factory_id, created_at, updated_at", {
+    .select("id, username, name, role, factory_id, center_id, created_at, updated_at", {
       count: "exact",
     })
     .order(sortColumn, { ascending: !sortDesc })
     .eq("factory_id", factoryId)
+    .neq("role", Role.HARDWARE)
     .is("deleted_at", null);
 
   if (roleParam && roleParam !== "all") {
@@ -66,6 +67,13 @@ export const POST = withAuth(async (req, user, client) => {
   }
 
   const { name, username, password, role } = parsed.data;
+
+  if ((role as string) === Role.HARDWARE) {
+    return apiError(
+      "Hardware accounts can only be provisioned directly in database by DB owner",
+      StatusCodes.FORBIDDEN,
+    );
+  }
 
   const { data: existingUser } = await client
     .from("users")

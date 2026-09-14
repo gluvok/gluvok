@@ -4,7 +4,7 @@
  */
 
 import { supabase } from "@/db";
-import { EntryStatus, EntrySource } from "@/lib/constants/enums";
+import { EntryStatus, EntrySource, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { uploadBase64ImagesToStorage } from "./storage";
 import { validateSequentialApproval, tryMergeEntries } from "./weighments";
@@ -14,6 +14,8 @@ export interface CreateEntryParams {
   centerId: number;
   vehicleNumber: string;
   weight: number;
+  createdBy?: number;
+  approvedBy?: number | null;
   deviceId?: number | null;
   userId?: number | null;
   detectedVehicleNumber?: string | null;
@@ -69,6 +71,8 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
     centerId,
     vehicleNumber,
     weight,
+    createdBy,
+    approvedBy: explicitApprovedBy = null,
     deviceId = null,
     userId = null,
     detectedVehicleNumber = null,
@@ -77,7 +81,20 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
     images = [],
   } = params;
 
-  const isDevice = Boolean(deviceId);
+  const creatorId = createdBy ?? userId ?? deviceId;
+  if (!creatorId) {
+    throw new Error("Missing created_by user ID");
+  }
+
+  // Fetch creator's role to determine whether this entry originates from hardware
+  const { data: creator } = await client
+    .from("users")
+    .select("id, role")
+    .eq("id", creatorId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  const isDevice = creator?.role === Role.HARDWARE;
   const isNoPlate =
     vehicleNumber === "NO_PLATE_DETECTED" || detectedVehicleNumber === "NO_PLATE_DETECTED";
 
@@ -95,15 +112,20 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
   // 3. Determine auto_approved flag & final approval status
   let finalStatus = status;
   let isAutoApproved = false;
+  let approvedBy = explicitApprovedBy;
 
   if (isDevice && !isNoPlate) {
     if (centerRecord?.auto_approve) {
       isAutoApproved = true;
       finalStatus = EntryStatus.APPROVED;
+      approvedBy = creatorId;
     }
   } else {
     // Manual entries or entries with NO_PLATE_DETECTED are NEVER auto-approved
     isAutoApproved = false;
+    if (finalStatus === EntryStatus.APPROVED && !approvedBy) {
+      approvedBy = creatorId;
+    }
   }
 
   const nowStr = new Date().toISOString();
@@ -123,11 +145,11 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
       detected_vehicle_number: detectedVehicleNumber,
       vehicle_number: vehicleNumber,
       weight: Number(weight),
-      device_id: deviceId,
       center_id: Number(centerId),
-      user_id: userId,
       customer_id: customerId ? Number(customerId) : null,
       factory_id: factoryId,
+      created_by: creatorId,
+      approved_by: approvedBy,
       status: finalStatus,
       auto_approved: isAutoApproved,
       images: uploadedImageUrls,
@@ -149,7 +171,7 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
 
   return {
     ...newEntry,
-    source: newEntry.device_id ? EntrySource.DEVICE : EntrySource.MANUAL,
+    source: isDevice ? EntrySource.DEVICE : EntrySource.MANUAL,
   };
 }
 

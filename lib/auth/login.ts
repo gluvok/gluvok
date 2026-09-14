@@ -24,17 +24,27 @@ export async function authenticateUser(request: NextRequest): Promise<NextRespon
     const { user, userPayload } = result;
     const tokens = await generateAuthTokens(user);
 
+    // Create a database-backed session for immediate revocation and edge device access
+    const { createSession } = await import("./session");
+    const session = await createSession(user.id);
+
     const response = NextResponse.json({
       success: true,
       user: userPayload,
+      token: session.token,
+      session_id: session.id,
     });
 
-    return setAuthCookies(response, {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      accessExpiresIn: tokens.expiresIn,
-      refreshExpiresIn: tokens.refreshExpiresIn,
-    });
+    return setAuthCookies(
+      response,
+      {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        accessExpiresIn: tokens.expiresIn,
+        refreshExpiresIn: tokens.refreshExpiresIn,
+      },
+      session.token,
+    );
   } catch (error) {
     console.error("Authentication error:", error);
     return NextResponse.json({ error: AuthErrorMessage.INTERNAL_SERVER_ERROR }, { status: 500 });

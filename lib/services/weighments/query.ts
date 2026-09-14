@@ -35,9 +35,9 @@ export async function fetchWeighmentsList(
 
   const dualFilters = ["center_id", "user_id", "customer_id"] as const;
   const specificFilters: [string, "in_entry_id" | "out_entry_id", string][] = [
-    ["in_user_id", "in_entry_id", "user_id"],
+    ["in_user_id", "in_entry_id", "created_by"],
     ["in_customer_id", "in_entry_id", "customer_id"],
-    ["out_user_id", "out_entry_id", "user_id"],
+    ["out_user_id", "out_entry_id", "created_by"],
     ["out_customer_id", "out_entry_id", "customer_id"],
   ];
 
@@ -79,12 +79,17 @@ export async function fetchWeighmentsList(
       if (!isNaN(id)) {
         preQueryPromises.push(
           (async (): Promise<DualFilterResult> => {
-            const { data } = await client
+            let entryQuery = client
               .from("entries")
               .select("id")
               .eq("factory_id", user.factory_id!)
-              .eq(key, id)
               .is("deleted_at", null);
+            if (key === "user_id") {
+              entryQuery = entryQuery.or(`created_by.eq.${id},approved_by.eq.${id}`);
+            } else {
+              entryQuery = entryQuery.eq(key, id);
+            }
+            const { data } = await entryQuery;
             return {
               type: "dual",
               ids: (data || []).map((e: { id: number }) => e.id),
@@ -143,7 +148,7 @@ export async function fetchWeighmentsList(
   let query = client
     .from("weighments")
     .select(
-      `*, in_entry:entries!in_entry_id(id, weight, images, created_at, center_id, user_id, customer_id, vehicle_number, centers(name), users(name), customers(name)), out_entry:entries!out_entry_id(id, weight, images, created_at, center_id, user_id, customer_id, vehicle_number, centers(name), users(name), customers(name))`,
+      `*, in_entry:entries!in_entry_id(id, weight, images, created_at, center_id, created_by, approved_by, customer_id, vehicle_number, centers(name), users:users!created_by(name), customers(name)), out_entry:entries!out_entry_id(id, weight, images, created_at, center_id, created_by, approved_by, customer_id, vehicle_number, centers(name), users:users!created_by(name), customers(name))`,
       { count: "exact" },
     )
     .eq("in_entry.factory_id", user.factory_id!)

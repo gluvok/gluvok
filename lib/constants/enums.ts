@@ -8,6 +8,7 @@ export enum Role {
   MANAGER = "manager",
   OPERATOR = "operator",
   BASE = "base",
+  HARDWARE = "hardware",
 }
 
 export enum Unit {

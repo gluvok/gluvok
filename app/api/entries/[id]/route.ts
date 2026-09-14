@@ -24,7 +24,9 @@ export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
 
   const { data, error } = await client
     .from("entries")
-    .select(`*, centers(name), users(name), customers(name, user_id)`)
+    .select(
+      `*, centers(name), created_by_user:users!created_by(name, role), approved_by_user:users!approved_by(name, role), customers(name, user_id)`,
+    )
     .eq("id", entryId)
     .eq("factory_id", user.factory_id!)
     .is("deleted_at", null)
@@ -51,8 +53,10 @@ export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
   );
 
   const centers = data.centers as Record<string, unknown> | undefined;
-  const users = data.users as Record<string, unknown> | undefined;
+  const createdByUser = data.created_by_user as Record<string, unknown> | undefined;
+  const approvedByUser = data.approved_by_user as Record<string, unknown> | undefined;
   const customers = data.customers as Record<string, unknown> | undefined;
+  const isHardware = createdByUser?.role === Role.HARDWARE;
 
   const { data: linkedWeighment } = await client
     .from("weighments")
@@ -73,10 +77,12 @@ export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
 
   const formatted = {
     ...data,
-    source: data.device_id != null ? EntrySource.DEVICE : EntrySource.MANUAL,
+    source: isHardware ? EntrySource.DEVICE : EntrySource.MANUAL,
     edited: isEdited,
     center_name: centers?.name || "",
-    user_name: users?.name || "",
+    created_by_name: createdByUser?.name || "",
+    approved_by_name: approvedByUser?.name || "",
+    user_name: createdByUser?.name || "",
     customer_name: customers?.name || "",
     linked_weighment: weighmentInfo,
   };
@@ -98,7 +104,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   // 1. Fetch current entry
   const { data: existing, error: fetchErr } = await client
     .from("entries")
-    .select("*")
+    .select("*, created_by_user:users!created_by(role)")
     .eq("id", entryId)
     .eq("factory_id", user.factory_id!)
     .is("deleted_at", null)
@@ -152,12 +158,8 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     }
   }
 
-  if (
-    isTransitioningToApproved ||
-    isChangingVehicleOnApproved ||
-    (updates["customer_id"] !== undefined && updates["customer_id"] !== existing.customer_id)
-  ) {
-    updates["user_id"] = parseInt(user.sub, 10);
+  if (isTransitioningToApproved) {
+    updates["approved_by"] = parseInt(user.sub, 10);
   }
 
   updates["updated_at"] = new Date().toISOString();
@@ -179,23 +181,22 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     );
   }
 
-  // 6. Perform entry update
+  // 6. Execute update on current entry
   const { data: updatedEntry, error: updateErr } = await client
     .from("entries")
     .update(updates)
     .eq("id", entryId)
     .eq("factory_id", user.factory_id!)
-    .is("deleted_at", null)
     .select("*")
     .single();
 
   if (updateErr || !updatedEntry) {
-    console.error("Failed to update entry:", updateErr);
+    console.error("Entry update failed:", updateErr);
     return apiError(ApiErrorMessage.FAILED_TO_UPDATE_ENTRY, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
-  // 7. Auto-merge triggers
-  if (updatedEntry.status === EntryStatus.APPROVED && !updateWeighmentPair) {
+  // 7. Auto-merge trigger if transitioning to APPROVED
+  if (isTransitioningToApproved) {
     await tryMergeEntries(client, user.factory_id!, entryId);
   }
   if (unlinkedPartnerId) {
@@ -211,10 +212,13 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     updatedEntry.detected_vehicle_number !== updatedEntry.vehicle_number,
   );
 
+  const existingCreatedByUser = existing.created_by_user as { role?: string } | undefined;
+  const isHardwareUpdated = existingCreatedByUser?.role === Role.HARDWARE;
+
   return NextResponse.json({
     data: {
       ...updatedEntry,
-      source: updatedEntry.device_id != null ? EntrySource.DEVICE : EntrySource.MANUAL,
+      source: isHardwareUpdated ? EntrySource.DEVICE : EntrySource.MANUAL,
       edited: isEditedUpdated,
     },
   });

@@ -7,15 +7,15 @@ import { Role, Unit, EntryStatus, WeighmentType, TicketStatus } from "../../lib/
 
 // Tables in reverse dependency order for clearing
 export const TABLES_IN_CLEAR_ORDER = [
+  "sessions",
   "tickets",
   "weighments",
   "entries",
-  "devices",
   "rates",
   "customers",
   "commodities",
-  "centers",
   "users",
+  "centers",
   "factories",
 ];
 
@@ -146,20 +146,27 @@ export function getUserConfigs(
   ];
 }
 
-export interface SeedDeviceConfig {
+export interface SeedHardwareUserConfig {
   rawKey: string;
   centerName: string;
+  username: string;
 }
 
-export function getDeviceConfigs(): SeedDeviceConfig[] {
+export type SeedDeviceConfig = SeedHardwareUserConfig;
+
+export function getHardwareUserConfigs(): SeedHardwareUserConfig[] {
   return [
-    { rawKey: "hardware101", centerName: "Main Weighbridge" },
-    { rawKey: "hardware123", centerName: "North Automatic Scale" },
-    { rawKey: "hardware202", centerName: "East Grain Terminal" },
-    { rawKey: "hardware456", centerName: "South Express Bay" },
-    { rawKey: "hardware789", centerName: "Apex Inbound Scale" },
-    { rawKey: "hardware909", centerName: "Apex Outbound Gate" },
+    { rawKey: "hardware101", centerName: "Main Weighbridge", username: "device_main_weighbridge" },
+    { rawKey: "hardware123", centerName: "North Automatic Scale", username: "device_north_scale" },
+    { rawKey: "hardware202", centerName: "East Grain Terminal", username: "device_east_terminal" },
+    { rawKey: "hardware456", centerName: "South Express Bay", username: "device_south_bay" },
+    { rawKey: "hardware789", centerName: "Apex Inbound Scale", username: "device_apex_inbound" },
+    { rawKey: "hardware909", centerName: "Apex Outbound Gate", username: "device_apex_outbound" },
   ];
+}
+
+export function getDeviceConfigs(): SeedHardwareUserConfig[] {
+  return getHardwareUserConfigs();
 }
 
 export interface SeedCenterConfig {
@@ -294,6 +301,8 @@ export interface WeighmentPairScenario {
   outWeight: number;
   customerName: string;
   centerId: number;
+  createdBy?: number;
+  approvedBy?: number | null;
   deviceId?: number | null;
   userId?: number | null;
   autoApproved: boolean;
@@ -507,11 +516,11 @@ export function getStandaloneEntries(ctx: {
       vehicle_number: "TN09KK4455",
       detected_vehicle_number: "TN09KK4455",
       weight: 38200,
-      device_id: null,
       status: EntryStatus.PENDING,
       auto_approved: false,
       center_id: ctx.mainCenterId,
-      user_id: ctx.defaultOperatorId,
+      created_by: ctx.defaultOperatorId,
+      approved_by: null,
       customer_id: ctx.customerMap.get("Anita Patel"),
       factory_id: ctx.primaryFactoryId,
       images: MOCK_IMAGES,
@@ -522,11 +531,11 @@ export function getStandaloneEntries(ctx: {
       vehicle_number: "TS07EE9988",
       detected_vehicle_number: "TS07EE9988",
       weight: 44100,
-      device_id: ctx.defaultDeviceId,
       status: EntryStatus.PENDING,
       auto_approved: false,
       center_id: ctx.northAutoCenterId,
-      user_id: null,
+      created_by: ctx.defaultDeviceId,
+      approved_by: null,
       customer_id: ctx.customerMap.get("Vikram Singh"),
       factory_id: ctx.primaryFactoryId,
       images: MOCK_IMAGES,
@@ -537,11 +546,11 @@ export function getStandaloneEntries(ctx: {
       vehicle_number: "AP28FF6677",
       detected_vehicle_number: "AP28FF6677",
       weight: 62500, // Gross overload
-      device_id: ctx.defaultDeviceId,
       status: EntryStatus.REJECTED,
       auto_approved: false,
       center_id: ctx.southExpressCenterId,
-      user_id: ctx.charlieOperatorId,
+      created_by: ctx.defaultDeviceId,
+      approved_by: null,
       customer_id: ctx.customerMap.get("Sunil Verma"),
       factory_id: ctx.primaryFactoryId,
       images: MOCK_IMAGES,
@@ -552,11 +561,11 @@ export function getStandaloneEntries(ctx: {
       vehicle_number: "KL07CD3344",
       detected_vehicle_number: "KL07CD3300",
       weight: 29800,
-      device_id: null,
       status: EntryStatus.REJECTED,
       auto_approved: false,
       center_id: ctx.eastTerminalCenterId,
-      user_id: ctx.defaultOperatorId,
+      created_by: ctx.defaultOperatorId,
+      approved_by: null,
       customer_id: ctx.customerMap.get("Deepak Choudhary"),
       factory_id: ctx.primaryFactoryId,
       images: [],
@@ -567,11 +576,11 @@ export function getStandaloneEntries(ctx: {
       vehicle_number: "MH04AB1212",
       detected_vehicle_number: "MH04AB1212",
       weight: 41900,
-      device_id: ctx.defaultDeviceId,
       status: EntryStatus.APPROVED,
       auto_approved: true,
       center_id: ctx.northAutoCenterId,
-      user_id: null,
+      created_by: ctx.defaultDeviceId,
+      approved_by: ctx.defaultDeviceId,
       customer_id: ctx.customerMap.get("Ramesh Kumar"),
       factory_id: ctx.primaryFactoryId,
       images: MOCK_IMAGES,
@@ -582,11 +591,11 @@ export function getStandaloneEntries(ctx: {
       vehicle_number: "DL01XY7890",
       detected_vehicle_number: "DL01XY7890",
       weight: 13800,
-      device_id: null,
       status: EntryStatus.APPROVED,
       auto_approved: false,
       center_id: ctx.mainCenterId,
-      user_id: ctx.defaultOperatorId,
+      created_by: ctx.defaultOperatorId,
+      approved_by: ctx.defaultOperatorId,
       customer_id: ctx.customerMap.get("Priya Sharma"),
       factory_id: ctx.primaryFactoryId,
       images: [],
@@ -597,11 +606,11 @@ export function getStandaloneEntries(ctx: {
       vehicle_number: "GJ01AB9900",
       detected_vehicle_number: "GJ01AB9900",
       weight: 37600,
-      device_id: ctx.apexDeviceId,
       status: EntryStatus.APPROVED,
       auto_approved: true,
       center_id: ctx.centerMap.get("Apex Inbound Scale")!,
-      user_id: null,
+      created_by: ctx.apexDeviceId,
+      approved_by: ctx.apexDeviceId,
       customer_id: ctx.customerMap.get("Harpreet Singh"),
       factory_id: ctx.secondaryFactoryId,
       images: MOCK_IMAGES,

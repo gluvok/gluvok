@@ -24,24 +24,38 @@ describe("POST /api/auth/login (Browser Authentication)", () => {
 
   it("authenticates browser user successfully and attaches session cookies", async () => {
     const passwordHash = await hashPassword("password123");
-    mockDb.from.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          is: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({
-              data: {
-                id: 1,
-                username: "admin1",
-                name: "Admin User",
-                password_hash: passwordHash,
-                role: Role.ADMIN,
-                factory_id: 1,
-              },
-              error: null,
+    mockDb.from.mockImplementation((table: string) => {
+      if (table === "sessions") {
+        return {
+          insert: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { id: 1, token: "mock-session-token", user_id: 1 },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            is: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: {
+                  id: 1,
+                  username: "admin1",
+                  name: "Admin User",
+                  password_hash: passwordHash,
+                  role: Role.ADMIN,
+                  factory_id: 1,
+                },
+                error: null,
+              }),
             }),
           }),
         }),
-      }),
+      };
     });
 
     const req = new NextRequest("http://localhost/api/auth/login", {

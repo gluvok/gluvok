@@ -184,6 +184,8 @@ export interface MockEntryRecord {
   weight: number;
   status: EntryStatus;
   source: EntrySource;
+  created_by?: number;
+  approved_by?: number | null;
   device_id?: number | null;
   user_id?: number | null;
   auto_approved: boolean;
@@ -197,21 +199,41 @@ export interface MockEntryRecord {
 }
 
 export function createMockEntry(overrides: Partial<MockEntryRecord> = {}): MockEntryRecord {
-  const deviceId =
-    overrides.device_id !== undefined
-      ? overrides.device_id
-      : overrides.source === EntrySource.MANUAL
-        ? null
-        : 1;
+  const isDevice =
+    overrides.source !== undefined
+      ? overrides.source === EntrySource.DEVICE
+      : overrides.device_id !== undefined
+        ? overrides.device_id != null
+        : overrides.created_by_role === Role.HARDWARE || true;
+  const createdBy = overrides.created_by !== undefined ? overrides.created_by : isDevice ? 1 : 5;
+  const approvedBy =
+    overrides.approved_by !== undefined
+      ? overrides.approved_by
+      : overrides.status === EntryStatus.APPROVED
+        ? createdBy
+        : null;
+
   return {
     id: 10,
     vehicle_number: "KA01AB1111",
     detected_vehicle_number: "KA01AB1111",
     weight: 15000,
     status: EntryStatus.APPROVED,
-    device_id: deviceId,
-    user_id: overrides.user_id !== undefined ? overrides.user_id : null,
-    source: overrides.source ?? (deviceId != null ? EntrySource.DEVICE : EntrySource.MANUAL),
+    created_by: createdBy,
+    approved_by: approvedBy,
+    device_id: overrides.device_id,
+    user_id: overrides.user_id,
+    source: overrides.source ?? (isDevice ? EntrySource.DEVICE : EntrySource.MANUAL),
+    created_by_user:
+      overrides.created_by_user ??
+      (isDevice
+        ? { role: Role.HARDWARE, name: "Scale Device" }
+        : { role: Role.OPERATOR, name: "Operator 1" }),
+    users:
+      overrides.users ??
+      (isDevice
+        ? { role: Role.HARDWARE, name: "Scale Device" }
+        : { role: Role.OPERATOR, name: "Operator 1" }),
     auto_approved: true,
     customer_id: null,
     center_id: 1,

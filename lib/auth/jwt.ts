@@ -21,6 +21,7 @@ export interface JWTPayload {
   role: string;
   factory_id: number;
   factory_name?: string;
+  center_id?: number | null;
   token_version?: number;
 }
 

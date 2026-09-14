@@ -18,6 +18,7 @@ export const ApiErrorMessage = {
   METHOD_NOT_ALLOWED: "This action is not supported or not allowed for this record.",
   FORBIDDEN: "You do not have permission to perform this action.",
   CREATE_USER_FAILED: "Failed to create user",
+  FAILED_TO_UPDATE_USER: "Failed to update user",
   RECORD_NOT_FOUND: "The requested record was not found.",
   UNAUTHORIZED_DEVICE: "Unauthorized or disabled device",
   INVALID_DEVICE_KEY: "Invalid device key",

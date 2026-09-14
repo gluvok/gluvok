@@ -7,6 +7,7 @@
 DROP TABLE IF EXISTS tickets CASCADE;
 DROP TABLE IF EXISTS weighments CASCADE;
 DROP TABLE IF EXISTS entries CASCADE;
+DROP TABLE IF EXISTS sessions CASCADE;
 DROP TABLE IF EXISTS devices CASCADE;
 DROP TABLE IF EXISTS rates CASCADE;
 DROP TABLE IF EXISTS customers CASCADE;
@@ -17,7 +18,6 @@ DROP TABLE IF EXISTS factories CASCADE;
 
 DROP TYPE IF EXISTS ticket_status CASCADE;
 
-DROP TYPE IF EXISTS entry_source CASCADE;
 DROP TYPE IF EXISTS entry_status CASCADE;
 DROP TYPE IF EXISTS weighment_type CASCADE;
 DROP TYPE IF EXISTS field_requirement_mode CASCADE;
@@ -28,7 +28,7 @@ DROP TYPE IF EXISTS role_enum CASCADE;
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'role_enum') THEN
-        CREATE TYPE role_enum AS ENUM ('admin', 'manager', 'operator', 'base');
+        CREATE TYPE role_enum AS ENUM ('admin', 'manager', 'operator', 'base', 'hardware');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'unit_enum') THEN
         CREATE TYPE unit_enum AS ENUM ('kg', 'q', 'gal');
@@ -56,37 +56,7 @@ CREATE TABLE IF NOT EXISTS factories (
     deleted_at TIMESTAMPTZ
 );
 
--- USERS TABLE (Custom authentication & user entity table)
-CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    username TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    name TEXT NOT NULL,
-    role role_enum NOT NULL DEFAULT 'base',
-    token_version INT NOT NULL DEFAULT 1,
-    factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_active 
-ON users (username) 
-WHERE deleted_at IS NULL;
-
--- CUSTOMERS TABLE
-CREATE TABLE IF NOT EXISTS customers (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    father_name TEXT NOT NULL,
-    user_id INT REFERENCES users(id) ON DELETE RESTRICT,
-    factory_id INT REFERENCES factories(id) ON DELETE RESTRICT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ
-);
-
--- CENTERS TABLE
+-- CENTERS TABLE (Physical collection centers)
 CREATE TABLE IF NOT EXISTS centers (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
@@ -100,6 +70,55 @@ CREATE TABLE IF NOT EXISTS centers (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_centers_factory_name
 ON centers (factory_id, name)
 WHERE deleted_at IS NULL;
+
+-- USERS TABLE (Custom authentication & user entity table, including hardware accounts)
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    name TEXT NOT NULL,
+    role role_enum NOT NULL DEFAULT 'base',
+    token_version INT NOT NULL DEFAULT 1,
+    factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
+    center_id INT REFERENCES centers(id) ON DELETE RESTRICT DEFAULT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_active 
+ON users (username) 
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_users_center
+ON users (center_id)
+WHERE deleted_at IS NULL;
+
+-- SESSIONS TABLE (Server-side user sessions for immediate revocation)
+CREATE TABLE IF NOT EXISTS sessions (
+    id SERIAL PRIMARY KEY,
+    token TEXT NOT NULL UNIQUE,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_active_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions (token);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions (expires_at);
+
+-- CUSTOMERS TABLE
+CREATE TABLE IF NOT EXISTS customers (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    father_name TEXT NOT NULL,
+    user_id INT REFERENCES users(id) ON DELETE RESTRICT,
+    factory_id INT REFERENCES factories(id) ON DELETE RESTRICT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
+);
 
 -- COMMODITIES TABLE
 CREATE TABLE IF NOT EXISTS commodities (
@@ -131,34 +150,19 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_rates_factory_commodity_unit
 ON rates (factory_id, commodity_id, unit)
 WHERE deleted_at IS NULL;
 
--- DEVICES TABLE (Edge capture hardware devices)
-CREATE TABLE IF NOT EXISTS devices (
-    id SERIAL PRIMARY KEY,
-    hashed_key TEXT NOT NULL,
-    center_id INT NOT NULL REFERENCES centers(id) ON DELETE RESTRICT,
-    last_seen_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ
-);
-
-CREATE INDEX IF NOT EXISTS idx_devices_center
-ON devices (center_id)
-WHERE deleted_at IS NULL;
-
 -- ENTRIES TABLE (Raw weighment events)
 CREATE TABLE IF NOT EXISTS entries (
     id SERIAL PRIMARY KEY,
     detected_vehicle_number TEXT,
     vehicle_number TEXT NOT NULL,
     weight NUMERIC(10, 2) NOT NULL,
-    device_id INT REFERENCES devices(id) ON DELETE RESTRICT DEFAULT NULL,
     status entry_status NOT NULL DEFAULT 'pending',
     auto_approved BOOLEAN NOT NULL DEFAULT FALSE,
     center_id INT NOT NULL REFERENCES centers(id) ON DELETE RESTRICT,
-    user_id INT REFERENCES users(id) ON DELETE RESTRICT DEFAULT NULL,
     customer_id INT REFERENCES customers(id) ON DELETE RESTRICT,
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
+    created_by INT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    approved_by INT REFERENCES users(id) ON DELETE RESTRICT DEFAULT NULL,
     images TEXT[] DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -178,8 +182,12 @@ CREATE INDEX IF NOT EXISTS idx_entries_factory_created
 ON entries (factory_id, created_at DESC)
 WHERE deleted_at IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_entries_device
-ON entries (factory_id, device_id)
+CREATE INDEX IF NOT EXISTS idx_entries_created_by
+ON entries (factory_id, created_by)
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_entries_approved_by
+ON entries (factory_id, approved_by)
 WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_entries_center
@@ -188,10 +196,6 @@ WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_entries_customer
 ON entries (factory_id, customer_id)
-WHERE deleted_at IS NULL;
-
-CREATE INDEX IF NOT EXISTS idx_entries_user
-ON entries (factory_id, user_id)
 WHERE deleted_at IS NULL;
 
 -- WEIGHMENTS TABLE (Merged double-entry pair)
@@ -337,9 +341,6 @@ BEFORE UPDATE ON rates
 FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 
 DROP TRIGGER IF EXISTS trg_devices_updated_at ON devices;
-CREATE TRIGGER trg_devices_updated_at
-BEFORE UPDATE ON devices
-FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 
 DROP TRIGGER IF EXISTS trg_entries_updated_at ON entries;
 CREATE TRIGGER trg_entries_updated_at
@@ -359,7 +360,7 @@ FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 -- 3. ENABLE ROW LEVEL SECURITY (RLS)
 ALTER TABLE IF EXISTS factories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS devices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS centers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS commodities ENABLE ROW LEVEL SECURITY;
@@ -371,7 +372,7 @@ ALTER TABLE IF EXISTS tickets ENABLE ROW LEVEL SECURITY;
 -- 4. THIN RLS POLICIES
 DROP POLICY IF EXISTS "Allow access factories" ON factories;
 DROP POLICY IF EXISTS "Allow access users" ON users;
-DROP POLICY IF EXISTS "Allow access devices" ON devices;
+DROP POLICY IF EXISTS "Allow access sessions" ON sessions;
 DROP POLICY IF EXISTS "Allow access customers" ON customers;
 DROP POLICY IF EXISTS "Allow access centers" ON centers;
 DROP POLICY IF EXISTS "Allow access commodities" ON commodities;
@@ -382,7 +383,7 @@ DROP POLICY IF EXISTS "Allow access tickets" ON tickets;
 
 CREATE POLICY "Allow access factories" ON factories FOR ALL USING (true);
 CREATE POLICY "Allow access users" ON users FOR ALL USING (true);
-CREATE POLICY "Allow access devices" ON devices FOR ALL USING (true);
+CREATE POLICY "Allow access sessions" ON sessions FOR ALL USING (true);
 CREATE POLICY "Allow access customers" ON customers FOR ALL USING (true);
 CREATE POLICY "Allow access centers" ON centers FOR ALL USING (true);
 CREATE POLICY "Allow access commodities" ON commodities FOR ALL USING (true);
@@ -418,7 +419,7 @@ SECURITY DEFINER
 AS $$
 DECLARE
     t text;
-    tbls text[] := ARRAY['tickets', 'weighments', 'entries', 'devices', 'rates', 'customers', 'commodities', 'centers', 'users', 'factories'];
+    tbls text[] := ARRAY['tickets', 'weighments', 'entries', 'sessions', 'rates', 'customers', 'commodities', 'centers', 'users', 'factories'];
     seq_name text;
 BEGIN
     FOREACH t IN ARRAY tbls LOOP

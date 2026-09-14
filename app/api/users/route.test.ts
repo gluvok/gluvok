@@ -60,6 +60,7 @@ describe("Users collection route handlers (/api/users)", () => {
       mockQuery.select = vi.fn(() => mockQuery);
       mockQuery.order = vi.fn(() => mockQuery);
       mockQuery.eq = vi.fn(() => mockQuery);
+      mockQuery.neq = vi.fn(() => mockQuery);
       mockQuery.is = vi.fn(() => mockQuery);
 
       const mockDb = { from: vi.fn(() => mockQuery) };

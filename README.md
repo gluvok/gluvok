@@ -9,18 +9,19 @@ Gluvok is a high-performance operations platform designed for factories, weighbr
 ## Features
 
 - **Multi-Tenant Factory Isolation**: Complete data separation across factories (`factory_id` scoping) with PostgreSQL Row Level Security (RLS).
-- **Role-Based Access Control (RBAC)**: Fine-grained human permission model supporting `admin`, `manager`, `operator`, and `base` roles. Edge IoT devices authenticate independently against the dedicated `devices` table. See [PERMISSIONS.md](PERMISSIONS.md) for the complete access matrix.
+- **Role-Based Access Control (RBAC)**: Fine-grained permission model supporting `admin`, `manager`, `operator`, `base`, and edge `hardware` roles. Edge IoT devices authenticate as dedicated hardware users bound to centers (`role = 'hardware'`). See [PERMISSIONS.md](PERMISSIONS.md) for the complete access matrix.
 - **Weighbridge Lifecycle Management**:
   - Unassigned, Inbound (gross), and Outbound (tare/net) weighing cycles.
   - Automatic net weight and total price calculation.
   - Indian vehicle registration number validation (e.g. `MH12AB1234`, `22BH1234AA`).
-- **Ticketing & Approval Workflow**: Automated ticket generation for center entries with status tracking (`pending`, `approved`, `rejected`).
+- **Ticketing & Approval Workflow**: Automated ticket generation for center entries with status tracking (`pending`, `approved`, `rejected`), with explicit `created_by` and `approved_by` audit fields.
 - **Commodity & Rate Masters**: Dynamic rate configuration per commodity and center.
-- **Hardware & IoT Ingestion**: Dedicated header-authenticated API workflows for Raspberry Pi scales and automated license plate recognition (ALPR) cameras. Devices are bound to physical collection centers, and weighment events capture an immutable point-in-time center snapshot. See [docs/raspberry_pi_curl.md](docs/raspberry_pi_curl.md).
+- **Hardware & IoT Ingestion**: High-throughput API workflows for Raspberry Pi scales and automated license plate recognition (ALPR) cameras. Devices authenticate via session Bearer tokens or device headers, bound to physical collection centers, capturing an immutable point-in-time center snapshot. See [docs/raspberry_pi_curl.md](docs/raspberry_pi_curl.md).
 - **Data Export**: Built-in CSV and PDF export capabilities for audit reports and center registries.
-- **Dual Authentication Model**:
-  - Web UI Personnel: HTTP-only Secure Cookie-based JWT sessions (`admin`, `manager`, `operator`, `base`).
-  - Edge Ingestion Devices: Constant-time SHA-256 verified header authentication (`x-device-id` and `x-device-key`) with heartbeat tracking (`last_seen_at`), center assignment, and central deactivation (`deleted_at = NOW()`).
+- **Database-Backed Session & Instant Revocation Model**:
+  - Central `sessions` table tracks active tokens (`id`, `token`, `user_id`, `expires_at`, `last_active_at`) for 0-second instant revocation upon logout or device deactivation.
+  - Web UI Personnel: HTTP-only secure cookie-based session tokens (`admin`, `manager`, `operator`, `base`).
+  - Edge Ingestion Devices: Bearer session tokens (`Authorization: Bearer <token>`) or SHA-256 / Argon2id verified header authentication (`x-device-id` and `x-device-key`) with zero cookie dependency.
 
 ---
 
@@ -31,7 +32,7 @@ Gluvok is a high-performance operations platform designed for factories, weighbr
 - **Styling**: [TailwindCSS v4](https://tailwindcss.com/), Radix UI / Shadcn primitives, Lucide Icons
 - **State Management**: [Zustand](https://github.com/pmndrs/zustand) with custom hydration and authentication store
 - **Database & Storage**: [Supabase](https://supabase.com/) (PostgreSQL with RLS, Supabase Storage buckets)
-- **Authentication**: Custom JWT using [jose](https://github.com/panva/jose) and password hashing via [argon2](https://github.com/ranisalt/node-argon2)
+- **Authentication**: Database-backed sessions with [jose](https://github.com/panva/jose) JWT fallback and password hashing via [argon2](https://github.com/ranisalt/node-argon2)
 - **Tooling & Quality**:
   - Linter: [Oxlint](https://oxc.rs/docs/guide/usage/linter.html)
   - Formatter: [Oxfmt](https://oxc.rs/)
@@ -70,15 +71,18 @@ pnpm install
 ### Database Setup
 
 1. Execute [schema.sql](schema.sql) in your Supabase SQL Editor to provision tables, enums, indexes, integrity constraints, and RLS policies:
+   - **Unified Hardware Users**: Hardware scale devices exist as `role = 'hardware'` in `users`, bound directly to a `center_id`.
+   - **Sessions Table**: Real-time database sessions (`id SERIAL PRIMARY KEY`, `token TEXT NOT NULL UNIQUE`, `user_id INT REFERENCES users(id) ON DELETE CASCADE`) enabling instantaneous session revocation.
+   - **Audit Trail**: Entries track creator and approver directly via `created_by` and `approved_by` referencing `users(id)`.
    - **Data Integrity Constraints**: Enforces positive weights (`weight > 0`), non-negative pricing (`unit_price >= 0`), and distinct weighment entries (`in_entry_id <> out_entry_id`).
-   - **Partial Unique Indexes**: Enforces uniqueness on active (`WHERE deleted_at IS NULL`) records for commodities, centers per factory, rates per commodity/unit, and device names.
-   - **Query Optimization**: Includes composite indexes on `(factory_id, center_id, created_at DESC)` and `(factory_id, vehicle_number, status, created_at DESC)` to eliminate in-memory sorting.
+   - **Partial Unique Indexes**: Enforces uniqueness on active (`WHERE deleted_at IS NULL`) records for commodities, centers per factory, rates per commodity/unit, and usernames.
+   - **Query Optimization**: Composite indexes on `(factory_id, center_id, created_at DESC)` and `(factory_id, vehicle_number, status, created_at DESC)`.
    - **Inlined Computed Columns**: High-performance `LANGUAGE sql STABLE PARALLEL SAFE` functions for `gross_weight`, `tare_weight`, and `net_weight`.
    - **Automatic Timestamps**: Automated `BEFORE UPDATE` trigger on all tables keeping `updated_at` timestamps accurate.
 2. Execute [storage.sql](storage.sql) to create the required storage bucket (`gluvok`) and hierarchical object policies (`f_<factory_id>/c_<center_id>/weighments/...`):
    - **Public CDN Reads**: Open for rapid image delivery.
    - **Restricted Mutations**: `INSERT`, `UPDATE`, and `DELETE` restricted to `authenticated` and `service_role` clients with regex validation on folder prefixes.
-3. Seed default factory data, commodities, and administrative accounts:
+3. Seed default factory data, commodities, centers, and administrative accounts:
 
 ```bash
 pnpm seed
@@ -86,8 +90,8 @@ pnpm seed
 
 Other available database utilities:
 
-- `pnpm db:clear`: Safely truncate database tables in reverse dependency order.
-- `pnpm seed:test`: Seed controlled data fixtures for test environments (configured via `scripts/fixtures/seed-data.ts`).
+- `pnpm db:clear`: Safely truncate database tables in reverse dependency order (including active sessions).
+- `pnpm seed:test`: Seed controlled data fixtures for test environments (provisions 6 centers and 6 hardware scale users).
 
 ### Testing & Utilities
 
@@ -122,9 +126,9 @@ All API endpoints are located under `/api/*`:
 
 ### Authentication
 
-- `POST /api/auth/login` - Authenticate users with secure HTTP-only cookies.
+- `POST /api/auth/login` - Authenticate users and hardware devices, returning a database-backed session token and setting HTTP-only cookie for web browsers.
 - `POST /api/auth/refresh` - Refresh an expired access token using a valid refresh token.
-- `POST /api/auth/logout` - Invalidate active session and clear authentication cookies.
+- `POST /api/auth/logout` - Invalidate active session immediately in database and clear authentication cookies.
 - `GET /api/auth/me` - Retrieve current authenticated user profile and permissions.
 
 ### Master Data & Entities
@@ -136,14 +140,14 @@ All API endpoints are located under `/api/*`:
 - `GET, PUT, DELETE /api/customers/:id` - Retrieve, update, or soft-delete a customer.
 - `GET, POST /api/rates` - Query current rates or configure rates for a commodity/center.
 - `GET, PUT, DELETE /api/rates/:id` - Retrieve, update, or delete rate definitions.
-- `GET, POST /api/users` - List factory users or create user accounts.
+- `GET, POST /api/users` - List factory personnel (hardware accounts are filtered out from UI).
 - `GET, PUT, DELETE /api/users/:id` - Retrieve, update, or delete a user account.
 - `GET, POST /api/settings` - Retrieve or update factory operational settings.
 - `GET, PUT, DELETE /api/settings/:id` - Manage specific settings records.
 
 ### Operations & Weighments
 
-- `GET, POST /api/entries` - List entries (derived `source` from `device_id != null`) or ingest a new entry (manual operator or device header auth).
+- `GET, POST /api/entries` - List entries (with derived `source` based on creator role) or ingest a new entry with `created_by` and `approved_by`.
 - `GET, PUT, DELETE /api/entries/:id` - Retrieve, update, approve, or reject an entry.
 - `GET, POST /api/tickets` - List ticketing records or create new tickets.
 - `GET, PUT, DELETE /api/tickets/:id` - Ticket details, status updates, and resolutions.
@@ -180,5 +184,4 @@ pnpm run build
 ## Related Documentation
 
 - [AGENTS.md](AGENTS.md) — Agent coding guidelines, simplicity standards, and verification gates.
-- [PERMISSIONS.md](PERMISSIONS.md) — Role-based access control (RBAC) permission matrix.
 - [docs/raspberry_pi_curl.md](docs/raspberry_pi_curl.md) — Hardware device integration guide and sample curl commands.

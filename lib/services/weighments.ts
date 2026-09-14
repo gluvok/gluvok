@@ -4,7 +4,7 @@
  */
 
 import { supabase } from "@/db";
-import { EntryStatus, EntrySource, Unit, WeighmentType } from "@/lib/constants/enums";
+import { EntryStatus, EntrySource, Unit, WeighmentType, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
 export async function validateSequentialApproval(
@@ -17,7 +17,7 @@ export async function validateSequentialApproval(
 ): Promise<void> {
   let query = client
     .from("entries")
-    .select("id, created_at, device_id")
+    .select("id, created_at, created_by, users:users!created_by(role)")
     .eq("center_id", centerId)
     .eq("vehicle_number", vehicleNumber)
     .eq("status", EntryStatus.PENDING)
@@ -30,9 +30,9 @@ export async function validateSequentialApproval(
       typeof entrySource === "number"
         ? true
         : entrySource === EntrySource.DEVICE || entrySource === true;
-    query = isDevice ? query.not("device_id", "is", null) : query.is("device_id", null);
-  } else if (entrySource === null) {
-    query = query.is("device_id", null);
+    query = isDevice
+      ? query.eq("users.role", Role.HARDWARE)
+      : query.neq("users.role", Role.HARDWARE);
   }
 
   const { data: earlierPending, error } = await query
@@ -46,7 +46,9 @@ export async function validateSequentialApproval(
   }
 
   if (earlierPending) {
-    const sourceLabel = earlierPending.device_id ? "device " : "manual ";
+    const creator = (earlierPending as { users?: { role?: string } }).users;
+    const isDevice = creator?.role === Role.HARDWARE;
+    const sourceLabel = isDevice ? "device " : "manual ";
     throw new Error(
       ApiErrorMessage.CANNOT_APPROVE_PENDING_EARLIER_ENTRY(
         targetEntryId,
@@ -96,9 +98,9 @@ export function formatWeighmentRecord(row: Record<string, unknown>): Record<stri
     out_entry_created_at: outEntry.created_at,
     center_id: inEntry.center_id,
     center_name: (inEntry.centers as { name: string }).name,
-    in_user_id: inEntry.user_id,
+    in_user_id: inEntry.created_by ?? inEntry.user_id,
     in_user_name: inUsers?.name || "",
-    out_user_id: outEntry.user_id,
+    out_user_id: outEntry.created_by ?? outEntry.user_id,
     out_user_name: outUsers?.name || "",
     in_customer_id: inEntry.customer_id,
     in_customer_name: inCustomers?.name || "",

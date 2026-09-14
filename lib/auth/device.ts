@@ -1,17 +1,19 @@
 /**
  * @file lib/auth/device.ts
- * @description Authentication and key verification utilities for edge IoT devices.
+ * @description Authentication and key verification utilities for edge IoT devices mapped to users with Role.HARDWARE.
  */
 
 import crypto from "crypto";
 import { type NextRequest } from "next/server";
 import { StatusCodes } from "http-status-codes";
 import { type supabase } from "@/db";
-import { type Device } from "@/types";
+import { type User } from "@/types";
+import { Role } from "@/lib/constants/enums";
+import { verifyPassword } from "@/lib/auth/password";
 
 export interface DeviceAuthResult {
   success: boolean;
-  device?: Device;
+  device?: User;
   error?: string;
   status?: StatusCodes;
 }
@@ -25,7 +27,7 @@ export function hashDeviceKey(rawKey: string): string {
 
 /**
  * Authenticates an incoming edge device request via `x-device-id` and `x-device-key` HTTP headers.
- * Uses constant-time equality check to prevent timing attacks and verifies the device is not soft-deleted.
+ * Looks up the corresponding user record with role 'hardware' and verifies credentials.
  */
 export async function verifyDeviceRequest(
   req: NextRequest,
@@ -51,15 +53,16 @@ export async function verifyDeviceRequest(
     };
   }
 
-  // 1. Fetch active device record from database
-  const { data: device, error } = await client
-    .from("devices")
+  // 1. Fetch active hardware user record from database
+  const { data: deviceUser, error } = await client
+    .from("users")
     .select("*")
     .eq("id", deviceId)
+    .eq("role", Role.HARDWARE)
     .is("deleted_at", null)
     .maybeSingle();
 
-  if (error || !device) {
+  if (error || !deviceUser) {
     return {
       success: false,
       error: "Unauthorized or disabled device",
@@ -67,13 +70,17 @@ export async function verifyDeviceRequest(
     };
   }
 
-  // 2. Constant-time SHA-256 verification to prevent timing attacks
+  // 2. Verification check: support both SHA-256 fast hash and Argon2id hash
   const providedHash = hashDeviceKey(deviceKey);
-  const storedHash = String(device.hashed_key || "");
+  const storedHash = String(deviceUser.password_hash || "");
 
-  const isMatch =
-    providedHash.length === storedHash.length &&
-    crypto.timingSafeEqual(Buffer.from(providedHash), Buffer.from(storedHash));
+  let isMatch = false;
+  if (providedHash.length === storedHash.length) {
+    isMatch = crypto.timingSafeEqual(Buffer.from(providedHash), Buffer.from(storedHash));
+  }
+  if (!isMatch) {
+    isMatch = await verifyPassword(deviceKey, storedHash);
+  }
 
   if (!isMatch) {
     return {
@@ -83,14 +90,14 @@ export async function verifyDeviceRequest(
     };
   }
 
-  // 3. Update device last seen heartbeat
+  // 3. Update device heartbeat timestamp
   await client
-    .from("devices")
-    .update({ last_seen_at: new Date().toISOString() })
-    .eq("id", device.id);
+    .from("users")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", deviceUser.id);
 
   return {
     success: true,
-    device: device as Device,
+    device: deviceUser as User,
   };
 }

@@ -10,17 +10,12 @@ import {
   type RouteContext,
 } from "@/db/helpers";
 import { type JWTPayload } from "@/lib/auth/jwt";
-import { EntrySource, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
+import { EntrySource, EntryStatus, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { createEntry, deleteEntries } from "@/lib/services/entries";
 import { verifyDeviceRequest } from "@/lib/auth/device";
 import { supabase } from "@/db";
-import {
-  addEntrySchema,
-  addDeviceEntrySchema,
-  type AddEntryInput,
-  type AddDeviceEntryInput,
-} from "@/lib/validation";
+import { addEntrySchema, addDeviceEntrySchema, type AddDeviceEntryInput } from "@/lib/validation";
 
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.READ)) return forbiddenError();
@@ -35,8 +30,8 @@ export const GET = withAuth(async (req, user, client) => {
 
   const selectString =
     user.role === Role.BASE
-      ? `*, centers(name), users(name), customers!inner(name, user_id)`
-      : `*, centers(name), users(name), customers(name)`;
+      ? `*, centers(name), created_by_user:users!created_by(name, role), approved_by_user:users!approved_by(name, role), customers!inner(name, user_id)`
+      : `*, centers(name), created_by_user:users!created_by(name, role), approved_by_user:users!approved_by(name, role), customers(name)`;
 
   let query = client
     .from("entries")
@@ -50,18 +45,11 @@ export const GET = withAuth(async (req, user, client) => {
   }
 
   const sourceParam = req.nextUrl.searchParams.get("source");
-  if (sourceParam && sourceParam !== "all") {
-    if (sourceParam === EntrySource.DEVICE || sourceParam === "device") {
-      query = query.not("device_id", "is", null);
-    } else if (sourceParam === EntrySource.MANUAL || sourceParam === "manual") {
-      query = query.is("device_id", null);
-    }
-  }
-
   const filterParams: Record<string, string | null> = {
     status: req.nextUrl.searchParams.get("status"),
     center_id: req.nextUrl.searchParams.get("center_id"),
-    user_id: req.nextUrl.searchParams.get("user_id"),
+    created_by:
+      req.nextUrl.searchParams.get("created_by") || req.nextUrl.searchParams.get("user_id"),
     customer_id: req.nextUrl.searchParams.get("customer_id"),
     auto_approved: req.nextUrl.searchParams.get("auto_approved"),
   };
@@ -97,19 +85,28 @@ export const GET = withAuth(async (req, user, client) => {
     );
   }
 
-  const formattedData = (data || []).map((row: Record<string, unknown>) => {
+  let formattedData = (data || []).map((row: Record<string, unknown>) => {
     const centers = row.centers as Record<string, unknown> | undefined;
-    const users = row.users as Record<string, unknown> | undefined;
+    const createdByUser = (row.created_by_user || row.users) as Record<string, unknown> | undefined;
+    const approvedByUser = row.approved_by_user as Record<string, unknown> | undefined;
     const customers = row.customers as Record<string, unknown> | undefined;
+
+    const isHardware = createdByUser?.role === Role.HARDWARE;
 
     return {
       ...row,
-      source: row.device_id != null ? EntrySource.DEVICE : EntrySource.MANUAL,
+      source: isHardware ? EntrySource.DEVICE : EntrySource.MANUAL,
       center_name: centers?.name || "",
-      user_name: users?.name || "",
+      created_by_name: createdByUser?.name || "",
+      approved_by_name: approvedByUser?.name || "",
+      user_name: createdByUser?.name || "",
       customer_name: customers?.name || "",
     };
   });
+
+  if (sourceParam && sourceParam !== "all") {
+    formattedData = formattedData.filter((item) => item.source === sourceParam);
+  }
 
   const total = count ?? formattedData.length;
   return NextResponse.json({
@@ -118,34 +115,56 @@ export const GET = withAuth(async (req, user, client) => {
   });
 });
 
-async function handleUserPost(req: NextRequest, user: JWTPayload, client: typeof supabase) {
+async function handleEntryPost(req: NextRequest, user: JWTPayload, client: typeof supabase) {
   if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.CREATE)) {
     return forbiddenError();
   }
 
   const body = await req.json();
-  const parsed = addEntrySchema.safeParse(body);
+  const isHardware = user.role === Role.HARDWARE;
+
+  const parsed = isHardware ? addDeviceEntrySchema.safeParse(body) : addEntrySchema.safeParse(body);
+
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
+    const fallbackParsed = addEntrySchema.safeParse(body);
+    if (!fallbackParsed.success) {
+      return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
+    }
   }
+
+  const rawData = body as Record<string, unknown>;
+  const inputCenterId = rawData.center_id ? Number(rawData.center_id) : undefined;
+  const centerId = inputCenterId ?? (user.center_id ? Number(user.center_id) : undefined);
+
+  if (!centerId) {
+    return apiError(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND, StatusCodes.BAD_REQUEST);
+  }
+
+  const vehicleNumber =
+    ((rawData.vehicle_number || rawData.detected_vehicle_number) as string) || "";
+  const detectedVehicleNumber =
+    (rawData.detected_vehicle_number as string) || (isHardware ? vehicleNumber : null);
+  const weight = Number(rawData.weight);
+  const customerId = rawData.customer_id ? Number(rawData.customer_id) : null;
+  const status = (rawData.status as EntryStatus) || EntryStatus.PENDING;
+  const images = (rawData.images as string[]) || [];
 
   const newEntry = await createEntry(client, {
     factoryId: user.factory_id!,
-    centerId: (parsed.data as AddEntryInput).center_id,
-    deviceId: null,
-    userId: parseInt(user.sub, 10),
-    vehicleNumber: (parsed.data as AddEntryInput).vehicle_number,
-    detectedVehicleNumber: null,
-    weight: (parsed.data as AddEntryInput).weight,
-    customerId: (parsed.data as AddEntryInput).customer_id,
-    status: (parsed.data as AddEntryInput).status,
-    images: (parsed.data as AddEntryInput).images,
+    centerId,
+    createdBy: parseInt(user.sub, 10),
+    vehicleNumber,
+    detectedVehicleNumber,
+    weight,
+    customerId,
+    status: isHardware ? EntryStatus.PENDING : status,
+    images,
   });
 
   return NextResponse.json({ data: newEntry }, { status: StatusCodes.CREATED });
 }
 
-const userPostHandler = withAuth(handleUserPost);
+const authedPostHandler = withAuth(handleEntryPost);
 
 export async function POST(req: NextRequest, ...rest: unknown[]) {
   try {
@@ -171,7 +190,7 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
       const { data: centerRecord } = await supabase
         .from("centers")
         .select("id, factory_id")
-        .eq("id", centerId)
+        .eq("id", centerId!)
         .is("deleted_at", null)
         .maybeSingle();
 
@@ -181,9 +200,8 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
 
       const newEntry = await createEntry(supabase, {
         factoryId: centerRecord.factory_id,
-        centerId,
-        deviceId: device.id,
-        userId: null,
+        centerId: centerId!,
+        createdBy: device.id,
         detectedVehicleNumber: (parsed.data as AddDeviceEntryInput).detected_vehicle_number,
         vehicleNumber: (parsed.data as AddDeviceEntryInput).detected_vehicle_number,
         weight: (parsed.data as AddDeviceEntryInput).weight,
@@ -197,10 +215,10 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
     if (rest.length >= 1 && typeof rest[0] === "object" && rest[0] !== null && "role" in rest[0]) {
       const user = rest[0] as JWTPayload;
       const client = (rest[1] as typeof supabase) || supabase;
-      return await handleUserPost(req, user, client);
+      return await handleEntryPost(req, user, client);
     }
 
-    return await userPostHandler(req, rest[0] as RouteContext);
+    return await authedPostHandler(req, rest[0] as RouteContext);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : ApiErrorMessage.PROCESS_ENTRY_FAILED;
     return apiError(msg, StatusCodes.BAD_REQUEST);

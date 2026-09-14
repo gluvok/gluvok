@@ -6,7 +6,9 @@ This guide contains the exact `curl` commands and request/response specification
 
 ## Table of Contents
 
-1. [Architecture & Header Authentication](#1-architecture--header-authentication)
+1. [Authentication Architecture](#1-authentication-architecture)
+   - [Option A: Session Token Auth (Recommended)](#option-a-session-token-auth-recommended)
+   - [Option B: Direct Device Header Auth](#option-b-direct-device-header-auth)
 2. [Step 1: Upload Images (Storage API)](#2-step-1-upload-images-storage-api)
 3. [Step 2: Create Device Entry](#3-step-2-create-device-entry)
 4. [Alternative: Direct Base64 Image Payload](#4-alternative-direct-base64-image-payload)
@@ -15,46 +17,87 @@ This guide contains the exact `curl` commands and request/response specification
 
 ---
 
-## 1. Architecture & Header Authentication
+## 1. Authentication Architecture
 
-Gluvok uses a stateless, header-authenticated model for IoT edge devices. Edge devices **do not** require user login, JWT tokens, cookie jars, or refresh token loops.
+Edge hardware devices (Raspberry Pi scales and camera units) are provisioned directly in the database as accounts in the `users` table with `role = 'hardware'` and an assigned `center_id`. Hardware accounts are filtered out from the human user management UI.
 
-Each request must include the device ID and secret raw key in custom headers:
+Gluvok supports two authentication methods for edge devices (both completely cookie-free):
 
-| Header Name    | Description                                                 |
-| :------------- | :---------------------------------------------------------- |
-| `x-device-id`  | Integer primary key of the device from the `devices` table. |
-| `x-device-key` | Raw secret pre-shared key (e.g. `hardware123`).             |
+### Option A: Session Token Auth (Recommended)
 
-### Security & Heartbeat
+The device logs in once using its username and password (or pre-shared key) to receive a database-backed session token, then passes that token as a `Bearer` token in the `Authorization` header.
 
-- The server computes `SHA-256(x-device-key)` and performs constant-time equality comparison (`crypto.timingSafeEqual`) against the stored `hashed_key` in the `devices` table.
-- Upon successful authentication, the server automatically updates the device's `last_seen_at = NOW()` heartbeat timestamp.
-- If a device is deactivated (`deleted_at IS NOT NULL`), requests are immediately rejected with `403 Forbidden`.
+#### 1. Device Login
+
+```bash
+curl -X POST "https://gluvok.vercel.app/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "device_center_1",
+    "password": "hardware_password_123"
+  }'
+```
+
+Response (`200 OK`):
+
+```json
+{
+  "success": true,
+  "user": {
+    "id": 10,
+    "username": "device_center_1",
+    "role": "hardware",
+    "center_id": 1,
+    "factory_id": 1
+  },
+  "token": "4f18d6a8b7924c13a52efc193248e3a2b7193dc5872a441e8c56d7829aef0123",
+  "session_id": 42
+}
+```
+
+The device stores the returned `token` in local memory or an environment file.
+
+#### 2. Authenticated API Calls
+
+```bash
+curl -X POST "https://gluvok.vercel.app/api/entries" \
+  -H "Authorization: Bearer 4f18d6a8b7924c13a52efc193248e3a2b7193dc5872a441e8c56d7829aef0123" \
+  -H "Content-Type: application/json" \
+  -d '{ ... }'
+```
+
+### Option B: Direct Device Header Auth
+
+Alternatively, edge devices can supply their user ID and key per-request using custom headers:
+
+| Header Name    | Description                                                  |
+| :------------- | :----------------------------------------------------------- |
+| `x-device-id`  | Integer ID of the hardware user record in the `users` table. |
+| `x-device-key` | Raw secret key matching the hardware user's password hash.   |
+
+The server validates the credentials against the `users` table and updates `updated_at` as a heartbeat.
 
 ---
 
 ## 2. Step 1: Upload Images (Storage API)
 
-Upload camera captures to Supabase Storage before creating the entry. The endpoint accepts `multipart/form-data` and supports edge device headers.
+Upload camera captures to Supabase Storage before creating the entry. The endpoint accepts `multipart/form-data`.
 
-### Single Image Upload (`file`)
+### With Bearer Token (Recommended)
 
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/storage/upload" \
-  -H "x-device-id: 1" \
-  -H "x-device-key: hardware123" \
+  -H "Authorization: Bearer <token>" \
   -F "file=@/path/to/vehicle_capture.jpg;type=image/jpeg"
 ```
 
-### Multiple Images Upload (`files`)
+### With Device Headers
 
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/storage/upload" \
-  -H "x-device-id: 1" \
-  -H "x-device-key: hardware123" \
-  -F "files=@/path/to/front_plate.jpg;type=image/jpeg" \
-  -F "files=@/path/to/side_view.jpg;type=image/jpeg"
+  -H "x-device-id: 10" \
+  -H "x-device-key: hardware_password_123" \
+  -F "file=@/path/to/vehicle_capture.jpg;type=image/jpeg"
 ```
 
 ### Response (`201 Created`)
@@ -63,8 +106,7 @@ curl -X POST "https://gluvok.vercel.app/api/storage/upload" \
 {
   "data": {
     "urls": [
-      "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/f_1/c_1/weighments/abc12345-1725210000.jpg",
-      "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/f_1/c_1/weighments/def67890-1725210001.jpg"
+      "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/f_1/c_1/weighments/abc12345-1725210000.jpg"
     ]
   }
 }
@@ -74,14 +116,13 @@ curl -X POST "https://gluvok.vercel.app/api/storage/upload" \
 
 ## 3. Step 2: Create Device Entry
 
-Submit the vehicle weighment event with weight, detected plate number, and uploaded image URLs. Collection center ID is automatically resolved from the device's assigned center (or can be passed optionally).
+Submit the vehicle weighment event with weight, detected plate number, and uploaded image URLs. Collection center ID is automatically resolved from the device's assigned center.
 
 ### cURL Request
 
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/entries" \
-  -H "x-device-id: 1" \
-  -H "x-device-key: hardware123" \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "detected_vehicle_number": "MH12AB1234",
@@ -94,18 +135,9 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 
 > [!NOTE]
 >
-> - **Center Resolution & Point-in-Time Snapshot**: The server reads the device's assigned `center_id` from the database and records it as an immutable snapshot on `entries.center_id`. If the scale is moved in the future, past entries retain their original center.
-> - **Auto-Approval**: If the collection center has `auto_approve: true` and a valid vehicle plate was detected, the entry is automatically marked `approved` with `auto_approved: true`.
-> - **Operator Tracking (Approach A)**: For automated device entries, `user_id` is initially `null` and `device_id` is populated. If an operator later edits the plate or assigns a customer, `user_id` is updated to the operator's account.
-
-### Request Fields Specification
-
-| Field                     | Type    | Required | Description                                                           |
-| :------------------------ | :------ | :------- | :-------------------------------------------------------------------- |
-| `detected_vehicle_number` | String  | **Yes**  | Raw OCR/ANPR text recognized by the camera (or `"NO_PLATE_DETECTED"`) |
-| `weight`                  | Number  | **Yes**  | Positive numeric weight (kg/tons)                                     |
-| `center_id`               | Integer | No       | Optional. Defaults to the device's assigned `center_id` in database.  |
-| `images`                  | Array   | No       | Array of uploaded image URLs or Base64 data URIs                      |
+> - **Audit Trail (`created_by` & `approved_by`)**: The scale's hardware user ID is automatically set as `created_by`. If the center has `auto_approve: true` and a valid plate was detected, `approved_by` is also populated with the hardware user ID and status is set to `approved`.
+> - **Source Derivation**: `source: "device"` is derived automatically on the server from the creator's `role = 'hardware'`, eliminating tampering.
+> - **Center Resolution**: The server reads the hardware user's assigned `center_id` and records it as an immutable snapshot on `entries.center_id`.
 
 ### Response (`201 Created`)
 
@@ -117,9 +149,10 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
     "vehicle_number": "MH12AB1234",
     "weight": 14250.5,
     "source": "device",
-    "device_id": 1,
-    "device_name": "Weighbridge Camera 1",
-    "user_id": null,
+    "created_by": 10,
+    "approved_by": 10,
+    "created_by_name": "device_center_1",
+    "approved_by_name": "device_center_1",
     "center_id": 1,
     "customer_id": null,
     "factory_id": 1,
@@ -138,18 +171,17 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 
 ## 4. Alternative: Direct Base64 Image Payload
 
-You can pass Base64 Data URI strings directly inside the `images` array in `POST /api/entries`. The server decodes and persists them to object storage automatically:
+You can pass Base64 Data URI strings directly inside the `images` array in `POST /api/entries`:
 
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/entries" \
-  -H "x-device-id: 1" \
-  -H "x-device-key: hardware123" \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "detected_vehicle_number": "MH12AB1234",
     "weight": 14250.5,
     "images": [
-      "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/..."
+      "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/..."
     ]
   }'
 ```
@@ -158,30 +190,31 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 
 ## 5. Device Management & Deactivation
 
-Edge devices are managed centrally in the database `devices` table with their assigned collection center:
+Edge devices are managed directly in the database `users` table:
 
 ```sql
--- Provision a new device bound to a center
-INSERT INTO devices (name, hashed_key, center_id)
-VALUES ('South Express Scale', encode(sha256('your_secure_device_key'::bytea), 'hex'), 1);
+-- Provision a new hardware device account bound to Center 1
+INSERT INTO users (factory_id, username, password_hash, role, center_id)
+VALUES (1, 'device_center_1', encode(sha256('hardware_password_123'::bytea), 'hex'), 'hardware', 1);
 
--- Move a device to another collection center (past entries remain linked to original center)
-UPDATE devices SET center_id = 2 WHERE id = 1;
+-- Move a device to another collection center
+UPDATE users SET center_id = 2 WHERE id = 10 AND role = 'hardware';
 
--- Deactivate a device immediately (DataGrip or SQL editor)
-UPDATE devices SET deleted_at = NOW() WHERE id = 1;
+-- Deactivate a device immediately (revokes all active sessions instantly)
+UPDATE users SET deleted_at = NOW() WHERE id = 10;
+DELETE FROM sessions WHERE user_id = 10;
 
 -- Reactivate a device
-UPDATE devices SET deleted_at = NULL WHERE id = 1;
+UPDATE users SET deleted_at = NULL WHERE id = 10;
 ```
 
 ---
 
 ## 6. Error Handling & Status Codes
 
-| Status Code        | Reason                                                                     | Resolution                                                                         |
-| :----------------- | :------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- |
-| `401 Unauthorized` | Missing `x-device-id` or `x-device-key` header                             | Ensure both authentication headers are supplied.                                   |
-| `403 Forbidden`    | Invalid device key, device not found, or device deactivated (`deleted_at`) | Verify device ID and pre-shared key; confirm `deleted_at IS NULL` in the database. |
-| `400 Bad Request`  | Validation error (e.g. invalid plate format, non-positive weight)          | Check error details in response JSON and fix payload formatting.                   |
-| `500 Server Error` | Database or unexpected server exception                                    | Retry with exponential backoff.                                                    |
+| Status Code        | Reason                                                             | Resolution                                                                         |
+| :----------------- | :----------------------------------------------------------------- | :--------------------------------------------------------------------------------- |
+| `401 Unauthorized` | Missing or expired session token, or missing credentials           | Re-authenticate via `POST /api/auth/login` to obtain a new session token.          |
+| `403 Forbidden`    | Invalid credentials, hardware account disabled, or revoked session | Verify credentials and ensure `deleted_at IS NULL` on the user record in database. |
+| `400 Bad Request`  | Validation error (e.g. invalid plate format, non-positive weight)  | Check error details in response JSON and fix payload formatting.                   |
+| `500 Server Error` | Database or unexpected server exception                            | Retry with exponential backoff.                                                    |

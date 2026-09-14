@@ -24,7 +24,9 @@ export const GET = withAuth(
       .is("deleted_at", null);
 
     const { data: existing, error } = await existingQuery.maybeSingle();
-    if (error || !existing) return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
+    if (error || !existing || existing.role === Role.HARDWARE) {
+      return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
+    }
 
     const isOwn = String(existing.id) === String(user.sub);
     if (!isOwn && !hasPermission(user, ProjectSlug.USERS, PermissionKey.READ)) {
@@ -45,7 +47,9 @@ export const PATCH = withAuth(
       .is("deleted_at", null);
 
     const { data: existing } = await existingQuery.maybeSingle();
-    if (!existing) return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
+    if (!existing || existing.role === Role.HARDWARE) {
+      return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
+    }
 
     const isOwn = String(existing.id) === String(user.sub);
 
@@ -61,6 +65,9 @@ export const PATCH = withAuth(
     }
 
     const { name, password, role } = parsed.data;
+    if ((role as string) === Role.HARDWARE) {
+      return apiError("Cannot assign hardware role via web API", StatusCodes.FORBIDDEN);
+    }
     const validRole =
       role && Object.values(Role).includes(role as Role) ? (role as Role) : undefined;
 
@@ -79,17 +86,16 @@ export const PATCH = withAuth(
       updates["token_version"] = (existing.token_version || 1) + 1;
     }
 
-    const { data: updated, error } = await client
+    const { data: updated, error: updateErr } = await client
       .from("users")
       .update(updates)
       .eq("id", entityId)
       .eq("factory_id", factoryId)
-      .is("deleted_at", null)
       .select("id, username, name, role, factory_id, created_at, updated_at")
       .single();
 
-    if (error || !updated) {
-      return apiError(error?.message || ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
+    if (updateErr || !updated) {
+      return apiError(ApiErrorMessage.FAILED_TO_UPDATE_USER, StatusCodes.INTERNAL_SERVER_ERROR);
     }
 
     return formatEntityResponse(updated, StatusCodes.OK);
@@ -100,13 +106,15 @@ export const DELETE = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client
       .from("users")
-      .select("id")
+      .select("id, role")
       .eq("id", entityId)
       .eq("factory_id", factoryId)
       .is("deleted_at", null);
 
     const { data: existing } = await existingQuery.maybeSingle();
-    if (!existing) return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
+    if (!existing || existing.role === Role.HARDWARE) {
+      return apiError(ApiErrorMessage.USER_NOT_FOUND, StatusCodes.NOT_FOUND);
+    }
 
     const isOwn = String(existing.id) === String(user.sub);
 
@@ -119,7 +127,7 @@ export const DELETE = withAuth(
       client
         .from("entries")
         .select("id")
-        .eq("user_id", entityId)
+        .or(`created_by.eq.${entityId},approved_by.eq.${entityId}`)
         .is("deleted_at", null)
         .limit(1)
         .maybeSingle(),

@@ -134,6 +134,7 @@ describe("User mutation guards", () => {
           const checkChain: Record<string, unknown> = {};
           checkChain.select = vi.fn(() => checkChain);
           checkChain.eq = vi.fn(() => checkChain);
+          checkChain.or = vi.fn(() => checkChain);
           checkChain.is = vi.fn(() => checkChain);
           checkChain.limit = vi.fn(() => checkChain);
           checkChain.maybeSingle = vi.fn().mockResolvedValue({ data: null });

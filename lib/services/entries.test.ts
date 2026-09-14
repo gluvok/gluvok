@@ -5,7 +5,7 @@ import {
   validateCustomerBelongsToFactory,
   deleteEntries,
 } from "./entries";
-import { EntryStatus, EntrySource } from "@/lib/constants/enums";
+import { EntryStatus, EntrySource, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import type { supabase } from "@/db";
 
@@ -104,9 +104,9 @@ describe("Entries Service", () => {
         id: 100,
         vehicle_number: "MH12AB1234",
         weight: 12000,
-        device_id: null,
         center_id: 1,
-        user_id: 5,
+        created_by: 5,
+        approved_by: null,
         customer_id: 2,
         factory_id: 10,
         status: EntryStatus.PENDING,
@@ -115,6 +115,17 @@ describe("Entries Service", () => {
       };
 
       mockClient.from.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            is: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { id: 5, role: Role.OPERATOR },
+              error: null,
+            }),
+          };
+        }
         if (table === "centers") {
           return {
             select: vi.fn().mockReturnThis(),
@@ -167,9 +178,9 @@ describe("Entries Service", () => {
         detected_vehicle_number: "MH12AB1234",
         vehicle_number: "MH12AB1234",
         weight: 15000,
-        device_id: 3,
         center_id: 1,
-        user_id: null,
+        created_by: 3,
+        approved_by: 3,
         customer_id: null,
         factory_id: 10,
         status: EntryStatus.APPROVED,
@@ -178,6 +189,17 @@ describe("Entries Service", () => {
       };
 
       mockClient.from.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            is: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { id: 3, role: Role.HARDWARE },
+              error: null,
+            }),
+          };
+        }
         if (table === "centers") {
           return {
             select: vi.fn().mockReturnThis(),
@@ -228,9 +250,9 @@ describe("Entries Service", () => {
         detected_vehicle_number: "NO_PLATE_DETECTED",
         vehicle_number: "NO_PLATE_DETECTED",
         weight: 15000,
-        device_id: 3,
         center_id: 1,
-        user_id: null,
+        created_by: 3,
+        approved_by: null,
         customer_id: null,
         factory_id: 10,
         status: EntryStatus.PENDING,
@@ -240,6 +262,17 @@ describe("Entries Service", () => {
 
       const centersQueryMock = vi.fn();
       mockClient.from.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            is: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { id: 3, role: Role.HARDWARE },
+              error: null,
+            }),
+          };
+        }
         if (table === "centers") {
           centersQueryMock();
           return {
@@ -280,6 +313,17 @@ describe("Entries Service", () => {
 
     it("throws error when db insert fails", async () => {
       mockClient.from.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            is: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { id: 5, role: Role.OPERATOR },
+              error: null,
+            }),
+          };
+        }
         if (table === "centers") {
           return {
             select: vi.fn().mockReturnThis(),

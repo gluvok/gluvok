@@ -201,7 +201,7 @@ describe("Entries route handlers (/api/entries)", () => {
 
       expect(response.status).toBe(200);
       expect(selectMock).toHaveBeenCalledWith(
-        "*, centers(name), users(name), customers!inner(name, user_id)",
+        "*, centers(name), created_by_user:users!created_by(name, role), approved_by_user:users!approved_by(name, role), customers!inner(name, user_id)",
         { count: "exact" },
       );
       expect(eqMock).toHaveBeenCalledWith("customers.user_id", 10);
@@ -281,8 +281,7 @@ describe("Entries route handlers (/api/entries)", () => {
         expect.anything(),
         expect.objectContaining({
           factoryId: 1,
-          userId: 1,
-          deviceId: null,
+          createdBy: 1,
           vehicleNumber: "MH12AB1234",
           weight: 12000,
           centerId: 1,
@@ -315,8 +314,8 @@ describe("Entries route handlers (/api/entries)", () => {
         vehicle_number: "KA01AB1234",
         weight: 15000,
         center_id: 1,
-        device_id: 5,
-        user_id: null,
+        created_by: 5,
+        approved_by: 5,
         factory_id: 1,
         source: EntrySource.DEVICE,
         status: EntryStatus.PENDING,
@@ -346,8 +345,7 @@ describe("Entries route handlers (/api/entries)", () => {
         expect.anything(),
         expect.objectContaining({
           factoryId: 1,
-          userId: null,
-          deviceId: 5,
+          createdBy: 5,
           detectedVehicleNumber: "KA01AB1234",
           vehicleNumber: "KA01AB1234",
           weight: 15000,
@@ -380,8 +378,8 @@ describe("Entries route handlers (/api/entries)", () => {
         vehicle_number: "NO_PLATE_DETECTED",
         weight: 15000,
         center_id: 1,
-        device_id: 5,
-        user_id: null,
+        created_by: 5,
+        approved_by: null,
         factory_id: 1,
         source: EntrySource.DEVICE,
         status: EntryStatus.PENDING,
@@ -410,8 +408,7 @@ describe("Entries route handlers (/api/entries)", () => {
         expect.anything(),
         expect.objectContaining({
           factoryId: 1,
-          userId: null,
-          deviceId: 5,
+          createdBy: 5,
           detectedVehicleNumber: "NO_PLATE_DETECTED",
           vehicleNumber: "NO_PLATE_DETECTED",
           weight: 15000,

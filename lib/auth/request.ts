@@ -6,6 +6,7 @@
 import { NextRequest } from "next/server";
 import { verifyJWT, verifyRefreshToken, JWTPayload } from "./jwt";
 import { fetchActiveUserById, generateAuthTokens } from "./common";
+import { validateSession } from "./session";
 import { Role } from "@/lib/constants/enums";
 
 export interface RefreshedTokens {
@@ -23,6 +24,7 @@ export async function getAuthUser(
   const rawName = req.headers.get("x-user-name");
   const role = req.headers.get("x-user-role");
   const factoryIdStr = req.headers.get("x-user-factory-id");
+  const centerIdStr = req.headers.get("x-user-center-id");
 
   if (userId && username && role && rawName) {
     return {
@@ -32,27 +34,38 @@ export async function getAuthUser(
         name: decodeURIComponent(rawName),
         role: role as Role,
         factory_id: factoryIdStr ? parseInt(factoryIdStr, 10) : 1,
+        center_id: centerIdStr ? parseInt(centerIdStr, 10) : null,
         token_version: 1,
       },
     };
   }
 
-  // 1. Try Bearer token from Authorization header
+  // 1. Try Bearer token from Authorization header (Session token or JWT)
   const authHeader = req.headers.get("authorization");
   if (authHeader && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.substring(7).trim();
-    const payload = await verifyJWT(token);
+    const rawToken = authHeader.substring(7).trim();
+
+    // Check database session first (immediate revocation & hardware device support)
+    const sessionUser = await validateSession(rawToken);
+    if (sessionUser) {
+      return { user: sessionUser };
+    }
+
+    // Fallback to JWT verify
+    const payload = await verifyJWT(rawToken);
     if (payload) {
       return { user: payload };
     }
   }
 
-  // 2. Try Cookies (access token first, then fallback to refresh token)
+  // 2. Try Cookies (session_token first, then access token, then fallback to refresh token)
+  let cookieSessionToken: string | undefined;
   let cookieAccessToken: string | undefined;
   let cookieRefreshToken: string | undefined;
 
   const nextReq = req as NextRequest;
   if (nextReq.cookies && typeof nextReq.cookies.get === "function") {
+    cookieSessionToken = nextReq.cookies.get("session_token")?.value;
     cookieAccessToken =
       nextReq.cookies.get("token")?.value || nextReq.cookies.get("accessToken")?.value;
     cookieRefreshToken =
@@ -66,11 +79,24 @@ export async function getAuthUser(
         parsedCookies[parts[0]] = parts.slice(1).join("=");
       }
     });
+    cookieSessionToken = parsedCookies["session_token"];
     cookieAccessToken = parsedCookies["token"] || parsedCookies["accessToken"];
     cookieRefreshToken = parsedCookies["refresh_token"] || parsedCookies["refreshToken"];
   }
 
+  if (cookieSessionToken) {
+    const sessionUser = await validateSession(cookieSessionToken);
+    if (sessionUser) {
+      return { user: sessionUser };
+    }
+  }
+
   if (cookieAccessToken) {
+    const sessionUser = await validateSession(cookieAccessToken);
+    if (sessionUser) {
+      return { user: sessionUser };
+    }
+
     const payload = await verifyJWT(cookieAccessToken);
     if (payload) {
       return { user: payload };
@@ -90,6 +116,7 @@ export async function getAuthUser(
           role: user.role,
           factory_id: user.factory_id,
           factory_name: user.factories?.name,
+          center_id: user.center_id,
           token_version: user.token_version,
         };
 

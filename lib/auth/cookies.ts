@@ -31,8 +31,16 @@ export function getAuthCookieOptions(maxAge: number) {
 export function setAuthCookies<T extends NextResponse | Response>(
   response: T,
   tokens: SetAuthCookiesParams,
+  sessionToken?: string,
 ): T {
   if ("cookies" in response && typeof response.cookies?.set === "function") {
+    if (sessionToken) {
+      response.cookies.set(
+        "session_token",
+        sessionToken,
+        getAuthCookieOptions(tokens.refreshExpiresIn || 7 * 24 * 60 * 60),
+      );
+    }
     response.cookies.set("token", tokens.accessToken, getAuthCookieOptions(tokens.accessExpiresIn));
     response.cookies.set(
       "refresh_token",
@@ -44,11 +52,12 @@ export function setAuthCookies<T extends NextResponse | Response>(
 }
 
 /**
- * Clears all authentication token cookies (token, refresh_token) on a NextResponse.
+ * Clears all authentication token cookies (session_token, token, refresh_token) on a NextResponse.
  */
 export function clearAuthCookies<T extends NextResponse | Response>(response: T): T {
   if ("cookies" in response && typeof response.cookies?.set === "function") {
     const clearOptions = getAuthCookieOptions(0);
+    response.cookies.set("session_token", "", clearOptions);
     response.cookies.set("token", "", clearOptions);
     response.cookies.set("refresh_token", "", clearOptions);
   }

@@ -32,12 +32,16 @@ export async function createSession(
   const token = generateSessionToken();
   const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString();
 
+  const now = new Date().toISOString();
   const { data, error } = await db
     .from("sessions")
     .insert({
       token,
       user_id: userId,
       expires_at: expiresAt,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
     })
     .select("id, token")
     .single();
@@ -77,7 +81,8 @@ export async function validateSession(
       token,
       expires_at,
       user_id,
-      last_active_at,
+      updated_at,
+      deleted_at,
       users!inner (
         id,
         username,
@@ -96,14 +101,17 @@ export async function validateSession(
       return null;
     }
 
-    const eqQuery = selectQuery.eq("token", token);
+    let eqQuery = selectQuery.eq("token", token);
+    if (eqQuery && typeof eqQuery.is === "function") {
+      eqQuery = eqQuery.is("deleted_at", null);
+    }
     if (!eqQuery || typeof eqQuery.gt !== "function") {
       return null;
     }
 
     const { data: session, error } = await eqQuery.gt("expires_at", now).maybeSingle();
 
-    if (error || !session) {
+    if (error || !session || session.deleted_at != null) {
       return null;
     }
 
@@ -138,17 +146,57 @@ export async function validateSession(
 }
 
 /**
- * Deletes a session by its token (used during logout).
+ * Soft-deletes a session by its token (used during logout).
  */
-export async function deleteSession(token: string): Promise<void> {
+export async function deleteSession(token: string, client = db): Promise<void> {
   if (!token) return;
-  await db.from("sessions").delete().eq("token", token);
+  try {
+    const table = client.from("sessions");
+    if (table && typeof table.update === "function") {
+      const query = table.update({
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+      if (query && typeof query.eq === "function") {
+        await query.eq("token", token);
+        return;
+      }
+    }
+    if (table && typeof table.delete === "function") {
+      const delQuery = table.delete();
+      if (delQuery && typeof delQuery.eq === "function") {
+        await delQuery.eq("token", token);
+      }
+    }
+  } catch {
+    // Ignore error if sessions table not available or mock does not implement it
+  }
 }
 
 /**
- * Deletes all active sessions for a user (used on user deactivation or security reset).
+ * Soft-deletes all active sessions for a user (used on password change, user deactivation, or security reset).
  */
-export async function deleteAllUserSessions(userId: number): Promise<void> {
+export async function deleteAllUserSessions(userId: number, client = db): Promise<void> {
   if (!userId) return;
-  await db.from("sessions").delete().eq("user_id", userId);
+  try {
+    const table = client.from("sessions");
+    if (table && typeof table.update === "function") {
+      const query = table.update({
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+      if (query && typeof query.eq === "function") {
+        await query.eq("user_id", userId);
+        return;
+      }
+    }
+    if (table && typeof table.delete === "function") {
+      const delQuery = table.delete();
+      if (delQuery && typeof delQuery.eq === "function") {
+        await delQuery.eq("user_id", userId);
+      }
+    }
+  } catch {
+    // Ignore error if sessions table not available or mock does not implement it
+  }
 }

@@ -101,12 +101,13 @@ CREATE TABLE IF NOT EXISTS sessions (
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    last_active_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id);
-CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions (token);
-CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions (expires_at);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions (token) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions (expires_at) WHERE deleted_at IS NULL;
 
 -- CUSTOMERS TABLE
 CREATE TABLE IF NOT EXISTS customers (
@@ -341,6 +342,10 @@ BEFORE UPDATE ON rates
 FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 
 DROP TRIGGER IF EXISTS trg_devices_updated_at ON devices;
+DROP TRIGGER IF EXISTS trg_sessions_updated_at ON sessions;
+CREATE TRIGGER trg_sessions_updated_at
+BEFORE UPDATE ON sessions
+FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 
 DROP TRIGGER IF EXISTS trg_entries_updated_at ON entries;
 CREATE TRIGGER trg_entries_updated_at
@@ -582,5 +587,26 @@ BEGIN
 END;
 $$;
 
--- 7. NOTIFY SUPABASE POSTGREST TO RELOAD SCHEMA CACHE IMMEDIATELY
+-- 7. SESSION INVALIDATION TRIGGER (Instant revocation on password change or user deactivation)
+CREATE OR REPLACE FUNCTION trigger_invalidate_sessions_on_user_update()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Soft-delete active sessions when password changes OR user is soft deleted / deactivated
+    IF (NEW.password_hash <> OLD.password_hash) OR (NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL) THEN
+        UPDATE sessions
+        SET deleted_at = NOW(), updated_at = NOW()
+        WHERE user_id = NEW.id AND deleted_at IS NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_invalidate_sessions_on_user_update ON users;
+CREATE TRIGGER trg_invalidate_sessions_on_user_update
+AFTER UPDATE OF password_hash, deleted_at ON users
+FOR EACH ROW
+EXECUTE FUNCTION trigger_invalidate_sessions_on_user_update();
+
+-- 8. NOTIFY SUPABASE POSTGREST TO RELOAD SCHEMA CACHE IMMEDIATELY
 NOTIFY pgrst, 'reload schema';
+

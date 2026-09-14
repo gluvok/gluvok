@@ -79,7 +79,8 @@ export interface Session {
   user_id: number;
   expires_at: string;
   created_at: string;
-  last_active_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
 }
 
 export interface Entry {

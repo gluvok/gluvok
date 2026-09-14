@@ -12,6 +12,7 @@ import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { editCustomerSchema } from "@/lib/validation";
 import { hashPassword } from "@/lib/auth/password";
+import { deleteAllUserSessions } from "@/lib/auth/session";
 
 export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
@@ -74,6 +75,13 @@ export const PATCH = withAuth(
       return apiError(error?.message || ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND);
     }
 
+    if (passwordHash) {
+      const targetUserId = (updated as { user_id?: number })?.user_id ?? existing?.user_id;
+      if (targetUserId) {
+        await deleteAllUserSessions(targetUserId, client);
+      }
+    }
+
     return formatEntityResponse(updated, StatusCodes.OK);
   }),
 );
@@ -95,6 +103,15 @@ export const DELETE = withAuth(
       return apiError(ApiErrorMessage.CANNOT_DELETE_CUSTOMER(entityId), StatusCodes.BAD_REQUEST);
     }
 
+    // Query customer to check if a user account is linked
+    const { data: customerRecord } = await client
+      .from("customers")
+      .select("user_id")
+      .eq("id", entityId)
+      .eq("factory_id", factoryId)
+      .is("deleted_at", null)
+      .maybeSingle();
+
     const { data: deletedCount, error } = await client.rpc("delete_customers_with_user", {
       p_customer_ids: [entityId],
       p_factory_id: factoryId,
@@ -109,6 +126,10 @@ export const DELETE = withAuth(
 
     if (!deletedCount || deletedCount === 0) {
       return apiError(ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND);
+    }
+
+    if (customerRecord?.user_id) {
+      await deleteAllUserSessions(customerRecord.user_id, client);
     }
 
     return NextResponse.json({ success: true, id: entityId });

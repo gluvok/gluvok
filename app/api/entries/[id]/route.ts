@@ -24,7 +24,7 @@ export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
 
   const { data, error } = await client
     .from("entries")
-    .select(`*, centers(name), devices(name), users(name), customers(name, user_id)`)
+    .select(`*, centers(name), users(name), customers(name, user_id)`)
     .eq("id", entryId)
     .eq("factory_id", user.factory_id!)
     .is("deleted_at", null)
@@ -52,7 +52,6 @@ export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
 
   const centers = data.centers as Record<string, unknown> | undefined;
   const users = data.users as Record<string, unknown> | undefined;
-  const devices = data.devices as Record<string, unknown> | undefined;
   const customers = data.customers as Record<string, unknown> | undefined;
 
   const { data: linkedWeighment } = await client
@@ -77,7 +76,6 @@ export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
     source: data.device_id != null ? EntrySource.DEVICE : EntrySource.MANUAL,
     edited: isEdited,
     center_name: centers?.name || "",
-    device_name: devices?.name || "",
     user_name: users?.name || "",
     customer_name: customers?.name || "",
     linked_weighment: weighmentInfo,

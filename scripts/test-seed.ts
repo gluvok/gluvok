@@ -205,29 +205,30 @@ async function main() {
 
   for (const d of deviceConfigs) {
     const assignedCenterId = centerMap.get(d.centerName) || 1;
+    const hashedKey = hashDeviceKey(d.rawKey);
     const { data: existing } = await supabase
       .from("devices")
       .select("id")
-      .eq("name", d.name)
+      .eq("hashed_key", hashedKey)
       .maybeSingle();
 
     if (existing) {
-      deviceMap.set(d.name, existing.id);
-      console.log(`  ✓ Found device: '${d.name}' (id: ${existing.id})`);
+      deviceMap.set(d.rawKey, existing.id);
+      console.log(`  ✓ Found device: id=${existing.id} (center: ${d.centerName})`);
     } else {
       const { data: created, error } = await supabase
         .from("devices")
         .insert({
-          name: d.name,
-          hashed_key: hashDeviceKey(d.rawKey),
+          hashed_key: hashedKey,
           center_id: assignedCenterId,
         })
         .select("id")
         .single();
-      if (error || !created) throw error || new Error(`Failed to create device ${d.name}`);
-      deviceMap.set(d.name, created.id);
+      if (error || !created)
+        throw error || new Error(`Failed to create device for center ${d.centerName}`);
+      deviceMap.set(d.rawKey, created.id);
       console.log(
-        `  + Created device: '${d.name}' (id: ${created.id}, center_id: ${assignedCenterId})`,
+        `  + Created device: id=${created.id} (center_id: ${assignedCenterId}, center: ${d.centerName})`,
       );
     }
   }
@@ -331,8 +332,8 @@ async function main() {
   console.log("\n🚛 [7/8] Seeding Paired Entries and Weighments across date presets...");
   const defaultOperatorId = userMap.get("operator_bob") || userMap.get("admin1")!;
   const charlieOperatorId = userMap.get("operator_charlie") || defaultOperatorId;
-  const defaultDeviceId = deviceMap.get("North Weighbridge Terminal") || 1;
-  const apexDeviceId = deviceMap.get("Apex Weighbridge Camera") || 2;
+  const defaultDeviceId = deviceMap.get("hardware123") || 1;
+  const apexDeviceId = deviceMap.get("hardware789") || 2;
 
   const mainCenterId = centerMap.get("Main Weighbridge")!;
   const northAutoCenterId = centerMap.get("North Automatic Scale")!;
@@ -505,8 +506,8 @@ async function main() {
   console.log("  • Admin 2:    admin2 / admin123 (Factory 2)");
   console.log("📋 Test Ingestion Devices Summary:");
   for (const d of deviceConfigs) {
-    const id = deviceMap.get(d.name);
-    console.log(`  • Device ${id}:   ${d.name} [Center: '${d.centerName}'] (Key: ${d.rawKey})`);
+    const id = deviceMap.get(d.rawKey);
+    console.log(`  • Device ${id}:   [Center: '${d.centerName}'] (Key: ${d.rawKey})`);
   }
   console.log("=================================================");
 }

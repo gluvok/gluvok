@@ -35,8 +35,8 @@ export const GET = withAuth(async (req, user, client) => {
 
   const selectString =
     user.role === Role.BASE
-      ? `*, centers(name), devices(name), users(name), customers!inner(name, user_id)`
-      : `*, centers(name), devices(name), users(name), customers(name)`;
+      ? `*, centers(name), users(name), customers!inner(name, user_id)`
+      : `*, centers(name), users(name), customers(name)`;
 
   let query = client
     .from("entries")
@@ -100,7 +100,6 @@ export const GET = withAuth(async (req, user, client) => {
   const formattedData = (data || []).map((row: Record<string, unknown>) => {
     const centers = row.centers as Record<string, unknown> | undefined;
     const users = row.users as Record<string, unknown> | undefined;
-    const devices = row.devices as Record<string, unknown> | undefined;
     const customers = row.customers as Record<string, unknown> | undefined;
 
     return {
@@ -108,7 +107,6 @@ export const GET = withAuth(async (req, user, client) => {
       source: row.device_id != null ? EntrySource.DEVICE : EntrySource.MANUAL,
       center_name: centers?.name || "",
       user_name: users?.name || "",
-      device_name: devices?.name || "",
       customer_name: customers?.name || "",
     };
   });

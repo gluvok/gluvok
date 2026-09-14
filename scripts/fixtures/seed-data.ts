@@ -147,43 +147,18 @@ export function getUserConfigs(
 }
 
 export interface SeedDeviceConfig {
-  name: string;
   rawKey: string;
   centerName: string;
 }
 
 export function getDeviceConfigs(): SeedDeviceConfig[] {
   return [
-    {
-      name: "Main Weighbridge Terminal",
-      rawKey: "hardware101",
-      centerName: "Main Weighbridge",
-    },
-    {
-      name: "North Weighbridge Terminal",
-      rawKey: "hardware123",
-      centerName: "North Automatic Scale",
-    },
-    {
-      name: "East Grain Terminal Scale",
-      rawKey: "hardware202",
-      centerName: "East Grain Terminal",
-    },
-    {
-      name: "South Scale Bay",
-      rawKey: "hardware456",
-      centerName: "South Express Bay",
-    },
-    {
-      name: "Apex Weighbridge Camera",
-      rawKey: "hardware789",
-      centerName: "Apex Inbound Scale",
-    },
-    {
-      name: "Apex Outbound Gate Terminal",
-      rawKey: "hardware909",
-      centerName: "Apex Outbound Gate",
-    },
+    { rawKey: "hardware101", centerName: "Main Weighbridge" },
+    { rawKey: "hardware123", centerName: "North Automatic Scale" },
+    { rawKey: "hardware202", centerName: "East Grain Terminal" },
+    { rawKey: "hardware456", centerName: "South Express Bay" },
+    { rawKey: "hardware789", centerName: "Apex Inbound Scale" },
+    { rawKey: "hardware909", centerName: "Apex Outbound Gate" },
   ];
 }
 

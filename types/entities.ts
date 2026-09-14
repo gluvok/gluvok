@@ -75,7 +75,6 @@ export interface Factory {
 
 export interface Device {
   id: number;
-  name: string;
   hashed_key: string;
   center_id: number;
   last_seen_at?: string | null;
@@ -105,7 +104,6 @@ export interface Entry {
   // Flattened join fields
   center_name?: string;
   user_name?: string;
-  device_name?: string;
   customer_name?: string;
   linked_weighment?: { id: number; partner_entry_id: number } | null;
 }

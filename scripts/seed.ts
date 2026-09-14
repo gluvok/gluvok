@@ -118,14 +118,13 @@ async function main() {
   const { data: existingDevice } = await supabase
     .from("devices")
     .select("id")
-    .eq("name", "Default Weighbridge Terminal")
+    .eq("hashed_key", defaultDeviceKeyHash)
     .maybeSingle();
 
   if (!existingDevice) {
     const { data: newDevice, error: devErr } = await supabase
       .from("devices")
       .insert({
-        name: "Default Weighbridge Terminal",
         hashed_key: defaultDeviceKeyHash,
         center_id: centerId,
       })
@@ -134,7 +133,7 @@ async function main() {
     if (devErr || !newDevice) throw devErr || new Error("Failed to create default device");
     console.log(`Default device inserted with id=${newDevice.id}`);
   } else {
-    console.log("Default device ('Default Weighbridge Terminal') already exists.");
+    console.log("Default device already exists.");
   }
 
   console.log("Seeding default commodities catalog...");

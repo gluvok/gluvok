@@ -134,7 +134,6 @@ WHERE deleted_at IS NULL;
 -- DEVICES TABLE (Edge capture hardware devices)
 CREATE TABLE IF NOT EXISTS devices (
     id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
     hashed_key TEXT NOT NULL,
     center_id INT NOT NULL REFERENCES centers(id) ON DELETE RESTRICT,
     last_seen_at TIMESTAMPTZ,
@@ -142,10 +141,6 @@ CREATE TABLE IF NOT EXISTS devices (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
 );
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_name_active
-ON devices (name)
-WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_devices_center
 ON devices (center_id)

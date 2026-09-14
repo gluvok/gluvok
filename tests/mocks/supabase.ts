@@ -185,7 +185,6 @@ export interface MockEntryRecord {
   status: EntryStatus;
   source: EntrySource;
   device_id?: number | null;
-  device_name?: string;
   user_id?: number | null;
   auto_approved: boolean;
   customer_id: number | null;

@@ -201,7 +201,7 @@ describe("Entries route handlers (/api/entries)", () => {
 
       expect(response.status).toBe(200);
       expect(selectMock).toHaveBeenCalledWith(
-        "*, centers(name), devices(name), users(name), customers!inner(name, user_id)",
+        "*, centers(name), users(name), customers!inner(name, user_id)",
         { count: "exact" },
       );
       expect(eqMock).toHaveBeenCalledWith("customers.user_id", 10);

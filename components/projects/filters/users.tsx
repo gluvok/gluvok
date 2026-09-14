@@ -22,7 +22,6 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: Role.MANAGER, label: Role.MANAGER },
   { value: Role.OPERATOR, label: Role.OPERATOR },
   { value: Role.BASE, label: Role.BASE },
-  { value: Role.HARDWARE, label: Role.HARDWARE },
 ];
 
 export function UsersFilters<TData extends RowData>({ table }: UsersFiltersProps<TData>) {

@@ -2,10 +2,27 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { PermissionKey, ProjectSlug, Role, EntryStatus, EntrySource } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
-const { mockHasPermission, mockCreateEntry } = vi.hoisted(() => ({
+const { mockHasPermission, mockCreateEntry, mockVerifyDeviceRequest, mockDb } = vi.hoisted(() => ({
   mockHasPermission: vi.fn(),
   mockCreateEntry: vi.fn(),
+  mockVerifyDeviceRequest: vi.fn(),
+  mockDb: {
+    from: vi.fn(),
+  },
 }));
+
+vi.mock("@/db", () => ({
+  db: mockDb,
+  supabase: mockDb,
+}));
+
+vi.mock("@/lib/auth/device", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth/device")>();
+  return {
+    ...actual,
+    verifyDeviceRequest: mockVerifyDeviceRequest,
+  };
+});
 
 vi.mock("@/db/helpers", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/db/helpers")>();
@@ -184,7 +201,7 @@ describe("Entries route handlers (/api/entries)", () => {
 
       expect(response.status).toBe(200);
       expect(selectMock).toHaveBeenCalledWith(
-        "*, centers(name), users(name), customers!inner(name, user_id)",
+        "*, centers(name), devices(name), users(name), customers!inner(name, user_id)",
         { count: "exact" },
       );
       expect(eqMock).toHaveBeenCalledWith("customers.user_id", 10);
@@ -265,7 +282,7 @@ describe("Entries route handlers (/api/entries)", () => {
         expect.objectContaining({
           factoryId: 1,
           userId: 1,
-          source: EntrySource.MANUAL,
+          deviceId: null,
           vehicleNumber: "MH12AB1234",
           weight: 12000,
           centerId: 1,
@@ -274,13 +291,23 @@ describe("Entries route handlers (/api/entries)", () => {
       );
     });
 
-    it("creates DEVICE entry when caller has Role.HARDWARE", async () => {
-      const hardwareUser = {
-        sub: "5",
-        username: "hardware_scale_1",
-        role: Role.HARDWARE,
-        factory_id: 1,
-      };
+    it("creates DEVICE entry when caller provides valid device headers", async () => {
+      mockVerifyDeviceRequest.mockResolvedValue({
+        success: true,
+        device: { id: 5, name: "North Terminal" },
+      });
+
+      mockDb.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            is: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: 1, factory_id: 1 },
+              }),
+            }),
+          }),
+        }),
+      });
 
       const createdEntry = {
         id: 20,
@@ -288,7 +315,8 @@ describe("Entries route handlers (/api/entries)", () => {
         vehicle_number: "KA01AB1234",
         weight: 15000,
         center_id: 1,
-        user_id: 5,
+        device_id: 5,
+        user_id: null,
         factory_id: 1,
         source: EntrySource.DEVICE,
         status: EntryStatus.PENDING,
@@ -297,7 +325,11 @@ describe("Entries route handlers (/api/entries)", () => {
 
       const req = new NextRequest("http://localhost/api/entries", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-device-id": "5",
+          "x-device-key": "hardware123",
+        },
         body: JSON.stringify({
           detected_vehicle_number: "KA01AB1234",
           weight: 15000,
@@ -305,8 +337,7 @@ describe("Entries route handlers (/api/entries)", () => {
         }),
       });
 
-      const handler = POST as unknown as RawHandler;
-      const response = await handler(req, hardwareUser, {}, context);
+      const response = await POST(req);
 
       expect(response.status).toBe(201);
       const json = await response.json();
@@ -315,8 +346,8 @@ describe("Entries route handlers (/api/entries)", () => {
         expect.anything(),
         expect.objectContaining({
           factoryId: 1,
-          userId: 5,
-          source: EntrySource.DEVICE,
+          userId: null,
+          deviceId: 5,
           detectedVehicleNumber: "KA01AB1234",
           vehicleNumber: "KA01AB1234",
           weight: 15000,
@@ -325,13 +356,23 @@ describe("Entries route handlers (/api/entries)", () => {
       );
     });
 
-    it("creates DEVICE entry when caller has Role.HARDWARE with NO_PLATE_DETECTED", async () => {
-      const hardwareUser = {
-        sub: "5",
-        username: "hardware_scale_1",
-        role: Role.HARDWARE,
-        factory_id: 1,
-      };
+    it("creates DEVICE entry when device sends NO_PLATE_DETECTED", async () => {
+      mockVerifyDeviceRequest.mockResolvedValue({
+        success: true,
+        device: { id: 5, name: "North Terminal" },
+      });
+
+      mockDb.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            is: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: 1, factory_id: 1 },
+              }),
+            }),
+          }),
+        }),
+      });
 
       const createdEntry = {
         id: 21,
@@ -339,7 +380,8 @@ describe("Entries route handlers (/api/entries)", () => {
         vehicle_number: "NO_PLATE_DETECTED",
         weight: 15000,
         center_id: 1,
-        user_id: 5,
+        device_id: 5,
+        user_id: null,
         factory_id: 1,
         source: EntrySource.DEVICE,
         status: EntryStatus.PENDING,
@@ -348,7 +390,11 @@ describe("Entries route handlers (/api/entries)", () => {
 
       const req = new NextRequest("http://localhost/api/entries", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-device-id": "5",
+          "x-device-key": "hardware123",
+        },
         body: JSON.stringify({
           detected_vehicle_number: "NO_PLATE_DETECTED",
           weight: 15000,
@@ -356,8 +402,7 @@ describe("Entries route handlers (/api/entries)", () => {
         }),
       });
 
-      const handler = POST as unknown as RawHandler;
-      const response = await handler(req, hardwareUser, {}, context);
+      const response = await POST(req);
 
       expect(response.status).toBe(201);
       const json = await response.json();
@@ -366,14 +411,42 @@ describe("Entries route handlers (/api/entries)", () => {
         expect.anything(),
         expect.objectContaining({
           factoryId: 1,
-          userId: 5,
-          source: EntrySource.DEVICE,
+          userId: null,
+          deviceId: 5,
           detectedVehicleNumber: "NO_PLATE_DETECTED",
           vehicleNumber: "NO_PLATE_DETECTED",
           weight: 15000,
           centerId: 1,
         }),
       );
+    });
+
+    it("rejects device request when verifyDeviceRequest fails", async () => {
+      mockVerifyDeviceRequest.mockResolvedValue({
+        success: false,
+        status: 403,
+        error: "Invalid device key or deactivated device",
+      });
+
+      const req = new NextRequest("http://localhost/api/entries", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-device-id": "5",
+          "x-device-key": "wrong_key",
+        },
+        body: JSON.stringify({
+          detected_vehicle_number: "KA01AB1234",
+          weight: 15000,
+          center_id: 1,
+        }),
+      });
+
+      const response = await POST(req);
+
+      expect(response.status).toBe(403);
+      const json = await response.json();
+      expect(json.error).toBe("Invalid device key or deactivated device");
     });
 
     it("handles createEntry service error", async () => {

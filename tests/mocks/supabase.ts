@@ -184,6 +184,9 @@ export interface MockEntryRecord {
   weight: number;
   status: EntryStatus;
   source: EntrySource;
+  device_id?: number | null;
+  device_name?: string;
+  user_id?: number | null;
   auto_approved: boolean;
   customer_id: number | null;
   center_id: number;
@@ -195,13 +198,21 @@ export interface MockEntryRecord {
 }
 
 export function createMockEntry(overrides: Partial<MockEntryRecord> = {}): MockEntryRecord {
+  const deviceId =
+    overrides.device_id !== undefined
+      ? overrides.device_id
+      : overrides.source === EntrySource.MANUAL
+        ? null
+        : 1;
   return {
     id: 10,
     vehicle_number: "KA01AB1111",
     detected_vehicle_number: "KA01AB1111",
     weight: 15000,
     status: EntryStatus.APPROVED,
-    source: EntrySource.DEVICE,
+    device_id: deviceId,
+    user_id: overrides.user_id !== undefined ? overrides.user_id : null,
+    source: overrides.source ?? (deviceId != null ? EntrySource.DEVICE : EntrySource.MANUAL),
     auto_approved: true,
     customer_id: null,
     center_id: 1,
@@ -244,6 +255,7 @@ export function createMockWeighment(
       weight: 15000,
       vehicle_number: "KA01AB1234",
       status: EntryStatus.APPROVED,
+      device_id: 1,
       source: EntrySource.DEVICE,
       created_at: "2026-08-31T08:00:00Z",
     },
@@ -252,6 +264,7 @@ export function createMockWeighment(
       weight: 5000,
       vehicle_number: "KA01AB1234",
       status: EntryStatus.APPROVED,
+      device_id: 1,
       source: EntrySource.DEVICE,
       created_at: "2026-08-31T10:00:00Z",
     },

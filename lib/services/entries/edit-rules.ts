@@ -5,7 +5,7 @@
 
 import { supabase } from "@/db";
 import { StatusCodes } from "@/db/helpers";
-import { EntryStatus, EntrySource } from "@/lib/constants/enums";
+import { EntryStatus } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import {
   validateCenterBelongsToFactory,
@@ -113,7 +113,8 @@ export async function validateAndBuildEntryUpdates(
       }
     }
   } else if (existing.status === EntryStatus.PENDING) {
-    if (existing.source === EntrySource.MANUAL) {
+    const isManual = existing.device_id === null || existing.device_id === undefined;
+    if (isManual) {
       // Manual Pending: allow vehicle_number, weight, center_id, customer_id, images, status
       if (body.vehicle_number !== undefined) updates["vehicle_number"] = body.vehicle_number;
       if (body.weight !== undefined) updates["weight"] = Number(body.weight);

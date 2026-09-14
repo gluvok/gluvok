@@ -137,7 +137,9 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
       const rec = row as Record<string, unknown>;
       const name =
         (rec.user_name as string) || (rec.users as { name?: string } | undefined)?.name || "";
-      return <div className="font-semibold text-foreground text-xs">{name || "—"}</div>;
+      const autoApproved = rec.auto_approved === true || rec.auto_approved === "true";
+      const displayName = name || (autoApproved ? "System" : "—");
+      return <div className="font-semibold text-foreground text-xs">{displayName}</div>;
     }),
     createIdColumn("customer_id", "Customer ID", Users),
     createCustomColumn("customer_name", "Customer Name", Users, (_val, row) => {

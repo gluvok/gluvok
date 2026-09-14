@@ -9,12 +9,14 @@
 import { createClient } from "@supabase/supabase-js";
 import { EntryStatus } from "../lib/constants/enums";
 import { hashPassword } from "../lib/auth/password";
+import { hashDeviceKey } from "../lib/auth/device";
 import {
   TABLES_IN_CLEAR_ORDER,
   DEFAULT_COMMODITIES,
   MOCK_IMAGES,
   FACTORY_CONFIGS,
   getUserConfigs,
+  getDeviceConfigs,
   getCenterConfigs,
   getRateConfigs,
   getCustomerConfigs,
@@ -112,23 +114,22 @@ async function main() {
   const secondaryFactoryId = factoryMap.get("Apex Agro Logistics")!;
 
   // 2. USERS
-  console.log("\n👥 [2/8] Seeding Users across all 5 roles...");
+  console.log(
+    "\n👥 [2/8] Seeding Users across all personnel roles (Admin, Manager, Operator, Base)...",
+  );
   console.log("  🔒 Hashing passwords with Argon2id...");
-  const [adminPassHash, managerPassHash, operatorPassHash, basePassHash, hardwarePassHash] =
-    await Promise.all([
-      hashPassword("admin123"),
-      hashPassword("manager123"),
-      hashPassword("operator123"),
-      hashPassword("user123"),
-      hashPassword("hardware123"),
-    ]);
+  const [adminPassHash, managerPassHash, operatorPassHash, basePassHash] = await Promise.all([
+    hashPassword("admin123"),
+    hashPassword("manager123"),
+    hashPassword("operator123"),
+    hashPassword("user123"),
+  ]);
 
   const userConfigs = getUserConfigs(primaryFactoryId, secondaryFactoryId, {
     admin: adminPassHash,
     manager: managerPassHash,
     operator: operatorPassHash,
     base: basePassHash,
-    hardware: hardwarePassHash,
   });
 
   const userMap = new Map<string, number>();
@@ -158,6 +159,36 @@ async function main() {
       if (error || !created) throw error || new Error(`Failed to create user ${u.username}`);
       userMap.set(u.username, created.id);
       console.log(`  + Created user: '${u.username}' (${u.role}, id: ${created.id})`);
+    }
+  }
+
+  // 2b. DEVICES
+  console.log("\n📟 Seeding Edge Ingestion Devices...");
+  const deviceConfigs = getDeviceConfigs();
+  const deviceMap = new Map<string, number>();
+
+  for (const d of deviceConfigs) {
+    const { data: existing } = await supabase
+      .from("devices")
+      .select("id")
+      .eq("name", d.name)
+      .maybeSingle();
+
+    if (existing) {
+      deviceMap.set(d.name, existing.id);
+      console.log(`  ✓ Found device: '${d.name}' (id: ${existing.id})`);
+    } else {
+      const { data: created, error } = await supabase
+        .from("devices")
+        .insert({
+          name: d.name,
+          hashed_key: hashDeviceKey(d.rawKey),
+        })
+        .select("id")
+        .single();
+      if (error || !created) throw error || new Error(`Failed to create device ${d.name}`);
+      deviceMap.set(d.name, created.id);
+      console.log(`  + Created device: '${d.name}' (id: ${created.id})`);
     }
   }
 
@@ -296,7 +327,8 @@ async function main() {
   console.log("\n🚛 [7/8] Seeding Paired Entries and Weighments across date presets...");
   const defaultOperatorId = userMap.get("operator_bob") || userMap.get("admin1")!;
   const charlieOperatorId = userMap.get("operator_charlie") || defaultOperatorId;
-  const hardwareDevice1Id = userMap.get("pi1") || defaultOperatorId;
+  const defaultDeviceId = deviceMap.get("North Weighbridge Terminal") || 1;
+  const apexDeviceId = deviceMap.get("Apex Weighbridge Camera") || 2;
 
   const mainCenterId = centerMap.get("Main Weighbridge")!;
   const northAutoCenterId = centerMap.get("North Automatic Scale")!;
@@ -306,7 +338,7 @@ async function main() {
   const weighmentPairScenarios = getWeighmentPairScenarios({
     defaultOperatorId,
     charlieOperatorId,
-    hardwareDevice1Id,
+    defaultDeviceId,
     mainCenterId,
     northAutoCenterId,
     eastTerminalCenterId,
@@ -335,11 +367,11 @@ async function main() {
         detected_vehicle_number: pair.detectedVehicle || pair.vehicleNumber,
         vehicle_number: pair.vehicleNumber,
         weight: pair.inWeight,
-        source: pair.source,
+        device_id: pair.deviceId ?? null,
         status: EntryStatus.APPROVED,
         auto_approved: pair.autoApproved,
         center_id: pair.centerId,
-        user_id: pair.userId,
+        user_id: pair.userId ?? null,
         customer_id: custId || null,
         factory_id: primaryFactoryId,
         images: MOCK_IMAGES,
@@ -362,11 +394,11 @@ async function main() {
         detected_vehicle_number: pair.vehicleNumber,
         vehicle_number: pair.vehicleNumber,
         weight: pair.outWeight,
-        source: pair.source,
+        device_id: pair.deviceId ?? null,
         status: EntryStatus.APPROVED,
         auto_approved: pair.autoApproved,
         center_id: pair.centerId,
-        user_id: pair.userId,
+        user_id: pair.userId ?? null,
         customer_id: custId || null,
         factory_id: primaryFactoryId,
         images: MOCK_IMAGES,
@@ -418,7 +450,8 @@ async function main() {
     customerMap,
     defaultOperatorId,
     charlieOperatorId,
-    hardwareDevice1Id,
+    defaultDeviceId,
+    apexDeviceId,
     mainCenterId,
     northAutoCenterId,
     eastTerminalCenterId,
@@ -464,11 +497,12 @@ async function main() {
   console.log("  • Manager 1:  manager_alice / manager123 (Factory 1)");
   console.log("  • Operator 1: operator_bob / operator123 (Factory 1)");
   console.log("  • Operator 2: operator_charlie / operator123 (Factory 1)");
-  console.log("  • Hardware 1: pi1 / hardware123 (Factory 1)");
-  console.log("  • Hardware 2: pi2 / hardware123 (Factory 1)");
   console.log("  • Customer:   cust_ramesh / user123 (Factory 1)");
   console.log("  • Admin 2:    admin2 / admin123 (Factory 2)");
-  console.log("  • Hardware 3: pi3 / hardware123 (Factory 2)");
+  console.log("📋 Test Ingestion Devices Summary:");
+  console.log("  • Device 1:   North Weighbridge Terminal (Key: hardware123)");
+  console.log("  • Device 2:   South Scale Bay (Key: hardware456)");
+  console.log("  • Device 3:   Apex Weighbridge Camera (Key: hardware789)");
   console.log("=================================================");
 }
 

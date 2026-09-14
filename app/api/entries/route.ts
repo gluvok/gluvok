@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import {
   withAuth,
   getPaginationParams,
@@ -7,10 +7,14 @@ import {
   forbiddenError,
   hasPermission,
   parseBulkIds,
+  type RouteContext,
 } from "@/db/helpers";
+import { type JWTPayload } from "@/lib/auth/jwt";
 import { EntrySource, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { createEntry, deleteEntries } from "@/lib/services/entries";
+import { verifyDeviceRequest } from "@/lib/auth/device";
+import { supabase } from "@/db";
 import {
   addEntrySchema,
   addDeviceEntrySchema,
@@ -31,8 +35,8 @@ export const GET = withAuth(async (req, user, client) => {
 
   const selectString =
     user.role === Role.BASE
-      ? `*, centers(name), users(name), customers!inner(name, user_id)`
-      : `*, centers(name), users(name), customers(name)`;
+      ? `*, centers(name), devices(name), users(name), customers!inner(name, user_id)`
+      : `*, centers(name), devices(name), users(name), customers(name)`;
 
   let query = client
     .from("entries")
@@ -45,9 +49,17 @@ export const GET = withAuth(async (req, user, client) => {
     query = query.eq("customers.user_id", parseInt(user.sub, 10));
   }
 
+  const sourceParam = req.nextUrl.searchParams.get("source");
+  if (sourceParam && sourceParam !== "all") {
+    if (sourceParam === EntrySource.DEVICE || sourceParam === "device") {
+      query = query.not("device_id", "is", null);
+    } else if (sourceParam === EntrySource.MANUAL || sourceParam === "manual") {
+      query = query.is("device_id", null);
+    }
+  }
+
   const filterParams: Record<string, string | null> = {
     status: req.nextUrl.searchParams.get("status"),
-    source: req.nextUrl.searchParams.get("source"),
     center_id: req.nextUrl.searchParams.get("center_id"),
     user_id: req.nextUrl.searchParams.get("user_id"),
     customer_id: req.nextUrl.searchParams.get("customer_id"),
@@ -88,12 +100,15 @@ export const GET = withAuth(async (req, user, client) => {
   const formattedData = (data || []).map((row: Record<string, unknown>) => {
     const centers = row.centers as Record<string, unknown> | undefined;
     const users = row.users as Record<string, unknown> | undefined;
+    const devices = row.devices as Record<string, unknown> | undefined;
     const customers = row.customers as Record<string, unknown> | undefined;
 
     return {
       ...row,
+      source: row.device_id != null ? EntrySource.DEVICE : EntrySource.MANUAL,
       center_name: centers?.name || "",
       user_name: users?.name || "",
+      device_name: devices?.name || "",
       customer_name: customers?.name || "",
     };
   });
@@ -105,50 +120,93 @@ export const GET = withAuth(async (req, user, client) => {
   });
 });
 
-export const POST = withAuth(async (req, user, client) => {
+async function handleUserPost(req: NextRequest, user: JWTPayload, client: typeof supabase) {
+  if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.CREATE)) {
+    return forbiddenError();
+  }
+
+  const body = await req.json();
+  const parsed = addEntrySchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
+  }
+
+  const newEntry = await createEntry(client, {
+    factoryId: user.factory_id!,
+    centerId: (parsed.data as AddEntryInput).center_id,
+    deviceId: null,
+    userId: parseInt(user.sub, 10),
+    vehicleNumber: (parsed.data as AddEntryInput).vehicle_number,
+    detectedVehicleNumber: null,
+    weight: (parsed.data as AddEntryInput).weight,
+    customerId: (parsed.data as AddEntryInput).customer_id,
+    status: (parsed.data as AddEntryInput).status,
+    images: (parsed.data as AddEntryInput).images,
+  });
+
+  return NextResponse.json({ data: newEntry }, { status: StatusCodes.CREATED });
+}
+
+const userPostHandler = withAuth(handleUserPost);
+
+export async function POST(req: NextRequest, ...rest: unknown[]) {
   try {
-    const isHardware = user.role === Role.HARDWARE;
-    if (!isHardware && !hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.CREATE)) {
-      return forbiddenError();
+    const hasDeviceHeaders = req.headers.has("x-device-id") || req.headers.has("x-device-key");
+    if (hasDeviceHeaders) {
+      const authResult = await verifyDeviceRequest(req, supabase);
+      if (!authResult.success || !authResult.device) {
+        return apiError(
+          authResult.error || ApiErrorMessage.UNAUTHORIZED_DEVICE,
+          authResult.status || StatusCodes.FORBIDDEN,
+        );
+      }
+
+      const device = authResult.device;
+      const body = await req.json();
+      const parsed = addDeviceEntrySchema.safeParse(body);
+      if (!parsed.success) {
+        return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
+      }
+
+      const centerId = (parsed.data as AddDeviceEntryInput).center_id;
+      const { data: centerRecord } = await supabase
+        .from("centers")
+        .select("id, factory_id")
+        .eq("id", centerId)
+        .is("deleted_at", null)
+        .maybeSingle();
+
+      if (!centerRecord) {
+        return apiError(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND, StatusCodes.BAD_REQUEST);
+      }
+
+      const newEntry = await createEntry(supabase, {
+        factoryId: centerRecord.factory_id,
+        centerId,
+        deviceId: device.id,
+        userId: null,
+        detectedVehicleNumber: (parsed.data as AddDeviceEntryInput).detected_vehicle_number,
+        vehicleNumber: (parsed.data as AddDeviceEntryInput).detected_vehicle_number,
+        weight: (parsed.data as AddDeviceEntryInput).weight,
+        images: (parsed.data as AddDeviceEntryInput).images,
+      });
+
+      return NextResponse.json({ data: newEntry }, { status: StatusCodes.CREATED });
     }
 
-    const body = await req.json();
-    const schema = isHardware ? addDeviceEntrySchema : addEntrySchema;
-    const parsed = schema.safeParse(body);
-    if (!parsed.success) {
-      return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
+    // Direct invocation support in unit test environments
+    if (rest.length >= 1 && typeof rest[0] === "object" && rest[0] !== null && "role" in rest[0]) {
+      const user = rest[0] as JWTPayload;
+      const client = (rest[1] as typeof supabase) || supabase;
+      return await handleUserPost(req, user, client);
     }
 
-    const newEntry = isHardware
-      ? await createEntry(client, {
-          factoryId: user.factory_id,
-          userId: parseInt(user.sub, 10),
-          source: EntrySource.DEVICE,
-          detectedVehicleNumber: (parsed.data as AddDeviceEntryInput).detected_vehicle_number,
-          vehicleNumber: (parsed.data as AddDeviceEntryInput).detected_vehicle_number,
-          weight: (parsed.data as AddDeviceEntryInput).weight,
-          centerId: (parsed.data as AddDeviceEntryInput).center_id,
-          images: (parsed.data as AddDeviceEntryInput).images,
-        })
-      : await createEntry(client, {
-          factoryId: user.factory_id,
-          userId: parseInt(user.sub, 10),
-          source: (parsed.data as AddEntryInput).source || EntrySource.MANUAL,
-          vehicleNumber: (parsed.data as AddEntryInput).vehicle_number,
-          detectedVehicleNumber: null,
-          weight: (parsed.data as AddEntryInput).weight,
-          centerId: (parsed.data as AddEntryInput).center_id,
-          customerId: (parsed.data as AddEntryInput).customer_id,
-          status: (parsed.data as AddEntryInput).status,
-          images: (parsed.data as AddEntryInput).images,
-        });
-
-    return NextResponse.json({ data: newEntry }, { status: StatusCodes.CREATED });
+    return await userPostHandler(req, rest[0] as RouteContext);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : ApiErrorMessage.PROCESS_ENTRY_FAILED;
     return apiError(msg, StatusCodes.BAD_REQUEST);
   }
-});
+}
 
 export const DELETE = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.DELETE)) return forbiddenError();

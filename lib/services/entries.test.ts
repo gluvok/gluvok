@@ -104,7 +104,7 @@ describe("Entries Service", () => {
         id: 100,
         vehicle_number: "MH12AB1234",
         weight: 12000,
-        source: EntrySource.MANUAL,
+        device_id: null,
         center_id: 1,
         user_id: 5,
         customer_id: 2,
@@ -155,7 +155,7 @@ describe("Entries Service", () => {
         images: ["data:image/jpeg;base64,..."],
       });
 
-      expect(res).toEqual(insertedEntry);
+      expect(res).toEqual({ ...insertedEntry, source: EntrySource.MANUAL });
       expect(mockUploadImages).toHaveBeenCalledWith(["data:image/jpeg;base64,..."], 10);
       expect(mockValidateSeq).not.toHaveBeenCalled();
       expect(mockTryMerge).not.toHaveBeenCalled();
@@ -167,9 +167,9 @@ describe("Entries Service", () => {
         detected_vehicle_number: "MH12AB1234",
         vehicle_number: "MH12AB1234",
         weight: 15000,
-        source: EntrySource.DEVICE,
+        device_id: 3,
         center_id: 1,
-        user_id: 5,
+        user_id: null,
         customer_id: null,
         factory_id: 10,
         status: EntryStatus.APPROVED,
@@ -202,23 +202,22 @@ describe("Entries Service", () => {
 
       const res = await createEntry(mockClient, {
         factoryId: 10,
-        userId: 5,
+        deviceId: 3,
         vehicleNumber: "MH12AB1234",
         detectedVehicleNumber: "MH12AB1234",
         weight: 15000,
         centerId: 1,
-        source: EntrySource.DEVICE,
         status: EntryStatus.APPROVED,
       });
 
-      expect(res).toEqual(insertedEntry);
+      expect(res).toEqual({ ...insertedEntry, source: EntrySource.DEVICE });
       expect(mockValidateSeq).toHaveBeenCalledWith(
         mockClient,
         1,
         "MH12AB1234",
         expect.any(String),
         0,
-        EntrySource.DEVICE,
+        true,
       );
       expect(mockTryMerge).toHaveBeenCalledWith(mockClient, 10, 101);
     });
@@ -229,9 +228,9 @@ describe("Entries Service", () => {
         detected_vehicle_number: "NO_PLATE_DETECTED",
         vehicle_number: "NO_PLATE_DETECTED",
         weight: 15000,
-        source: EntrySource.DEVICE,
+        device_id: 3,
         center_id: 1,
-        user_id: 5,
+        user_id: null,
         customer_id: null,
         factory_id: 10,
         status: EntryStatus.PENDING,
@@ -266,15 +265,14 @@ describe("Entries Service", () => {
 
       const res = await createEntry(mockClient, {
         factoryId: 10,
-        userId: 5,
+        deviceId: 3,
         vehicleNumber: "NO_PLATE_DETECTED",
         detectedVehicleNumber: "NO_PLATE_DETECTED",
         weight: 15000,
         centerId: 1,
-        source: EntrySource.DEVICE,
       });
 
-      expect(res).toEqual(insertedEntry);
+      expect(res).toEqual({ ...insertedEntry, source: EntrySource.DEVICE });
       expect(centersQueryMock).not.toHaveBeenCalled();
       expect(mockValidateSeq).not.toHaveBeenCalled();
       expect(mockTryMerge).not.toHaveBeenCalled();

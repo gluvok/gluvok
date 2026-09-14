@@ -31,16 +31,16 @@ describe("users validation", () => {
       }
     });
 
-    it("rejects hardware role for manual account creation", () => {
+    it("rejects invalid role for manual account creation", () => {
       expect(() =>
         addUserSchema.parse({
           name: "Hardware Device",
           username: "device_01",
           password: "password123",
           confirmPassword: "password123",
-          role: Role.HARDWARE,
+          role: "hardware" as unknown as Role,
         }),
-      ).toThrow("Hardware accounts cannot be created or modified manually");
+      ).toThrow("Invalid role selected.");
     });
 
     it("rejects short username or invalid characters", () => {

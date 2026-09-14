@@ -14,7 +14,7 @@ export async function tryMergeEntries(
   // 1. Fetch current entry E2
   const { data: e2, error: fetchErr } = await client
     .from("entries")
-    .select("id, status, vehicle_number, created_at, source, center_id")
+    .select("id, status, vehicle_number, created_at, device_id, center_id")
     .eq("id", entryId)
     .eq("factory_id", factoryId)
     .is("deleted_at", null)
@@ -35,7 +35,7 @@ export async function tryMergeEntries(
   // 3. Check if E2 is already linked in weighments AND query E1 candidates in parallel
   let e1Query = client
     .from("entries")
-    .select("id, vehicle_number, weight, created_at, source, center_id")
+    .select("id, vehicle_number, weight, created_at, device_id, center_id")
     .eq("factory_id", factoryId)
     .eq("vehicle_number", e2.vehicle_number)
     .eq("status", EntryStatus.APPROVED)
@@ -43,8 +43,10 @@ export async function tryMergeEntries(
     .neq("id", entryId)
     .is("deleted_at", null);
 
-  if (e2.source) {
-    e1Query = e1Query.eq("source", e2.source);
+  if (e2.device_id != null) {
+    e1Query = e1Query.not("device_id", "is", null);
+  } else {
+    e1Query = e1Query.is("device_id", null);
   }
 
   if (factory?.check_center_on_merge) {
@@ -99,7 +101,7 @@ export async function tryMergeEntries(
   // 5. Try forward merge: look for a later unmerged entry (E2 In, E_next Out)
   let eNextQuery = client
     .from("entries")
-    .select("id, vehicle_number, weight, created_at, source, center_id")
+    .select("id, vehicle_number, weight, created_at, device_id, center_id")
     .eq("factory_id", factoryId)
     .eq("vehicle_number", e2.vehicle_number)
     .eq("status", EntryStatus.APPROVED)
@@ -107,8 +109,10 @@ export async function tryMergeEntries(
     .neq("id", entryId)
     .is("deleted_at", null);
 
-  if (e2.source) {
-    eNextQuery = eNextQuery.eq("source", e2.source);
+  if (e2.device_id != null) {
+    eNextQuery = eNextQuery.not("device_id", "is", null);
+  } else {
+    eNextQuery = eNextQuery.is("device_id", null);
   }
 
   if (factory?.check_center_on_merge) {

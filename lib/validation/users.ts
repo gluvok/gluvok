@@ -9,7 +9,7 @@ import { Role } from "@/lib/constants/enums";
 export const MANAGEABLE_ROLES = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE] as const;
 
 export const manageableRoleSchema = z.enum(MANAGEABLE_ROLES, {
-  message: "Invalid role selected. Hardware accounts cannot be created or modified manually.",
+  message: "Invalid role selected.",
 });
 
 export const addUserSchema = z

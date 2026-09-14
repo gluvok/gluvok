@@ -112,24 +112,6 @@ describe("RBAC Access Controls", () => {
         filter: true,
       });
     });
-
-    it("should grant Hardware role create and write permission for entries and read for centers", () => {
-      const entryPerms = getPermissions(Role.HARDWARE, ProjectSlug.ENTRIES);
-      expect(entryPerms).toMatchObject({
-        read: true,
-        write: true,
-        create: true,
-        delete: false,
-        show: false,
-      });
-
-      const centerPerms = getPermissions(Role.HARDWARE, ProjectSlug.CENTERS);
-      expect(centerPerms).toMatchObject({
-        read: true,
-        create: false,
-        show: false,
-      });
-    });
   });
 
   describe("hasPageAccess", () => {
@@ -138,7 +120,6 @@ describe("RBAC Access Controls", () => {
       expect(hasPageAccess(Role.OPERATOR, ProjectSlug.CENTERS)).toBe(true);
       expect(hasPageAccess(Role.OPERATOR, ProjectSlug.RATES)).toBe(false);
       expect(hasPageAccess(Role.BASE, ProjectSlug.WEIGHMENTS)).toBe(true);
-      expect(hasPageAccess(Role.HARDWARE, ProjectSlug.ENTRIES)).toBe(false);
     });
   });
 
@@ -151,7 +132,6 @@ describe("RBAC Access Controls", () => {
       expect(hasCreateAccess(Role.MANAGER, ProjectSlug.USERS)).toBe(true);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.COMMODITIES)).toBe(false);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.CUSTOMERS)).toBe(true);
-      expect(hasCreateAccess(Role.HARDWARE, ProjectSlug.ENTRIES)).toBe(true);
     });
   });
 
@@ -161,7 +141,6 @@ describe("RBAC Access Controls", () => {
       expect(hasDeleteAccess(Role.MANAGER, ProjectSlug.WEIGHMENTS)).toBe(false);
       expect(hasDeleteAccess(Role.OPERATOR, ProjectSlug.WEIGHMENTS)).toBe(false);
       expect(hasDeleteAccess(Role.BASE, ProjectSlug.WEIGHMENTS)).toBe(false);
-      expect(hasDeleteAccess(Role.HARDWARE, ProjectSlug.WEIGHMENTS)).toBe(false);
     });
 
     it("should allow only ADMIN to delete ENTRIES", () => {
@@ -169,7 +148,6 @@ describe("RBAC Access Controls", () => {
       expect(hasDeleteAccess(Role.MANAGER, ProjectSlug.ENTRIES)).toBe(false);
       expect(hasDeleteAccess(Role.OPERATOR, ProjectSlug.ENTRIES)).toBe(false);
       expect(hasDeleteAccess(Role.BASE, ProjectSlug.ENTRIES)).toBe(false);
-      expect(hasDeleteAccess(Role.HARDWARE, ProjectSlug.ENTRIES)).toBe(false);
     });
   });
 
@@ -222,7 +200,7 @@ describe("RBAC Access Controls", () => {
 
   describe("Settings Access", () => {
     it("disallows create and delete for all roles", () => {
-      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE, Role.HARDWARE];
+      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE];
       for (const role of roles) {
         expect(hasCreateAccess(role, ProjectSlug.SETTINGS)).toBe(false);
         expect(hasDeleteAccess(role, ProjectSlug.SETTINGS)).toBe(false);
@@ -234,34 +212,31 @@ describe("RBAC Access Controls", () => {
       expect(hasPageAccess(Role.MANAGER, ProjectSlug.SETTINGS)).toBe(true);
       expect(hasPageAccess(Role.OPERATOR, ProjectSlug.SETTINGS)).toBe(false);
       expect(hasPageAccess(Role.BASE, ProjectSlug.SETTINGS)).toBe(false);
-      expect(hasPageAccess(Role.HARDWARE, ProjectSlug.SETTINGS)).toBe(false);
     });
   });
 
   describe("Tickets Access", () => {
     it("disallows ad-hoc create button on toolbar for all roles", () => {
-      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE, Role.HARDWARE];
+      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE];
       for (const role of roles) {
         expect(hasCreateAccess(role, ProjectSlug.TICKETS)).toBe(false);
       }
     });
 
-    it("grants ticket read and write permissions to Admin, Manager, and Operator but denies Base and Hardware", () => {
+    it("grants ticket read and write permissions to Admin, Manager, and Operator but denies Base", () => {
       expect(hasPermission(Role.ADMIN, ProjectSlug.TICKETS, PermissionKey.READ)).toBe(true);
       expect(hasPermission(Role.MANAGER, ProjectSlug.TICKETS, PermissionKey.READ)).toBe(true);
       expect(hasPermission(Role.OPERATOR, ProjectSlug.TICKETS, PermissionKey.READ)).toBe(true);
       expect(hasPermission(Role.BASE, ProjectSlug.TICKETS, PermissionKey.READ)).toBe(false);
-      expect(hasPermission(Role.HARDWARE, ProjectSlug.TICKETS, PermissionKey.READ)).toBe(false);
 
       expect(hasPermission(Role.OPERATOR, ProjectSlug.TICKETS, PermissionKey.CREATE)).toBe(true);
       expect(hasPermission(Role.BASE, ProjectSlug.TICKETS, PermissionKey.CREATE)).toBe(false);
-      expect(hasPermission(Role.HARDWARE, ProjectSlug.TICKETS, PermissionKey.CREATE)).toBe(false);
     });
   });
 
   describe("isColumnVisible & isFieldVisible", () => {
     it("should hide factory_id and factory_name columns and fields across all roles", () => {
-      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE, Role.HARDWARE];
+      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE];
       for (const role of roles) {
         expect(isColumnVisible(role, ProjectSlug.CENTERS, "factory_id")).toBe(false);
         expect(isColumnVisible(role, ProjectSlug.CENTERS, "factory_name")).toBe(false);

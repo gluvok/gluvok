@@ -7,6 +7,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { Role } from "../lib/constants/enums";
 import { hashPassword } from "../lib/auth/password";
+import { hashDeviceKey } from "../lib/auth/device";
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey =
@@ -77,7 +78,6 @@ async function main() {
 
   console.log("Hashing passwords for users...");
   const adminPasswordHash = await hashPassword("admin123");
-  const hardwarePasswordHash = await hashPassword("hardware123");
 
   console.log("Inserting admin user ('admin1')...");
   const { data: existingAdmin } = await supabase
@@ -104,29 +104,27 @@ async function main() {
     console.log("Admin user ('admin1') already exists.");
   }
 
-  console.log("Inserting hardware device user ('pi1')...");
-  const { data: existingHardware } = await supabase
-    .from("users")
+  console.log("Inserting default weighbridge edge device...");
+  const defaultDeviceKeyHash = hashDeviceKey("hardware123");
+  const { data: existingDevice } = await supabase
+    .from("devices")
     .select("id")
-    .eq("username", "pi1")
+    .eq("name", "Default Weighbridge Terminal")
     .maybeSingle();
 
-  if (!existingHardware) {
-    const { data: newHardware, error: hwErr } = await supabase
-      .from("users")
+  if (!existingDevice) {
+    const { data: newDevice, error: devErr } = await supabase
+      .from("devices")
       .insert({
-        username: "pi1",
-        password_hash: hardwarePasswordHash,
-        name: "Pi 1",
-        role: Role.HARDWARE,
-        factory_id: factoryId,
+        name: "Default Weighbridge Terminal",
+        hashed_key: defaultDeviceKeyHash,
       })
       .select("id")
       .single();
-    if (hwErr || !newHardware) throw hwErr || new Error("Failed to create hardware user");
-    console.log(`Hardware user inserted with id=${newHardware.id}`);
+    if (devErr || !newDevice) throw devErr || new Error("Failed to create default device");
+    console.log(`Default device inserted with id=${newDevice.id}`);
   } else {
-    console.log("Hardware user ('pi1') already exists.");
+    console.log("Default device ('Default Weighbridge Terminal') already exists.");
   }
 
   console.log("Seeding default commodities catalog...");

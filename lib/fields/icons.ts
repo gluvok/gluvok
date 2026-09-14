@@ -43,7 +43,6 @@ import {
   Sliders,
   PenTool,
   Cpu,
-  Bot,
   Pencil,
   Activity,
   Ruler,
@@ -113,8 +112,6 @@ export function getRoleIcon(role?: string): LucideIcon {
       return HardHat;
     case Role.BASE:
       return UserCircle;
-    case Role.HARDWARE:
-      return Bot;
     default:
       return Shield;
   }
@@ -130,8 +127,6 @@ export function getRoleColorClass(role?: string): string {
       return "text-amber-700 dark:text-amber-300";
     case Role.BASE:
       return "text-emerald-700 dark:text-emerald-300";
-    case Role.HARDWARE:
-      return "text-cyan-700 dark:text-cyan-300";
     default:
       return "";
   }

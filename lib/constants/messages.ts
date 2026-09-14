@@ -19,6 +19,8 @@ export const ApiErrorMessage = {
   FORBIDDEN: "You do not have permission to perform this action.",
   CREATE_USER_FAILED: "Failed to create user",
   RECORD_NOT_FOUND: "The requested record was not found.",
+  UNAUTHORIZED_DEVICE: "Unauthorized or disabled device",
+  INVALID_DEVICE_KEY: "Invalid device key",
 
   // Entity Not Found
   CENTER_NOT_FOUND: "Center not found",

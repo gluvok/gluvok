@@ -11,11 +11,11 @@ import { validateSequentialApproval, tryMergeEntries } from "./weighments";
 
 export interface CreateEntryParams {
   factoryId: number;
-  userId: number;
+  centerId: number;
   vehicleNumber: string;
   weight: number;
-  centerId: number;
-  source?: EntrySource;
+  deviceId?: number | null;
+  userId?: number | null;
   detectedVehicleNumber?: string | null;
   customerId?: number | null;
   status?: EntryStatus;
@@ -66,24 +66,25 @@ export async function validateCustomerBelongsToFactory(
 export async function createEntry(client: typeof supabase, params: CreateEntryParams) {
   const {
     factoryId,
-    userId,
+    centerId,
     vehicleNumber,
     weight,
-    centerId,
-    source = EntrySource.MANUAL,
+    deviceId = null,
+    userId = null,
     detectedVehicleNumber = null,
     customerId = null,
     status = EntryStatus.PENDING,
     images = [],
   } = params;
 
+  const isDevice = Boolean(deviceId);
   const isNoPlate =
     vehicleNumber === "NO_PLATE_DETECTED" || detectedVehicleNumber === "NO_PLATE_DETECTED";
 
   // 1 & 2. Verify center and customer (if provided) concurrently
   // When no plate detected is received from device, skip fetching the centers table since auto-approval is impossible.
   const [centerRecord] = await Promise.all([
-    isNoPlate && source === EntrySource.DEVICE
+    isNoPlate && isDevice
       ? Promise.resolve(null)
       : validateCenterBelongsToFactory(client, Number(centerId), factoryId),
     customerId
@@ -95,7 +96,7 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
   let finalStatus = status;
   let isAutoApproved = false;
 
-  if (source === EntrySource.DEVICE && !isNoPlate) {
+  if (isDevice && !isNoPlate) {
     if (centerRecord?.auto_approve) {
       isAutoApproved = true;
       finalStatus = EntryStatus.APPROVED;
@@ -112,7 +113,7 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
 
   // 5. Validate sequential approval if approved
   if (finalStatus === EntryStatus.APPROVED) {
-    await validateSequentialApproval(client, Number(centerId), vehicleNumber, nowStr, 0, source);
+    await validateSequentialApproval(client, Number(centerId), vehicleNumber, nowStr, 0, isDevice);
   }
 
   // 6. Insert new entry into database
@@ -122,7 +123,7 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
       detected_vehicle_number: detectedVehicleNumber,
       vehicle_number: vehicleNumber,
       weight: Number(weight),
-      source,
+      device_id: deviceId,
       center_id: Number(centerId),
       user_id: userId,
       customer_id: customerId ? Number(customerId) : null,
@@ -146,7 +147,10 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
     await tryMergeEntries(client, factoryId, newEntry.id);
   }
 
-  return newEntry;
+  return {
+    ...newEntry,
+    source: newEntry.device_id ? EntrySource.DEVICE : EntrySource.MANUAL,
+  };
 }
 
 export async function deleteEntries(

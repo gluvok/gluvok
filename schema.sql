@@ -7,6 +7,7 @@
 DROP TABLE IF EXISTS tickets CASCADE;
 DROP TABLE IF EXISTS weighments CASCADE;
 DROP TABLE IF EXISTS entries CASCADE;
+DROP TABLE IF EXISTS devices CASCADE;
 DROP TABLE IF EXISTS rates CASCADE;
 DROP TABLE IF EXISTS customers CASCADE;
 DROP TABLE IF EXISTS centers CASCADE;
@@ -27,13 +28,10 @@ DROP TYPE IF EXISTS role_enum CASCADE;
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'role_enum') THEN
-        CREATE TYPE role_enum AS ENUM ('admin', 'manager', 'operator', 'base', 'hardware');
+        CREATE TYPE role_enum AS ENUM ('admin', 'manager', 'operator', 'base');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'unit_enum') THEN
         CREATE TYPE unit_enum AS ENUM ('kg', 'q', 'gal');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'entry_source') THEN
-        CREATE TYPE entry_source AS ENUM ('device', 'manual');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'weighment_type') THEN
         CREATE TYPE weighment_type AS ENUM ('unassigned', 'in', 'out');
@@ -120,17 +118,28 @@ CREATE TABLE IF NOT EXISTS rates (
     deleted_at TIMESTAMPTZ
 );
 
+-- DEVICES TABLE (Edge capture hardware devices)
+CREATE TABLE IF NOT EXISTS devices (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    hashed_key TEXT NOT NULL,
+    last_seen_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
+);
+
 -- ENTRIES TABLE (Raw weighment events)
 CREATE TABLE IF NOT EXISTS entries (
     id SERIAL PRIMARY KEY,
     detected_vehicle_number TEXT,
     vehicle_number TEXT NOT NULL,
     weight NUMERIC(10, 2) NOT NULL,
-    source entry_source NOT NULL DEFAULT 'device',
+    device_id INT REFERENCES devices(id) ON DELETE RESTRICT DEFAULT NULL,
     status entry_status NOT NULL DEFAULT 'pending',
     auto_approved BOOLEAN NOT NULL DEFAULT FALSE,
     center_id INT NOT NULL REFERENCES centers(id) ON DELETE RESTRICT,
-    user_id INT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    user_id INT REFERENCES users(id) ON DELETE RESTRICT DEFAULT NULL,
     customer_id INT REFERENCES customers(id) ON DELETE RESTRICT,
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     images TEXT[] DEFAULT '{}',
@@ -140,10 +149,14 @@ CREATE TABLE IF NOT EXISTS entries (
 );
 
 CREATE INDEX IF NOT EXISTS idx_entries_factory_vehicle 
-ON entries (factory_id, vehicle_number, source, status, created_at DESC);
+ON entries (factory_id, vehicle_number, status, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_entries_factory_created
 ON entries (factory_id, created_at DESC)
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_entries_device
+ON entries (factory_id, device_id)
 WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_entries_center
@@ -278,6 +291,7 @@ $$;
 -- 3. ENABLE ROW LEVEL SECURITY (RLS)
 ALTER TABLE IF EXISTS factories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS devices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS centers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS commodities ENABLE ROW LEVEL SECURITY;
@@ -289,6 +303,7 @@ ALTER TABLE IF EXISTS tickets ENABLE ROW LEVEL SECURITY;
 -- 4. THIN RLS POLICIES
 DROP POLICY IF EXISTS "Allow access factories" ON factories;
 DROP POLICY IF EXISTS "Allow access users" ON users;
+DROP POLICY IF EXISTS "Allow access devices" ON devices;
 DROP POLICY IF EXISTS "Allow access customers" ON customers;
 DROP POLICY IF EXISTS "Allow access centers" ON centers;
 DROP POLICY IF EXISTS "Allow access commodities" ON commodities;
@@ -299,6 +314,7 @@ DROP POLICY IF EXISTS "Allow access tickets" ON tickets;
 
 CREATE POLICY "Allow access factories" ON factories FOR ALL USING (true);
 CREATE POLICY "Allow access users" ON users FOR ALL USING (true);
+CREATE POLICY "Allow access devices" ON devices FOR ALL USING (true);
 CREATE POLICY "Allow access customers" ON customers FOR ALL USING (true);
 CREATE POLICY "Allow access centers" ON centers FOR ALL USING (true);
 CREATE POLICY "Allow access commodities" ON commodities FOR ALL USING (true);
@@ -334,7 +350,7 @@ SECURITY DEFINER
 AS $$
 DECLARE
     t text;
-    tbls text[] := ARRAY['tickets', 'weighments', 'entries', 'rates', 'customers', 'commodities', 'centers', 'users', 'factories'];
+    tbls text[] := ARRAY['tickets', 'weighments', 'entries', 'devices', 'rates', 'customers', 'commodities', 'centers', 'users', 'factories'];
     seq_name text;
 BEGIN
     FOREACH t IN ARRAY tbls LOOP

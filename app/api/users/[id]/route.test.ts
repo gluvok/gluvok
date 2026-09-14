@@ -159,13 +159,13 @@ describe("User mutation guards", () => {
     expect(json.is_self_deleted).toBe(true);
   });
 
-  it("rejects updating user role to HARDWARE", async () => {
+  it("rejects updating user role to invalid role", async () => {
     mockHasPermission.mockReturnValue(true);
     const updateRequest = new Request("http://localhost/api/users/1", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        role: Role.HARDWARE,
+        role: "hardware",
       }),
     });
 
@@ -174,6 +174,6 @@ describe("User mutation guards", () => {
 
     expect(response.status).toBe(400);
     const json = await response.json();
-    expect(json.error).toContain("Hardware accounts cannot be created or modified manually");
+    expect(json.error).toContain("Invalid role selected");
   });
 });

@@ -35,7 +35,6 @@ import {
   UserCircle,
   Briefcase,
   HardHat,
-  Bot,
   Shield,
   Ruler,
   Anvil,
@@ -136,7 +135,6 @@ describe("Field Helpers & Icon Mapping", () => {
       expect(getRoleIcon(Role.BASE)).toBe(UserCircle);
       expect(getRoleIcon(Role.MANAGER)).toBe(Briefcase);
       expect(getRoleIcon(Role.OPERATOR)).toBe(HardHat);
-      expect(getRoleIcon(Role.HARDWARE)).toBe(Bot);
       expect(getRoleIcon()).toBe(Shield);
     });
   });

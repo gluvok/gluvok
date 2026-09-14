@@ -73,14 +73,25 @@ export interface Factory {
   updated_at: string;
 }
 
+export interface Device {
+  id: number;
+  name: string;
+  hashed_key: string;
+  last_seen_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+}
+
 export interface Entry {
   id: number;
   detected_vehicle_number?: string | null;
   vehicle_number: string;
   weight: number | string;
   source: EntrySource;
+  device_id?: number | null;
   center_id: number;
-  user_id: number;
+  user_id?: number | null;
   customer_id?: number | null;
   factory_id: number;
   status: EntryStatus;
@@ -92,6 +103,7 @@ export interface Entry {
   // Flattened join fields
   center_name?: string;
   user_name?: string;
+  device_name?: string;
   customer_name?: string;
   linked_weighment?: { id: number; partner_entry_id: number } | null;
 }

@@ -9,18 +9,18 @@ Gluvok is a high-performance operations platform designed for factories, weighbr
 ## Features
 
 - **Multi-Tenant Factory Isolation**: Complete data separation across factories (`factory_id` scoping) with PostgreSQL Row Level Security (RLS).
-- **Role-Based Access Control (RBAC)**: Fine-grained permission model supporting `admin`, `manager`, `operator`, `base`, and `hardware` roles. See [PERMISSIONS.md](PERMISSIONS.md) for the complete access matrix.
+- **Role-Based Access Control (RBAC)**: Fine-grained human permission model supporting `admin`, `manager`, `operator`, and `base` roles. Edge IoT devices authenticate independently against the dedicated `devices` table. See [PERMISSIONS.md](PERMISSIONS.md) for the complete access matrix.
 - **Weighbridge Lifecycle Management**:
   - Unassigned, Inbound (gross), and Outbound (tare/net) weighing cycles.
   - Automatic net weight and total price calculation.
   - Indian vehicle registration number validation (e.g. `MH12AB1234`, `22BH1234AA`).
 - **Ticketing & Approval Workflow**: Automated ticket generation for center entries with status tracking (`pending`, `approved`, `rejected`).
 - **Commodity & Rate Masters**: Dynamic rate configuration per commodity and center.
-- **Hardware & IoT Integration**: Dedicated API workflows for Raspberry Pi scales and automated license plate recognition (ALPR) cameras. See [raspberry_pi_curl.md](raspberry_pi_curl.md).
+- **Hardware & IoT Ingestion**: Dedicated header-authenticated API workflows for Raspberry Pi scales and automated license plate recognition (ALPR) cameras. See [raspberry_pi_curl.md](raspberry_pi_curl.md).
 - **Data Export**: Built-in CSV and PDF export capabilities for audit reports and center registries.
 - **Dual Authentication Model**:
-  - Web UI: HTTP-only Secure Cookie-based JWT sessions.
-  - Hardware Devices: Header-based Bearer JWT authentication (`access_token` and `refresh_token`).
+  - Web UI Personnel: HTTP-only Secure Cookie-based JWT sessions (`admin`, `manager`, `operator`, `base`).
+  - Edge Ingestion Devices: Constant-time SHA-256 verified header authentication (`x-device-id` and `x-device-key`) with heartbeat tracking (`last_seen_at`) and central deactivation (`deleted_at = NOW()`).
 
 ---
 
@@ -115,7 +115,7 @@ All API endpoints are located under `/api/*`:
 
 ### Authentication
 
-- `POST /api/auth/login` - Authenticate users (cookies for web, Bearer tokens for hardware).
+- `POST /api/auth/login` - Authenticate users with secure HTTP-only cookies.
 - `POST /api/auth/refresh` - Refresh an expired access token using a valid refresh token.
 - `POST /api/auth/logout` - Invalidate active session and clear authentication cookies.
 - `GET /api/auth/me` - Retrieve current authenticated user profile and permissions.
@@ -136,7 +136,7 @@ All API endpoints are located under `/api/*`:
 
 ### Operations & Weighments
 
-- `GET, POST /api/entries` - List entries or submit a new entry (manual or IoT device).
+- `GET, POST /api/entries` - List entries (derived `source` from `device_id != null`) or ingest a new entry (manual operator or device header auth).
 - `GET, PUT, DELETE /api/entries/:id` - Retrieve, update, approve, or reject an entry.
 - `GET, POST /api/tickets` - List ticketing records or create new tickets.
 - `GET, PUT, DELETE /api/tickets/:id` - Ticket details, status updates, and resolutions.

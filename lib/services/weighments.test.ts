@@ -5,7 +5,7 @@ import {
   formatWeighmentRecord,
   deleteWeighments,
 } from "./weighments";
-import { EntryStatus, EntrySource, Unit } from "@/lib/constants/enums";
+import { EntryStatus, Unit } from "@/lib/constants/enums";
 import type { supabase } from "@/db";
 import { createMockQueryBuilder } from "@/tests/test-utils";
 
@@ -28,21 +28,14 @@ describe("Weighments Service", () => {
       mockClient.from.mockReturnValue(query);
 
       await expect(
-        validateSequentialApproval(
-          mockClient,
-          1,
-          "MH12AB1234",
-          "2026-08-09T14:00:00Z",
-          2,
-          EntrySource.DEVICE,
-        ),
+        validateSequentialApproval(mockClient, 1, "MH12AB1234", "2026-08-09T14:00:00Z", 2, 1),
       ).resolves.toBeUndefined();
 
       expect(mockClient.from).toHaveBeenCalledWith("entries");
       expect(query.eq).toHaveBeenCalledWith("center_id", 1);
       expect(query.eq).toHaveBeenCalledWith("vehicle_number", "MH12AB1234");
       expect(query.eq).toHaveBeenCalledWith("status", EntryStatus.PENDING);
-      expect(query.eq).toHaveBeenCalledWith("source", EntrySource.DEVICE);
+      expect(query.not).toHaveBeenCalledWith("device_id", "is", null);
     });
 
     it("should throw an error if an earlier pending entry exists for the vehicle in the same center", async () => {
@@ -50,20 +43,13 @@ describe("Weighments Service", () => {
         maybeSingleData: {
           id: 1,
           created_at: "2026-08-09T12:00:00Z",
-          source: EntrySource.DEVICE,
+          device_id: 1,
         },
       });
       mockClient.from.mockReturnValue(query);
 
       await expect(
-        validateSequentialApproval(
-          mockClient,
-          1,
-          "MH12AB1234",
-          "2026-08-09T14:00:00Z",
-          2,
-          EntrySource.DEVICE,
-        ),
+        validateSequentialApproval(mockClient, 1, "MH12AB1234", "2026-08-09T14:00:00Z", 2, 1),
       ).rejects.toThrow(/Cannot approve entry #2 because earlier device entry #1/);
     });
   });
@@ -74,7 +60,7 @@ describe("Weighments Service", () => {
         id: 2,
         vehicle_number: "MH12AB1234",
         status: EntryStatus.APPROVED,
-        source: EntrySource.DEVICE,
+        device_id: 1,
         created_at: "2026-08-09T14:00:00Z",
         center_id: 10,
       };
@@ -82,7 +68,7 @@ describe("Weighments Service", () => {
         id: 1,
         vehicle_number: "MH12AB1234",
         status: EntryStatus.APPROVED,
-        source: EntrySource.DEVICE,
+        device_id: 1,
         created_at: "2026-08-09T12:00:00Z",
         center_id: 20, // different center
       };
@@ -132,7 +118,7 @@ describe("Weighments Service", () => {
         id: 2,
         vehicle_number: "MH12AB1234",
         status: EntryStatus.APPROVED,
-        source: EntrySource.DEVICE,
+        device_id: 1,
         created_at: "2026-08-09T14:00:00Z",
         center_id: 10,
       };
@@ -140,7 +126,7 @@ describe("Weighments Service", () => {
         id: 1,
         vehicle_number: "MH12AB1234",
         status: EntryStatus.APPROVED,
-        source: EntrySource.DEVICE,
+        device_id: 1,
         created_at: "2026-08-09T12:00:00Z",
         center_id: 10, // matching center
       };
@@ -190,7 +176,7 @@ describe("Weighments Service", () => {
         id: 2,
         vehicle_number: "MH12AB1234",
         status: EntryStatus.APPROVED,
-        source: EntrySource.MANUAL,
+        device_id: null,
         created_at: "2026-08-09T14:00:00Z",
         center_id: 10,
       };
@@ -223,7 +209,7 @@ describe("Weighments Service", () => {
         id: 1,
         vehicle_number: "MH12AB1234",
         status: EntryStatus.APPROVED,
-        source: EntrySource.DEVICE,
+        device_id: 1,
         created_at: "2026-08-09T10:00:00Z",
         center_id: 10,
       };
@@ -231,7 +217,7 @@ describe("Weighments Service", () => {
         id: 2,
         vehicle_number: "MH12AB1234",
         status: EntryStatus.APPROVED,
-        source: EntrySource.DEVICE,
+        device_id: 1,
         created_at: "2026-08-09T12:00:00Z",
         center_id: 10,
       };

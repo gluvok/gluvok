@@ -7,7 +7,7 @@ import {
   hasPermission,
   StatusCodes,
 } from "@/db/helpers";
-import { ProjectSlug, PermissionKey, EntryStatus, Role } from "@/lib/constants/enums";
+import { ProjectSlug, PermissionKey, EntryStatus, EntrySource, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { validateSequentialApproval, tryMergeEntries } from "@/lib/services/weighments";
 import { deleteEntries } from "@/lib/services/entries";
@@ -24,7 +24,7 @@ export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
 
   const { data, error } = await client
     .from("entries")
-    .select(`*, centers(name), users(name), customers(name, user_id)`)
+    .select(`*, centers(name), devices(name), users(name), customers(name, user_id)`)
     .eq("id", entryId)
     .eq("factory_id", user.factory_id!)
     .is("deleted_at", null)
@@ -52,6 +52,7 @@ export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
 
   const centers = data.centers as Record<string, unknown> | undefined;
   const users = data.users as Record<string, unknown> | undefined;
+  const devices = data.devices as Record<string, unknown> | undefined;
   const customers = data.customers as Record<string, unknown> | undefined;
 
   const { data: linkedWeighment } = await client
@@ -73,8 +74,10 @@ export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
 
   const formatted = {
     ...data,
+    source: data.device_id != null ? EntrySource.DEVICE : EntrySource.MANUAL,
     edited: isEdited,
     center_name: centers?.name || "",
+    device_name: devices?.name || "",
     user_name: users?.name || "",
     customer_name: customers?.name || "",
     linked_weighment: weighmentInfo,
@@ -151,6 +154,14 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     }
   }
 
+  if (
+    isTransitioningToApproved ||
+    isChangingVehicleOnApproved ||
+    (updates["customer_id"] !== undefined && updates["customer_id"] !== existing.customer_id)
+  ) {
+    updates["user_id"] = parseInt(user.sub, 10);
+  }
+
   updates["updated_at"] = new Date().toISOString();
 
   // 5. Vehicle plate sync with linked weighments
@@ -202,7 +213,13 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     updatedEntry.detected_vehicle_number !== updatedEntry.vehicle_number,
   );
 
-  return NextResponse.json({ data: { ...updatedEntry, edited: isEditedUpdated } });
+  return NextResponse.json({
+    data: {
+      ...updatedEntry,
+      source: updatedEntry.device_id != null ? EntrySource.DEVICE : EntrySource.MANUAL,
+      edited: isEditedUpdated,
+    },
+  });
 });
 
 export const DELETE = withAuth(

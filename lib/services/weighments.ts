@@ -13,11 +13,11 @@ export async function validateSequentialApproval(
   vehicleNumber: string,
   targetCreatedAt: string,
   targetEntryId: number,
-  entrySource?: EntrySource,
+  entrySource?: EntrySource | boolean | number | null,
 ): Promise<void> {
   let query = client
     .from("entries")
-    .select("id, created_at, source")
+    .select("id, created_at, device_id")
     .eq("center_id", centerId)
     .eq("vehicle_number", vehicleNumber)
     .eq("status", EntryStatus.PENDING)
@@ -25,8 +25,14 @@ export async function validateSequentialApproval(
     .neq("id", targetEntryId)
     .is("deleted_at", null);
 
-  if (entrySource) {
-    query = query.eq("source", entrySource);
+  if (entrySource !== undefined && entrySource !== null) {
+    const isDevice =
+      typeof entrySource === "number"
+        ? true
+        : entrySource === EntrySource.DEVICE || entrySource === true;
+    query = isDevice ? query.not("device_id", "is", null) : query.is("device_id", null);
+  } else if (entrySource === null) {
+    query = query.is("device_id", null);
   }
 
   const { data: earlierPending, error } = await query
@@ -40,7 +46,7 @@ export async function validateSequentialApproval(
   }
 
   if (earlierPending) {
-    const sourceLabel = earlierPending.source ? `${earlierPending.source} ` : "";
+    const sourceLabel = earlierPending.device_id ? "device " : "manual ";
     throw new Error(
       ApiErrorMessage.CANNOT_APPROVE_PENDING_EARLIER_ENTRY(
         targetEntryId,

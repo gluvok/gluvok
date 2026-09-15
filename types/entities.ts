@@ -123,7 +123,10 @@ export interface Weighment {
   tare_weight?: string | number;
   net_weight?: string | number;
   vehicle_number?: string;
-  center_name?: string;
+  in_center_id?: number | null;
+  in_center_name?: string;
+  out_center_id?: number | null;
+  out_center_name?: string;
   user_name?: string;
   customer_name?: string;
   commodity_name?: string;

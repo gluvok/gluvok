@@ -81,7 +81,14 @@ function getFilterChipIcon(
   ) {
     return Calendar;
   }
-  if (id === "center_id" || id === "center_name") {
+  if (
+    id === "center_id" ||
+    id === "center_name" ||
+    id === "in_center_id" ||
+    id === "in_center_name" ||
+    id === "out_center_id" ||
+    id === "out_center_name"
+  ) {
     return Building;
   }
   if (

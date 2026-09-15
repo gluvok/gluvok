@@ -95,8 +95,8 @@ describe("GET /api/weighments", () => {
     expect(json.data[0].gross_weight).toBe(15000);
     expect(json.data[0].tare_weight).toBe(5000);
     expect(json.data[0].net_weight).toBe(10000);
-    expect(json.data[0].center_name).toBe("Center A");
-    expect(json.data[0].center_id).toBe(1);
+    expect(json.data[0].in_center_name).toBe("Center A");
+    expect(json.data[0].in_center_id).toBe(1);
     expect(json.data[0].rate_id).toBe(5);
   });
 

@@ -99,6 +99,10 @@ const COLUMN_LABEL_MAP: Record<string, string> = {
   in_customer_name: "In-Customer Name",
   out_customer_id: "Out-Customer ID",
   out_customer_name: "Out-Customer Name",
+  in_center_id: "In-Center ID",
+  in_center_name: "In-Center Name",
+  out_center_id: "Out-Center ID",
+  out_center_name: "Out-Center Name",
 };
 
 /**

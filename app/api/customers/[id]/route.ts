@@ -124,7 +124,7 @@ export const DELETE = withAuth(
       );
     }
 
-    if (!deletedCount || deletedCount === 0) {
+    if (!deletedCount) {
       return apiError(ApiErrorMessage.CUSTOMER_NOT_FOUND, StatusCodes.NOT_FOUND);
     }
 

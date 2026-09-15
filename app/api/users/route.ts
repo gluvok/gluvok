@@ -30,7 +30,7 @@ export const GET = withAuth(async (req, user, client) => {
 
   let query = client
     .from("users")
-    .select("id, username, name, role, factory_id, center_id, created_at, updated_at", {
+    .select("id, username, name, role, factory_id, created_at, updated_at", {
       count: "exact",
     })
     .order(sortColumn, { ascending: !sortDesc })

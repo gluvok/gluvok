@@ -139,7 +139,6 @@ describe("lib/auth/device", () => {
                         username: "cam1",
                         role: Role.HARDWARE,
                         factory_id: 1,
-                        center_id: 2,
                         password_hash: hashDeviceKey("valid_secret"),
                       },
                       error: null,

@@ -356,7 +356,7 @@ describe("Entries route handlers (/api/entries)", () => {
     it("creates DEVICE entry when caller provides HTTP Basic Auth credentials", async () => {
       mockVerifyDeviceRequest.mockResolvedValue({
         success: true,
-        device: { id: 5, factory_id: 1, center_id: 1 },
+        device: { id: 5, factory_id: 1 },
       });
 
       mockDb.from.mockReturnValue({
@@ -419,7 +419,7 @@ describe("Entries route handlers (/api/entries)", () => {
     it("creates DEVICE entry when caller provides credentials in FormData", async () => {
       mockVerifyDeviceRequest.mockResolvedValue({
         success: true,
-        device: { id: 6, factory_id: 1, center_id: 2 },
+        device: { id: 6, factory_id: 1 },
       });
 
       mockDb.from.mockReturnValue({
@@ -467,7 +467,7 @@ describe("Entries route handlers (/api/entries)", () => {
     it("creates DEVICE entry when device sends NO_PLATE_DETECTED", async () => {
       mockVerifyDeviceRequest.mockResolvedValue({
         success: true,
-        device: { id: 5, factory_id: 1, center_id: 1 },
+        device: { id: 5, factory_id: 1 },
       });
 
       mockDb.from.mockReturnValue({
@@ -527,7 +527,7 @@ describe("Entries route handlers (/api/entries)", () => {
     it("rejects DEVICE entry when center is not found", async () => {
       mockVerifyDeviceRequest.mockResolvedValue({
         success: true,
-        device: { id: 5, factory_id: 1, center_id: 999 },
+        device: { id: 5, factory_id: 1 },
       });
 
       mockDb.from.mockReturnValue({

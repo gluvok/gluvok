@@ -18,7 +18,7 @@ This guide contains the exact `curl` commands and request/response specification
 
 ## 1. Authentication Architecture
 
-Edge hardware devices (Raspberry Pi scales and camera units) are provisioned directly in the database as accounts in the `users` table with `role = 'hardware'` and an assigned `center_id`. Hardware accounts are filtered out from human user management.
+Edge hardware devices (Raspberry Pi scales and camera units) are provisioned directly in the database as accounts in the `users` table with `role = 'hardware'` scoped to a `factory_id`. Weighment entries specify the collection center ID (`center_id`). Hardware accounts are filtered out from human user management.
 
 Edge devices authenticate directly using their assigned **`username` and `password`**.
 
@@ -29,6 +29,7 @@ Supply username and password via standard HTTP Basic Authentication. cURL handle
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/entries" \
   -u "device_center_1:hardware_password_123" \
+  -F "center_id=1" \
   -F "detected_vehicle_number=MH12AB1234" \
   -F "weight=14250.5" \
   -F "file=@/path/to/vehicle_capture.jpg"
@@ -42,6 +43,7 @@ Include `username` and `password` directly as form-data fields alongside entry m
 curl -X POST "https://gluvok.vercel.app/api/entries" \
   -F "username=device_center_1" \
   -F "password=hardware_password_123" \
+  -F "center_id=1" \
   -F "detected_vehicle_number=MH12AB1234" \
   -F "weight=14250.5" \
   -F "file=@/path/to/vehicle_capture.jpg"
@@ -81,7 +83,7 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 - **Fields**:
   - `detected_vehicle_number` (string, required): Plate detected by camera (e.g. `MH12AB1234`), or `NO_PLATE_DETECTED`.
   - `weight` (number, required): Positive weighbridge scale measurement (e.g. `14250.5`).
-  - `center_id` (integer, optional): Collection center ID. Defaults automatically to the hardware device's assigned `center_id`.
+  - `center_id` (integer, required): Collection center ID where the weighment takes place.
   - `file` or `files` (binary file, optional): JPEG/PNG/WebP camera snapshot.
 
 ### Example cURL Command
@@ -89,6 +91,7 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/entries" \
   -u "device_center_1:hardware_password_123" \
+  -F "center_id=1" \
   -F "detected_vehicle_number=MH12AB1234" \
   -F "weight=14250.5" \
   -F "file=@/path/to/vehicle_capture.jpg;type=image/jpeg"
@@ -124,7 +127,6 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 >
 > - **Audit Trail (`created_by` & `approved_by`)**: The scale's hardware user ID is automatically assigned as `created_by`. If the center has `auto_approve: true` and a valid plate was detected, `approved_by` is set to the device and status is set to `approved`.
 > - **Source Derivation**: `source: "device"` is derived automatically on the server from the creator's `role = 'hardware'`.
-> - **Center Resolution**: If omitted, `center_id` is resolved automatically from the device's provisioned collection center.
 
 ---
 
@@ -133,12 +135,9 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 Edge devices are managed directly in the database `users` table:
 
 ```sql
--- Provision a new hardware device account bound to Center 1
-INSERT INTO users (factory_id, username, password_hash, role, center_id)
-VALUES (1, 'device_center_1', encode(sha256('hardware_password_123'::bytea), 'hex'), 'hardware', 1);
-
--- Move a device to another collection center
-UPDATE users SET center_id = 2 WHERE username = 'device_center_1' AND role = 'hardware';
+-- Provision a new hardware device account scoped to Factory 1
+INSERT INTO users (factory_id, username, password_hash, role, name)
+VALUES (1, 'device_center_1', encode(sha256('hardware_password_123'::bytea), 'hex'), 'hardware', 'Main Weighbridge Scale');
 
 -- Deactivate a device immediately
 UPDATE users SET deleted_at = NOW() WHERE username = 'device_center_1';

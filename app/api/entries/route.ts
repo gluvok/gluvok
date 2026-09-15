@@ -131,7 +131,6 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
     let isHardware = false;
     let creatorId: number;
     let factoryId: number;
-    let defaultCenterId: number | undefined;
 
     // Direct invocation support in unit test environments
     if (rest.length >= 1 && typeof rest[0] === "object" && rest[0] !== null && "role" in rest[0]) {
@@ -153,7 +152,6 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
       isHardware = true;
       creatorId = authResult.device.id;
       factoryId = authResult.device.factory_id;
-      defaultCenterId = authResult.device.center_id ?? undefined;
     } else {
       const authUser = await getAuthUser(req);
       if (!authUser) {
@@ -169,7 +167,7 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
     }
 
     const centerIdRaw = formData.get("center_id");
-    const centerId = centerIdRaw ? Number(centerIdRaw) : defaultCenterId;
+    const centerId = centerIdRaw ? Number(centerIdRaw) : undefined;
 
     if (!centerId) {
       return apiError(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND, StatusCodes.BAD_REQUEST);

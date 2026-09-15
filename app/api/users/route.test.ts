@@ -67,6 +67,10 @@ describe("Users collection route handlers (/api/users)", () => {
       const req = new NextRequest("http://localhost/api/users");
       const response = await (GET as unknown as RawHandler)(req, adminUser, mockDb, context);
       expect(response.status).toBe(200);
+      expect(mockQuery.select).toHaveBeenCalledWith(
+        "id, username, name, role, factory_id, created_at, updated_at",
+        { count: "exact" },
+      );
     });
   });
 

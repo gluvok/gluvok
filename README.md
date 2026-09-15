@@ -9,7 +9,7 @@ Gluvok is a high-performance operations platform designed for factories, weighbr
 ## Features
 
 - **Multi-Tenant Factory Isolation**: Complete data separation across factories (`factory_id` scoping) with PostgreSQL Row Level Security (RLS).
-- **Role-Based Access Control (RBAC)**: Fine-grained permission model supporting `admin`, `manager`, `operator`, `base`, and edge `hardware` roles. Edge IoT devices authenticate as dedicated hardware users bound to centers (`role = 'hardware'`). See [PERMISSIONS.md](PERMISSIONS.md) for the complete access matrix.
+- **Role-Based Access Control (RBAC)**: Fine-grained permission model supporting `admin`, `manager`, `operator`, `base`, and edge `hardware` roles. Edge IoT devices authenticate as dedicated hardware users scoped to factories (`role = 'hardware'`), with physical collection centers specified on weighment entries (`center_id`). See [PERMISSIONS.md](PERMISSIONS.md) for the complete access matrix.
 - **Weighbridge Lifecycle Management**:
   - Unassigned, Inbound (gross), and Outbound (tare/net) weighing cycles.
   - Automatic net weight and total price calculation.

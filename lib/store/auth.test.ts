@@ -17,7 +17,7 @@ vi.mock("sonner", () => ({
 // Mock axios
 vi.mock("axios");
 
-describe("Auth Store (Zustand with custom JWT API via Axios)", () => {
+describe("Auth Store (Zustand with session API via Axios)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(axios.get).mockResolvedValue({

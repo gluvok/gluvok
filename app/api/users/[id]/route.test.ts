@@ -176,7 +176,6 @@ describe("User mutation guards", () => {
       name: "User 1",
       role: Role.OPERATOR,
       factory_id: 1,
-      token_version: 1,
     };
     const updatedUser = {
       id: 1,

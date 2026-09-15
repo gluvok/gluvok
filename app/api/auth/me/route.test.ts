@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { GET } from "./route";
 import { Role } from "@/lib/constants/enums";
-import { signJWT, signRefreshToken } from "@/lib/auth/jwt";
+import { validateSession } from "@/lib/auth/session";
 
 const { mockCookies, mockDb } = vi.hoisted(() => ({
   mockCookies: vi.fn(),
@@ -19,26 +19,29 @@ vi.mock("@/db", () => ({
   supabase: mockDb,
 }));
 
+vi.mock("@/lib/auth/session", () => ({
+  validateSession: vi.fn(),
+}));
+
 describe("GET /api/auth/me", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.JWT_SECRET = "test-secret-key-12345";
   });
 
-  it("returns user when valid access token is provided", async () => {
-    const token = await signJWT({
+  it("returns user when valid session token is provided", async () => {
+    mockCookies.mockResolvedValue({
+      get: vi.fn().mockImplementation((name: string) => {
+        if (name === "session_token") return { value: "valid-session-token" };
+        return undefined;
+      }),
+    });
+
+    vi.mocked(validateSession).mockResolvedValue({
       sub: "10",
       username: "operator_01",
       name: "Operator One",
       role: Role.OPERATOR,
       factory_id: 1,
-    });
-
-    mockCookies.mockResolvedValue({
-      get: vi.fn().mockImplementation((name: string) => {
-        if (name === "token") return { value: token };
-        return undefined;
-      }),
     });
 
     mockDb.from.mockReturnValue({
@@ -52,53 +55,6 @@ describe("GET /api/auth/me", () => {
                 name: "Operator One",
                 role: Role.OPERATOR,
                 factory_id: 1,
-              },
-              error: null,
-            }),
-          }),
-        }),
-      }),
-    });
-
-    const res = await GET();
-    expect(res.status).toBe(200);
-
-    const json = await res.json();
-    expect(json.user).toEqual({
-      id: 10,
-      username: "operator_01",
-      name: "Operator One",
-      role: Role.OPERATOR,
-      factory_id: 1,
-    });
-  });
-
-  it("self-heals and returns user when access token is expired but refresh token is valid", async () => {
-    const refreshToken = await signRefreshToken({
-      sub: "10",
-      token_version: 1,
-    });
-
-    mockCookies.mockResolvedValue({
-      get: vi.fn().mockImplementation((name: string) => {
-        if (name === "token") return { value: "invalid.or.expired.token" };
-        if (name === "refresh_token") return { value: refreshToken };
-        return undefined;
-      }),
-    });
-
-    mockDb.from.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          is: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({
-              data: {
-                id: 10,
-                username: "operator_01",
-                name: "Operator One",
-                role: Role.OPERATOR,
-                factory_id: 1,
-                token_version: 1,
               },
               error: null,
             }),
@@ -121,7 +77,24 @@ describe("GET /api/auth/me", () => {
     });
   });
 
-  it("returns user: null when neither access token nor refresh token is valid", async () => {
+  it("returns user: null when session token is invalid or expired", async () => {
+    mockCookies.mockResolvedValue({
+      get: vi.fn().mockImplementation((name: string) => {
+        if (name === "session_token") return { value: "invalid-token" };
+        return undefined;
+      }),
+    });
+
+    vi.mocked(validateSession).mockResolvedValue(null);
+
+    const res = await GET();
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json.user).toBeNull();
+  });
+
+  it("returns user: null when no cookies are provided", async () => {
     mockCookies.mockResolvedValue({
       get: vi.fn().mockReturnValue(undefined),
     });

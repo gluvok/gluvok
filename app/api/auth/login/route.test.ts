@@ -19,7 +19,6 @@ vi.mock("@/db", () => ({
 describe("POST /api/auth/login (Browser Authentication)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.JWT_SECRET = "test-secret-key-12345";
   });
 
   it("authenticates browser user successfully and attaches session cookies", async () => {
@@ -81,10 +80,9 @@ describe("POST /api/auth/login (Browser Authentication)", () => {
     expect(json.access_token).toBeUndefined();
     expect(json.refresh_token).toBeUndefined();
 
-    // Verify session cookies are set
+    // Verify session token cookie is set
     const setCookieHeader = res.headers.get("set-cookie");
-    expect(setCookieHeader).toContain("token=");
-    expect(setCookieHeader).toContain("refresh_token=");
+    expect(setCookieHeader).toContain("session_token=");
   });
 
   it("rejects login with 400 when credentials are missing", async () => {

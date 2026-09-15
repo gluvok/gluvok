@@ -335,7 +335,10 @@ describe("Entries route handlers (/api/entries)", () => {
       expect(response.status).toBe(201);
       const json = await response.json();
       expect(json.data).toEqual(createdEntry);
-      expect(mockUploadFilesToStorage).toHaveBeenCalledWith([file], 1);
+      expect(mockUploadFilesToStorage).toHaveBeenCalledWith(
+        [expect.objectContaining({ name: "photo.jpg", type: "image/jpeg" })],
+        1,
+      );
       expect(mockCreateEntry).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({

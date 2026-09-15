@@ -1,12 +1,16 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { proxy } from "./proxy";
 import { Role } from "@/lib/constants/enums";
-import { signJWT, signRefreshToken } from "@/lib/auth/jwt";
+import { validateSession } from "@/lib/auth/session";
+
+vi.mock("@/lib/auth/session", () => ({
+  validateSession: vi.fn(),
+}));
 
 describe("Next.js Middleware Proxy", () => {
   beforeEach(() => {
-    process.env.JWT_SECRET = "test-secret-key-12345";
+    vi.clearAllMocks();
   });
 
   it("passes through public route /login", async () => {
@@ -22,8 +26,8 @@ describe("Next.js Middleware Proxy", () => {
     expect(res.status).toBe(200);
   });
 
-  it("allows access with valid access token and sets header attributes", async () => {
-    const token = await signJWT({
+  it("allows access with valid session token in cookie and sets header attributes", async () => {
+    vi.mocked(validateSession).mockResolvedValue({
       sub: "123",
       username: "admin_user",
       name: "Admin User",
@@ -32,51 +36,45 @@ describe("Next.js Middleware Proxy", () => {
     });
 
     const req = new NextRequest("http://localhost/projects/centers");
-    req.cookies.set("token", token);
+    req.cookies.set("session_token", "valid-session-token");
 
     const res = await proxy(req);
     expect(res.status).toBe(200);
     expect(res.headers.get("location")).toBeNull();
   });
 
-  it("allows page navigation without redirect when access token is expired but refresh token is valid", async () => {
-    const refreshToken = await signRefreshToken({
+  it("allows access with valid Bearer session token and sets header attributes", async () => {
+    vi.mocked(validateSession).mockResolvedValue({
       sub: "123",
-      token_version: 1,
+      username: "admin_user",
+      name: "Admin User",
+      role: Role.ADMIN,
+      factory_id: 5,
     });
 
-    const req = new NextRequest("http://localhost/projects/centers");
-    req.cookies.set("token", "expired.or.invalid.token");
-    req.cookies.set("refresh_token", refreshToken);
-
-    const res = await proxy(req);
-    expect(res.status).toBe(200);
-    expect(res.headers.get("location")).toBeNull();
-  });
-
-  it("allows API routes to pass through when access token is expired but refresh token is valid (allowing withAuth to auto-refresh)", async () => {
-    const refreshToken = await signRefreshToken({
-      sub: "123",
-      token_version: 1,
+    const req = new NextRequest("http://localhost/api/centers", {
+      headers: {
+        Authorization: "Bearer valid-bearer-session",
+      },
     });
 
-    const req = new NextRequest("http://localhost/api/centers");
-    req.cookies.set("token", "expired.or.invalid.token");
-    req.cookies.set("refresh_token", refreshToken);
-
     const res = await proxy(req);
     expect(res.status).toBe(200);
     expect(res.headers.get("location")).toBeNull();
   });
 
-  it("redirects to /login on page requests when neither token nor refresh token is valid", async () => {
+  it("redirects to /login on page requests when session is invalid or missing", async () => {
+    vi.mocked(validateSession).mockResolvedValue(null);
+
     const req = new NextRequest("http://localhost/projects/centers");
     const res = await proxy(req);
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain("/login");
   });
 
-  it("returns 401 on API requests when neither token nor refresh token is valid", async () => {
+  it("returns 401 on API requests when session is invalid or missing", async () => {
+    vi.mocked(validateSession).mockResolvedValue(null);
+
     const req = new NextRequest("http://localhost/api/centers");
     const res = await proxy(req);
     expect(res.status).toBe(401);

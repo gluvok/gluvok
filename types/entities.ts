@@ -138,10 +138,18 @@ export interface User {
   factory_id: number;
   center_id?: number | null;
   password_hash?: string;
-  token_version?: number;
   created_at: string;
   updated_at: string;
   // Flattened join/view fields
+  factory_name?: string;
+}
+
+export interface AuthUserPayload {
+  sub: string;
+  username: string;
+  name: string;
+  role: Role;
+  factory_id: number;
   factory_name?: string;
 }
 

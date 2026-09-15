@@ -1,6 +1,6 @@
 /**
  * @file lib/store/auth.ts
- * @description Zustand state store for managing authentication and user session via custom JWT API endpoints (axios).
+ * @description Zustand state store for managing authentication and user session via session API endpoints (axios).
  */
 
 import { create } from "zustand";

@@ -2,7 +2,7 @@
 
 /**
  * @file components/auth/form/login.tsx
- * @description Sign in form component using username and password with Argon2/JWT backend.
+ * @description Sign in form component using username and password with Argon2/Session backend.
  */
 
 import { useForm } from "react-hook-form";

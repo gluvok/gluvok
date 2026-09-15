@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { StatusCodes, ReasonPhrases } from "http-status-codes";
-import { type JWTPayload } from "@/lib/auth/jwt";
-import { setAuthCookies } from "@/lib/auth/cookies";
+import { type AuthUserPayload } from "@/types";
 import { ProjectSlug } from "@/lib/constants/enums";
 export { hasPermission } from "@/lib/store/access";
 import { REQUIRED_CREATE_FIELDS } from "@/lib/fields/config";
@@ -88,12 +87,12 @@ export function parseBulkIds(body: unknown): number[] | null {
   return [...new Set(numericIds)];
 }
 
-import { getAuthUser, type RefreshedTokens } from "@/lib/auth/request";
-export { getAuthUser, type RefreshedTokens };
+import { getAuthUser } from "@/lib/auth/request";
+export { getAuthUser };
 
 export type AuthedHandler<P extends Record<string, string> = Record<string, string>> = (
   req: NextRequest,
-  user: JWTPayload,
+  user: AuthUserPayload,
   client: typeof supabase,
   ctx: RouteContext<P>,
 ) => Promise<NextResponse>;
@@ -107,20 +106,13 @@ export function withAuth<P extends Record<string, string> = Record<string, strin
       return apiError(ReasonPhrases.UNAUTHORIZED, StatusCodes.UNAUTHORIZED);
     }
 
-    const { user, refreshedTokens } = authResult;
-    const response = await handler(req, user, supabase, ctx);
-
-    if (refreshedTokens) {
-      setAuthCookies(response, refreshedTokens);
-    }
-
-    return response;
+    return handler(req, authResult.user, supabase, ctx);
   };
 }
 
 export type ScopedEntityHandler<P extends Record<string, string> = Record<string, string>> = (
   req: NextRequest,
-  user: JWTPayload,
+  user: AuthUserPayload,
   client: typeof supabase,
   ctx: RouteContext<P>,
   scope: { entityId: number; factoryId: number },
@@ -129,7 +121,7 @@ export type ScopedEntityHandler<P extends Record<string, string> = Record<string
 function withEntityId<P extends Record<string, string> = Record<string, string>>(
   handler: (
     req: NextRequest,
-    user: JWTPayload,
+    user: AuthUserPayload,
     client: typeof supabase,
     ctx: RouteContext<P>,
     entityId: number,

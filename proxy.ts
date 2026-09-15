@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { StatusCodes, ReasonPhrases } from "http-status-codes";
-import { verifyJWT, verifyRefreshToken } from "@/lib/auth/jwt";
+import { validateSession } from "@/lib/auth/session";
 import { AppRoutes, PUBLIC_ROUTES, AUTH_ROUTES, PUBLIC_API_ROUTES } from "@/lib/constants/routes";
 
 const PUBLIC_PATHNAMES = new Set<string>([...AUTH_ROUTES, ...PUBLIC_ROUTES, ...PUBLIC_API_ROUTES]);
@@ -24,21 +24,15 @@ export async function proxy(request: NextRequest) {
   }
 
   const token =
+    request.cookies.get("session_token")?.value ||
     request.cookies.get("token")?.value ||
     request.headers.get("authorization")?.match(/^Bearer (.+)$/i)?.[1];
 
   const isApiRoute = pathname.startsWith("/api/");
 
-  const payload = token ? await verifyJWT(token) : null;
+  const sessionUser = token ? await validateSession(token) : null;
 
-  if (!payload) {
-    const refreshToken = request.cookies.get("refresh_token")?.value;
-    const refreshPayload = refreshToken ? await verifyRefreshToken(refreshToken) : null;
-
-    if (refreshPayload) {
-      return NextResponse.next();
-    }
-
+  if (!sessionUser) {
     return isApiRoute
       ? NextResponse.json(
           { error: ReasonPhrases.UNAUTHORIZED },
@@ -48,13 +42,13 @@ export async function proxy(request: NextRequest) {
   }
 
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-user-id", payload.sub);
-  requestHeaders.set("x-user-username", payload.username);
-  requestHeaders.set("x-user-name", payload.name);
-  requestHeaders.set("x-user-role", payload.role);
+  requestHeaders.set("x-user-id", sessionUser.sub);
+  requestHeaders.set("x-user-username", sessionUser.username);
+  requestHeaders.set("x-user-name", sessionUser.name);
+  requestHeaders.set("x-user-role", sessionUser.role);
 
-  if (payload.factory_id != null) {
-    requestHeaders.set("x-user-factory-id", String(payload.factory_id));
+  if (sessionUser.factory_id != null) {
+    requestHeaders.set("x-user-factory-id", String(sessionUser.factory_id));
   }
 
   return NextResponse.next({ request: { headers: requestHeaders } });

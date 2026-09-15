@@ -1,16 +1,11 @@
 /**
  * @file lib/auth/cookies.ts
- * @description Centralized cookie management utilities for authentication tokens.
+ * @description Centralized cookie management utilities for authentication session tokens.
  */
 
 import { NextResponse } from "next/server";
 
-export interface SetAuthCookiesParams {
-  accessToken: string;
-  refreshToken: string;
-  accessExpiresIn: number;
-  refreshExpiresIn: number;
-}
+export const DEFAULT_SESSION_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
 
 /**
  * Returns standard options for authentication cookies.
@@ -26,33 +21,21 @@ export function getAuthCookieOptions(maxAge: number) {
 }
 
 /**
- * Sets both access and refresh token cookies on a NextResponse.
+ * Sets the database session_token cookie on a NextResponse.
  */
 export function setAuthCookies<T extends NextResponse | Response>(
   response: T,
-  tokens: SetAuthCookiesParams,
-  sessionToken?: string,
+  sessionToken: string,
+  maxAge: number = DEFAULT_SESSION_COOKIE_MAX_AGE,
 ): T {
   if ("cookies" in response && typeof response.cookies?.set === "function") {
-    if (sessionToken) {
-      response.cookies.set(
-        "session_token",
-        sessionToken,
-        getAuthCookieOptions(tokens.refreshExpiresIn || 7 * 24 * 60 * 60),
-      );
-    }
-    response.cookies.set("token", tokens.accessToken, getAuthCookieOptions(tokens.accessExpiresIn));
-    response.cookies.set(
-      "refresh_token",
-      tokens.refreshToken,
-      getAuthCookieOptions(tokens.refreshExpiresIn),
-    );
+    response.cookies.set("session_token", sessionToken, getAuthCookieOptions(maxAge));
   }
   return response;
 }
 
 /**
- * Clears all authentication token cookies (session_token, token, refresh_token) on a NextResponse.
+ * Clears authentication session cookies on a NextResponse (including legacy token cookies).
  */
 export function clearAuthCookies<T extends NextResponse | Response>(response: T): T {
   if ("cookies" in response && typeof response.cookies?.set === "function") {

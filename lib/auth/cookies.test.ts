@@ -14,23 +14,18 @@ describe("Auth Cookie Helpers", () => {
     });
   });
 
-  it("sets both access and refresh token cookies on NextResponse", () => {
+  it("sets session_token cookie on NextResponse", () => {
     const res = NextResponse.json({ ok: true });
-    setAuthCookies(res, {
-      accessToken: "access-token-xyz",
-      refreshToken: "refresh-token-abc",
-      accessExpiresIn: 300,
-      refreshExpiresIn: 604800,
-    });
+    setAuthCookies(res, "session-token-xyz", 604800);
 
-    expect(res.cookies.get("token")?.value).toBe("access-token-xyz");
-    expect(res.cookies.get("refresh_token")?.value).toBe("refresh-token-abc");
+    expect(res.cookies.get("session_token")?.value).toBe("session-token-xyz");
   });
 
   it("clears all auth token cookies on NextResponse", () => {
     const res = NextResponse.json({ ok: true });
     clearAuthCookies(res);
 
+    expect(res.cookies.get("session_token")?.value).toBe("");
     expect(res.cookies.get("token")?.value).toBe("");
     expect(res.cookies.get("refresh_token")?.value).toBe("");
   });

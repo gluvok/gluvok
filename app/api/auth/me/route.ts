@@ -1,43 +1,33 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { verifyJWT, verifyRefreshToken } from "@/lib/auth/jwt";
-import { setAuthCookies } from "@/lib/auth/cookies";
-import { fetchActiveUserById, generateAuthTokens, toUserSessionPayload } from "@/lib/auth/common";
+import { validateSession } from "@/lib/auth/session";
+import { fetchActiveUserById, toUserSessionPayload } from "@/lib/auth/common";
 
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
+    const token = cookieStore.get("session_token")?.value || cookieStore.get("token")?.value;
 
-    const payload = token ? await verifyJWT(token) : null;
-    if (payload) {
-      const userId = parseInt(payload.sub, 10);
-      if (!isNaN(userId)) {
-        const user = await fetchActiveUserById(userId);
-        if (user) {
-          return NextResponse.json({ user: toUserSessionPayload(user) });
-        }
-      }
+    if (!token) {
+      return NextResponse.json({ user: null });
     }
 
-    // Access token is missing or expired — fallback to refresh_token self-healing
-    const refreshToken = cookieStore.get("refresh_token")?.value;
-    if (refreshToken) {
-      const refreshPayload = await verifyRefreshToken(refreshToken);
-      if (refreshPayload) {
-        const userId = parseInt(refreshPayload.sub, 10);
-        if (!isNaN(userId)) {
-          const user = await fetchActiveUserById(userId);
-          if (user && user.token_version === refreshPayload.token_version) {
-            const tokens = await generateAuthTokens(user);
-            const response = NextResponse.json({ user: toUserSessionPayload(user) });
-            return setAuthCookies(response, tokens);
-          }
-        }
-      }
+    const sessionUser = await validateSession(token);
+    if (!sessionUser) {
+      return NextResponse.json({ user: null });
     }
 
-    return NextResponse.json({ user: null });
+    const userId = parseInt(sessionUser.sub, 10);
+    if (isNaN(userId)) {
+      return NextResponse.json({ user: null });
+    }
+
+    const user = await fetchActiveUserById(userId);
+    if (!user) {
+      return NextResponse.json({ user: null });
+    }
+
+    return NextResponse.json({ user: toUserSessionPayload(user) });
   } catch (error) {
     console.error("Auth /me error:", error);
     return NextResponse.json({ user: null });

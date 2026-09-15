@@ -351,7 +351,7 @@ async function main() {
   const weighmentPairScenarios = getWeighmentPairScenarios({
     defaultOperatorId,
     charlieOperatorId,
-    defaultDeviceId: defaultHardwareUserId,
+    defaultHardwareUserId,
     mainCenterId,
     northAutoCenterId,
     eastTerminalCenterId,
@@ -373,9 +373,9 @@ async function main() {
     const inCreatedAt = getRelativeDate(pair.daysAgo, pair.inHoursAgo);
     const outCreatedAt = getRelativeDate(pair.daysAgo, pair.outHoursAgo);
 
-    const isDevice = Boolean(pair.deviceId);
+    const isHardware = Boolean(pair.hardwareUserId);
     const createdBy =
-      pair.createdBy ?? (isDevice ? defaultHardwareUserId : (pair.userId ?? defaultOperatorId));
+      pair.createdBy ?? (isHardware ? defaultHardwareUserId : (pair.userId ?? defaultOperatorId));
     const approvedBy =
       pair.approvedBy ?? (pair.autoApproved ? createdBy : (pair.userId ?? defaultOperatorId));
 
@@ -469,8 +469,8 @@ async function main() {
     customerMap,
     defaultOperatorId,
     charlieOperatorId,
-    defaultDeviceId: defaultHardwareUserId,
-    apexDeviceId: apexHardwareUserId,
+    defaultHardwareUserId,
+    apexHardwareUserId,
     mainCenterId,
     northAutoCenterId,
     eastTerminalCenterId,

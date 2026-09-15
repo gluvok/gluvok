@@ -5,7 +5,10 @@
 
 import crypto from "crypto";
 import { db, supabase } from "@/db";
-import { JWTPayload } from "./jwt";
+import { AuthUserPayload } from "@/types";
+import { Role } from "@/lib/constants/enums";
+
+export type { AuthUserPayload };
 
 export const DEFAULT_SESSION_EXPIRY_DAYS = 7;
 
@@ -63,7 +66,7 @@ export async function createSession(
 export async function validateSession(
   token: string,
   client?: typeof supabase,
-): Promise<JWTPayload | null> {
+): Promise<AuthUserPayload | null> {
   const db = client || supabase;
   if (!token || typeof token !== "string" || token.trim().length === 0) {
     return null;
@@ -133,7 +136,7 @@ export async function validateSession(
       sub: String(user.id),
       username: user.username,
       name: user.name,
-      role: user.role,
+      role: user.role as Role,
       factory_id: user.factory_id,
       factory_name: user.factories?.name,
     };

@@ -7,7 +7,6 @@ import { db } from "@/db";
 import { Role } from "@/lib/constants/enums";
 import { AuthErrorMessage } from "@/lib/constants/messages";
 import { verifyPassword } from "@/lib/auth/password";
-import { signJWT, signRefreshToken, getTokenExpiresIn } from "@/lib/auth/jwt";
 
 export interface AuthenticatedUserRecord {
   id: number;
@@ -16,7 +15,6 @@ export interface AuthenticatedUserRecord {
   password_hash: string;
   role: Role;
   factory_id: number;
-  token_version?: number;
   factories?: { name?: string };
 }
 
@@ -27,14 +25,6 @@ export interface UserSessionPayload {
   role: Role;
   factory_id: number;
   factory_name?: string;
-}
-
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
-  accessExpiresIn: number;
-  refreshExpiresIn: number;
-  expiresIn: number;
 }
 
 export interface CredentialsVerificationResult {
@@ -106,37 +96,5 @@ export async function verifyUserCredentials(
       user,
       userPayload: toUserSessionPayload(user, user.factories?.name),
     },
-  };
-}
-
-/**
- * Signs and packages access and refresh tokens for an authenticated user.
- */
-export async function generateAuthTokens(user: AuthenticatedUserRecord): Promise<AuthTokens> {
-  const factoryId = user.factory_id;
-  const tokenVersion = user.token_version ?? 1;
-
-  const accessToken = await signJWT({
-    sub: String(user.id),
-    username: user.username,
-    name: user.name,
-    role: user.role,
-    factory_id: factoryId,
-    factory_name: user.factories?.name,
-  });
-  const accessExpiresIn = getTokenExpiresIn(accessToken);
-
-  const refreshToken = await signRefreshToken({
-    sub: String(user.id),
-    token_version: tokenVersion,
-  });
-  const refreshExpiresIn = getTokenExpiresIn(refreshToken);
-
-  return {
-    accessToken,
-    refreshToken,
-    accessExpiresIn,
-    refreshExpiresIn,
-    expiresIn: accessExpiresIn,
   };
 }

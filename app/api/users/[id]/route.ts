@@ -42,7 +42,7 @@ export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
     const existingQuery = client
       .from("users")
-      .select("id, username, name, role, factory_id, token_version")
+      .select("id, username, name, role, factory_id")
       .eq("id", entityId)
       .eq("factory_id", factoryId)
       .is("deleted_at", null);
@@ -84,7 +84,6 @@ export const PATCH = withAuth(
     }
     if (password && typeof password === "string" && password.trim().length > 0) {
       updates.password_hash = await hashPassword(password.trim());
-      updates["token_version"] = (existing.token_version || 1) + 1;
       await deleteAllUserSessions(entityId, client);
     }
 

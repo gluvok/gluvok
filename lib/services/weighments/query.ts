@@ -5,11 +5,11 @@
 
 import { supabase } from "@/db";
 import { Role } from "@/lib/constants/enums";
-import { type JWTPayload } from "@/lib/auth/jwt";
+import { type AuthUserPayload } from "@/types";
 
 export interface WeighmentQueryParams {
   searchParams: URLSearchParams;
-  user: JWTPayload;
+  user: AuthUserPayload;
   pagination: { page: number; limit: number; offset: number };
 }
 

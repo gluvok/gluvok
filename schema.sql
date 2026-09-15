@@ -8,7 +8,6 @@ DROP TABLE IF EXISTS tickets CASCADE;
 DROP TABLE IF EXISTS weighments CASCADE;
 DROP TABLE IF EXISTS entries CASCADE;
 DROP TABLE IF EXISTS sessions CASCADE;
-DROP TABLE IF EXISTS devices CASCADE;
 DROP TABLE IF EXISTS rates CASCADE;
 DROP TABLE IF EXISTS customers CASCADE;
 DROP TABLE IF EXISTS centers CASCADE;
@@ -78,7 +77,6 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     name TEXT NOT NULL,
     role role_enum NOT NULL DEFAULT 'base',
-    token_version INT NOT NULL DEFAULT 1,
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -336,7 +334,6 @@ CREATE TRIGGER trg_rates_updated_at
 BEFORE UPDATE ON rates
 FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 
-DROP TRIGGER IF EXISTS trg_devices_updated_at ON devices;
 DROP TRIGGER IF EXISTS trg_sessions_updated_at ON sessions;
 CREATE TRIGGER trg_sessions_updated_at
 BEFORE UPDATE ON sessions
@@ -520,9 +517,14 @@ BEGIN
             name = COALESCE(p_name, name),
             username = COALESCE(p_username, username),
             password_hash = COALESCE(p_password_hash, password_hash),
-            token_version = CASE WHEN p_password_hash IS NOT NULL THEN token_version + 1 ELSE token_version END,
             updated_at = NOW()
         WHERE id = v_user_id AND deleted_at IS NULL;
+
+        IF p_password_hash IS NOT NULL THEN
+            UPDATE sessions
+            SET deleted_at = NOW(), updated_at = NOW()
+            WHERE user_id = v_user_id AND deleted_at IS NULL;
+        END IF;
     ELSIF p_username IS NOT NULL AND p_password_hash IS NOT NULL THEN
         INSERT INTO users (username, password_hash, name, role, factory_id)
         VALUES (p_username, p_password_hash, COALESCE(p_name, (SELECT name FROM customers WHERE id = p_customer_id)), 'base', p_factory_id)

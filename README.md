@@ -32,7 +32,7 @@ Gluvok is a high-performance operations platform designed for factories, weighbr
 - **Styling**: [TailwindCSS v4](https://tailwindcss.com/), Radix UI / Shadcn primitives, Lucide Icons
 - **State Management**: [Zustand](https://github.com/pmndrs/zustand) with custom hydration and authentication store
 - **Database & Storage**: [Supabase](https://supabase.com/) (PostgreSQL with RLS, Supabase Storage buckets)
-- **Authentication**: Database-backed sessions with [jose](https://github.com/panva/jose) JWT fallback and password hashing via [argon2](https://github.com/ranisalt/node-argon2)
+- **Authentication**: Database-backed sessions with immediate revocation via `sessions` table and password hashing via [argon2](https://github.com/ranisalt/node-argon2)
 - **Tooling & Quality**:
   - Linter: [Oxlint](https://oxc.rs/docs/guide/usage/linter.html)
   - Formatter: [Oxfmt](https://oxc.rs/)
@@ -48,9 +48,6 @@ Configure environment variables in `.env.local`:
 | :-------------------------- | :---------------------------------------------- | :------- | :------------------------------- |
 | `SUPABASE_URL`              | Supabase project API URL                        | Yes      | `https://xyzcompany.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key for server operations | Yes      | `eyJhbGciOi...`                  |
-| `JWT_SECRET`                | Secret key used to sign and verify JWT tokens   | Yes      | `your-secure-jwt-secret`         |
-| `JWT_ACCESS_EXPIRES_IN`     | Access token lifespan (e.g. `5m`, `15m`, `1h`)  | Optional | `5m` (default)                   |
-| `JWT_REFRESH_EXPIRES_IN`    | Refresh token lifespan (e.g. `7d`, `30d`)       | Optional | `7d` (default)                   |
 | `FACTORY_NAME`              | Initial factory name for seed scripts           | Optional | `Default Factory`                |
 
 ---
@@ -127,7 +124,6 @@ All API endpoints are located under `/api/*`:
 ### Authentication
 
 - `POST /api/auth/login` - Authenticate users and hardware devices, returning a database-backed session token and setting HTTP-only cookie for web browsers.
-- `POST /api/auth/refresh` - Refresh an expired access token using a valid refresh token.
 - `POST /api/auth/logout` - Invalidate active session immediately in database and clear authentication cookies.
 - `GET /api/auth/me` - Retrieve current authenticated user profile and permissions.
 

@@ -44,9 +44,6 @@ importers:
       http-status-codes:
         specifier: ^2.3.0
         version: 2.3.0
-      jose:
-        specifier: ^6.2.10
-        version: 6.2.10
       lucide-react:
         specifier: ^1.34.0
         version: 1.34.0(react@19.2.8)

@@ -152,8 +152,6 @@ export interface SeedHardwareUserConfig {
   username: string;
 }
 
-export type SeedDeviceConfig = SeedHardwareUserConfig;
-
 export function getHardwareUserConfigs(): SeedHardwareUserConfig[] {
   return [
     { rawKey: "hardware101", centerName: "Main Weighbridge", username: "device_main_weighbridge" },
@@ -163,10 +161,6 @@ export function getHardwareUserConfigs(): SeedHardwareUserConfig[] {
     { rawKey: "hardware789", centerName: "Apex Inbound Scale", username: "device_apex_inbound" },
     { rawKey: "hardware909", centerName: "Apex Outbound Gate", username: "device_apex_outbound" },
   ];
-}
-
-export function getDeviceConfigs(): SeedHardwareUserConfig[] {
-  return getHardwareUserConfigs();
 }
 
 export interface SeedCenterConfig {
@@ -303,7 +297,7 @@ export interface WeighmentPairScenario {
   centerId: number;
   createdBy?: number;
   approvedBy?: number | null;
-  deviceId?: number | null;
+  hardwareUserId?: number | null;
   userId?: number | null;
   autoApproved: boolean;
   weighmentType: WeighmentType;
@@ -317,7 +311,7 @@ export interface WeighmentPairScenario {
 export function getWeighmentPairScenarios(ctx: {
   defaultOperatorId: number;
   charlieOperatorId: number;
-  defaultDeviceId: number;
+  defaultHardwareUserId: number;
   mainCenterId: number;
   northAutoCenterId: number;
   eastTerminalCenterId: number;
@@ -338,7 +332,7 @@ export function getWeighmentPairScenarios(ctx: {
       outWeight: 14200,
       customerName: "Ramesh Kumar",
       centerId: ctx.northAutoCenterId,
-      deviceId: ctx.defaultDeviceId,
+      hardwareUserId: ctx.defaultHardwareUserId,
       userId: null,
       autoApproved: true,
       weighmentType: WeighmentType.IN,
@@ -356,7 +350,7 @@ export function getWeighmentPairScenarios(ctx: {
       outWeight: 12100,
       customerName: "Anita Patel",
       centerId: ctx.mainCenterId,
-      deviceId: null,
+      hardwareUserId: null,
       userId: ctx.defaultOperatorId,
       autoApproved: false,
       weighmentType: WeighmentType.IN,
@@ -374,7 +368,7 @@ export function getWeighmentPairScenarios(ctx: {
       outWeight: 13400,
       customerName: "Vikram Singh",
       centerId: ctx.northAutoCenterId,
-      deviceId: ctx.defaultDeviceId,
+      hardwareUserId: ctx.defaultHardwareUserId,
       userId: null,
       autoApproved: true,
       weighmentType: WeighmentType.IN,
@@ -392,7 +386,7 @@ export function getWeighmentPairScenarios(ctx: {
       outWeight: 44200,
       customerName: "Priya Sharma",
       centerId: ctx.southExpressCenterId,
-      deviceId: ctx.defaultDeviceId,
+      hardwareUserId: ctx.defaultHardwareUserId,
       userId: null,
       autoApproved: true,
       weighmentType: WeighmentType.OUT,
@@ -410,7 +404,7 @@ export function getWeighmentPairScenarios(ctx: {
       outWeight: 15300,
       customerName: "Sunil Verma",
       centerId: ctx.eastTerminalCenterId,
-      deviceId: null,
+      hardwareUserId: null,
       userId: ctx.charlieOperatorId,
       autoApproved: false,
       weighmentType: WeighmentType.IN,
@@ -428,7 +422,7 @@ export function getWeighmentPairScenarios(ctx: {
       outWeight: 14100,
       customerName: "Deepak Choudhary",
       centerId: ctx.mainCenterId,
-      deviceId: null,
+      hardwareUserId: null,
       userId: ctx.defaultOperatorId,
       autoApproved: false,
       weighmentType: WeighmentType.IN,
@@ -446,7 +440,7 @@ export function getWeighmentPairScenarios(ctx: {
       outWeight: 14800,
       customerName: "Meena Devi",
       centerId: ctx.northAutoCenterId,
-      deviceId: ctx.defaultDeviceId,
+      hardwareUserId: ctx.defaultHardwareUserId,
       userId: null,
       autoApproved: true,
       weighmentType: WeighmentType.IN,
@@ -464,7 +458,7 @@ export function getWeighmentPairScenarios(ctx: {
       outWeight: 11900,
       customerName: "Kavita Rao",
       centerId: ctx.eastTerminalCenterId,
-      deviceId: null,
+      hardwareUserId: null,
       userId: ctx.charlieOperatorId,
       autoApproved: false,
       weighmentType: WeighmentType.IN,
@@ -482,7 +476,7 @@ export function getWeighmentPairScenarios(ctx: {
       outWeight: 13900,
       customerName: "Ramesh Kumar",
       centerId: ctx.mainCenterId,
-      deviceId: null,
+      hardwareUserId: null,
       userId: ctx.defaultOperatorId,
       autoApproved: false,
       weighmentType: WeighmentType.IN,
@@ -503,8 +497,8 @@ export function getStandaloneEntries(ctx: {
   customerMap: Map<string, number>;
   defaultOperatorId: number;
   charlieOperatorId: number;
-  defaultDeviceId: number;
-  apexDeviceId: number;
+  defaultHardwareUserId: number;
+  apexHardwareUserId: number;
   mainCenterId: number;
   northAutoCenterId: number;
   eastTerminalCenterId: number;
@@ -534,7 +528,7 @@ export function getStandaloneEntries(ctx: {
       status: EntryStatus.PENDING,
       auto_approved: false,
       center_id: ctx.northAutoCenterId,
-      created_by: ctx.defaultDeviceId,
+      created_by: ctx.defaultHardwareUserId,
       approved_by: null,
       customer_id: ctx.customerMap.get("Vikram Singh"),
       factory_id: ctx.primaryFactoryId,
@@ -549,7 +543,7 @@ export function getStandaloneEntries(ctx: {
       status: EntryStatus.REJECTED,
       auto_approved: false,
       center_id: ctx.southExpressCenterId,
-      created_by: ctx.defaultDeviceId,
+      created_by: ctx.defaultHardwareUserId,
       approved_by: null,
       customer_id: ctx.customerMap.get("Sunil Verma"),
       factory_id: ctx.primaryFactoryId,
@@ -579,8 +573,8 @@ export function getStandaloneEntries(ctx: {
       status: EntryStatus.APPROVED,
       auto_approved: true,
       center_id: ctx.northAutoCenterId,
-      created_by: ctx.defaultDeviceId,
-      approved_by: ctx.defaultDeviceId,
+      created_by: ctx.defaultHardwareUserId,
+      approved_by: ctx.defaultHardwareUserId,
       customer_id: ctx.customerMap.get("Ramesh Kumar"),
       factory_id: ctx.primaryFactoryId,
       images: MOCK_IMAGES,
@@ -609,8 +603,8 @@ export function getStandaloneEntries(ctx: {
       status: EntryStatus.APPROVED,
       auto_approved: true,
       center_id: ctx.centerMap.get("Apex Inbound Scale")!,
-      created_by: ctx.apexDeviceId,
-      approved_by: ctx.apexDeviceId,
+      created_by: ctx.apexHardwareUserId,
+      approved_by: ctx.apexHardwareUserId,
       customer_id: ctx.customerMap.get("Harpreet Singh"),
       factory_id: ctx.secondaryFactoryId,
       images: MOCK_IMAGES,

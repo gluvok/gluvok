@@ -9,7 +9,7 @@ import {
   parseBulkIds,
   getAuthUser,
 } from "@/db/helpers";
-import { type JWTPayload } from "@/lib/auth/jwt";
+import { type AuthUserPayload } from "@/types";
 import { EntrySource, EntryStatus, ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { createEntry, deleteEntries } from "@/lib/services/entries";
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
 
     // Direct invocation support in unit test environments
     if (rest.length >= 1 && typeof rest[0] === "object" && rest[0] !== null && "role" in rest[0]) {
-      const user = rest[0] as JWTPayload;
+      const user = rest[0] as AuthUserPayload;
       if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.CREATE)) {
         return forbiddenError();
       }

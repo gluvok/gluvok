@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
 import { Role } from "@/lib/constants/enums";
-import { signJWT, signRefreshToken } from "@/lib/auth/jwt";
+import { validateSession } from "@/lib/auth/session";
 import {
   fetchPaginatedResult,
   formatEntityResponse,
@@ -21,6 +21,10 @@ const { mockDb } = vi.hoisted(() => ({
 vi.mock("@/db", () => ({
   db: mockDb,
   supabase: mockDb,
+}));
+
+vi.mock("@/lib/auth/session", () => ({
+  validateSession: vi.fn(),
 }));
 
 describe("fetchPaginatedResult", () => {
@@ -133,17 +137,16 @@ describe("parseBulkIds", () => {
   });
 });
 
-describe("withAuth and server-side auto-refresh", () => {
+describe("withAuth and session authentication", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.JWT_SECRET = "test-secret-key-12345";
   });
 
-  it("authenticates and passes through when access token is valid", async () => {
+  it("authenticates and passes through when session token is valid", async () => {
     const handler = vi.fn().mockResolvedValue(NextResponse.json({ success: true }));
     const authedHandler = withAuth(handler);
 
-    const token = await signJWT({
+    vi.mocked(validateSession).mockResolvedValue({
       sub: "1",
       username: "admin",
       name: "Admin",
@@ -152,54 +155,34 @@ describe("withAuth and server-side auto-refresh", () => {
     });
 
     const req = new NextRequest("http://localhost/api/test");
-    req.cookies.set("token", token);
+    req.cookies.set("session_token", "mock-session-token");
 
     const response = await authedHandler(req, { params: Promise.resolve({}) });
     expect(response.status).toBe(200);
     expect(handler).toHaveBeenCalled();
   });
 
-  it("silently auto-refreshes when access token is expired but refresh token is valid", async () => {
+  it("authenticates and passes through with forwarded x-user headers", async () => {
     const handler = vi.fn().mockResolvedValue(NextResponse.json({ success: true }));
     const authedHandler = withAuth(handler);
 
-    const refreshToken = await signRefreshToken({
-      sub: "10",
-      token_version: 1,
+    const req = new NextRequest("http://localhost/api/test", {
+      headers: {
+        "x-user-id": "1",
+        "x-user-username": "admin",
+        "x-user-name": "Admin",
+        "x-user-role": Role.ADMIN,
+        "x-user-factory-id": "1",
+      },
     });
-
-    mockDb.from.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          is: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({
-              data: {
-                id: 10,
-                username: "operator_01",
-                name: "Operator One",
-                role: Role.OPERATOR,
-                factory_id: 2,
-                token_version: 1,
-              },
-              error: null,
-            }),
-          }),
-        }),
-      }),
-    });
-
-    const req = new NextRequest("http://localhost/api/test");
-    req.cookies.set("token", "expired.or.invalid.token");
-    req.cookies.set("refresh_token", refreshToken);
 
     const response = await authedHandler(req, { params: Promise.resolve({}) });
     expect(response.status).toBe(200);
     expect(handler).toHaveBeenCalled();
-    expect(response.cookies.get("token")?.value).toBeDefined();
-    expect(response.cookies.get("refresh_token")?.value).toBeDefined();
   });
 
-  it("returns 401 when neither token nor refresh token is valid", async () => {
+  it("returns 401 when session token is invalid or missing", async () => {
+    vi.mocked(validateSession).mockResolvedValue(null);
     const handler = vi.fn();
     const authedHandler = withAuth(handler);
 

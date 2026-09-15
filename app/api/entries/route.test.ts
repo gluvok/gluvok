@@ -2,10 +2,19 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { PermissionKey, ProjectSlug, Role, EntryStatus, EntrySource } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
-const { mockHasPermission, mockCreateEntry, mockVerifyDeviceRequest, mockDb } = vi.hoisted(() => ({
+const {
+  mockHasPermission,
+  mockCreateEntry,
+  mockVerifyDeviceRequest,
+  mockUploadFilesToStorage,
+  mockDeleteStorageImages,
+  mockDb,
+} = vi.hoisted(() => ({
   mockHasPermission: vi.fn(),
   mockCreateEntry: vi.fn(),
   mockVerifyDeviceRequest: vi.fn(),
+  mockUploadFilesToStorage: vi.fn(),
+  mockDeleteStorageImages: vi.fn(),
   mockDb: {
     from: vi.fn(),
   },
@@ -23,6 +32,11 @@ vi.mock("@/lib/auth/device", async (importOriginal) => {
     verifyDeviceRequest: mockVerifyDeviceRequest,
   };
 });
+
+vi.mock("@/lib/services/storage", () => ({
+  uploadFilesToStorage: mockUploadFilesToStorage,
+  deleteStorageImages: mockDeleteStorageImages,
+}));
 
 vi.mock("@/db/helpers", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/db/helpers")>();
@@ -209,8 +223,26 @@ describe("Entries route handlers (/api/entries)", () => {
   });
 
   describe("POST /api/entries", () => {
-    it("rejects when user lacks CREATE permission", async () => {
-      mockHasPermission.mockReturnValue(false);
+    function createMultipartReq(
+      fields: Record<string, string | number>,
+      files?: File[],
+      headers?: Record<string, string>,
+    ) {
+      const formData = new FormData();
+      Object.entries(fields).forEach(([k, v]) => formData.append(k, String(v)));
+      if (files) {
+        files.forEach((f) => formData.append("files", f));
+      }
+      return new NextRequest("http://localhost/api/entries", {
+        method: "POST",
+        headers: {
+          ...headers,
+        },
+        body: formData,
+      });
+    }
+
+    it("rejects non-multipart requests with 415 Unsupported Media Type", async () => {
       const req = new NextRequest("http://localhost/api/entries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -219,6 +251,20 @@ describe("Entries route handlers (/api/entries)", () => {
           weight: 10000,
           center_id: 1,
         }),
+      });
+
+      const response = await POST(req);
+      expect(response.status).toBe(415);
+      const json = await response.json();
+      expect(json.error).toBe("POST /api/entries requires multipart/form-data");
+    });
+
+    it("rejects when user lacks CREATE permission", async () => {
+      mockHasPermission.mockReturnValue(false);
+      const req = createMultipartReq({
+        vehicle_number: "MH12AB1234",
+        weight: 10000,
+        center_id: 1,
       });
 
       const handler = POST as unknown as RawHandler;
@@ -233,13 +279,9 @@ describe("Entries route handlers (/api/entries)", () => {
     });
 
     it("returns 400 for invalid body schema", async () => {
-      const req = new NextRequest("http://localhost/api/entries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          vehicle_number: "INVALID-PLATE",
-          weight: -50,
-        }),
+      const req = createMultipartReq({
+        vehicle_number: "INVALID-PLATE",
+        weight: -50,
       });
 
       const handler = POST as unknown as RawHandler;
@@ -248,7 +290,7 @@ describe("Entries route handlers (/api/entries)", () => {
       expect(response.status).toBe(400);
     });
 
-    it("successfully creates entry via createEntry service", async () => {
+    it("successfully creates entry via createEntry service and uploads attached files", async () => {
       const createdEntry = {
         id: 10,
         vehicle_number: "MH12AB1234",
@@ -258,18 +300,34 @@ describe("Entries route handlers (/api/entries)", () => {
         factory_id: 1,
         source: EntrySource.MANUAL,
         status: EntryStatus.PENDING,
+        images: ["https://storage.supabase.co/photo.jpg"],
       };
       mockCreateEntry.mockResolvedValue(createdEntry);
+      mockUploadFilesToStorage.mockResolvedValue(["https://storage.supabase.co/photo.jpg"]);
 
-      const req = new NextRequest("http://localhost/api/entries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      mockDb.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              is: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: 1, factory_id: 1 },
+                }),
+              }),
+            }),
+          }),
+        }),
+      });
+
+      const file = new File([new Uint8Array([1, 2, 3])], "photo.jpg", { type: "image/jpeg" });
+      const req = createMultipartReq(
+        {
           vehicle_number: "MH12AB1234",
           weight: 12000,
           center_id: 1,
-        }),
-      });
+        },
+        [file],
+      );
 
       const handler = POST as unknown as RawHandler;
       const response = await handler(req, sampleUser, {}, context);
@@ -277,6 +335,7 @@ describe("Entries route handlers (/api/entries)", () => {
       expect(response.status).toBe(201);
       const json = await response.json();
       expect(json.data).toEqual(createdEntry);
+      expect(mockUploadFilesToStorage).toHaveBeenCalledWith([file], 1);
       expect(mockCreateEntry).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
@@ -286,22 +345,25 @@ describe("Entries route handlers (/api/entries)", () => {
           weight: 12000,
           centerId: 1,
           status: EntryStatus.PENDING,
+          images: ["https://storage.supabase.co/photo.jpg"],
         }),
       );
     });
 
-    it("creates DEVICE entry when caller provides valid device headers", async () => {
+    it("creates DEVICE entry when caller provides HTTP Basic Auth credentials", async () => {
       mockVerifyDeviceRequest.mockResolvedValue({
         success: true,
-        device: { id: 5, name: "North Terminal", center_id: 1 },
+        device: { id: 5, factory_id: 1, center_id: 1 },
       });
 
       mockDb.from.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            is: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({
-                data: { id: 1, factory_id: 1 },
+            eq: vi.fn().mockReturnValue({
+              is: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: 1, factory_id: 1 },
+                }),
               }),
             }),
           }),
@@ -322,19 +384,16 @@ describe("Entries route handlers (/api/entries)", () => {
       };
       mockCreateEntry.mockResolvedValue(createdEntry);
 
-      const req = new NextRequest("http://localhost/api/entries", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-device-id": "5",
-          "x-device-key": "hardware123",
-        },
-        body: JSON.stringify({
+      const basicHeader = `Basic ${Buffer.from("device1:pass123").toString("base64")}`;
+      const req = createMultipartReq(
+        {
           detected_vehicle_number: "KA01AB1234",
           weight: 15000,
           center_id: 1,
-        }),
-      });
+        },
+        undefined,
+        { authorization: basicHeader },
+      );
 
       const response = await POST(req);
 
@@ -354,18 +413,68 @@ describe("Entries route handlers (/api/entries)", () => {
       );
     });
 
-    it("creates DEVICE entry when device sends NO_PLATE_DETECTED", async () => {
+    it("creates DEVICE entry when caller provides credentials in FormData", async () => {
       mockVerifyDeviceRequest.mockResolvedValue({
         success: true,
-        device: { id: 5, name: "North Terminal", factory_id: 1 },
+        device: { id: 6, factory_id: 1, center_id: 2 },
       });
 
       mockDb.from.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            is: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({
-                data: { id: 1, factory_id: 1 },
+            eq: vi.fn().mockReturnValue({
+              is: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: 2, factory_id: 1 },
+                }),
+              }),
+            }),
+          }),
+        }),
+      });
+
+      const createdEntry = {
+        id: 21,
+        detected_vehicle_number: "MH04CD5678",
+        vehicle_number: "MH04CD5678",
+        weight: 18000,
+        center_id: 2,
+        created_by: 6,
+        factory_id: 1,
+        source: EntrySource.DEVICE,
+        status: EntryStatus.PENDING,
+      };
+      mockCreateEntry.mockResolvedValue(createdEntry);
+
+      const req = createMultipartReq({
+        username: "device_scale_2",
+        password: "hardware_secret",
+        detected_vehicle_number: "MH04CD5678",
+        weight: 18000,
+        center_id: 2,
+      });
+
+      const response = await POST(req);
+
+      expect(response.status).toBe(201);
+      const json = await response.json();
+      expect(json.data.source).toBe(EntrySource.DEVICE);
+    });
+
+    it("creates DEVICE entry when device sends NO_PLATE_DETECTED", async () => {
+      mockVerifyDeviceRequest.mockResolvedValue({
+        success: true,
+        device: { id: 5, factory_id: 1, center_id: 1 },
+      });
+
+      mockDb.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              is: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: 1, factory_id: 1 },
+                }),
               }),
             }),
           }),
@@ -386,18 +495,12 @@ describe("Entries route handlers (/api/entries)", () => {
       };
       mockCreateEntry.mockResolvedValue(createdEntry);
 
-      const req = new NextRequest("http://localhost/api/entries", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-device-id": "5",
-          "x-device-key": "hardware123",
-        },
-        body: JSON.stringify({
-          detected_vehicle_number: "NO_PLATE_DETECTED",
-          weight: 15000,
-          center_id: 1,
-        }),
+      const req = createMultipartReq({
+        username: "device1",
+        password: "secret",
+        detected_vehicle_number: "NO_PLATE_DETECTED",
+        weight: 15000,
+        center_id: 1,
       });
 
       const response = await POST(req);
@@ -418,69 +521,91 @@ describe("Entries route handlers (/api/entries)", () => {
       );
     });
 
-    it("rejects DEVICE entry when device omits center_id", async () => {
+    it("rejects DEVICE entry when center is not found", async () => {
       mockVerifyDeviceRequest.mockResolvedValue({
         success: true,
-        device: { id: 5, name: "North Terminal", factory_id: 1 },
+        device: { id: 5, factory_id: 1, center_id: 999 },
       });
 
-      const req = new NextRequest("http://localhost/api/entries", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-device-id": "5",
-          "x-device-key": "hardware123",
-        },
-        body: JSON.stringify({
-          detected_vehicle_number: "NO_PLATE_DETECTED",
-          weight: 15000,
+      mockDb.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              is: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: null,
+                }),
+              }),
+            }),
+          }),
         }),
+      });
+
+      const req = createMultipartReq({
+        username: "device1",
+        password: "secret",
+        detected_vehicle_number: "MH12AB1234",
+        weight: 15000,
+        center_id: 999,
       });
 
       const response = await POST(req);
       expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.error).toBe(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND);
     });
 
     it("rejects device request when verifyDeviceRequest fails", async () => {
       mockVerifyDeviceRequest.mockResolvedValue({
         success: false,
         status: 403,
-        error: "Invalid device key or deactivated device",
+        error: "Invalid device credentials",
       });
 
-      const req = new NextRequest("http://localhost/api/entries", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-device-id": "5",
-          "x-device-key": "wrong_key",
-        },
-        body: JSON.stringify({
+      const req = createMultipartReq(
+        {
           detected_vehicle_number: "KA01AB1234",
           weight: 15000,
           center_id: 1,
-        }),
-      });
+        },
+        undefined,
+        { "x-username": "bad_user", "x-password": "bad_password" },
+      );
 
       const response = await POST(req);
 
       expect(response.status).toBe(403);
       const json = await response.json();
-      expect(json.error).toBe("Invalid device key or deactivated device");
+      expect(json.error).toBe("Invalid device credentials");
     });
 
-    it("handles createEntry service error", async () => {
+    it("handles createEntry service error and performs compensating rollback", async () => {
+      mockUploadFilesToStorage.mockResolvedValue(["https://storage.supabase.co/uploaded.jpg"]);
       mockCreateEntry.mockRejectedValue(new Error(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND));
 
-      const req = new NextRequest("http://localhost/api/entries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      mockDb.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              is: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: 999, factory_id: 1 },
+                }),
+              }),
+            }),
+          }),
+        }),
+      });
+
+      const file = new File([new Uint8Array([1, 2, 3])], "photo.jpg", { type: "image/jpeg" });
+      const req = createMultipartReq(
+        {
           vehicle_number: "MH12AB1234",
           weight: 12000,
           center_id: 999,
-        }),
-      });
+        },
+        [file],
+      );
 
       const handler = POST as unknown as RawHandler;
       const response = await handler(req, sampleUser, {}, context);
@@ -488,6 +613,11 @@ describe("Entries route handlers (/api/entries)", () => {
       expect(response.status).toBe(400);
       const json = await response.json();
       expect(json.error).toBe(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND);
+      // Verify compensating rollback deleted the newly uploaded images from storage
+      expect(mockDeleteStorageImages).toHaveBeenCalledWith(
+        ["https://storage.supabase.co/uploaded.jpg"],
+        1,
+      );
     });
   });
 

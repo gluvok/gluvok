@@ -9,6 +9,126 @@ const STORAGE_BUCKET_NAME = "gluvok";
 const CACHE_CONTROL = "3600";
 const UPLOAD_PATH_FOLDER = "weighments";
 
+export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+export const ALLOWED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/heic",
+  "image/bmp",
+]);
+export const PUBLIC_URL_INDICATOR = "/public/gluvok/";
+
+/**
+ * Uploads an array of browser/Node File objects to the Supabase Storage bucket.
+ *
+ * @param files Array of File objects to upload
+ * @param factoryId Active factory ID for directory partitioning
+ * @returns Array of public URLs for all uploaded images
+ */
+export async function uploadFilesToStorage(
+  files: File[],
+  factoryId: number | string,
+): Promise<string[]> {
+  if (!files || files.length === 0) return [];
+
+  const parsedFactoryId = Number(factoryId);
+  if (!Number.isSafeInteger(parsedFactoryId) || parsedFactoryId <= 0) {
+    throw new Error("Valid factoryId is required for image uploads");
+  }
+
+  const factoryPrefix = String(parsedFactoryId);
+  const uploadedUrls: string[] = [];
+
+  for (const file of files) {
+    if (file.size > MAX_IMAGE_SIZE) {
+      throw new Error(`File "${file.name}" exceeds maximum allowed size of 10MB`);
+    }
+
+    if (file.type && !ALLOWED_MIME_TYPES.has(file.type.toLowerCase())) {
+      throw new Error(
+        `Invalid image file type "${file.type}". Allowed types: JPEG, PNG, WebP, GIF, HEIC, BMP`,
+      );
+    }
+
+    const fileExt = file.name ? file.name.split(".").pop() || "jpg" : "jpg";
+    const uniqueId = `${Math.random().toString(36).substring(2, 15)}-${Date.now()}`;
+    const filePath = `f_${factoryPrefix}/${UPLOAD_PATH_FOLDER}/${uniqueId}.${fileExt}`;
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const { error: uploadError } = await supabase.storage
+      .from(STORAGE_BUCKET_NAME)
+      .upload(filePath, buffer, {
+        contentType: file.type || "image/jpeg",
+        cacheControl: CACHE_CONTROL,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("Supabase storage upload error:", uploadError);
+      throw new Error("Failed to upload image to storage");
+    }
+
+    const { data } = supabase.storage.from(STORAGE_BUCKET_NAME).getPublicUrl(filePath);
+    if (data?.publicUrl) {
+      uploadedUrls.push(data.publicUrl);
+    }
+  }
+
+  return uploadedUrls;
+}
+
+/**
+ * Deletes an array of image URLs or storage paths from the Supabase Storage bucket.
+ *
+ * @param urlsOrPaths Array of public URLs or relative paths to remove
+ * @param factoryId Optional factory ID to enforce tenancy boundary scoping
+ * @returns Number of removed images
+ */
+export async function deleteStorageImages(
+  urlsOrPaths: string[],
+  factoryId?: number | string,
+): Promise<number> {
+  if (!urlsOrPaths || urlsOrPaths.length === 0) return 0;
+
+  const factoryPrefix = factoryId !== undefined ? `f_${factoryId}/` : undefined;
+  const targetPaths: string[] = [];
+
+  for (const item of urlsOrPaths) {
+    if (typeof item !== "string" || !item) continue;
+
+    let relativePath: string | null = null;
+    if (item.includes(PUBLIC_URL_INDICATOR)) {
+      relativePath = item.split(PUBLIC_URL_INDICATOR)[1] || null;
+    } else if (!item.startsWith("http://") && !item.startsWith("https://")) {
+      relativePath = item;
+    }
+
+    if (relativePath) {
+      if (!factoryPrefix || relativePath.startsWith(factoryPrefix)) {
+        targetPaths.push(relativePath);
+      }
+    }
+  }
+
+  if (targetPaths.length === 0) return 0;
+
+  const { error: removeError } = await supabase.storage
+    .from(STORAGE_BUCKET_NAME)
+    .remove(targetPaths);
+
+  if (removeError) {
+    console.error("Supabase storage deletion error:", removeError);
+    throw new Error("Failed to delete images from storage");
+  }
+
+  return targetPaths.length;
+}
+
 /**
  * Uploads an array of base64 image strings to the Supabase Storage bucket.
  * Non-base64 images (e.g. existing https URLs) are returned untouched.

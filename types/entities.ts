@@ -136,6 +136,8 @@ export interface User {
   name: string;
   role: Role;
   factory_id: number;
+  center_id?: number | null;
+  password_hash?: string;
   token_version?: number;
   created_at: string;
   updated_at: string;

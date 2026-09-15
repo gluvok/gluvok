@@ -90,11 +90,59 @@ export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
   return NextResponse.json({ data: formatted });
 });
 
+import { uploadFilesToStorage, deleteStorageImages } from "@/lib/services/storage";
+
 export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => {
   if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.WRITE)) return forbiddenError();
   const { id } = await ctx.params;
   const entryId = Number(id);
-  const body = await req.json();
+
+  const contentType = req.headers.get("content-type") || "";
+  let body: Record<string, unknown> = {};
+  const files: File[] = [];
+
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await req.formData();
+    formData.forEach((value, key) => {
+      if (key === "files" || key === "file" || key === "images" || key === "image") {
+        if (value instanceof File && value.size > 0) {
+          files.push(value);
+        }
+      } else {
+        body[key] = value;
+      }
+    });
+
+    const existingUrls: string[] = [];
+    for (const key of ["image_urls", "images"]) {
+      for (const entry of formData.getAll(key)) {
+        if (
+          typeof entry === "string" &&
+          (entry.startsWith("http://") || entry.startsWith("https://"))
+        ) {
+          existingUrls.push(entry);
+        }
+      }
+    }
+
+    if (
+      files.length > 0 ||
+      existingUrls.length > 0 ||
+      formData.has("images") ||
+      formData.has("image_urls")
+    ) {
+      body.images = existingUrls;
+    }
+  } else {
+    body = await req.json();
+  }
+
+  // If new files are attached, upload them to Supabase storage
+  if (files.length > 0) {
+    const uploadedUrls = await uploadFilesToStorage(files, user.factory_id!);
+    const currentImages = Array.isArray(body.images) ? (body.images as string[]) : [];
+    body.images = [...currentImages, ...uploadedUrls];
+  }
 
   const parsed = editEntrySchema.safeParse(body);
   if (!parsed.success) {
@@ -112,6 +160,21 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   if (fetchErr || !existing) {
     return apiError(ApiErrorMessage.ENTRY_NOT_FOUND, StatusCodes.NOT_FOUND);
+  }
+
+  // If images are being updated, remove deleted images from storage
+  if (body.images !== undefined && Array.isArray(existing.images)) {
+    const remainingImages = (body.images || []) as string[];
+    const removedImages = (existing.images as string[]).filter(
+      (img) => !remainingImages.includes(img),
+    );
+    if (removedImages.length > 0) {
+      try {
+        await deleteStorageImages(removedImages, user.factory_id!);
+      } catch (err) {
+        console.error("Failed to delete removed storage images on patch:", err);
+      }
+    }
   }
 
   // 2. Validate edit locks and compute updates

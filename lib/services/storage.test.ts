@@ -1,8 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const { mockUpload, mockGetPublicUrl } = vi.hoisted(() => ({
+const { mockUpload, mockGetPublicUrl, mockRemove } = vi.hoisted(() => ({
   mockUpload: vi.fn(),
   mockGetPublicUrl: vi.fn(),
+  mockRemove: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase", () => ({
@@ -11,12 +12,13 @@ vi.mock("@/lib/supabase", () => ({
       from: vi.fn(() => ({
         upload: mockUpload,
         getPublicUrl: mockGetPublicUrl,
+        remove: mockRemove,
       })),
     },
   },
 }));
 
-import { uploadBase64ImagesToStorage } from "./storage";
+import { uploadBase64ImagesToStorage, uploadFilesToStorage, deleteStorageImages } from "./storage";
 
 describe("uploadBase64ImagesToStorage", () => {
   beforeEach(() => {
@@ -112,5 +114,92 @@ describe("uploadBase64ImagesToStorage", () => {
     const res = await uploadBase64ImagesToStorage([base64Img], 1);
 
     expect(res).toEqual([base64Img]);
+  });
+});
+
+describe("uploadFilesToStorage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns empty array when given empty files", async () => {
+    const res = await uploadFilesToStorage([], 1);
+    expect(res).toEqual([]);
+  });
+
+  it("throws error when file exceeds 10MB", async () => {
+    const hugeFile = {
+      name: "huge.jpg",
+      size: 11 * 1024 * 1024,
+      type: "image/jpeg",
+      arrayBuffer: vi.fn(),
+    } as unknown as File;
+
+    await expect(uploadFilesToStorage([hugeFile], 1)).rejects.toThrow(
+      'File "huge.jpg" exceeds maximum allowed size of 10MB',
+    );
+  });
+
+  it("throws error for invalid image MIME type", async () => {
+    const badFile = {
+      name: "script.sh",
+      size: 100,
+      type: "application/x-sh",
+      arrayBuffer: vi.fn(),
+    } as unknown as File;
+
+    await expect(uploadFilesToStorage([badFile], 1)).rejects.toThrow(
+      'Invalid image file type "application/x-sh"',
+    );
+  });
+
+  it("successfully uploads valid File and returns public URL", async () => {
+    mockUpload.mockResolvedValue({ error: null });
+    mockGetPublicUrl.mockReturnValue({
+      data: {
+        publicUrl:
+          "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/photo.jpg",
+      },
+    });
+
+    const file = new File([new Uint8Array([1, 2, 3])], "photo.jpg", { type: "image/jpeg" });
+    const res = await uploadFilesToStorage([file], 1);
+
+    expect(mockUpload).toHaveBeenCalledWith(
+      expect.stringMatching(/^f_1\/weighments\/.+\.jpg$/),
+      expect.any(Buffer),
+      expect.objectContaining({
+        contentType: "image/jpeg",
+        cacheControl: "3600",
+      }),
+    );
+    expect(res).toEqual([
+      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/photo.jpg",
+    ]);
+  });
+});
+
+describe("deleteStorageImages", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns 0 when given empty array", async () => {
+    const res = await deleteStorageImages([]);
+    expect(res).toBe(0);
+    expect(mockRemove).not.toHaveBeenCalled();
+  });
+
+  it("deletes relative paths and public URLs scoped to factory", async () => {
+    mockRemove.mockResolvedValue({ error: null });
+
+    const urls = [
+      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/photo1.jpg",
+      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/f_2/weighments/photo2.jpg", // different factory
+    ];
+
+    const count = await deleteStorageImages(urls, 1);
+    expect(count).toBe(1);
+    expect(mockRemove).toHaveBeenCalledWith(["f_1/weighments/photo1.jpg"]);
   });
 });

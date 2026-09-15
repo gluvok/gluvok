@@ -16,12 +16,12 @@ Gluvok is a high-performance operations platform designed for factories, weighbr
   - Indian vehicle registration number validation (e.g. `MH12AB1234`, `22BH1234AA`).
 - **Ticketing & Approval Workflow**: Automated ticket generation for center entries with status tracking (`pending`, `approved`, `rejected`), with explicit `created_by` and `approved_by` audit fields.
 - **Commodity & Rate Masters**: Dynamic rate configuration per commodity and center.
-- **Hardware & IoT Ingestion**: High-throughput API workflows for Raspberry Pi scales and automated license plate recognition (ALPR) cameras. Devices authenticate via session Bearer tokens or device headers, bound to physical collection centers, capturing an immutable point-in-time center snapshot. See [docs/raspberry_pi_curl.md](docs/raspberry_pi_curl.md).
+- **Hardware & IoT Ingestion**: High-throughput API workflows for Raspberry Pi scales and automated license plate recognition (ALPR) cameras. Devices authenticate via HTTP Basic Auth (`username`/`password`) or session Bearer tokens, bound to physical collection centers, capturing an immutable point-in-time center snapshot. See [docs/raspberry_pi_curl.md](docs/raspberry_pi_curl.md).
 - **Data Export**: Built-in CSV and PDF export capabilities for audit reports and center registries.
 - **Database-Backed Session & Instant Revocation Model**:
   - Central `sessions` table tracks active tokens (`id`, `token`, `user_id`, `expires_at`, `created_at`, `updated_at`, `deleted_at`) for 0-second instant revocation upon logout, password updates, or account deactivation/deletion (enforced by both application routes and PostgreSQL database triggers).
   - Web UI Personnel: HTTP-only secure cookie-based session tokens (`admin`, `manager`, `operator`, `base`).
-  - Edge Ingestion Devices: Bearer session tokens (`Authorization: Bearer <token>`) or SHA-256 / Argon2id verified header authentication (`x-device-id` and `x-device-key`) with zero cookie dependency.
+  - Edge Ingestion Devices: HTTP Basic Auth (`Authorization: Basic <credentials>`), multipart form-data credentials (`username`/`password`), or Bearer session tokens with zero cookie dependency.
 
 ---
 
@@ -147,13 +147,12 @@ All API endpoints are located under `/api/*`:
 
 ### Operations & Weighments
 
-- `GET, POST /api/entries` - List entries (with derived `source` based on creator role) or ingest a new entry with `created_by` and `approved_by`.
-- `GET, PUT, DELETE /api/entries/:id` - Retrieve, update, approve, or reject an entry.
+- `GET, POST /api/entries` - List entries (with derived `source` based on creator role) or ingest a new entry. `POST` exclusively accepts `multipart/form-data` with attached images, uploading them to Supabase Storage before DB commit with compensating rollback. Supports HTTP Basic Auth and form-data credentials (`username`/`password`) for hardware devices.
+- `GET, PATCH, DELETE /api/entries/:id` - Retrieve, update, approve, or reject an entry. Automatically manages storage image additions and purges on patch and delete.
 - `GET, POST /api/tickets` - List ticketing records or create new tickets.
 - `GET, PUT, DELETE /api/tickets/:id` - Ticket details, status updates, and resolutions.
 - `GET, POST /api/weighments` - Retrieve weighments with factory/customer filters.
 - `GET, PUT, DELETE /api/weighments/:id` - Weighment record details and lifecycle updates.
-- `POST /api/storage/upload` - Upload image files or base64 payloads to Supabase storage.
 - `GET /api/health` - Service health status probe.
 
 ---

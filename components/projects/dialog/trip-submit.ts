@@ -9,7 +9,7 @@ import { type FieldConfig } from "@/lib/fields";
 import { ProjectSlug, EntryStatus, Role, PermissionKey } from "@/lib/constants/enums";
 import { getField, hasPermission } from "@/lib/store";
 import { checkEditUniqueness } from "@/lib/validation";
-import { processImageUploadsAndDeletions } from "@/components/form/image/upload";
+import { getPendingImageFile, releasePendingImage } from "@/components/form/image/upload";
 
 /**
  * checkVehicleChangeOnLinkedEntry
@@ -60,10 +60,35 @@ export async function prepareSubmitPayload(
   updateBoth?: boolean,
 ): Promise<PreparedPayload> {
   if (!isEdit) {
-    const payload = { ...values };
-    if (Array.isArray(payload["images"])) {
-      payload["images"] = await processImageUploadsAndDeletions(payload["images"], []);
+    if (projectSlug === ProjectSlug.ENTRIES) {
+      const formData = new FormData();
+      Object.entries(values).forEach(([key, val]) => {
+        if (key === "images") return;
+        if (val !== undefined && val !== null && val !== "") {
+          formData.append(key, String(val));
+        }
+      });
+
+      if (Array.isArray(values["images"])) {
+        for (const img of values["images"]) {
+          if (typeof img === "string") {
+            if (img.startsWith("blob:")) {
+              const file = getPendingImageFile(img);
+              if (file) {
+                formData.append("files", file);
+                releasePendingImage(img);
+              }
+            } else {
+              formData.append("image_urls", img);
+            }
+          }
+        }
+      }
+
+      return { payload: formData as unknown as Record<string, unknown> };
     }
+
+    const payload = { ...values };
     return { payload };
   }
 
@@ -112,12 +137,30 @@ export async function prepareSubmitPayload(
       return { payload: updateValues, uniquenessError };
     }
 
-    if (Array.isArray(updateValues["images"])) {
-      const originalImages = (getField(item, "images") || []) as string[];
-      updateValues["images"] = await processImageUploadsAndDeletions(
-        updateValues["images"],
-        originalImages,
-      );
+    if (projectSlug === ProjectSlug.ENTRIES && Array.isArray(updateValues["images"])) {
+      const formData = new FormData();
+      Object.entries(updateValues).forEach(([key, val]) => {
+        if (key === "images") return;
+        if (val !== undefined && val !== null) {
+          formData.append(key, String(val));
+        }
+      });
+
+      for (const img of updateValues["images"]) {
+        if (typeof img === "string") {
+          if (img.startsWith("blob:")) {
+            const file = getPendingImageFile(img);
+            if (file) {
+              formData.append("files", file);
+              releasePendingImage(img);
+            }
+          } else {
+            formData.append("image_urls", img);
+          }
+        }
+      }
+
+      return { payload: formData as unknown as Record<string, unknown> };
     }
   }
 

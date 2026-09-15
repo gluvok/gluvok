@@ -7,7 +7,6 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import axios from "axios";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Dropzone, DropzoneEmptyState } from "@/components/kibo-ui/dropzone";
@@ -30,63 +29,15 @@ interface ImageUploadProps {
  */
 const pendingImageUploads = new Map<string, File>();
 
-/**
- * processImageUploadsAndDeletions utility
- * Resolves local file blob uploads and removes deleted items via authenticated server storage API.
- * Returns the final public URL arrays.
- */
-export async function processImageUploadsAndDeletions(
-  submittedImages: string[],
-  originalImages: string[] = [],
-): Promise<string[]> {
-  // 1. Identify which images to delete (present in original, but not in submitted)
-  const imagesToDelete = originalImages.filter((img) => !submittedImages.includes(img));
-  if (imagesToDelete.length > 0) {
-    try {
-      await axios.delete("/api/storage/upload", {
-        data: { urls: imagesToDelete },
-      });
-    } catch (err: unknown) {
-      console.error("Failed to delete removed files from storage API:", err);
-    }
-  }
+export function getPendingImageFile(blobUrl: string): File | undefined {
+  return pendingImageUploads.get(blobUrl);
+}
 
-  // 2. Upload any new blob images
-  const blobImages = submittedImages.filter((img) => img.startsWith("blob:"));
-  if (blobImages.length > 0) {
-    const formData = new FormData();
-    for (const blobUrl of blobImages) {
-      const file = pendingImageUploads.get(blobUrl);
-      if (file) {
-        formData.append("files", file);
-      }
-    }
-
-    const response = await axios.post<{ data: { urls: string[] } }>(
-      "/api/storage/upload",
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      },
-    );
-
-    const uploadedUrls = response.data?.data?.urls || [];
-    let uploadIdx = 0;
-
-    const finalImages = submittedImages.map((img) => {
-      if (img.startsWith("blob:")) {
-        const finalUrl = uploadedUrls[uploadIdx++];
-        pendingImageUploads.delete(img);
-        URL.revokeObjectURL(img);
-        return finalUrl || img;
-      }
-      return img;
-    });
-
-    return finalImages;
-  }
-
-  return submittedImages;
+export function releasePendingImage(blobUrl: string): void {
+  pendingImageUploads.delete(blobUrl);
+  try {
+    URL.revokeObjectURL(blobUrl);
+  } catch {}
 }
 
 /**

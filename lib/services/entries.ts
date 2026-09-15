@@ -6,7 +6,7 @@
 import { supabase } from "@/db";
 import { EntryStatus, EntrySource, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
-import { uploadBase64ImagesToStorage } from "./storage";
+import { uploadBase64ImagesToStorage, deleteStorageImages } from "./storage";
 import { validateSequentialApproval, tryMergeEntries } from "./weighments";
 
 export interface CreateEntryParams {
@@ -209,7 +209,7 @@ export async function deleteEntries(
     .in("id", entryIds)
     .is("deleted_at", null)
     .eq("factory_id", factoryId)
-    .select("id");
+    .select("id, images");
 
   if (error) {
     console.error("Failed to soft delete entries:", error);
@@ -221,5 +221,17 @@ export async function deleteEntries(
   }
 
   const deletedIds = (deletedEntries || []).map((e: { id: number }) => e.id);
+  const imagesToPurge: string[] = [];
+  (deletedEntries || []).forEach((e: { images?: string[] }) => {
+    if (Array.isArray(e.images)) imagesToPurge.push(...e.images);
+  });
+  if (imagesToPurge.length > 0) {
+    try {
+      await deleteStorageImages(imagesToPurge, factoryId);
+    } catch (storageErr) {
+      console.error("Failed to delete storage images on entries deletion:", storageErr);
+    }
+  }
+
   return { deletedIds };
 }

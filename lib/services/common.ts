@@ -78,7 +78,7 @@ export async function fetchEntityListPaginated(
 
 export async function insertRow(
   slug: ProjectSlug,
-  record: Record<string, unknown>,
+  record: Record<string, unknown> | FormData,
 ): Promise<EntityRecord> {
   const endpoint = getEndpoint(slug);
   return apiRequest(async () => {
@@ -90,7 +90,7 @@ export async function insertRow(
 export async function updateRow(
   slug: ProjectSlug,
   id: number,
-  record: Record<string, unknown>,
+  record: Record<string, unknown> | FormData,
 ): Promise<EntityRecord> {
   const endpoint = getEndpoint(slug);
   return apiRequest(async () => {

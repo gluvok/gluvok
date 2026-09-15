@@ -118,11 +118,33 @@ export function useEntityForm({
       }
 
       if (isEdit && item) {
-        await updateEntity(
+        const updatedResult = await updateEntity(
           projectSlug as ProjectSlug,
           String(getField(item, primaryIdKey)),
           payload,
         );
+
+        const isSelfPasswordChange = Boolean(
+          projectSlug === ProjectSlug.USERS &&
+          currentUser &&
+          String(getField(item, primaryIdKey)) === String(currentUser.id) &&
+          ((payload &&
+            typeof payload === "object" &&
+            "password" in payload &&
+            (payload as { password?: string }).password) ||
+            (updatedResult &&
+              typeof updatedResult === "object" &&
+              (updatedResult as Record<string, unknown>).is_self_password_changed)),
+        );
+
+        if (isSelfPasswordChange) {
+          toast.success("Password changed successfully. Please log in with your new password.");
+          onOpenChange(false);
+          useAuthStore.setState({ user: null });
+          window.location.href = "/login";
+          return;
+        }
+
         toast.success(
           updateBoth
             ? `${singularName} and paired weighment trip updated successfully`

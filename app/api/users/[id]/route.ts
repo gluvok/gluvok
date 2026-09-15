@@ -82,8 +82,11 @@ export const PATCH = withAuth(
     if (validRole) {
       updates["role"] = validRole;
     }
-    if (password && typeof password === "string" && password.trim().length > 0) {
-      updates.password_hash = await hashPassword(password.trim());
+    const isPasswordUpdated = Boolean(
+      password && typeof password === "string" && password.trim().length > 0,
+    );
+    if (isPasswordUpdated) {
+      updates.password_hash = await hashPassword(password!.trim());
       await deleteAllUserSessions(entityId, client);
     }
 
@@ -97,6 +100,14 @@ export const PATCH = withAuth(
 
     if (updateErr || !updated) {
       return apiError(ApiErrorMessage.FAILED_TO_UPDATE_USER, StatusCodes.INTERNAL_SERVER_ERROR);
+    }
+
+    if (isOwn && isPasswordUpdated) {
+      const response = formatEntityResponse(updated, StatusCodes.OK, {
+        is_self_password_changed: true,
+      });
+      clearAuthCookies(response);
+      return response;
     }
 
     return formatEntityResponse(updated, StatusCodes.OK);

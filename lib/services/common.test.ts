@@ -79,6 +79,18 @@ describe("insertRow & updateRow", () => {
     const result = await updateRow(ProjectSlug.USERS, 10, { name: "Updated Name" });
     expect(result).toEqual({ id: 10, name: "Updated Name" });
   });
+
+  it("updateRow preserves is_self_password_changed flag", async () => {
+    vi.mocked(axios.patch).mockResolvedValue({
+      data: {
+        data: { id: 10, name: "Updated Name" },
+        is_self_password_changed: true,
+      },
+    });
+
+    const result = await updateRow(ProjectSlug.USERS, 10, { password: "newpassword" });
+    expect(result).toEqual({ id: 10, name: "Updated Name", is_self_password_changed: true });
+  });
 });
 
 describe("deleteRows", () => {

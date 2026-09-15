@@ -187,6 +187,9 @@ export function useProjectTable({ projectSlug, primaryIdKey, projectName }: UseP
           setLocalCount(result.count);
         }
       } catch (err) {
+        if (err instanceof Error && err.message === "Unauthorized") {
+          return;
+        }
         console.error(`Failed to load paginated ${projectSlug}:`, err);
         if (!cancelled) {
           setLocalError(err instanceof Error ? err.message : `Failed to load ${projectName}`);

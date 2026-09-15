@@ -221,6 +221,25 @@ describe("useProjectTable Hook", () => {
     expect(result.current.error).toBe("Network unavailable");
   });
 
+  it("should not set error state when loading data fails with Unauthorized", async () => {
+    vi.mocked(fetchEntityListPaginated).mockRejectedValue(new Error("Unauthorized"));
+
+    const { result } = renderHook(() =>
+      useProjectTable({
+        projectSlug: "centers",
+        primaryIdKey: "id",
+        projectName: "Centers",
+      }),
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.error).toBeNull();
+  });
+
   it("should apply column preferences that hydrate after the initial render", async () => {
     vi.mocked(getProjectColumns).mockReturnValue([{ id: "id" }, { id: "name" }, { id: "actions" }]);
 

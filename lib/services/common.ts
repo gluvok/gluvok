@@ -18,6 +18,11 @@ export async function apiRequest<T>(requestFn: () => Promise<T>): Promise<T> {
     return await requestFn();
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+          window.location.href = "/login";
+        }
+      }
       const serverError = error.response?.data?.error || error.response?.data?.message;
       if (serverError && typeof serverError === "string") {
         throw new Error(serverError);
@@ -95,8 +100,15 @@ export async function updateRow(
   const endpoint = getEndpoint(slug);
   return apiRequest(async () => {
     const url = `${endpoint}/${id}`;
-    const res = await axios.patch<{ data: EntityRecord }>(url, record);
-    return res.data.data;
+    const res = await axios.patch<{
+      data: EntityRecord;
+      is_self_password_changed?: boolean;
+    }>(url, record);
+    const data = res.data.data;
+    if (res.data.is_self_password_changed && data && typeof data === "object") {
+      (data as unknown as Record<string, unknown>).is_self_password_changed = true;
+    }
+    return data;
   });
 }
 

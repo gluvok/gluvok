@@ -25,7 +25,7 @@ interface EntitiesState {
     slug: ProjectSlug,
     id: string | number,
     fields: Record<string, unknown>,
-  ) => Promise<void>;
+  ) => Promise<Record<string, unknown> | undefined>;
   deleteEntity: (slug: ProjectSlug, id: string | number) => Promise<void>;
   deleteEntities: (slug: ProjectSlug, ids: Array<string | number>) => Promise<void>;
   entitiesUpdatedTrigger: number;
@@ -140,7 +140,10 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
       const patch = applyUpdateEntity(get(), slug, Number(id), updated, fields);
       set(patch);
     }
-    get().triggerEntitiesUpdate();
+    if (!updated?.is_self_password_changed) {
+      get().triggerEntitiesUpdate();
+    }
+    return updated;
   },
 
   deleteEntity: async (slug, id) => {

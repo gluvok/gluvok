@@ -217,6 +217,73 @@ describe("User mutation guards", () => {
     expect(sessionDeleteSpy).toHaveBeenCalledWith("user_id", 1);
   });
 
+  it("marks is_self_password_changed and clears auth cookies when own password is changed", async () => {
+    mockHasPermission.mockReturnValue(true);
+    const ownUser = {
+      sub: "1",
+      username: "operator",
+      role: Role.OPERATOR,
+      factory_id: 1,
+    };
+    const updateRequest = new Request("http://localhost/api/users/1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        password: "new_secure_password_123",
+        confirmPassword: "new_secure_password_123",
+      }),
+    });
+
+    const existingUser = {
+      id: 1,
+      name: "User 1",
+      role: Role.OPERATOR,
+      factory_id: 1,
+    };
+    const updatedUser = {
+      id: 1,
+      name: "User 1",
+      role: Role.OPERATOR,
+      factory_id: 1,
+    };
+
+    const sessionDeleteSpy = vi.fn();
+    const mockDbWithSessions = {
+      from: vi.fn((table: string) => {
+        if (table === "sessions") {
+          const sessionChain: Record<string, unknown> = {};
+          sessionChain.delete = vi.fn(() => sessionChain);
+          sessionChain.update = vi.fn(() => sessionChain);
+          sessionChain.eq = vi.fn((field: string, val: unknown) => {
+            sessionDeleteSpy(field, val);
+            return Promise.resolve({ data: null, error: null });
+          });
+          return sessionChain;
+        }
+
+        const userChain: Record<string, unknown> = {};
+        userChain.select = vi.fn(() => userChain);
+        userChain.eq = vi.fn(() => userChain);
+        userChain.neq = vi.fn(() => userChain);
+        userChain.is = vi.fn(() => userChain);
+        userChain.maybeSingle = vi.fn().mockResolvedValue({ data: existingUser });
+        userChain.update = vi.fn(() => userChain);
+        userChain.single = vi.fn().mockResolvedValue({ data: updatedUser, error: null });
+        return userChain;
+      }),
+    };
+
+    const patchHandler = PATCH as unknown as RawUserHandler;
+    const response = await patchHandler(updateRequest, ownUser, mockDbWithSessions, context);
+
+    expect(response.status).toBe(200);
+    expect(sessionDeleteSpy).toHaveBeenCalledWith("user_id", 1);
+    const json = await response.json();
+    expect(json.is_self_password_changed).toBe(true);
+    const setCookie = response.headers.get("set-cookie") || "";
+    expect(setCookie).toContain("Max-Age=0");
+  });
+
   it("purges all active user sessions when user is soft deleted", async () => {
     const ownUser = {
       sub: "1",

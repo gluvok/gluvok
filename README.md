@@ -137,7 +137,7 @@ All API endpoints are located under `/api/*`:
 - `GET, POST /api/rates` - Query current rates or configure rates for a commodity/center.
 - `GET, PUT, DELETE /api/rates/:id` - Retrieve, update, or delete rate definitions.
 - `GET, POST /api/users` - List factory personnel (hardware accounts are filtered out from UI).
-- `GET, PUT, DELETE /api/users/:id` - Retrieve, update, or delete a user account.
+- `GET, PATCH, DELETE /api/users/:id` - Retrieve, update, or delete a user account. Updating a password invalidates all active sessions for that user; updating one's own password clears session cookies and initiates an immediate re-login flow.
 - `GET, POST /api/settings` - Retrieve or update factory operational settings.
 - `GET, PUT, DELETE /api/settings/:id` - Manage specific settings records.
 

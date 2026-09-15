@@ -5,7 +5,31 @@
 
 import { NextResponse } from "next/server";
 
-export const DEFAULT_SESSION_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
+// 400 days in seconds (34,560,000s) — standard RFC 6265bis maximum allowed by modern browser engines
+export const DEFAULT_PERMANENT_COOKIE_MAX_AGE = 400 * 24 * 60 * 60;
+export const DEFAULT_SESSION_COOKIE_MAX_AGE = DEFAULT_PERMANENT_COOKIE_MAX_AGE;
+
+/**
+ * Returns the session cookie maxAge in seconds, configured via environment variables
+ * or defaulting to permanent (400 days).
+ */
+export function getSessionExpirySeconds(): number {
+  if (process.env.SESSION_MAX_AGE_SECONDS) {
+    const parsed = parseInt(process.env.SESSION_MAX_AGE_SECONDS, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  if (process.env.SESSION_EXPIRY_DAYS) {
+    const parsed = parseInt(process.env.SESSION_EXPIRY_DAYS, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      return parsed * 24 * 60 * 60;
+    }
+  }
+
+  return DEFAULT_PERMANENT_COOKIE_MAX_AGE;
+}
 
 /**
  * Returns standard options for authentication cookies.
@@ -26,7 +50,7 @@ export function getAuthCookieOptions(maxAge: number) {
 export function setAuthCookies<T extends NextResponse | Response>(
   response: T,
   sessionToken: string,
-  maxAge: number = DEFAULT_SESSION_COOKIE_MAX_AGE,
+  maxAge: number = getSessionExpirySeconds(),
 ): T {
   if ("cookies" in response && typeof response.cookies?.set === "function") {
     response.cookies.set("session_token", sessionToken, getAuthCookieOptions(maxAge));

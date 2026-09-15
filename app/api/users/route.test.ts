@@ -183,7 +183,9 @@ describe("Users collection route handlers (/api/users)", () => {
           chain.in = vi.fn(() => chain);
           chain.eq = vi.fn(() => chain);
           chain.is = vi.fn(() => chain);
-          chain.limit = vi.fn().mockResolvedValue({ data: [{ id: 1, role: Role.BASE }], error: null });
+          chain.limit = vi
+            .fn()
+            .mockResolvedValue({ data: [{ id: 1, role: Role.BASE }], error: null });
           return chain;
         }),
       };
@@ -200,7 +202,9 @@ describe("Users collection route handlers (/api/users)", () => {
           chain.in = vi.fn(() => chain);
           chain.eq = vi.fn(() => chain);
           // Manager trying to delete another Manager — .is() is the terminal
-          chain.is = vi.fn().mockResolvedValue({ data: [{ id: 3, role: Role.MANAGER }], error: null });
+          chain.is = vi
+            .fn()
+            .mockResolvedValue({ data: [{ id: 3, role: Role.MANAGER }], error: null });
           return chain;
         }),
       };
@@ -225,7 +229,9 @@ describe("Users collection route handlers (/api/users)", () => {
           chain.is = vi.fn(() => chain);
           if (callCount === 1) {
             // role-lookup: target is Base, actor is Admin (sub: "1"), target id: 3 ≠ sub
-            chain.limit = vi.fn().mockResolvedValue({ data: [{ id: 3, role: Role.BASE }], error: null });
+            chain.limit = vi
+              .fn()
+              .mockResolvedValue({ data: [{ id: 3, role: Role.BASE }], error: null });
           } else {
             // customer-link check
             chain.limit = vi.fn().mockResolvedValue({ data: [{ id: 10 }], error: null });
@@ -254,7 +260,9 @@ describe("Users collection route handlers (/api/users)", () => {
           chain.is = vi.fn(() => chain);
           if (callCount === 1) {
             // role-lookup: target is Base
-            chain.limit = vi.fn().mockResolvedValue({ data: [{ id: 3, role: Role.BASE }], error: null });
+            chain.limit = vi
+              .fn()
+              .mockResolvedValue({ data: [{ id: 3, role: Role.BASE }], error: null });
           } else if (callCount === 2) {
             // customer-link check: none
             chain.limit = vi.fn().mockResolvedValue({ data: [], error: null });

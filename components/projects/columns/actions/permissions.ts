@@ -76,4 +76,3 @@ export function hasRowDeletePermission<T extends EntityRecord>(
       return true;
   }
 }
-

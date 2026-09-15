@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { validateSession } from "@/lib/auth/session";
 import { fetchActiveUserById, toUserSessionPayload } from "@/lib/auth/common";
-import { clearAuthCookies } from "@/lib/auth/cookies";
+import { clearAuthCookies, setAuthCookies } from "@/lib/auth/cookies";
 
 export async function GET() {
   try {
@@ -34,7 +34,8 @@ export async function GET() {
       return response;
     }
 
-    return NextResponse.json({ user: toUserSessionPayload(user) });
+    const response = NextResponse.json({ user: toUserSessionPayload(user) });
+    return setAuthCookies(response, token);
   } catch (error) {
     console.error("Auth /me error:", error);
     return NextResponse.json({ user: null });

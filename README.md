@@ -44,11 +44,13 @@ Gluvok is a high-performance operations platform designed for factories, weighbr
 
 Configure environment variables in `.env.local`:
 
-| Variable                    | Description                                     | Required | Example                          |
-| :-------------------------- | :---------------------------------------------- | :------- | :------------------------------- |
-| `SUPABASE_URL`              | Supabase project API URL                        | Yes      | `https://xyzcompany.supabase.co` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key for server operations | Yes      | `eyJhbGciOi...`                  |
-| `FACTORY_NAME`              | Initial factory name for seed scripts           | Optional | `Default Factory`                |
+| Variable                    | Description                                                                   | Required | Example                          |
+| :-------------------------- | :---------------------------------------------------------------------------- | :------- | :------------------------------- |
+| `SUPABASE_URL`              | Supabase project API URL                                                      | Yes      | `https://xyzcompany.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key for server operations                               | Yes      | `eyJhbGciOi...`                  |
+| `FACTORY_NAME`              | Initial factory name for seed scripts                                         | Optional | `Default Factory`                |
+| `SESSION_MAX_AGE_SECONDS`   | Session & cookie duration in seconds (defaults to permanent/sliding 400 days) | Optional | `604800`                         |
+| `SESSION_EXPIRY_DAYS`       | Alternative session duration in days                                          | Optional | `30`                             |
 
 ---
 

@@ -8,9 +8,12 @@ import { db, supabase } from "@/db";
 import { AuthUserPayload } from "@/types";
 import { Role } from "@/lib/constants/enums";
 
+import { getSessionExpirySeconds } from "./cookies";
+
 export type { AuthUserPayload };
 
-export const DEFAULT_SESSION_EXPIRY_DAYS = 7;
+export const DEFAULT_PERMANENT_SESSION_EXPIRY_DAYS = 365 * 100; // 100 years (~permanent)
+export const DEFAULT_SESSION_EXPIRY_DAYS = DEFAULT_PERMANENT_SESSION_EXPIRY_DAYS;
 
 /**
  * Generates a cryptographically secure 256-bit random session token string.
@@ -24,16 +27,34 @@ export interface CreateSessionResult {
   token: string;
 }
 
+export interface CreateSessionOptions {
+  expiresInDays?: number;
+  expiresInSeconds?: number;
+}
+
 /**
  * Creates a new session record in the database for the given user.
  */
 export async function createSession(
   userId: number,
-  options: { expiresInDays?: number } = {},
+  options: CreateSessionOptions = {},
 ): Promise<CreateSessionResult> {
-  const expiresInDays = options.expiresInDays ?? DEFAULT_SESSION_EXPIRY_DAYS;
+  let durationMs: number;
+  if (options.expiresInSeconds !== undefined) {
+    durationMs =
+      options.expiresInDays !== undefined
+        ? options.expiresInSeconds * 1000
+        : options.expiresInSeconds * 1000;
+  } else if (options.expiresInDays !== undefined) {
+    durationMs = options.expiresInDays * 24 * 60 * 60 * 1000;
+  } else if (process.env.SESSION_MAX_AGE_SECONDS || process.env.SESSION_EXPIRY_DAYS) {
+    durationMs = getSessionExpirySeconds() * 1000;
+  } else {
+    durationMs = DEFAULT_PERMANENT_SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+  }
+
   const token = generateSessionToken();
-  const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + durationMs).toISOString();
 
   const now = new Date().toISOString();
   const { data, error } = await db

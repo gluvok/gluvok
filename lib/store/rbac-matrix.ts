@@ -15,6 +15,8 @@ export interface Permission {
   hiddenColumns?: string[];
   hiddenFields?: string[];
   editableFields?: string[];
+  /** Roles that this actor may delete (only meaningful for ProjectSlug.USERS). */
+  deletableRoles?: Role[];
 }
 
 export type RoleAccessMatrix = {
@@ -34,6 +36,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       create: true,
       show: true,
       filter: true,
+      deletableRoles: [Role.OPERATOR, Role.BASE],
     },
     [ProjectSlug.CENTERS]: {
       read: true,
@@ -110,6 +113,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       create: true,
       show: true,
       filter: true,
+      deletableRoles: [Role.OPERATOR, Role.BASE],
     },
     [ProjectSlug.CENTERS]: {
       read: true,
@@ -180,11 +184,12 @@ export const RBAC_MATRIX: RbacMatrix = {
   [Role.OPERATOR]: {
     [ProjectSlug.USERS]: {
       read: true,
-      write: false,
-      delete: false,
+      write: true,
+      delete: true,
       create: false,
       show: false,
       filter: true,
+      deletableRoles: [Role.BASE],
     },
     [ProjectSlug.CENTERS]: {
       read: true,
@@ -259,6 +264,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       create: false,
       show: false,
       filter: true,
+      deletableRoles: [],
     },
     [ProjectSlug.CENTERS]: {
       read: true,

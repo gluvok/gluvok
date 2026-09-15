@@ -52,6 +52,8 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     const success = await login(data.username, data.password);
 
     if (success) {
+      // Strip query params so AuthGuard doesn't clear the session we just set
+      window.history.replaceState({}, "", window.location.pathname);
       router.push(targetRedirect);
     }
   };

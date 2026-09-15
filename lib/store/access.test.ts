@@ -6,6 +6,7 @@ import {
   hasPageAccess,
   hasCreateAccess,
   hasDeleteAccess,
+  canDeleteUserRole,
   isColumnVisible,
   isFieldVisible,
 } from "./access";
@@ -245,6 +246,36 @@ describe("RBAC Access Controls", () => {
         expect(isColumnVisible(role, ProjectSlug.CENTERS, "name")).toBe(true);
         expect(isFieldVisible(role, ProjectSlug.CENTERS, "name")).toBe(true);
       }
+    });
+  });
+
+  describe("canDeleteUserRole", () => {
+    it("Admin can delete Operator and Base but not Admin or Manager", () => {
+      expect(canDeleteUserRole(Role.ADMIN, Role.OPERATOR)).toBe(true);
+      expect(canDeleteUserRole(Role.ADMIN, Role.BASE)).toBe(true);
+      expect(canDeleteUserRole(Role.ADMIN, Role.MANAGER)).toBe(false);
+      expect(canDeleteUserRole(Role.ADMIN, Role.ADMIN)).toBe(false);
+    });
+
+    it("Manager can delete Operator and Base but not Admin or Manager", () => {
+      expect(canDeleteUserRole(Role.MANAGER, Role.OPERATOR)).toBe(true);
+      expect(canDeleteUserRole(Role.MANAGER, Role.BASE)).toBe(true);
+      expect(canDeleteUserRole(Role.MANAGER, Role.MANAGER)).toBe(false);
+      expect(canDeleteUserRole(Role.MANAGER, Role.ADMIN)).toBe(false);
+    });
+
+    it("Operator can delete Base only", () => {
+      expect(canDeleteUserRole(Role.OPERATOR, Role.BASE)).toBe(true);
+      expect(canDeleteUserRole(Role.OPERATOR, Role.OPERATOR)).toBe(false);
+      expect(canDeleteUserRole(Role.OPERATOR, Role.MANAGER)).toBe(false);
+      expect(canDeleteUserRole(Role.OPERATOR, Role.ADMIN)).toBe(false);
+    });
+
+    it("Base cannot delete anyone", () => {
+      expect(canDeleteUserRole(Role.BASE, Role.BASE)).toBe(false);
+      expect(canDeleteUserRole(Role.BASE, Role.OPERATOR)).toBe(false);
+      expect(canDeleteUserRole(Role.BASE, Role.MANAGER)).toBe(false);
+      expect(canDeleteUserRole(Role.BASE, Role.ADMIN)).toBe(false);
     });
   });
 });

@@ -120,7 +120,8 @@ describe("User mutation guards", () => {
     expect(json.data.name).toBe("Updated Name");
   });
 
-  it("allows self deletion and marks is_self_deleted while clearing cookies", async () => {
+  it("rejects self-deletion with 403", async () => {
+    mockHasPermission.mockReturnValue(true);
     const ownUser = {
       sub: "1",
       username: "operator",
@@ -129,35 +130,46 @@ describe("User mutation guards", () => {
     };
 
     const selfMockDb = {
-      from: vi.fn((table: string) => {
-        if (table === "entries" || table === "customers") {
-          const checkChain: Record<string, unknown> = {};
-          checkChain.select = vi.fn(() => checkChain);
-          checkChain.eq = vi.fn(() => checkChain);
-          checkChain.or = vi.fn(() => checkChain);
-          checkChain.is = vi.fn(() => checkChain);
-          checkChain.limit = vi.fn(() => checkChain);
-          checkChain.maybeSingle = vi.fn().mockResolvedValue({ data: null });
-          return checkChain;
-        }
-
-        const userChain: Record<string, unknown> = {};
-        userChain.select = vi.fn(() => userChain);
-        userChain.eq = vi.fn(() => userChain);
-        userChain.is = vi.fn(() => userChain);
-        userChain.maybeSingle = vi.fn().mockResolvedValue({ data: { id: 1, name: "Self User" } });
-        userChain.update = vi.fn(() => userChain);
-        return userChain;
+      from: vi.fn(() => {
+        const chain: Record<string, unknown> = {};
+        chain.select = vi.fn(() => chain);
+        chain.eq = vi.fn(() => chain);
+        chain.is = vi.fn(() => chain);
+        chain.maybeSingle = vi.fn().mockResolvedValue({ data: { id: 1, role: Role.BASE } });
+        return chain;
       }),
     };
 
     const deleteHandler = DELETE as unknown as RawUserHandler;
     const response = await deleteHandler(request, ownUser, selfMockDb, context);
 
-    expect(response.status).toBe(200);
-    const json = await response.json();
-    expect(json.success).toBe(true);
-    expect(json.is_self_deleted).toBe(true);
+    expect(response.status).toBe(403);
+  });
+
+  it("rejects deletion of an admin user with 403", async () => {
+    mockHasPermission.mockReturnValue(true);
+    const actorAdmin = {
+      sub: "99",
+      username: "admin",
+      role: Role.ADMIN,
+      factory_id: 1,
+    };
+
+    const adminTargetMockDb = {
+      from: vi.fn(() => {
+        const chain: Record<string, unknown> = {};
+        chain.select = vi.fn(() => chain);
+        chain.eq = vi.fn(() => chain);
+        chain.is = vi.fn(() => chain);
+        chain.maybeSingle = vi.fn().mockResolvedValue({ data: { id: 1, role: Role.ADMIN } });
+        return chain;
+      }),
+    };
+
+    const deleteHandler = DELETE as unknown as RawUserHandler;
+    const response = await deleteHandler(request, actorAdmin, adminTargetMockDb, context);
+
+    expect(response.status).toBe(403);
   });
 
   it("purges all active user sessions when password is changed", async () => {
@@ -285,10 +297,11 @@ describe("User mutation guards", () => {
   });
 
   it("purges all active user sessions when user is soft deleted", async () => {
-    const ownUser = {
-      sub: "1",
-      username: "operator",
-      role: Role.OPERATOR,
+    mockHasPermission.mockReturnValue(true);
+    const adminActor = {
+      sub: "99",
+      username: "admin",
+      role: Role.ADMIN,
       factory_id: 1,
     };
 
@@ -320,14 +333,15 @@ describe("User mutation guards", () => {
         userChain.select = vi.fn(() => userChain);
         userChain.eq = vi.fn(() => userChain);
         userChain.is = vi.fn(() => userChain);
-        userChain.maybeSingle = vi.fn().mockResolvedValue({ data: { id: 1, name: "Self User" } });
+        // Target is Base user (id: 1), actor is Admin (sub: "99")
+        userChain.maybeSingle = vi.fn().mockResolvedValue({ data: { id: 1, role: Role.BASE } });
         userChain.update = vi.fn(() => userChain);
         return userChain;
       }),
     };
 
     const deleteHandler = DELETE as unknown as RawUserHandler;
-    const response = await deleteHandler(request, ownUser, selfMockDb, context);
+    const response = await deleteHandler(request, adminActor, selfMockDb, context);
 
     expect(response.status).toBe(200);
     expect(sessionDeleteSpy).toHaveBeenCalledWith("user_id", 1);

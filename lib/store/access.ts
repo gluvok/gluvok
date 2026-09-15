@@ -53,6 +53,16 @@ export function hasDeleteAccess(role: Role | null | undefined, projectSlug: stri
   return getPermissions(role, projectSlug).delete;
 }
 
+/**
+ * canDeleteUserRole
+ * Returns true if `actorRole` is permitted to delete/edit a user whose role is `targetRole`.
+ * Self-deletion / self-edit are handled separately by the caller.
+ */
+export function canDeleteUserRole(actorRole: Role, targetRole: Role): boolean {
+  const deletableRoles = getPermissions(actorRole, ProjectSlug.USERS).deletableRoles ?? [];
+  return deletableRoles.includes(targetRole);
+}
+
 export function hasPermission(
   subject: Role | { role: string } | null | undefined,
   projectSlug: string,

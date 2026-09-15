@@ -12,6 +12,7 @@ import { editUserSchema } from "@/lib/validation";
 import { hashPassword } from "@/lib/auth/password";
 import { clearAuthCookies } from "@/lib/auth/cookies";
 import { deleteAllUserSessions } from "@/lib/auth/session";
+import { canDeleteUserRole } from "@/lib/store";
 import { PermissionKey, ProjectSlug, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 
@@ -116,6 +117,8 @@ export const PATCH = withAuth(
 
 export const DELETE = withAuth(
   withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
+    if (!hasPermission(user, ProjectSlug.USERS, PermissionKey.DELETE)) return forbiddenError();
+
     const existingQuery = client
       .from("users")
       .select("id, role")
@@ -130,7 +133,8 @@ export const DELETE = withAuth(
 
     const isOwn = String(existing.id) === String(user.sub);
 
-    if (!isOwn && !hasPermission(user, ProjectSlug.USERS, PermissionKey.DELETE)) {
+    // No one can delete themselves or a user outside their deletable-role hierarchy
+    if (isOwn || !canDeleteUserRole(user.role as Role, existing.role as Role)) {
       return forbiddenError();
     }
 
@@ -179,11 +183,6 @@ export const DELETE = withAuth(
 
     await deleteAllUserSessions(entityId, client);
 
-    const response = NextResponse.json({ success: true, id: entityId, is_self_deleted: isOwn });
-    if (isOwn) {
-      clearAuthCookies(response);
-    }
-
-    return response;
+    return NextResponse.json({ success: true, id: entityId });
   }),
 );

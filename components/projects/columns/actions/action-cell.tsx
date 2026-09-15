@@ -13,7 +13,7 @@ import { getField, useEntitiesStore, useAuthStore, hasPermission } from "@/lib/s
 import { type EntityRecord } from "@/types";
 import { type ColumnActionsCallbacks } from "../index";
 import { ProjectSlug, WeighmentType, EntryStatus, PermissionKey } from "@/lib/constants/enums";
-import { hasRowModifyPermission } from "./permissions";
+import { hasRowWritePermission, hasRowDeletePermission } from "./permissions";
 import { ActionMenu } from "./action-menu";
 import { ActionCellDialogs } from "./action-cell-dialogs";
 
@@ -54,8 +54,9 @@ export function ActionCell<T extends EntityRecord>({
     currentUser !== null &&
     hasPermission(currentUser, ProjectSlug.TICKETS, PermissionKey.CREATE);
 
-  const canModifyRow = hasRowModifyPermission(item, projectSlug, currentUser);
-  let hasRowWrite = canWrite && canModifyRow;
+  const canWriteRow = hasRowWritePermission(item, projectSlug, currentUser);
+  const canDeleteRow = hasRowDeletePermission(item, projectSlug, currentUser);
+  let hasRowWrite = canWrite && canWriteRow;
   let canApproveEntry = false;
   let canRejectEntry = false;
 
@@ -96,7 +97,7 @@ export function ActionCell<T extends EntityRecord>({
     }
   }
 
-  const hasRowDelete = canDelete && canModifyRow;
+  const hasRowDelete = canDelete && canDeleteRow;
 
   const confirmApprove = async () => {
     try {

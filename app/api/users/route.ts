@@ -14,7 +14,7 @@ import { Role, ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { addUserSchema } from "@/lib/validation";
 import { hashPassword } from "@/lib/auth/password";
-import { clearAuthCookies } from "@/lib/auth/cookies";
+import { canDeleteUserRole } from "@/lib/store";
 
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.USERS, PermissionKey.READ)) return forbiddenError();
@@ -124,19 +124,22 @@ export const DELETE = withAuth(async (req, user, client) => {
   const ids = parseBulkIds(await req.json());
   if (!ids) return apiError(ApiErrorMessage.PROVIDE_VALID_IDS, StatusCodes.BAD_REQUEST);
 
-  if (user.role === Role.MANAGER) {
-    const { data: targetUsers } = await client
-      .from("users")
-      .select("id, role")
-      .in("id", ids)
-      .eq("factory_id", user.factory_id)
-      .is("deleted_at", null);
+  // Block self-deletion
+  const currentUserId = parseInt(user.sub, 10);
+  if (ids.includes(currentUserId)) return forbiddenError();
 
-    const hasUnauthorized = targetUsers?.some((u) =>
-      [Role.ADMIN, Role.MANAGER].includes(u.role as Role),
-    );
-    if (hasUnauthorized) return forbiddenError();
-  }
+  // Fetch target users and enforce role hierarchy
+  const { data: targetUsers } = await client
+    .from("users")
+    .select("id, role")
+    .in("id", ids)
+    .eq("factory_id", user.factory_id)
+    .is("deleted_at", null);
+
+  const hasUnallowed = targetUsers?.some(
+    (t) => !canDeleteUserRole(user.role as Role, t.role as Role),
+  );
+  if (hasUnallowed) return forbiddenError();
 
   // Check if any active customers are linked to any of the selected users
   const { data: linkedCustomers } = await client
@@ -149,9 +152,6 @@ export const DELETE = withAuth(async (req, user, client) => {
   if (linkedCustomers && linkedCustomers.length > 0) {
     return apiError(ApiErrorMessage.CANNOT_DELETE_SELECTED_USERS, StatusCodes.BAD_REQUEST);
   }
-
-  const currentUserId = parseInt(user.sub, 10);
-  const isDeletingSelf = ids.includes(currentUserId);
 
   const query = client
     .from("users")
@@ -175,10 +175,5 @@ export const DELETE = withAuth(async (req, user, client) => {
     return apiError(ApiErrorMessage.ONE_OR_MORE_USERS_NOT_FOUND, StatusCodes.NOT_FOUND);
   }
 
-  const response = NextResponse.json({ success: true, deleted_count: data.length });
-  if (isDeletingSelf) {
-    clearAuthCookies(response);
-  }
-
-  return response;
+  return NextResponse.json({ success: true, deleted_count: data.length });
 });

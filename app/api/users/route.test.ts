@@ -169,14 +169,70 @@ describe("Users collection route handlers (/api/users)", () => {
       expect(response.status).toBe(403);
     });
 
-    it("rejects deletion when customer is linked to user", async () => {
-      const mockQuery: Record<string, unknown> = {};
-      mockQuery.select = vi.fn(() => mockQuery);
-      mockQuery.in = vi.fn(() => mockQuery);
-      mockQuery.is = vi.fn(() => mockQuery);
-      mockQuery.limit = vi.fn().mockResolvedValue({ data: [{ id: 10 }], error: null });
+    it("rejects self-deletion in bulk delete with 403", async () => {
+      mockHasPermission.mockReturnValue(true);
+      const req = new Request("http://localhost/api/users", {
+        method: "DELETE",
+        body: JSON.stringify({ ids: [1] }), // adminUser.sub = "1"
+      });
+      // role-lookup query returns a Base user, but actor is also id 1
+      const mockDb = {
+        from: vi.fn(() => {
+          const chain: Record<string, unknown> = {};
+          chain.select = vi.fn(() => chain);
+          chain.in = vi.fn(() => chain);
+          chain.eq = vi.fn(() => chain);
+          chain.is = vi.fn(() => chain);
+          chain.limit = vi.fn().mockResolvedValue({ data: [{ id: 1, role: Role.BASE }], error: null });
+          return chain;
+        }),
+      };
+      const response = await (DELETE as unknown as RawHandler)(req, adminUser, mockDb, context);
+      expect(response.status).toBe(403);
+    });
 
-      const mockDb = { from: vi.fn(() => mockQuery) };
+    it("rejects deletion when target role is outside hierarchy with 403", async () => {
+      mockHasPermission.mockReturnValue(true);
+      const mockDb = {
+        from: vi.fn(() => {
+          const chain: Record<string, unknown> = {};
+          chain.select = vi.fn(() => chain);
+          chain.in = vi.fn(() => chain);
+          chain.eq = vi.fn(() => chain);
+          // Manager trying to delete another Manager — .is() is the terminal
+          chain.is = vi.fn().mockResolvedValue({ data: [{ id: 3, role: Role.MANAGER }], error: null });
+          return chain;
+        }),
+      };
+      const req = new Request("http://localhost/api/users", {
+        method: "DELETE",
+        body: JSON.stringify({ ids: [3] }),
+      });
+      const response = await (DELETE as unknown as RawHandler)(req, managerUser, mockDb, context);
+      expect(response.status).toBe(403);
+    });
+
+    it("rejects deletion when customer is linked to user", async () => {
+      mockHasPermission.mockReturnValue(true);
+      let callCount = 0;
+      const mockDb = {
+        from: vi.fn(() => {
+          callCount++;
+          const chain: Record<string, unknown> = {};
+          chain.select = vi.fn(() => chain);
+          chain.in = vi.fn(() => chain);
+          chain.eq = vi.fn(() => chain);
+          chain.is = vi.fn(() => chain);
+          if (callCount === 1) {
+            // role-lookup: target is Base, actor is Admin (sub: "1"), target id: 3 ≠ sub
+            chain.limit = vi.fn().mockResolvedValue({ data: [{ id: 3, role: Role.BASE }], error: null });
+          } else {
+            // customer-link check
+            chain.limit = vi.fn().mockResolvedValue({ data: [{ id: 10 }], error: null });
+          }
+          return chain;
+        }),
+      };
       const req = new Request("http://localhost/api/users", {
         method: "DELETE",
         body: JSON.stringify({ ids: [3] }),
@@ -185,32 +241,35 @@ describe("Users collection route handlers (/api/users)", () => {
       expect(response.status).toBe(400);
     });
 
-    it("deletes user and clears cookie when deleting self", async () => {
+    it("successfully bulk-deletes a permitted user", async () => {
+      mockHasPermission.mockReturnValue(true);
       let callCount = 0;
       const mockDb = {
         from: vi.fn(() => {
           callCount++;
+          const chain: Record<string, unknown> = {};
+          chain.select = vi.fn(() => chain);
+          chain.in = vi.fn(() => chain);
+          chain.eq = vi.fn(() => chain);
+          chain.is = vi.fn(() => chain);
           if (callCount === 1) {
-            const checkChain: Record<string, unknown> = {};
-            checkChain.select = vi.fn(() => checkChain);
-            checkChain.in = vi.fn(() => checkChain);
-            checkChain.is = vi.fn(() => checkChain);
-            checkChain.limit = vi.fn().mockResolvedValue({ data: [], error: null });
-            return checkChain;
+            // role-lookup: target is Base
+            chain.limit = vi.fn().mockResolvedValue({ data: [{ id: 3, role: Role.BASE }], error: null });
+          } else if (callCount === 2) {
+            // customer-link check: none
+            chain.limit = vi.fn().mockResolvedValue({ data: [], error: null });
+          } else {
+            // actual update
+            chain.update = vi.fn(() => chain);
+            chain.select = vi.fn().mockResolvedValue({ data: [{ id: 3 }], error: null });
           }
-          const deleteChain: Record<string, unknown> = {};
-          deleteChain.update = vi.fn(() => deleteChain);
-          deleteChain.in = vi.fn(() => deleteChain);
-          deleteChain.is = vi.fn(() => deleteChain);
-          deleteChain.eq = vi.fn(() => deleteChain);
-          deleteChain.select = vi.fn().mockResolvedValue({ data: [{ id: 1 }], error: null });
-          return deleteChain;
+          return chain;
         }),
       };
 
       const req = new Request("http://localhost/api/users", {
         method: "DELETE",
-        body: JSON.stringify({ ids: [1] }),
+        body: JSON.stringify({ ids: [3] }),
       });
       const response = await (DELETE as unknown as RawHandler)(req, adminUser, mockDb, context);
       expect(response.status).toBe(200);

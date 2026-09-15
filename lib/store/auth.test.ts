@@ -69,6 +69,41 @@ describe("Auth Store (Zustand with session API via Axios)", () => {
       expect(axios.get).not.toHaveBeenCalled();
       unsubscribe();
     });
+
+    it("should refetch if force is true even if already initialized", async () => {
+      useAuthStore.setState({ initialized: true });
+      vi.mocked(axios.get).mockResolvedValueOnce({ data: { user: null } });
+
+      const unsubscribe = useAuthStore.getState().initAuth(true);
+      await new Promise(process.nextTick);
+
+      expect(axios.get).toHaveBeenCalledWith("/api/auth/me", expect.any(Object));
+      expect(useAuthStore.getState().user).toBeNull();
+      unsubscribe();
+    });
+  });
+
+  describe("clearSession", () => {
+    it("should clear user and set initialized to true", () => {
+      useAuthStore.setState({
+        user: {
+          id: "user-999",
+          username: "operator1",
+          name: "Op",
+          role: Role.OPERATOR,
+          factory_id: 1,
+        },
+        initialized: true,
+        userLoading: true,
+      });
+
+      useAuthStore.getState().clearSession();
+
+      const state = useAuthStore.getState();
+      expect(state.user).toBeNull();
+      expect(state.initialized).toBe(true);
+      expect(state.userLoading).toBe(false);
+    });
   });
 
   describe("login", () => {

@@ -1,7 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import axios from "axios";
-import { deleteRows, fetchEntityPaginatedFromApi, insertRow, updateRow } from "./common";
+import {
+  deleteRows,
+  fetchEntityPaginatedFromApi,
+  insertRow,
+  updateRow,
+  apiRequest,
+} from "./common";
 import { ProjectSlug, Unit } from "@/lib/constants/enums";
+import { useAuthStore } from "@/lib/store/auth";
 
 vi.mock("axios", () => ({
   default: {
@@ -106,5 +113,33 @@ describe("deleteRows", () => {
     expect(axios.delete).toHaveBeenCalledWith("/api/centers", {
       data: { ids: [1, 2, 3] },
     });
+  });
+});
+
+describe("apiRequest", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("clears auth session on 401 response", async () => {
+    const clearSessionSpy = vi.spyOn(useAuthStore.getState(), "clearSession");
+
+    const error = {
+      isAxiosError: true,
+      response: {
+        status: 401,
+        data: { error: "Unauthorized" },
+      },
+    };
+
+    vi.mocked(axios.isAxiosError).mockReturnValue(true);
+
+    await expect(
+      apiRequest(async () => {
+        throw error;
+      }),
+    ).rejects.toThrow("Unauthorized");
+
+    expect(clearSessionSpy).toHaveBeenCalled();
   });
 });

@@ -82,6 +82,16 @@ export function getNextParam(): string | null {
 }
 
 /**
+ * getReasonParam utility
+ * Extracts the 'reason' parameter value from the current window location search parameters safely.
+ */
+export function getReasonParam(): string | null {
+  if (typeof window === "undefined") return null;
+  const searchParams = new URLSearchParams(window.location.search);
+  return searchParams.get("reason");
+}
+
+/**
  * getNextRedirectUrl utility
  * Generates a URL string that appends the current path and query parameters as a 'next' redirect query parameter.
  */

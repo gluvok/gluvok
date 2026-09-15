@@ -53,14 +53,25 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   // Mark auth store as hydrated after mount
   useEffect(() => {
     useAuthStore.getState().setHydrated(true);
+    if (isAuthPage && typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.has("reason")) {
+        useAuthStore.getState().clearSession();
+      }
+    }
     const unsubscribe = useAuthStore.getState().initAuth();
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [isAuthPage]);
 
   useEffect(() => {
     if (!authHydrated || !initialized || userLoading) return;
+
+    const hasSessionReason =
+      isAuthPage &&
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).has("reason");
 
     switch (true) {
       // 1. Unauthenticated users trying to access protected pages
@@ -71,6 +82,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
       // 2. Authenticated users trying to access general auth pages
       case !!user && isAuthPage: {
+        if (hasSessionReason) {
+          useAuthStore.getState().clearSession();
+          break;
+        }
         router.push(getNextParam() || AppRoutes.HOME);
         break;
       }
@@ -101,11 +116,16 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <FullScreenStatus message="Booting up..." />;
   }
 
+  const hasSessionReason =
+    isAuthPage &&
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("reason");
+
   if (!user && !isAuthPage && !isPublicPage) {
     return <FullScreenStatus message="Taking you places..." />;
   }
 
-  if (user && isAuthPage) {
+  if (user && isAuthPage && !hasSessionReason) {
     return <FullScreenStatus message="Taking you places..." />;
   }
 

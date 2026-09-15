@@ -8,6 +8,8 @@ import { ProjectSlug } from "@/lib/constants/enums";
 import { type EntityRecord } from "@/types";
 import { type PaginatedParams } from "./scoping";
 import { ApiErrorMessage } from "@/lib/constants/messages";
+import { useAuthStore } from "@/lib/store/auth";
+import { AppRoutes } from "@/lib/constants";
 
 export function getEndpoint(slug: ProjectSlug | string): string {
   return `/api/${slug}`;
@@ -19,8 +21,14 @@ export async function apiRequest<T>(requestFn: () => Promise<T>): Promise<T> {
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 401) {
-        if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-          window.location.href = "/login";
+        useAuthStore.getState().clearSession();
+        if (
+          typeof window !== "undefined" &&
+          !window.location.pathname.startsWith(AppRoutes.LOGIN)
+        ) {
+          const currentUrl = window.location.pathname + window.location.search;
+          const redirectUrl = `${AppRoutes.LOGIN}?reason=session_expired&next=${encodeURIComponent(currentUrl)}`;
+          window.location.href = redirectUrl;
         }
       }
       const serverError = error.response?.data?.error || error.response?.data?.message;

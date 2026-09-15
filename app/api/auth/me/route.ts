@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { validateSession } from "@/lib/auth/session";
 import { fetchActiveUserById, toUserSessionPayload } from "@/lib/auth/common";
+import { clearAuthCookies } from "@/lib/auth/cookies";
 
 export async function GET() {
   try {
@@ -14,17 +15,23 @@ export async function GET() {
 
     const sessionUser = await validateSession(token);
     if (!sessionUser) {
-      return NextResponse.json({ user: null });
+      const response = NextResponse.json({ user: null });
+      clearAuthCookies(response);
+      return response;
     }
 
     const userId = parseInt(sessionUser.sub, 10);
     if (isNaN(userId)) {
-      return NextResponse.json({ user: null });
+      const response = NextResponse.json({ user: null });
+      clearAuthCookies(response);
+      return response;
     }
 
     const user = await fetchActiveUserById(userId);
     if (!user) {
-      return NextResponse.json({ user: null });
+      const response = NextResponse.json({ user: null });
+      clearAuthCookies(response);
+      return response;
     }
 
     return NextResponse.json({ user: toUserSessionPayload(user) });

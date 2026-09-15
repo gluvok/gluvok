@@ -140,8 +140,8 @@ export function useEntityForm({
         if (isSelfPasswordChange) {
           toast.success("Password changed successfully. Please log in with your new password.");
           onOpenChange(false);
-          useAuthStore.setState({ user: null });
-          window.location.href = "/login";
+          useAuthStore.getState().clearSession();
+          window.location.href = "/login?reason=password_changed";
           return;
         }
 

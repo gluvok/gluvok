@@ -6,7 +6,8 @@
 import * as React from "react";
 
 import { LayoutDashboard } from "lucide-react";
-import { PROJECTS } from "@/lib/projects";
+import { PROJECTS, PROJECT_REGISTRY } from "@/lib/projects";
+import { ProjectSlug } from "@/lib/constants/enums";
 import { cn } from "@/lib/utils";
 
 interface ProjectTitleProps {
@@ -28,16 +29,26 @@ export function ProjectTitle({
   desc,
   actions,
 }: ProjectTitleProps) {
+  const projectConfig = projectSlug ? PROJECT_REGISTRY[projectSlug] : undefined;
   const projectMeta = PROJECTS.find(
     (p) => (projectSlug && p.slug === projectSlug) || p.name === projectName,
   );
-  const Icon = CustomIcon || projectMeta?.icon || LayoutDashboard;
+  const Icon = CustomIcon || projectConfig?.icon || projectMeta?.icon || LayoutDashboard;
   const description =
     desc ||
+    projectConfig?.desc ||
     projectMeta?.desc ||
     `Manage the directory of ${projectName.toLowerCase()}, edit records, and configure settings.`;
 
-  const theme = projectMeta?.theme;
+  const theme =
+    projectMeta?.theme ||
+    (projectSlug === ProjectSlug.TICKETS
+      ? {
+          iconColor: "text-purple-600 dark:text-purple-400",
+          badgeBg: "bg-purple-500/10 dark:bg-purple-500/15",
+          badgeBorder: "border-purple-500/20 dark:border-purple-500/30",
+        }
+      : undefined);
   const iconColor = theme?.iconColor || "text-primary";
   const badgeBg = theme?.badgeBg || "bg-primary/10";
   const badgeBorder = theme?.badgeBorder || "border-primary/20";

@@ -24,7 +24,8 @@ interface AuthStore {
   hydrated: boolean;
   initialized: boolean;
   userLoading: boolean;
-  initAuth: () => () => void;
+  initAuth: (force?: boolean) => () => void;
+  clearSession: () => void;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   setHydrated: (state: boolean) => void;
@@ -35,8 +36,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   hydrated: false,
   initialized: false,
   userLoading: false,
-  initAuth: () => {
-    if (get().initialized) {
+  clearSession: () => {
+    set({ user: null, initialized: true, userLoading: false });
+  },
+  initAuth: (force = false) => {
+    if (!force && get().initialized) {
       if (get().userLoading) {
         set({ userLoading: false });
       }

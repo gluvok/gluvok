@@ -92,6 +92,7 @@ describe("GET /api/auth/me", () => {
 
     const json = await res.json();
     expect(json.user).toBeNull();
+    expect(res.cookies.get("session_token")?.value).toBe("");
   });
 
   it("returns user: null when no cookies are provided", async () => {

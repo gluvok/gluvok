@@ -137,7 +137,7 @@ All API endpoints are located under `/api/*`:
 - `GET, POST /api/rates` - Query current rates or configure rates for a commodity/center.
 - `GET, PUT, DELETE /api/rates/:id` - Retrieve, update, or delete rate definitions.
 - `GET, POST /api/users` - List factory personnel (hardware accounts are filtered out from UI).
-- `GET, PATCH, DELETE /api/users/:id` - Retrieve, update, or delete a user account. Updating a password invalidates all active sessions for that user; updating one's own password clears session cookies and initiates an immediate re-login flow.
+- `GET, PATCH, DELETE /api/users/:id` - Retrieve, update, or delete a user account. Updating a password invalidates all active database sessions for that user. Unauthorized client API calls cleanly clear Zustand authentication state and redirect to `/login` with explanatory banners and return redirect handling.
 - `GET, POST /api/settings` - Retrieve or update factory operational settings.
 - `GET, PUT, DELETE /api/settings/:id` - Manage specific settings records.
 

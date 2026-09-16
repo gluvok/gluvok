@@ -20,7 +20,7 @@ Gluvok is a high-performance operations platform designed for factories, weighbr
 - **Data Export**: Built-in CSV and PDF export capabilities for audit reports and center registries.
 - **Database-Backed Session & Instant Revocation Model**:
   - Central `sessions` table tracks active tokens (`id`, `token`, `user_id`, `expires_at`, `created_at`, `updated_at`, `deleted_at`) for 0-second instant revocation upon logout, password updates, or account deactivation/deletion (enforced by both application routes and PostgreSQL database triggers).
-  - Web UI Personnel: HTTP-only secure cookie-based session tokens (`admin`, `manager`, `operator`, `base`).
+  - Web UI Personnel: HTTP-only secure cookie-based session tokens with 400-day sliding expiration (RFC 6265bis browser maximum), automatically refreshed in lockstep in both the database and cookies upon active usage (`GET /api/auth/me`).
   - Edge Ingestion Devices: HTTP Basic Auth (`Authorization: Basic <credentials>`), multipart form-data credentials (`username`/`password`), or Bearer session tokens with zero cookie dependency.
 
 ---
@@ -130,26 +130,26 @@ All API endpoints are located under `/api/*`:
 ### Master Data & Entities
 
 - `GET, POST /api/centers` - List collection centers or create a new center.
-- `GET, PUT, DELETE /api/centers/:id` - Retrieve, update, or soft-delete a center.
+- `GET, PATCH, DELETE /api/centers/:id` - Retrieve, update, or soft-delete a center.
 - `GET, POST /api/commodities` - List available commodities or add a commodity.
 - `GET, POST /api/customers` - List customers or create a customer record.
-- `GET, PUT, DELETE /api/customers/:id` - Retrieve, update, or soft-delete a customer.
+- `GET, PATCH, DELETE /api/customers/:id` - Retrieve, update, or soft-delete a customer.
 - `GET, POST /api/rates` - Query current rates or configure rates for a commodity/center.
-- `GET, PUT, DELETE /api/rates/:id` - Retrieve, update, or delete rate definitions.
+- `GET, PATCH, DELETE /api/rates/:id` - Retrieve, update, or delete rate definitions.
 - `GET, POST /api/users` - List factory personnel (hardware accounts are filtered out from UI).
 - `GET, PATCH, DELETE /api/users/:id` - Retrieve, update, or delete a user account. Updating a password invalidates all active database sessions for that user. Unauthorized client API calls cleanly clear Zustand authentication state and redirect to `/login` with explanatory banners and return redirect handling.
 - `GET, POST /api/settings` - Retrieve or update factory operational settings.
-- `GET, PUT, DELETE /api/settings/:id` - Manage specific settings records.
+- `GET, PATCH, DELETE /api/settings/:id` - Manage specific settings records.
 
 ### Operations & Weighments
 
 - `GET, POST /api/entries` - List entries (with derived `source` based on creator role) or ingest a new entry. `POST` exclusively accepts `multipart/form-data` with attached images, uploading them to Supabase Storage before DB commit with compensating rollback. Supports HTTP Basic Auth and form-data credentials (`username`/`password`) for hardware devices.
 - `GET, PATCH, DELETE /api/entries/:id` - Retrieve, update, approve, or reject an entry. Automatically manages storage image additions and purges on patch and delete.
 - `GET, POST /api/tickets` - List ticketing records or create new tickets.
-- `GET, PUT, DELETE /api/tickets/:id` - Ticket details, status updates, and resolutions.
+- `GET, PATCH, DELETE /api/tickets/:id` - Ticket details, status updates, and resolutions.
 - `GET, POST /api/weighments` - Retrieve weighments with factory/customer filters.
-- `GET, PUT, DELETE /api/weighments/:id` - Weighment record details and lifecycle updates.
-- `GET /api/health` - Service health status probe.
+- `GET, PATCH, DELETE /api/weighments/:id` - Weighment record details and lifecycle updates.
+- `GET /api/health` - Public service health and database connectivity probe.
 
 ---
 

@@ -39,6 +39,8 @@ export async function fetchWeighmentsList(
     ["in_customer_id", "in_entry_id", "customer_id"],
     ["out_user_id", "out_entry_id", "created_by"],
     ["out_customer_id", "out_entry_id", "customer_id"],
+    ["in_center_id", "in_entry_id", "center_id"],
+    ["out_center_id", "out_entry_id", "center_id"],
   ];
 
   type DualFilterResult = { type: "dual"; ids: number[] };

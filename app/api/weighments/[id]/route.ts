@@ -20,7 +20,7 @@ export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
   const { data: row, error } = await client
     .from("weighments")
     .select(
-      `*, in_entry:entries!in_entry_id(id, weight, images, created_at, center_id, user_id, customer_id, vehicle_number, detected_vehicle_number, source, status, auto_approved, centers(name), users(name), customers(name, user_id)), out_entry:entries!out_entry_id(id, weight, images, created_at, center_id, user_id, customer_id, vehicle_number, detected_vehicle_number, source, status, auto_approved, centers(name), users(name), customers(name, user_id))`,
+      `*, in_entry:entries!in_entry_id(id, weight, images, created_at, center_id, created_by, approved_by, customer_id, vehicle_number, detected_vehicle_number, status, auto_approved, centers(name), users:users!created_by(name), customers(name, user_id)), out_entry:entries!out_entry_id(id, weight, images, created_at, center_id, created_by, approved_by, customer_id, vehicle_number, detected_vehicle_number, status, auto_approved, centers(name), users:users!created_by(name), customers(name, user_id))`,
     )
     .eq("id", weighmentId)
     .eq("in_entry.factory_id", user.factory_id!)

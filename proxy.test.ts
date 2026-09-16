@@ -26,6 +26,13 @@ describe("Next.js Middleware Proxy", () => {
     expect(res.status).toBe(200);
   });
 
+  it("passes through public health check route /api/health without authentication", async () => {
+    const req = new NextRequest("http://localhost/api/health");
+    const res = await proxy(req);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+  });
+
   it("allows access with valid session token in cookie and sets header attributes", async () => {
     vi.mocked(validateSession).mockResolvedValue({
       sub: "123",

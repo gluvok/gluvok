@@ -14,7 +14,7 @@ vi.mock("@/db/helpers", async (importOriginal) => {
   };
 });
 
-import { DELETE, PATCH } from "./route";
+import { GET, DELETE, PATCH } from "./route";
 
 type RawHandler = (
   request: Request,
@@ -372,5 +372,149 @@ describe("Weighments [id] PATCH route handler", () => {
     expect(response.status).toBe(400);
     const json = await response.json();
     expect(json.error).toContain("Rate not found or does not belong to your factory");
+  });
+});
+
+describe("Weighments [id] GET route handler", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockHasPermission.mockReturnValue(true);
+  });
+
+  it("rejects GET when user lacks READ permission", async () => {
+    mockHasPermission.mockReturnValue(false);
+    const req = new Request("http://localhost/api/weighments/100");
+    const mockDb = { from: vi.fn() };
+
+    const handler = GET as unknown as RawHandler;
+    const response = await handler(req, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(403);
+    expect(mockHasPermission).toHaveBeenCalledWith(
+      sampleUser,
+      ProjectSlug.WEIGHMENTS,
+      PermissionKey.READ,
+    );
+  });
+
+  it("returns 404 when weighment does not exist", async () => {
+    const req = new Request("http://localhost/api/weighments/100");
+    const mockDb = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              is: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+              })),
+            })),
+          })),
+        })),
+      })),
+    };
+
+    const handler = GET as unknown as RawHandler;
+    const response = await handler(req, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(404);
+  });
+
+  it("returns 200 with formatted weighment record for authorized user", async () => {
+    const req = new Request("http://localhost/api/weighments/100");
+    const mockDb = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              is: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: {
+                    id: 100,
+                    in_entry_id: 10,
+                    out_entry_id: 20,
+                    unit: "kg",
+                    type: "in",
+                    rate_id: 2,
+                    created_at: "2026-09-16T10:00:00.000Z",
+                    updated_at: "2026-09-16T10:00:00.000Z",
+                    in_entry: {
+                      id: 10,
+                      weight: 5000,
+                      images: [],
+                      created_at: "2026-09-16T09:00:00.000Z",
+                      center_id: 1,
+                      created_by: 1,
+                      vehicle_number: "KA01AB1234",
+                      centers: { name: "Center North" },
+                      users: { name: "Operator 1" },
+                      customers: { name: "Customer Alpha", user_id: 10 },
+                    },
+                    out_entry: {
+                      id: 20,
+                      weight: 2000,
+                      images: [],
+                      created_at: "2026-09-16T10:00:00.000Z",
+                      center_id: 2,
+                      created_by: 2,
+                      vehicle_number: "KA01AB1234",
+                      centers: { name: "Center South" },
+                      users: { name: "Operator 2" },
+                      customers: { name: "Customer Alpha", user_id: 10 },
+                    },
+                  },
+                  error: null,
+                }),
+              })),
+            })),
+          })),
+        })),
+      })),
+    };
+
+    const handler = GET as unknown as RawHandler;
+    const response = await handler(req, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.data.id).toBe(100);
+    expect(json.data.gross_weight).toBe(5000);
+    expect(json.data.tare_weight).toBe(2000);
+    expect(json.data.net_weight).toBe(3000);
+    expect(json.data.in_center_name).toBe("Center North");
+    expect(json.data.out_center_name).toBe("Center South");
+  });
+
+  it("returns 404 for BASE user if neither entry belongs to user's customer", async () => {
+    const baseUser = { sub: "999", username: "base_user", role: Role.BASE, factory_id: 1 };
+    const req = new Request("http://localhost/api/weighments/100");
+    const mockDb = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              is: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: {
+                    id: 100,
+                    in_entry: {
+                      customers: { user_id: 50 },
+                    },
+                    out_entry: {
+                      customers: { user_id: 50 },
+                    },
+                  },
+                  error: null,
+                }),
+              })),
+            })),
+          })),
+        })),
+      })),
+    };
+
+    const handler = GET as unknown as RawHandler;
+    const response = await handler(req, baseUser, mockDb, context);
+
+    expect(response.status).toBe(404);
   });
 });

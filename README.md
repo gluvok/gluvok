@@ -16,7 +16,7 @@ Gluvok is a high-performance operations platform designed for factories, weighbr
   - Indian vehicle registration number validation (e.g. `MH12AB1234`, `22BH1234AA`).
 - **Ticketing & Approval Workflow**: Automated ticket generation for center entries with status tracking (`pending`, `approved`, `rejected`), with explicit `created_by` and `approved_by` audit fields.
 - **Commodity & Rate Masters**: Dynamic rate configuration per commodity and center.
-- **Hardware & IoT Ingestion**: High-throughput API workflows for Raspberry Pi scales and automated license plate recognition (ALPR) cameras. Devices authenticate via HTTP Basic Auth (`username`/`password`) or session Bearer tokens, bound to physical collection centers, capturing an immutable point-in-time center snapshot. See [docs/raspberry_pi_curl.md](docs/raspberry_pi_curl.md).
+- **Hardware & IoT Ingestion**: High-throughput API workflows for Raspberry Pi scales and automated license plate recognition (ALPR) cameras. Devices authenticate via HTTP Basic Auth (`username`/`password`) or session Bearer tokens, bound to physical collection centers, capturing an immutable point-in-time center snapshot. See [docs/raspberry_pi_curl.md](docs/raspberry_pi_curl.md) and [docs/postman_hardware_testing.md](docs/postman_hardware_testing.md).
 - **Data Export**: Built-in CSV and PDF export capabilities for audit reports and center registries.
 - **Database-Backed Session & Instant Revocation Model**:
   - Central `sessions` table tracks active tokens (`id`, `token`, `user_id`, `expires_at`, `created_at`, `updated_at`, `deleted_at`) for 0-second instant revocation upon logout, password updates, or account deactivation/deletion (enforced by both application routes and PostgreSQL database triggers).

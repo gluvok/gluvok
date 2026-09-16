@@ -154,12 +154,12 @@ export interface SeedHardwareUserConfig {
 
 export function getHardwareUserConfigs(): SeedHardwareUserConfig[] {
   return [
-    { rawKey: "hardware101", centerName: "Main Weighbridge", username: "pi1" },
+    { rawKey: "hardware123", centerName: "Main Weighbridge", username: "pi1" },
     { rawKey: "hardware123", centerName: "North Automatic Scale", username: "pi2" },
-    { rawKey: "hardware202", centerName: "East Grain Terminal", username: "pi3" },
-    { rawKey: "hardware456", centerName: "South Express Bay", username: "pi4" },
-    { rawKey: "hardware789", centerName: "Apex Inbound Scale", username: "pi5" },
-    { rawKey: "hardware909", centerName: "Apex Outbound Gate", username: "pi6" },
+    { rawKey: "hardware123", centerName: "East Grain Terminal", username: "pi3" },
+    { rawKey: "hardware123", centerName: "South Express Bay", username: "pi4" },
+    { rawKey: "hardware123", centerName: "Apex Inbound Scale", username: "pi5" },
+    { rawKey: "hardware123", centerName: "Apex Outbound Gate", username: "pi6" },
   ];
 }
 

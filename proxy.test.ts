@@ -86,4 +86,31 @@ describe("Next.js Middleware Proxy", () => {
     const res = await proxy(req);
     expect(res.status).toBe(401);
   });
+
+  it("passes through POST /api/entries with Basic Auth without session token", async () => {
+    const req = new NextRequest("http://localhost/api/entries", {
+      method: "POST",
+      headers: {
+        Authorization: "Basic cGkxOmhhcmR3YXJlMTIz",
+        "Content-Type": "multipart/form-data; boundary=----WebKitFormBoundary",
+      },
+    });
+
+    const res = await proxy(req);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+  });
+
+  it("passes through POST /api/entries with multipart/form-data without session token", async () => {
+    const req = new NextRequest("http://localhost/api/entries", {
+      method: "POST",
+      headers: {
+        "Content-Type": "multipart/form-data; boundary=----WebKitFormBoundary",
+      },
+    });
+
+    const res = await proxy(req);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+  });
 });

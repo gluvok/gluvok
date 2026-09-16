@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { StatusCodes, ReasonPhrases } from "http-status-codes";
 import { validateSession } from "@/lib/auth/session";
-import { AppRoutes, PUBLIC_ROUTES, AUTH_ROUTES, PUBLIC_API_ROUTES } from "@/lib/constants/routes";
+import {
+  AppRoutes,
+  ApiRoutes,
+  PUBLIC_ROUTES,
+  AUTH_ROUTES,
+  PUBLIC_API_ROUTES,
+} from "@/lib/constants/routes";
 
 const PUBLIC_PATHNAMES = new Set<string>([...AUTH_ROUTES, ...PUBLIC_ROUTES, ...PUBLIC_API_ROUTES]);
 
@@ -20,6 +26,18 @@ export async function proxy(request: NextRequest) {
   }
 
   if (PUBLIC_PATHNAMES.has(pathname)) {
+    return NextResponse.next();
+  }
+
+  // Edge IoT devices posting entries authenticate directly in the route handler
+  // via HTTP Basic Auth, x-username/x-password headers, or multipart form-data.
+  if (
+    pathname === ApiRoutes.ENTRIES &&
+    request.method === "POST" &&
+    (request.headers.get("authorization")?.toLowerCase().startsWith("basic ") ||
+      request.headers.has("x-username") ||
+      request.headers.get("content-type")?.includes("multipart/form-data"))
+  ) {
     return NextResponse.next();
   }
 

@@ -248,14 +248,21 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
     }
     const allImages = [...existingUrls, ...uploadedUrls];
 
+    const finalVehicleNumber = isHardware
+      ? (parsed.data as { detected_vehicle_number: string }).detected_vehicle_number
+      : (parsed.data as { vehicle_number: string }).vehicle_number;
+    const finalDetectedVehicleNumber = isHardware
+      ? (parsed.data as { detected_vehicle_number: string }).detected_vehicle_number
+      : null;
+
     let newEntry;
     try {
       newEntry = await createEntry(supabase, {
         factoryId,
         centerId,
         createdBy: creatorId,
-        vehicleNumber,
-        detectedVehicleNumber,
+        vehicleNumber: finalVehicleNumber,
+        detectedVehicleNumber: finalDetectedVehicleNumber,
         weight,
         customerId,
         status: isHardware ? EntryStatus.PENDING : status,

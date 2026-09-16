@@ -65,7 +65,9 @@ describe("validation helpers", () => {
     const plate = indianPlateSchema("Vehicle Number");
     const optPlate = optionalIndianPlateSchema("Vehicle Number");
 
-    it("validates all 36 Indian state and UT codes", () => {
+    it("validates all Indian state and UT codes including TG (Telangana)", () => {
+      expect(STATE_CODES).toContain("TG");
+      expect(STATE_CODES).toContain("TS");
       for (const code of STATE_CODES) {
         const testPlate = `${code}01AB1234`;
         expect(validateIndianPlateStateCode(testPlate)).toBe(true);
@@ -79,9 +81,35 @@ describe("validation helpers", () => {
       expect(plate.parse("21BH9999Z")).toBe("21BH9999Z");
     });
 
+    it("validates Vintage series (VA)", () => {
+      expect(validateIndianPlateStateCode("DLVAAB0001")).toBe(true);
+      expect(plate.parse("DLVAAB0001")).toBe("DLVAAB0001");
+      expect(plate.parse("MH-VA-AB-1234")).toBe("MHVAAB1234");
+    });
+
+    it("validates 1-digit and 2-digit vehicle registration numbers", () => {
+      expect(plate.parse("MH12AB1")).toBe("MH12AB1");
+      expect(plate.parse("MH-12-AB-12")).toBe("MH12AB12");
+      expect(plate.parse("DL-1-C-AB-7")).toBe("DL1CAB7");
+      expect(plate.parse("KA01E45")).toBe("KA01E45");
+    });
+
+    it("validates early RTO series without letters", () => {
+      expect(plate.parse("MH121234")).toBe("MH121234");
+      expect(plate.parse("DL-01-1234")).toBe("DL011234");
+      expect(plate.parse("GA015678")).toBe("GA015678");
+    });
+
     it("rejects invalid state codes", () => {
       expect(validateIndianPlateStateCode("ZZ01AB1234")).toBe(false);
       expect(() => plate.parse("ZZ01AB1234")).toThrow();
+    });
+
+    it("rejects incomplete or invalid plate formats", () => {
+      expect(() => plate.parse("MH12")).toThrow();
+      expect(() => plate.parse("MH12AB12345")).toThrow();
+      expect(() => plate.parse("1234")).toThrow();
+      expect(() => plate.parse("INVALID")).toThrow();
     });
 
     it("handles optionalIndianPlateSchema with undefined", () => {
@@ -89,9 +117,11 @@ describe("validation helpers", () => {
       expect(optPlate.parse("MH12AB1234")).toBe("MH12AB1234");
     });
 
-    it("removes dashes and capitalizes plate numbers like MH-04-AB-1212", () => {
+    it("normalizes separators (dashes, spaces, dots) and trims surrounding whitespace", () => {
       expect(plate.parse("MH-04-AB-1212")).toBe("MH04AB1212");
       expect(plate.parse("mh-04-ab-1212")).toBe("MH04AB1212");
+      expect(plate.parse("MH 04 AB 1212")).toBe("MH04AB1212");
+      expect(plate.parse("  MH.04.AB.1212  ")).toBe("MH04AB1212");
       expect(plate.parse("DL-1-C-AB-1234")).toBe("DL1CAB1234");
       expect(optPlate.parse("KA-01-AB-1234")).toBe("KA01AB1234");
     });

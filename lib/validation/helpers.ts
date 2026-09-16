@@ -80,6 +80,7 @@ export const STATE_CODES = [
   "RJ",
   "SK",
   "TN",
+  "TG",
   "TS",
   "TR",
   "UP",
@@ -89,42 +90,54 @@ export const STATE_CODES = [
 ] as const;
 
 export const INDIAN_PLATE_REGEX =
-  /^(?:([A-Z]{2})[\s.-]?([A-Z0-9]{1,2})[\s.-]?([A-Za-z]{1,3})[\s.-]?(\d{3,4})|(\d{2})[\s.-]?(BH)[\s.-]?(\d{4})[\s.-]?([A-Za-z]{1,2}))$/i;
+  /^(?:([A-Z]{2})(\d{1,2})([A-Z]{1,3})(\d{1,4})|([A-Z]{2})(\d{1,2})(\d{4})|(\d{2})(BH)(\d{4})([A-Z]{1,2})|([A-Z]{2})(VA)([A-Z]{2})(\d{4}))$/i;
 
 export const validateIndianPlateStateCode = (val: string): boolean => {
-  if (/^\d{2}[\s.-]?BH/i.test(val)) return true;
-  return (STATE_CODES as readonly string[]).includes(val.substring(0, 2).toUpperCase());
+  const clean = val
+    .trim()
+    .replace(/[\s.-]+/g, "")
+    .toUpperCase();
+  if (/^\d{2}BH/i.test(clean)) return true;
+  return (STATE_CODES as readonly string[]).includes(clean.substring(0, 2));
+};
+
+export const cleanPlateString = (val: unknown): unknown => {
+  if (typeof val !== "string") return val;
+  return val
+    .trim()
+    .replace(/[\s.-]+/g, "")
+    .toUpperCase();
 };
 
 export const indianPlateSchema = (fieldName = "Vehicle Number") =>
-  z
-    .string()
-    .min(1, ValidationMessage.INDIAN_PLATE_REQUIRED(fieldName))
-    .max(15, ValidationMessage.INDIAN_PLATE_MAX(fieldName, 15))
-    .transform((val) => val.replace(/-/g, "").toUpperCase())
-    .pipe(
-      z
-        .string()
-        .regex(INDIAN_PLATE_REGEX, ValidationMessage.INDIAN_PLATE_FORMAT)
-        .refine(validateIndianPlateStateCode, {
-          message: ValidationMessage.INDIAN_PLATE_STATE,
-        }),
-    );
+  z.preprocess(
+    cleanPlateString,
+    z
+      .string({ message: ValidationMessage.INDIAN_PLATE_REQUIRED(fieldName) })
+      .min(1, ValidationMessage.INDIAN_PLATE_REQUIRED(fieldName))
+      .max(15, ValidationMessage.INDIAN_PLATE_MAX(fieldName, 15))
+      .regex(INDIAN_PLATE_REGEX, ValidationMessage.INDIAN_PLATE_FORMAT)
+      .refine(validateIndianPlateStateCode, {
+        message: ValidationMessage.INDIAN_PLATE_STATE,
+      }),
+  );
 
 export const optionalIndianPlateSchema = (fieldName = "Vehicle Number") =>
-  z
-    .string()
-    .max(15, ValidationMessage.INDIAN_PLATE_MAX(fieldName, 15))
-    .transform((val) => val.replace(/-/g, "").toUpperCase())
-    .pipe(
-      z
-        .string()
-        .regex(INDIAN_PLATE_REGEX, ValidationMessage.INDIAN_PLATE_FORMAT)
-        .refine(validateIndianPlateStateCode, {
-          message: ValidationMessage.INDIAN_PLATE_STATE,
-        }),
-    )
-    .optional();
+  z.preprocess(
+    (val) => {
+      if (val === undefined) return undefined;
+      if (val === null || val === "") return undefined;
+      return cleanPlateString(val);
+    },
+    z
+      .string()
+      .max(15, ValidationMessage.INDIAN_PLATE_MAX(fieldName, 15))
+      .regex(INDIAN_PLATE_REGEX, ValidationMessage.INDIAN_PLATE_FORMAT)
+      .refine(validateIndianPlateStateCode, {
+        message: ValidationMessage.INDIAN_PLATE_STATE,
+      })
+      .optional(),
+  );
 
 export const positiveWeightSchema = (fieldName = "Weight") =>
   z.coerce

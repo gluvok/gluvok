@@ -76,7 +76,7 @@ pnpm install
    - **Query Optimization**: Composite indexes on `(factory_id, center_id, created_at DESC)` and `(factory_id, vehicle_number, status, created_at DESC)`.
    - **Inlined Computed Columns**: High-performance `LANGUAGE sql STABLE PARALLEL SAFE` functions for `gross_weight`, `tare_weight`, and `net_weight`.
    - **Automatic Timestamps**: Automated `BEFORE UPDATE` trigger on all tables keeping `updated_at` timestamps accurate.
-2. Execute [storage.sql](storage.sql) to create the required storage bucket (`gluvok`) and factory object policies (`f_<factory_id>/weighments/...`):
+2. Execute [storage.sql](storage.sql) to create the required storage bucket (`gluvok`) and factory object policies (`<factory_id>/<file_id>.<ext>`):
    - **Public CDN Reads**: Open for rapid image delivery.
    - **Restricted Mutations**: `INSERT`, `UPDATE`, and `DELETE` restricted to `authenticated` and `service_role` clients with regex validation on folder prefixes.
 3. Seed default factory data, commodities, centers, and administrative accounts:

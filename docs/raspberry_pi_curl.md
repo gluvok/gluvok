@@ -115,7 +115,7 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
     "status": "approved",
     "auto_approved": true,
     "images": [
-      "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/abc12345-1725210000.jpg"
+      "https://your-supabase-project.supabase.co/storage/v1/object/public/gluvok/1/abc12345-1725210000.jpg"
     ],
     "created_at": "2026-09-15T09:45:00.000Z",
     "updated_at": "2026-09-15T09:45:00.000Z"

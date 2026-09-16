@@ -45,7 +45,7 @@ describe("uploadBase64ImagesToStorage", () => {
     mockGetPublicUrl.mockReturnValue({
       data: {
         publicUrl:
-          "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/test.jpg",
+          "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/1/test.jpg",
       },
     });
 
@@ -55,7 +55,7 @@ describe("uploadBase64ImagesToStorage", () => {
     const res = await uploadBase64ImagesToStorage([base64Img], 1);
 
     expect(mockUpload).toHaveBeenCalledWith(
-      expect.stringMatching(/^f_1\/weighments\/.+\.jpg$/),
+      expect.stringMatching(/^1\/.+\.jpg$/),
       expect.any(Buffer),
       expect.objectContaining({
         contentType: "image/jpeg",
@@ -64,7 +64,7 @@ describe("uploadBase64ImagesToStorage", () => {
       }),
     );
     expect(res).toEqual([
-      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/test.jpg",
+      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/1/test.jpg",
     ]);
   });
 
@@ -73,7 +73,7 @@ describe("uploadBase64ImagesToStorage", () => {
     mockGetPublicUrl.mockReturnValue({
       data: {
         publicUrl:
-          "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/f_2/weighments/test.png",
+          "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/2/test.png",
       },
     });
 
@@ -83,14 +83,14 @@ describe("uploadBase64ImagesToStorage", () => {
     const res = await uploadBase64ImagesToStorage([base64Png], 2);
 
     expect(mockUpload).toHaveBeenCalledWith(
-      expect.stringMatching(/^f_2\/weighments\/.+\.png$/),
+      expect.stringMatching(/^2\/.+\.png$/),
       expect.any(Buffer),
       expect.objectContaining({
         contentType: "image/png",
       }),
     );
     expect(res).toEqual([
-      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/f_2/weighments/test.png",
+      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/2/test.png",
     ]);
   });
 
@@ -158,7 +158,7 @@ describe("uploadFilesToStorage", () => {
     mockGetPublicUrl.mockReturnValue({
       data: {
         publicUrl:
-          "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/photo.jpg",
+          "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/1/photo.jpg",
       },
     });
 
@@ -166,7 +166,7 @@ describe("uploadFilesToStorage", () => {
     const res = await uploadFilesToStorage([file], 1);
 
     expect(mockUpload).toHaveBeenCalledWith(
-      expect.stringMatching(/^f_1\/weighments\/.+\.jpg$/),
+      expect.stringMatching(/^1\/.+\.jpg$/),
       expect.any(Buffer),
       expect.objectContaining({
         contentType: "image/jpeg",
@@ -174,7 +174,7 @@ describe("uploadFilesToStorage", () => {
       }),
     );
     expect(res).toEqual([
-      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/photo.jpg",
+      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/1/photo.jpg",
     ]);
   });
 });
@@ -194,12 +194,12 @@ describe("deleteStorageImages", () => {
     mockRemove.mockResolvedValue({ error: null });
 
     const urls = [
-      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/f_1/weighments/photo1.jpg",
-      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/f_2/weighments/photo2.jpg", // different factory
+      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/1/photo1.jpg",
+      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/2/photo2.jpg", // different factory
     ];
 
     const count = await deleteStorageImages(urls, 1);
     expect(count).toBe(1);
-    expect(mockRemove).toHaveBeenCalledWith(["f_1/weighments/photo1.jpg"]);
+    expect(mockRemove).toHaveBeenCalledWith(["1/photo1.jpg"]);
   });
 });

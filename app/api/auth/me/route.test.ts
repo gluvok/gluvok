@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { GET } from "./route";
 import { Role } from "@/lib/constants/enums";
-import { validateSession } from "@/lib/auth/session";
+import { validateSession, refreshSessionExpiry } from "@/lib/auth/session";
 
 const { mockCookies, mockDb } = vi.hoisted(() => ({
   mockCookies: vi.fn(),
@@ -76,6 +76,8 @@ describe("GET /api/auth/me", () => {
       factory_id: 1,
       factory_name: undefined,
     });
+
+    expect(refreshSessionExpiry).toHaveBeenCalledWith("valid-session-token");
   });
 
   it("returns user: null when session token is invalid or expired", async () => {

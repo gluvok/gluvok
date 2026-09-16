@@ -4,7 +4,7 @@
  */
 
 import crypto from "crypto";
-import { db, supabase } from "@/db";
+import { db } from "@/db";
 import { AuthUserPayload } from "@/types";
 import { Role } from "@/lib/constants/enums";
 
@@ -34,13 +34,14 @@ export interface CreateSessionOptions {
 export async function createSession(
   userId: number,
   options: CreateSessionOptions = {},
+  client = db,
 ): Promise<CreateSessionResult> {
   const durationSeconds = options.expiresInSeconds ?? SESSION_MAX_AGE_SECONDS;
   const token = generateSessionToken();
   const expiresAt = new Date(Date.now() + durationSeconds * 1000).toISOString();
 
   const now = new Date().toISOString();
-  const { data, error } = await db
+  const { data, error } = await client
     .from("sessions")
     .insert({
       token,
@@ -66,11 +67,10 @@ export async function createSession(
 /**
  * Refreshes the expiration timestamp of an active session in the database (sliding expiration).
  */
-export async function refreshSessionExpiry(token: string, client?: typeof supabase): Promise<void> {
-  const db = client || supabase;
+export async function refreshSessionExpiry(token: string, client = db): Promise<void> {
   if (!token || typeof token !== "string") return;
   const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000).toISOString();
-  await db
+  await client
     .from("sessions")
     .update({ expires_at: expiresAt, updated_at: new Date().toISOString() })
     .eq("token", token)
@@ -81,55 +81,38 @@ export async function refreshSessionExpiry(token: string, client?: typeof supaba
  * Validates an incoming session token against active database sessions and returns the user payload.
  * Instantly returns null if the session is revoked, expired, or the user account is soft-deleted.
  */
-export async function validateSession(
-  token: string,
-  client?: typeof supabase,
-): Promise<AuthUserPayload | null> {
-  const db = client || supabase;
+export async function validateSession(token: string, client = db): Promise<AuthUserPayload | null> {
   if (!token || typeof token !== "string" || token.trim().length === 0) {
     return null;
   }
 
   try {
-    const table = db.from?.("sessions");
-    if (!table || typeof table.select !== "function") {
-      return null;
-    }
-
     const now = new Date().toISOString();
-    const selectQuery = table.select(`
-      id,
-      token,
-      expires_at,
-      user_id,
-      updated_at,
-      deleted_at,
-      users!inner (
+    const { data: session, error } = await client
+      .from("sessions")
+      .select(`
         id,
-        username,
-        name,
-        role,
-        factory_id,
+        token,
+        expires_at,
+        user_id,
+        updated_at,
         deleted_at,
-        factories (
-          name
+        users!inner (
+          id,
+          username,
+          name,
+          role,
+          factory_id,
+          deleted_at,
+          factories (
+            name
+          )
         )
-      )
-    `);
-
-    if (!selectQuery || typeof selectQuery.eq !== "function") {
-      return null;
-    }
-
-    let eqQuery = selectQuery.eq("token", token);
-    if (eqQuery && typeof eqQuery.is === "function") {
-      eqQuery = eqQuery.is("deleted_at", null);
-    }
-    if (!eqQuery || typeof eqQuery.gt !== "function") {
-      return null;
-    }
-
-    const { data: session, error } = await eqQuery.gt("expires_at", now).maybeSingle();
+      `)
+      .eq("token", token)
+      .is("deleted_at", null)
+      .gt("expires_at", now)
+      .maybeSingle();
 
     if (error || !session || session.deleted_at != null) {
       return null;
@@ -168,27 +151,8 @@ export async function validateSession(
  */
 export async function deleteSession(token: string, client = db): Promise<void> {
   if (!token) return;
-  try {
-    const table = client.from("sessions");
-    if (table && typeof table.update === "function") {
-      const query = table.update({
-        deleted_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      if (query && typeof query.eq === "function") {
-        await query.eq("token", token);
-        return;
-      }
-    }
-    if (table && typeof table.delete === "function") {
-      const delQuery = table.delete();
-      if (delQuery && typeof delQuery.eq === "function") {
-        await delQuery.eq("token", token);
-      }
-    }
-  } catch {
-    // Ignore error if sessions table not available or mock does not implement it
-  }
+  const now = new Date().toISOString();
+  await client.from("sessions").update({ deleted_at: now, updated_at: now }).eq("token", token);
 }
 
 /**
@@ -196,25 +160,6 @@ export async function deleteSession(token: string, client = db): Promise<void> {
  */
 export async function deleteAllUserSessions(userId: number, client = db): Promise<void> {
   if (!userId) return;
-  try {
-    const table = client.from("sessions");
-    if (table && typeof table.update === "function") {
-      const query = table.update({
-        deleted_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      if (query && typeof query.eq === "function") {
-        await query.eq("user_id", userId);
-        return;
-      }
-    }
-    if (table && typeof table.delete === "function") {
-      const delQuery = table.delete();
-      if (delQuery && typeof delQuery.eq === "function") {
-        await delQuery.eq("user_id", userId);
-      }
-    }
-  } catch {
-    // Ignore error if sessions table not available or mock does not implement it
-  }
+  const now = new Date().toISOString();
+  await client.from("sessions").update({ deleted_at: now, updated_at: now }).eq("user_id", userId);
 }

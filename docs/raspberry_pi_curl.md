@@ -28,7 +28,7 @@ Supply username and password via standard HTTP Basic Authentication. cURL handle
 
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/entries" \
-  -u "device_center_1:hardware_password_123" \
+  -u "pi1:hardware123" \
   -F "center_id=1" \
   -F "detected_vehicle_number=MH12AB1234" \
   -F "weight=14250.5" \
@@ -41,8 +41,8 @@ Include `username` and `password` directly as form-data fields alongside entry m
 
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/entries" \
-  -F "username=device_center_1" \
-  -F "password=hardware_password_123" \
+  -F "username=pi1" \
+  -F "password=hardware123" \
   -F "center_id=1" \
   -F "detected_vehicle_number=MH12AB1234" \
   -F "weight=14250.5" \
@@ -57,7 +57,7 @@ The device logs in once via `POST /api/auth/login` to obtain a session token, th
 # 1. Login
 curl -X POST "https://gluvok.vercel.app/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"username": "device_center_1", "password": "hardware_password_123"}'
+  -d '{"username": "pi1", "password": "hardware123"}'
 
 # Response: { "token": "4f18d6a8b7924c13...", "user": { ... } }
 
@@ -90,7 +90,7 @@ curl -X POST "https://gluvok.vercel.app/api/entries" \
 
 ```bash
 curl -X POST "https://gluvok.vercel.app/api/entries" \
-  -u "device_center_1:hardware_password_123" \
+  -u "pi1:hardware123" \
   -F "center_id=1" \
   -F "detected_vehicle_number=MH12AB1234" \
   -F "weight=14250.5" \
@@ -137,14 +137,14 @@ Edge devices are managed directly in the database `users` table:
 ```sql
 -- Provision a new hardware device account scoped to Factory 1
 INSERT INTO users (factory_id, username, password_hash, role, name)
-VALUES (1, 'device_center_1', encode(sha256('hardware_password_123'::bytea), 'hex'), 'hardware', 'Main Weighbridge Scale');
+VALUES (1, 'pi1', encode(sha256('hardware123'::bytea), 'hex'), 'hardware', 'Main Weighbridge Scale');
 
 -- Deactivate a device immediately
-UPDATE users SET deleted_at = NOW() WHERE username = 'device_center_1';
-DELETE FROM sessions WHERE user_id = (SELECT id FROM users WHERE username = 'device_center_1');
+UPDATE users SET deleted_at = NOW() WHERE username = 'pi1';
+DELETE FROM sessions WHERE user_id = (SELECT id FROM users WHERE username = 'pi1');
 
 -- Reactivate a device
-UPDATE users SET deleted_at = NULL WHERE username = 'device_center_1';
+UPDATE users SET deleted_at = NULL WHERE username = 'pi1';
 ```
 
 ---

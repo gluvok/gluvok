@@ -112,30 +112,38 @@ async function main() {
     console.log("Admin user ('admin1') already exists.");
   }
 
-  console.log("Inserting default weighbridge edge device user...");
+  console.log("Inserting default weighbridge edge device users (pi1, pi2)...");
   const defaultHardwareHash = await hashPassword("hardware123");
-  const { data: existingDeviceUser } = await supabase
-    .from("users")
-    .select("id")
-    .eq("username", "device_center_1")
-    .maybeSingle();
+  const defaultDevices = [
+    { username: "pi1", name: "Raspberry Pi Scale 1" },
+    { username: "pi2", name: "Raspberry Pi Scale 2" },
+  ];
 
-  if (!existingDeviceUser) {
-    const { data: newDeviceUser, error: devErr } = await supabase
+  for (const dev of defaultDevices) {
+    const { data: existingDeviceUser } = await supabase
       .from("users")
-      .insert({
-        username: "device_center_1",
-        password_hash: defaultHardwareHash,
-        name: "Main Weighbridge Device",
-        role: Role.HARDWARE,
-        factory_id: factoryId,
-      })
       .select("id")
-      .single();
-    if (devErr || !newDeviceUser) throw devErr || new Error("Failed to create default device user");
-    console.log(`Default device user inserted with id=${newDeviceUser.id}`);
-  } else {
-    console.log("Default device user ('device_center_1') already exists.");
+      .eq("username", dev.username)
+      .maybeSingle();
+
+    if (!existingDeviceUser) {
+      const { data: newDeviceUser, error: devErr } = await supabase
+        .from("users")
+        .insert({
+          username: dev.username,
+          password_hash: defaultHardwareHash,
+          name: dev.name,
+          role: Role.HARDWARE,
+          factory_id: factoryId,
+        })
+        .select("id")
+        .single();
+      if (devErr || !newDeviceUser)
+        throw devErr || new Error(`Failed to create default device user ${dev.username}`);
+      console.log(`Default device user inserted with id=${newDeviceUser.id} (${dev.username})`);
+    } else {
+      console.log(`Default device user ('${dev.username}') already exists.`);
+    }
   }
 
   console.log("Seeding default commodities catalog...");

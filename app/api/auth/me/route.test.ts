@@ -21,6 +21,7 @@ vi.mock("@/db", () => ({
 
 vi.mock("@/lib/auth/session", () => ({
   validateSession: vi.fn(),
+  refreshSessionExpiry: vi.fn(),
 }));
 
 describe("GET /api/auth/me", () => {

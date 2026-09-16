@@ -8,12 +8,9 @@ import { db, supabase } from "@/db";
 import { AuthUserPayload } from "@/types";
 import { Role } from "@/lib/constants/enums";
 
-import { getSessionExpirySeconds } from "./cookies";
+import { SESSION_MAX_AGE_SECONDS } from "./cookies";
 
 export type { AuthUserPayload };
-
-export const DEFAULT_PERMANENT_SESSION_EXPIRY_DAYS = 365 * 100; // 100 years (~permanent)
-export const DEFAULT_SESSION_EXPIRY_DAYS = DEFAULT_PERMANENT_SESSION_EXPIRY_DAYS;
 
 /**
  * Generates a cryptographically secure 256-bit random session token string.
@@ -28,7 +25,6 @@ export interface CreateSessionResult {
 }
 
 export interface CreateSessionOptions {
-  expiresInDays?: number;
   expiresInSeconds?: number;
 }
 
@@ -39,22 +35,9 @@ export async function createSession(
   userId: number,
   options: CreateSessionOptions = {},
 ): Promise<CreateSessionResult> {
-  let durationMs: number;
-  if (options.expiresInSeconds !== undefined) {
-    durationMs =
-      options.expiresInDays !== undefined
-        ? options.expiresInSeconds * 1000
-        : options.expiresInSeconds * 1000;
-  } else if (options.expiresInDays !== undefined) {
-    durationMs = options.expiresInDays * 24 * 60 * 60 * 1000;
-  } else if (process.env.SESSION_MAX_AGE_SECONDS || process.env.SESSION_EXPIRY_DAYS) {
-    durationMs = getSessionExpirySeconds() * 1000;
-  } else {
-    durationMs = DEFAULT_PERMANENT_SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
-  }
-
+  const durationSeconds = options.expiresInSeconds ?? SESSION_MAX_AGE_SECONDS;
   const token = generateSessionToken();
-  const expiresAt = new Date(Date.now() + durationMs).toISOString();
+  const expiresAt = new Date(Date.now() + durationSeconds * 1000).toISOString();
 
   const now = new Date().toISOString();
   const { data, error } = await db
@@ -78,6 +61,20 @@ export async function createSession(
     id: data.id,
     token: data.token,
   };
+}
+
+/**
+ * Refreshes the expiration timestamp of an active session in the database (sliding expiration).
+ */
+export async function refreshSessionExpiry(token: string, client?: typeof supabase): Promise<void> {
+  const db = client || supabase;
+  if (!token || typeof token !== "string") return;
+  const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000).toISOString();
+  await db
+    .from("sessions")
+    .update({ expires_at: expiresAt, updated_at: new Date().toISOString() })
+    .eq("token", token)
+    .is("deleted_at", null);
 }
 
 /**

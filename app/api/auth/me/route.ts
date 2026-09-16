@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { validateSession } from "@/lib/auth/session";
+import { validateSession, refreshSessionExpiry } from "@/lib/auth/session";
 import { fetchActiveUserById, toUserSessionPayload } from "@/lib/auth/common";
 import { clearAuthCookies, setAuthCookies } from "@/lib/auth/cookies";
 
@@ -35,6 +35,7 @@ export async function GET() {
     }
 
     const response = NextResponse.json({ user: toUserSessionPayload(user) });
+    await refreshSessionExpiry(token);
     return setAuthCookies(response, token);
   } catch (error) {
     console.error("Auth /me error:", error);

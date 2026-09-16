@@ -14,7 +14,7 @@ import {
   XCircle,
   CircleAlert,
   UserCog,
-  Layers,
+  Target,
 } from "lucide-react";
 import { createCustomColumn } from "./helpers";
 import { TicketStatus } from "@/lib/constants/enums";
@@ -22,7 +22,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 export function getTicketsColumns<T extends RowData>(): ColumnDef<ProjectTableFeatures, T>[] {
   return [
-    createCustomColumn<T>("target", "Linked Target", Layers, (_val, row) => {
+    createCustomColumn<T>("target", "Linked Target", Target, (_val, row) => {
       const rec = row as Record<string, unknown>;
       const entryId = rec.entry_id;
       const weighmentId = rec.weighment_id;

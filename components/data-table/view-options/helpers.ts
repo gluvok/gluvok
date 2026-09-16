@@ -19,6 +19,7 @@ import {
   Weight,
   Truck,
   PackageCheck,
+  Target,
 } from "lucide-react";
 
 /**
@@ -47,6 +48,7 @@ export const COLUMN_ICONS: Record<string, React.ComponentType<{ className?: stri
   net_weight: PackageCheck,
   vehicle_number: Truck,
   detected_vehicle_number: Truck,
+  target: Target,
 };
 
 const COLUMN_LABEL_MAP: Record<string, string> = {

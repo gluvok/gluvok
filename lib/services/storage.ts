@@ -7,7 +7,6 @@ import { supabase } from "@/lib/supabase";
 
 const STORAGE_BUCKET_NAME = "gluvok";
 const CACHE_CONTROL = "3600";
-const UPLOAD_PATH_FOLDER = "weighments";
 
 export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 export const ALLOWED_MIME_TYPES = new Set([
@@ -55,7 +54,7 @@ export async function uploadFilesToStorage(
 
     const fileExt = file.name ? file.name.split(".").pop() || "jpg" : "jpg";
     const uniqueId = `${Math.random().toString(36).substring(2, 15)}-${Date.now()}`;
-    const filePath = `f_${factoryPrefix}/${UPLOAD_PATH_FOLDER}/${uniqueId}.${fileExt}`;
+    const filePath = `${factoryPrefix}/${uniqueId}.${fileExt}`;
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -95,7 +94,7 @@ export async function deleteStorageImages(
 ): Promise<number> {
   if (!urlsOrPaths || urlsOrPaths.length === 0) return 0;
 
-  const factoryPrefix = factoryId !== undefined ? `f_${factoryId}/` : undefined;
+  const factoryPrefix = factoryId !== undefined ? `${factoryId}/` : undefined;
   const targetPaths: string[] = [];
 
   for (const item of urlsOrPaths) {
@@ -177,7 +176,7 @@ export async function uploadBase64ImagesToStorage(
       try {
         const buffer = Buffer.from(base64Content, "base64");
         const uniqueId = `${Math.random().toString(36).substring(2, 15)}-${Date.now()}`;
-        const filePath = `f_${factoryPrefix}/${UPLOAD_PATH_FOLDER}/${uniqueId}.${ext}`;
+        const filePath = `${factoryPrefix}/${uniqueId}.${ext}`;
 
         const { error } = await supabase.storage
           .from(STORAGE_BUCKET_NAME)

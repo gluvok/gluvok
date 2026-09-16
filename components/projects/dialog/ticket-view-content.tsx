@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { Ticket, Scale, Truck, CircleAlert, UserCog, MessageSquare } from "lucide-react";
+import { Ticket, Scale, Truck, CircleAlert, UserCog, MessageSquare, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getField } from "@/lib/store";
@@ -52,7 +52,8 @@ export function TicketViewContent({ item, primaryIdKey, onOpenChange }: TicketVi
       <div className="py-3 space-y-4 text-xs">
         {/* Linked Target Card */}
         <div className="p-3 rounded-lg border border-border/70 bg-muted/30 space-y-1">
-          <div className="font-semibold text-2xs uppercase tracking-wider text-muted-foreground">
+          <div className="flex items-center gap-1.5 font-semibold text-2xs uppercase tracking-wider text-muted-foreground">
+            <Target className="h-3 w-3 text-muted-foreground/70" />
             Linked Target
           </div>
           <div className="flex items-center gap-2">

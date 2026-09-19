@@ -18,6 +18,8 @@ The application features a responsive sidebar (`AppSidebar`) composed of three m
 - **Nav User**:
   - User avatar with interactive dropdown menu (Account, Notifications, Log out).
 
+Navigation and module icons are centrally mapped in [`lib/icons.ts`](lib/icons.ts).
+
 The layout integrates `SidebarProvider` and `SidebarInset` with a collapsible sidebar trigger and header on the home page.
 
 ## Getting Started

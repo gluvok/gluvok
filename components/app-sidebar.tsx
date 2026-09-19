@@ -2,17 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import {
-  Briefcase01Icon,
-  Building01Icon,
-  ClipboardListIcon,
-  CustomerSupportIcon,
-  Settings01Icon,
-  Ticket01Icon,
-  UserGroupIcon,
-  UserIcon,
-  WeightScale01Icon,
-} from "@hugeicons/core-free-icons";
+import { appIcons } from "@/lib/icons";
 import {
   Sidebar,
   SidebarContent,
@@ -31,32 +21,32 @@ const navMainItems: NavItem[] = [
   {
     title: "Centers",
     url: "/centers",
-    icon: Building01Icon,
+    icon: appIcons.centers,
   },
   {
     title: "Entries",
     url: "/entries",
-    icon: ClipboardListIcon,
+    icon: appIcons.entries,
   },
   {
     title: "Weighments",
     url: "/weighments",
-    icon: WeightScale01Icon,
+    icon: appIcons.weighments,
   },
   {
     title: "Customers",
     url: "/customers",
-    icon: UserGroupIcon,
+    icon: appIcons.customers,
   },
   {
     title: "Users",
     url: "/users",
-    icon: UserIcon,
+    icon: appIcons.users,
   },
   {
     title: "Settings",
     url: "/settings",
-    icon: Settings01Icon,
+    icon: appIcons.settings,
   },
 ];
 
@@ -64,17 +54,17 @@ const navSecondaryItems: NavSecondaryItem[] = [
   {
     title: "Tickets",
     url: "/tickets",
-    icon: Ticket01Icon,
+    icon: appIcons.tickets,
   },
   {
     title: "Support",
     url: "/support",
-    icon: CustomerSupportIcon,
+    icon: appIcons.support,
   },
   {
     title: "Services",
     url: "/services",
-    icon: Briefcase01Icon,
+    icon: appIcons.services,
   },
 ];
 

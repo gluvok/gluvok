@@ -30,6 +30,21 @@ export type UserProps = {
   initials: string;
 };
 
+export function UserAvatarInfo({ user }: { user: UserProps }) {
+  return (
+    <>
+      <Avatar>
+        {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
+        <AvatarFallback className="font-medium text-xs">{user.initials}</AvatarFallback>
+      </Avatar>
+      <div className="grid flex-1 text-left text-sm leading-tight">
+        <span className="truncate font-semibold">{user.name}</span>
+        <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+      </div>
+    </>
+  );
+}
+
 export function NavUser({ user }: { user: UserProps }) {
   const { isMobile } = useSidebar();
 
@@ -45,14 +60,7 @@ export function NavUser({ user }: { user: UserProps }) {
               />
             }
           >
-            <Avatar>
-              {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-              <AvatarFallback className="font-medium text-xs">{user.initials}</AvatarFallback>
-            </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-semibold">{user.name}</span>
-              <span className="truncate text-xs text-muted-foreground">{user.email}</span>
-            </div>
+            <UserAvatarInfo user={user} />
             <HugeiconsIcon
               icon={Sorting05Icon}
               className="ml-auto size-4 shrink-0 text-muted-foreground"
@@ -61,14 +69,7 @@ export function NavUser({ user }: { user: UserProps }) {
           <DropdownMenuContent side={isMobile ? "bottom" : "right"}>
             <DropdownMenuGroup className="p-1">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar>
-                  {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-                  <AvatarFallback className="font-medium text-xs">{user.initials}</AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.name}</span>
-                  <span className="truncate text-xs text-muted-foreground">{user.email}</span>
-                </div>
+                <UserAvatarInfo user={user} />
               </div>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

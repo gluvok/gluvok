@@ -9,52 +9,45 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  ArrowRight01Icon,
-  Building01Icon,
-  ClipboardListIcon,
-  ContactRoundIcon,
-  Settings01Icon,
-  UserIcon,
-  WeightScale01Icon,
-} from "@hugeicons/core-free-icons";
+import { appIcons } from "@/lib/icons";
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 
 const sections = [
   {
     title: "Centers",
     description: "Manage processing facilities and operational locations.",
     href: "/centers",
-    icon: Building01Icon,
+    icon: appIcons.centers,
   },
   {
     title: "Entries",
     description: "View and record incoming and outgoing transport entries.",
     href: "/entries",
-    icon: ClipboardListIcon,
+    icon: appIcons.entries,
   },
   {
     title: "Weighments",
     description: "Track weighbridge measurements, gross, tare, and net weights.",
     href: "/weighments",
-    icon: WeightScale01Icon,
+    icon: appIcons.weighments,
   },
   {
     title: "Customers",
     description: "Maintain client profiles, billing contacts, and contracts.",
     href: "/customers",
-    icon: ContactRoundIcon,
+    icon: appIcons.customers,
   },
   {
     title: "Users",
     description: "Configure system operators, roles, and access credentials.",
     href: "/users",
-    icon: UserIcon,
+    icon: appIcons.users,
   },
   {
     title: "Settings",
     description: "Platform preferences, system defaults, and configurations.",
     href: "/settings",
-    icon: Settings01Icon,
+    icon: appIcons.settings,
   },
 ];
 

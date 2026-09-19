@@ -45,7 +45,7 @@ export function NavUser({ user }: { user: UserProps }) {
               />
             }
           >
-            <Avatar className="size-8">
+            <Avatar>
               {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
               <AvatarFallback className="font-medium text-xs">{user.initials}</AvatarFallback>
             </Avatar>
@@ -61,7 +61,7 @@ export function NavUser({ user }: { user: UserProps }) {
           <DropdownMenuContent side={isMobile ? "bottom" : "right"}>
             <DropdownMenuGroup className="p-1">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="size-8">
+                <Avatar>
                   {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
                   <AvatarFallback className="font-medium text-xs">{user.initials}</AvatarFallback>
                 </Avatar>

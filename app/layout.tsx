@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { AppSidebar } from "@/components/app-sidebar";
+import { AppBreadcrumb } from "@/components/app-breadcrumb";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -46,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
                 <Separator orientation="vertical" className="mr-2 my-auto data-vertical:h-4" />
-                <span className="text-sm font-medium">Home</span>
+                <AppBreadcrumb />
               </div>
             </header>
             <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>

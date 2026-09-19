@@ -20,7 +20,7 @@ The application features a responsive sidebar (`AppSidebar`) composed of three m
 
 Navigation and module icons are centrally mapped in [`lib/icons.ts`](lib/icons.ts).
 
-The layout integrates `SidebarProvider` and `SidebarInset` with a collapsible sidebar trigger and header on the home page.
+The layout integrates `SidebarProvider` and `SidebarInset` with a collapsible sidebar trigger and a dynamic header page title (`AppBreadcrumb`) that reflects the current route without breadcrumb arrows.
 
 ## Getting Started
 

@@ -37,7 +37,7 @@ export function UserAvatarInfo({ user }: { user: UserProps }) {
         {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
         <AvatarFallback className="font-medium text-xs">{user.initials}</AvatarFallback>
       </Avatar>
-      <div className="grid flex-1 text-left text-sm leading-tight">
+      <div className="grid flex-1 leading-tight">
         <span className="truncate font-semibold">{user.name}</span>
         <span className="truncate text-xs text-muted-foreground">{user.email}</span>
       </div>
@@ -56,18 +56,14 @@ export function NavUser({ user }: { user: UserProps }) {
             render={
               <SidebarMenuButton
                 size="lg"
-                className="data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-sidebar-accent-foreground"
               />
             }
           >
             <UserAvatarInfo user={user} />
-            <HugeiconsIcon
-              icon={Sorting05Icon}
-              className="ml-auto size-4 shrink-0 text-muted-foreground"
-            />
+            <HugeiconsIcon icon={Sorting05Icon} />
           </DropdownMenuTrigger>
           <DropdownMenuContent side={isMobile ? "bottom" : "right"}>
-            <DropdownMenuGroup className="p-1">
+            <DropdownMenuGroup>
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <UserAvatarInfo user={user} />
               </div>

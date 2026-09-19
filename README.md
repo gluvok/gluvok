@@ -143,7 +143,7 @@ All API endpoints are located under `/api/*`:
 
 ### Operations & Weighments
 
-- `GET, POST /api/entries` - List entries (with derived `source` based on creator role) or ingest a new entry. `POST` exclusively accepts `multipart/form-data` with attached images, uploading them to Supabase Storage before DB commit with compensating rollback. Supports HTTP Basic Auth and form-data credentials (`username`/`password`) for hardware devices.
+- `GET, POST /api/entries` - List entries (with derived `source` based on creator role) or ingest a new entry. `POST` exclusively accepts `multipart/form-data` with attached images, uploading them to Supabase Storage before DB commit with compensating rollback (resilient against transient network failures using `p-retry` exponential backoff). Supports HTTP Basic Auth and form-data credentials (`username`/`password`) for hardware devices.
 - `GET, PATCH, DELETE /api/entries/:id` - Retrieve, update, approve, or reject an entry. Automatically manages storage image additions and purges on patch and delete.
 - `GET, POST /api/tickets` - List ticketing records or create new tickets.
 - `GET, PATCH, DELETE /api/tickets/:id` - Ticket details, status updates, and resolutions.

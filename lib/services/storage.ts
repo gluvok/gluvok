@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "@/lib/supabase";
+import pRetry from "p-retry";
 
 const STORAGE_BUCKET_NAME = "gluvok";
 const CACHE_CONTROL = "3600";
@@ -82,15 +83,27 @@ export async function uploadFilesToStorage(
 }
 
 /**
+ * Options for configuring retry behavior during storage deletion rollback.
+ */
+export interface DeleteStorageImagesOptions {
+  retries?: number;
+  minTimeout?: number;
+  factor?: number;
+}
+
+/**
  * Deletes an array of image URLs or storage paths from the Supabase Storage bucket.
+ * Uses p-retry with exponential backoff to handle transient storage network issues.
  *
  * @param urlsOrPaths Array of public URLs or relative paths to remove
  * @param factoryId Optional factory ID to enforce tenancy boundary scoping
+ * @param options Optional retry options (retries, minTimeout, factor)
  * @returns Number of removed images
  */
 export async function deleteStorageImages(
   urlsOrPaths: string[],
   factoryId?: number | string,
+  options?: DeleteStorageImagesOptions,
 ): Promise<number> {
   if (!urlsOrPaths || urlsOrPaths.length === 0) return 0;
 
@@ -116,12 +129,34 @@ export async function deleteStorageImages(
 
   if (targetPaths.length === 0) return 0;
 
-  const { error: removeError } = await supabase.storage
-    .from(STORAGE_BUCKET_NAME)
-    .remove(targetPaths);
+  const retries = options?.retries ?? 3;
+  const minTimeout = options?.minTimeout ?? 200;
+  const factor = options?.factor ?? 2;
 
-  if (removeError) {
-    console.error("Supabase storage deletion error:", removeError);
+  try {
+    await pRetry(
+      async () => {
+        const { error: removeError } = await supabase.storage
+          .from(STORAGE_BUCKET_NAME)
+          .remove(targetPaths);
+
+        if (removeError) {
+          throw new Error(removeError.message || "Failed to delete images from storage");
+        }
+      },
+      {
+        retries,
+        minTimeout,
+        factor,
+        onFailedAttempt: ({ error, attemptNumber, retriesLeft }) => {
+          console.warn(
+            `[deleteStorageImages] Attempt ${attemptNumber} failed (${retriesLeft} retries left): ${error.message}`,
+          );
+        },
+      },
+    );
+  } catch (err) {
+    console.error("Supabase storage deletion error after retries:", err);
     throw new Error("Failed to delete images from storage");
   }
 

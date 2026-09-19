@@ -202,4 +202,32 @@ describe("deleteStorageImages", () => {
     expect(count).toBe(1);
     expect(mockRemove).toHaveBeenCalledWith(["1/photo1.jpg"]);
   });
+
+  it("recovers on retry after transient storage failure", async () => {
+    mockRemove
+      .mockResolvedValueOnce({ error: new Error("Temporary network timeout") })
+      .mockResolvedValueOnce({ error: null });
+
+    const urls = [
+      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/1/photo1.jpg",
+    ];
+    const count = await deleteStorageImages(urls, 1, { minTimeout: 1 });
+
+    expect(count).toBe(1);
+    expect(mockRemove).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws error after exhausting all retries", async () => {
+    mockRemove.mockResolvedValue({ error: new Error("Persistent storage failure") });
+
+    const urls = [
+      "https://ivatsbrhsdwkrkiecrvg.supabase.co/storage/v1/object/public/gluvok/1/photo1.jpg",
+    ];
+    await expect(deleteStorageImages(urls, 1, { retries: 2, minTimeout: 1 })).rejects.toThrow(
+      "Failed to delete images from storage",
+    );
+
+    // 1 initial attempt + 2 retries = 3 calls
+    expect(mockRemove).toHaveBeenCalledTimes(3);
+  });
 });

@@ -35,7 +35,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         "antialiased",
         geistSans.variable,
         geistMono.variable,
-        "font-sans",
         manrope.variable,
       )}
     >

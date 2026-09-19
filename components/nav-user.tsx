@@ -47,9 +47,7 @@ export function NavUser({ user }: { user: UserProps }) {
           >
             <Avatar className="size-8">
               {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-              <AvatarFallback className="font-medium text-xs">
-                {user.initials}
-              </AvatarFallback>
+              <AvatarFallback className="font-medium text-xs">{user.initials}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-semibold">{user.name}</span>
@@ -57,20 +55,15 @@ export function NavUser({ user }: { user: UserProps }) {
             </div>
             <HugeiconsIcon
               icon={Sorting05Icon}
-              strokeWidth={2}
               className="ml-auto size-4 shrink-0 text-muted-foreground"
             />
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            side={isMobile ? "bottom" : "right"}
-          >
+          <DropdownMenuContent side={isMobile ? "bottom" : "right"}>
             <DropdownMenuGroup className="p-1">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="size-8">
                   {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-                  <AvatarFallback className="font-medium text-xs">
-                    {user.initials}
-                  </AvatarFallback>
+                  <AvatarFallback className="font-medium text-xs">{user.initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{user.name}</span>
@@ -81,17 +74,17 @@ export function NavUser({ user }: { user: UserProps }) {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <HugeiconsIcon icon={UserCircleIcon} strokeWidth={2} />
+                <HugeiconsIcon icon={UserCircleIcon} />
                 <span>Account</span>
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <HugeiconsIcon icon={Notification01Icon} strokeWidth={2} />
+                <HugeiconsIcon icon={Notification01Icon} />
                 <span>Notifications</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive">
-              <HugeiconsIcon icon={Logout01Icon} strokeWidth={2} />
+              <HugeiconsIcon icon={Logout01Icon} />
               <span>Log out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

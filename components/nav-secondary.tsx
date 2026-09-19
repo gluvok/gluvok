@@ -42,7 +42,7 @@ export function NavSecondary({
                   isActive={isActive}
                   tooltip={item.title}
                 >
-                  <HugeiconsIcon icon={item.icon} strokeWidth={2} />
+                  <HugeiconsIcon icon={item.icon} />
                   <span>{item.title}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -74,7 +74,7 @@ export default function Home() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <div className="flex size-8 items-center justify-center rounded-md bg-muted text-foreground">
-                  <HugeiconsIcon icon={section.icon} strokeWidth={2} />
+                  <HugeiconsIcon icon={section.icon} />
                 </div>
                 <CardTitle>{section.title}</CardTitle>
               </div>
@@ -88,10 +88,11 @@ export default function Home() {
                 variant="outline"
                 size="sm"
                 className="w-full justify-between"
+                nativeButton={false}
                 render={<Link href={section.href} />}
               >
                 <span>Open {section.title}</span>
-                <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} data-icon="inline-end" />
+                <HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" />
               </Button>
             </CardFooter>
           </Card>

@@ -46,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
-                <Separator orientation="vertical" className="mr-2 data-vertical:h-4" />
+                <Separator orientation="vertical" className="mr-2 my-auto data-vertical:h-4" />
                 <span className="text-sm font-medium">Home</span>
               </div>
             </header>

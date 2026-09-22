@@ -34,6 +34,9 @@ export function getPermissions(role: Role | null | undefined, projectSlug: strin
 }
 
 export function hasPageAccess(role: Role | null | undefined, projectSlug: string): boolean {
+  if (projectSlug === ProjectSlug.COMMODITIES) {
+    return false;
+  }
   return getPermissions(role, projectSlug).show;
 }
 

@@ -10,7 +10,6 @@ import {
   ClipboardList,
   Scale,
   UserCog,
-  Tag,
   Settings,
 } from "lucide-react";
 import { ProjectSlug } from "@/lib/constants/enums";
@@ -30,21 +29,6 @@ export const PROJECTS: ProjectMetadata[] = [
       cardHoverBorder: "group-hover:border-blue-500/40 dark:group-hover:border-blue-400/40",
       cardHoverBg: "group-hover:bg-blue-500/[0.03] dark:group-hover:bg-blue-500/[0.06]",
       hoverAccent: "group-hover:text-blue-600 dark:group-hover:text-blue-400",
-    },
-  },
-  {
-    slug: ProjectSlug.COMMODITIES,
-    name: "Commodities",
-    desc: "Track trading products and goods catalog",
-    icon: Tag,
-    color: "text-amber-600 dark:text-amber-400",
-    theme: {
-      iconColor: "text-amber-600 dark:text-amber-400",
-      badgeBg: "bg-amber-500/10 dark:bg-amber-500/15",
-      badgeBorder: "border-amber-500/20 dark:border-amber-500/30",
-      cardHoverBorder: "group-hover:border-amber-500/40 dark:group-hover:border-amber-400/40",
-      cardHoverBg: "group-hover:bg-amber-500/[0.03] dark:group-hover:bg-amber-500/[0.06]",
-      hoverAccent: "group-hover:text-amber-600 dark:group-hover:text-amber-400",
     },
   },
   {

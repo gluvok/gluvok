@@ -51,7 +51,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       write: false,
       delete: false,
       create: false,
-      show: true,
+      show: false,
       filter: true,
     },
     [ProjectSlug.RATES]: {
@@ -128,7 +128,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       write: false,
       delete: false,
       create: false,
-      show: true,
+      show: false,
       filter: true,
     },
     [ProjectSlug.RATES]: {
@@ -204,7 +204,7 @@ export const RBAC_MATRIX: RbacMatrix = {
       write: false,
       delete: false,
       create: false,
-      show: true,
+      show: false,
       filter: true,
     },
     [ProjectSlug.RATES]: {

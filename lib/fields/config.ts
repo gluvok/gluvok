@@ -43,17 +43,6 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
       span: FieldSpan.FULL,
     },
   ],
-  [ProjectSlug.COMMODITIES]: [
-    {
-      key: "name",
-      label: "Name",
-      placeholder: "e.g. Barley",
-      type: FieldType.TEXT,
-      required: true,
-      icon: Tag,
-      span: FieldSpan.FULL,
-    },
-  ],
   [ProjectSlug.RATES]: [
     {
       key: "commodity_id",
@@ -281,7 +270,6 @@ export const PROJECT_FIELDS: Record<string, FieldConfig[]> = {
 
 export const REQUIRED_CREATE_FIELDS: Record<string, string[]> = {
   [ProjectSlug.CENTERS]: ["name"],
-  [ProjectSlug.COMMODITIES]: ["name"],
   [ProjectSlug.RATES]: ["commodity_id", "unit_price", "unit"],
   [ProjectSlug.CUSTOMERS]: ["name", "father_name"],
   [ProjectSlug.ENTRIES]: ["vehicle_number", "weight", "center_id"],

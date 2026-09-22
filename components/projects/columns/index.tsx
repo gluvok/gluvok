@@ -14,7 +14,6 @@ import { getSystemColumns } from "./system";
 import { getActionsColumn } from "./actions";
 
 import { getCentersColumns } from "./centers";
-import { getCommoditiesColumns } from "./commodities";
 import { getRatesColumns } from "./rates";
 import { getCustomersColumns } from "./customers";
 import { getEntriesColumns } from "./entries";
@@ -34,8 +33,6 @@ function getSpecificColumns<T extends RowData>(
   switch (projectSlug) {
     case ProjectSlug.CENTERS:
       return getCentersColumns<T>();
-    case ProjectSlug.COMMODITIES:
-      return getCommoditiesColumns<T>();
     case ProjectSlug.RATES:
       return getRatesColumns<T>();
     case ProjectSlug.CUSTOMERS:

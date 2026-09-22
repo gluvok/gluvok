@@ -254,6 +254,17 @@ describe("RBAC Access Controls", () => {
     });
   });
 
+  describe("Commodities Access", () => {
+    it("disallows page access and show permission across all roles", () => {
+      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE, Role.HARDWARE];
+      for (const role of roles) {
+        expect(hasPageAccess(role, ProjectSlug.COMMODITIES)).toBe(false);
+        expect(hasPermission(role, ProjectSlug.COMMODITIES, PermissionKey.SHOW)).toBe(false);
+        expect(hasCreateAccess(role, ProjectSlug.COMMODITIES)).toBe(false);
+      }
+    });
+  });
+
   describe("isColumnVisible & isFieldVisible", () => {
     it("should hide factory_id and factory_name columns and fields across all roles", () => {
       const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE];

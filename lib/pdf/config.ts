@@ -36,11 +36,6 @@ export const MANDATORY_PDF_FIELDS: Record<string, MandatoryPdfField[]> = {
     { id: "auto_approve", label: "Auto Approve" },
     { id: "created_at", label: "Created At" },
   ],
-  [ProjectSlug.COMMODITIES]: [
-    { id: "id", label: "ID" },
-    { id: "name", label: "Name" },
-    { id: "created_at", label: "Created At" },
-  ],
   [ProjectSlug.RATES]: [
     { id: "id", label: "ID" },
     { id: "commodity_name", label: "Commodity" },

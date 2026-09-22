@@ -131,7 +131,7 @@ All API endpoints are located under `/api/*`:
 
 - `GET /api/centers` - List collection centers (creating and deleting centers are disallowed).
 - `GET, PATCH /api/centers/:id` - Retrieve or update a center (deleting centers is disallowed).
-- `GET, POST /api/commodities` - List available commodities or add a commodity.
+- `GET /api/commodities` - List available commodities (used for rates selection and filtering; commodities frontend data table route is removed).
 - `GET, POST /api/customers` - List customers or create a customer record.
 - `GET, PATCH, DELETE /api/customers/:id` - Retrieve, update, or soft-delete a customer.
 - `GET, POST /api/rates` - Query current rates or configure rates for a commodity/center.

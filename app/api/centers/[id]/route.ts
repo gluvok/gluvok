@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import {
   withAuth,
   withEntityScope,
@@ -48,48 +47,5 @@ export const PATCH = withAuth(
     if (!updated) return apiError(ApiErrorMessage.CENTER_NOT_FOUND, StatusCodes.NOT_FOUND);
 
     return formatEntityResponse(updated);
-  }),
-);
-
-export const DELETE = withAuth(
-  withEntityScope(async (_req, user, client, _ctx, { entityId, factoryId }) => {
-    if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.DELETE)) return forbiddenError();
-
-    // Check if any active entries are linked to this center
-    const { data: linkedEntry } = await client
-      .from("entries")
-      .select("id")
-      .eq("center_id", entityId)
-      .is("deleted_at", null)
-      .limit(1)
-      .maybeSingle();
-
-    if (linkedEntry) {
-      return apiError(ApiErrorMessage.CANNOT_DELETE_CENTER(entityId), StatusCodes.BAD_REQUEST);
-    }
-
-    const query = client
-      .from("centers")
-      .update({
-        deleted_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", entityId)
-      .is("deleted_at", null)
-      .eq("factory_id", factoryId);
-
-    const { data, error } = await query.select("id");
-    if (error) {
-      return apiError(
-        error.message || ApiErrorMessage.CANNOT_DELETE_CENTER(entityId),
-        StatusCodes.BAD_REQUEST,
-      );
-    }
-
-    if (!data || data.length === 0) {
-      return apiError(ApiErrorMessage.CENTER_NOT_FOUND, StatusCodes.NOT_FOUND);
-    }
-
-    return NextResponse.json({ success: true, id: entityId });
   }),
 );

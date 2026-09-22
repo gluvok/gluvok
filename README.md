@@ -129,8 +129,8 @@ All API endpoints are located under `/api/*`:
 
 ### Master Data & Entities
 
-- `GET, DELETE /api/centers` - List collection centers or perform bulk deletion (creating new centers is disallowed).
-- `GET, PATCH, DELETE /api/centers/:id` - Retrieve, update, or soft-delete a center.
+- `GET /api/centers` - List collection centers (creating and deleting centers are disallowed).
+- `GET, PATCH /api/centers/:id` - Retrieve or update a center (deleting centers is disallowed).
 - `GET, POST /api/commodities` - List available commodities or add a commodity.
 - `GET, POST /api/customers` - List customers or create a customer record.
 - `GET, PATCH, DELETE /api/customers/:id` - Retrieve, update, or soft-delete a customer.

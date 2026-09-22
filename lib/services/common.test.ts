@@ -108,9 +108,9 @@ describe("deleteRows", () => {
   it("sends one collection DELETE request containing all selected IDs", async () => {
     vi.mocked(axios.delete).mockResolvedValue({ data: { deleted_count: 3 } });
 
-    await expect(deleteRows(ProjectSlug.CENTERS, [1, 2, 3])).resolves.toBe(3);
+    await expect(deleteRows(ProjectSlug.CUSTOMERS, [1, 2, 3])).resolves.toBe(3);
 
-    expect(axios.delete).toHaveBeenCalledWith("/api/centers", {
+    expect(axios.delete).toHaveBeenCalledWith("/api/customers", {
       data: { ids: [1, 2, 3] },
     });
   });

@@ -51,6 +51,9 @@ export function hasCreateAccess(role: Role | null | undefined, projectSlug: stri
 }
 
 export function hasDeleteAccess(role: Role | null | undefined, projectSlug: string): boolean {
+  if (projectSlug === ProjectSlug.CENTERS) {
+    return false;
+  }
   return getPermissions(role, projectSlug).delete;
 }
 

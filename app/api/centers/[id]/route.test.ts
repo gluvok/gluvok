@@ -13,7 +13,8 @@ vi.mock("@/db/helpers", async (importOriginal) => {
   };
 });
 
-import { PATCH, DELETE } from "./route";
+import * as routeHandlers from "./route";
+import { PATCH } from "./route";
 
 type RawHandler = (
   request: Request,
@@ -26,7 +27,6 @@ type RawHandler = (
 const sampleUser = { sub: "1", role: Role.ADMIN, factory_id: 1 };
 const context = { params: Promise.resolve({ id: "5" }) };
 const scope = { entityId: 5, factoryId: 1 };
-const request = new Request("http://localhost/api/centers/5");
 
 describe("Centers [id] route handlers", () => {
   beforeEach(() => {
@@ -127,75 +127,8 @@ describe("Centers [id] route handlers", () => {
   });
 
   describe("DELETE /api/centers/:id", () => {
-    it("rejects when user lacks DELETE permission", async () => {
-      mockHasPermission.mockReturnValue(false);
-      const response = await (DELETE as unknown as RawHandler)(
-        request,
-        sampleUser,
-        {},
-        context,
-        scope,
-      );
-      expect(response.status).toBe(403);
-      expect(mockHasPermission).toHaveBeenCalledWith(
-        sampleUser,
-        ProjectSlug.CENTERS,
-        PermissionKey.DELETE,
-      );
-    });
-
-    it("rejects deletion when linked entries exist", async () => {
-      const mockQuery: Record<string, unknown> = {};
-      mockQuery.select = vi.fn(() => mockQuery);
-      mockQuery.eq = vi.fn(() => mockQuery);
-      mockQuery.is = vi.fn(() => mockQuery);
-      mockQuery.limit = vi.fn(() => mockQuery);
-      mockQuery.maybeSingle = vi.fn().mockResolvedValue({ data: { id: 99 } });
-      const mockDb = { from: vi.fn(() => mockQuery) };
-
-      const response = await (DELETE as unknown as RawHandler)(
-        request,
-        sampleUser,
-        mockDb,
-        context,
-        scope,
-      );
-      expect(response.status).toBe(400);
-    });
-
-    it("soft-deletes center when no linked entries", async () => {
-      const mockQuery: Record<string, unknown> = {};
-      mockQuery.select = vi.fn(() => mockQuery);
-      mockQuery.update = vi.fn(() => mockQuery);
-      mockQuery.eq = vi.fn(() => mockQuery);
-      mockQuery.is = vi.fn(() => mockQuery);
-      mockQuery.limit = vi.fn(() => mockQuery);
-      mockQuery.maybeSingle = vi.fn().mockResolvedValue({ data: null });
-
-      let callCount = 0;
-      const mockDb = {
-        from: vi.fn(() => {
-          callCount++;
-          if (callCount === 1) return mockQuery;
-          const updateChain: Record<string, unknown> = {};
-          updateChain.update = vi.fn(() => updateChain);
-          updateChain.eq = vi.fn(() => updateChain);
-          updateChain.is = vi.fn(() => updateChain);
-          updateChain.select = vi.fn().mockResolvedValue({ data: [{ id: 5 }], error: null });
-          return updateChain;
-        }),
-      };
-
-      const response = await (DELETE as unknown as RawHandler)(
-        request,
-        sampleUser,
-        mockDb,
-        context,
-        scope,
-      );
-      expect(response.status).toBe(200);
-      const json = await response.json();
-      expect(json.success).toBe(true);
+    it("does not export a DELETE handler (center deletion is disallowed)", () => {
+      expect((routeHandlers as Record<string, unknown>).DELETE).toBeUndefined();
     });
   });
 });

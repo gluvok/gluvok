@@ -18,7 +18,7 @@ vi.mock("@/db/helpers", async (importOriginal) => {
 });
 
 import * as routeHandlers from "./route";
-import { GET, DELETE } from "./route";
+import { GET } from "./route";
 
 type RawHandler = (
   request: NextRequest,
@@ -114,21 +114,8 @@ describe("Centers route handlers (/api/centers)", () => {
   });
 
   describe("DELETE /api/centers", () => {
-    it("rejects when user lacks DELETE permission", async () => {
-      mockHasPermission.mockReturnValue(false);
-      const req = new NextRequest("http://localhost/api/centers", {
-        method: "DELETE",
-        body: JSON.stringify({ ids: [1, 2] }),
-      });
-      const handler = DELETE as unknown as RawHandler;
-      const response = await handler(req, sampleUser, {}, context);
-
-      expect(response.status).toBe(403);
-      expect(mockHasPermission).toHaveBeenCalledWith(
-        sampleUser,
-        ProjectSlug.CENTERS,
-        PermissionKey.DELETE,
-      );
+    it("does not export a DELETE handler (center deletion is disallowed)", () => {
+      expect((routeHandlers as Record<string, unknown>).DELETE).toBeUndefined();
     });
   });
 });

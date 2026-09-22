@@ -41,7 +41,7 @@ export const RBAC_MATRIX: RbacMatrix = {
     [ProjectSlug.CENTERS]: {
       read: true,
       write: true,
-      delete: true,
+      delete: false,
       create: false,
       show: true,
       filter: true,
@@ -118,7 +118,7 @@ export const RBAC_MATRIX: RbacMatrix = {
     [ProjectSlug.CENTERS]: {
       read: true,
       write: true,
-      delete: true,
+      delete: false,
       create: false,
       show: true,
       filter: true,
@@ -194,7 +194,7 @@ export const RBAC_MATRIX: RbacMatrix = {
     [ProjectSlug.CENTERS]: {
       read: true,
       write: true,
-      delete: true,
+      delete: false,
       create: false,
       show: true,
       filter: true,

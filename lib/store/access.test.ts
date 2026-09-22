@@ -53,19 +53,19 @@ describe("RBAC Access Controls", () => {
       expect(centerPerms).toMatchObject({
         read: true,
         write: true,
-        delete: true,
+        delete: false,
         create: false,
         show: true,
         filter: true,
       });
     });
 
-    it("should grant Operator correct permissions (write/delete centers, write customers, read-only rates)", () => {
+    it("should grant Operator correct permissions (write centers, write customers, read-only rates)", () => {
       const centerPerms = getPermissions(Role.OPERATOR, ProjectSlug.CENTERS);
       expect(centerPerms).toMatchObject({
         read: true,
         write: true,
-        delete: true,
+        delete: false,
         create: false,
         show: true,
         filter: true,
@@ -149,6 +149,13 @@ describe("RBAC Access Controls", () => {
       expect(hasDeleteAccess(Role.MANAGER, ProjectSlug.ENTRIES)).toBe(false);
       expect(hasDeleteAccess(Role.OPERATOR, ProjectSlug.ENTRIES)).toBe(false);
       expect(hasDeleteAccess(Role.BASE, ProjectSlug.ENTRIES)).toBe(false);
+    });
+
+    it("disallows delete for CENTERS across all roles", () => {
+      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE, Role.HARDWARE];
+      for (const role of roles) {
+        expect(hasDeleteAccess(role, ProjectSlug.CENTERS)).toBe(false);
+      }
     });
   });
 
@@ -236,11 +243,13 @@ describe("RBAC Access Controls", () => {
   });
 
   describe("Centers Access", () => {
-    it("disallows create for all roles", () => {
+    it("disallows create and delete for all roles", () => {
       const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE, Role.HARDWARE];
       for (const role of roles) {
         expect(hasCreateAccess(role, ProjectSlug.CENTERS)).toBe(false);
         expect(hasPermission(role, ProjectSlug.CENTERS, PermissionKey.CREATE)).toBe(false);
+        expect(hasDeleteAccess(role, ProjectSlug.CENTERS)).toBe(false);
+        expect(hasPermission(role, ProjectSlug.CENTERS, PermissionKey.DELETE)).toBe(false);
       }
     });
   });

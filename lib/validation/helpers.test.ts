@@ -11,6 +11,8 @@ import {
   optionalIndianPlateSchema,
   positiveWeightSchema,
   optionalPositiveWeightSchema,
+  isNoPlateDetectedText,
+  isValidIndianPlate,
 } from "./helpers";
 
 describe("validation helpers", () => {
@@ -141,6 +143,55 @@ describe("validation helpers", () => {
     it("handles optional weight", () => {
       expect(optWeight.parse(undefined)).toBeUndefined();
       expect(optWeight.parse("2500")).toBe(2500);
+    });
+  });
+
+  describe("isNoPlateDetectedText", () => {
+    it("recognizes exact NO_PLATE_DETECTED", () => {
+      expect(isNoPlateDetectedText("NO_PLATE_DETECTED")).toBe(true);
+    });
+
+    it("recognizes variations with spaces, hyphens, underscores and lowercase", () => {
+      expect(isNoPlateDetectedText("no plate detected")).toBe(true);
+      expect(isNoPlateDetectedText("NO PLATE DETECTED")).toBe(true);
+      expect(isNoPlateDetectedText("No Plate Detected")).toBe(true);
+      expect(isNoPlateDetectedText("no_plate_detected")).toBe(true);
+      expect(isNoPlateDetectedText("no-plate-detected")).toBe(true);
+      expect(isNoPlateDetectedText("  no  plate  detected  ")).toBe(true);
+      expect(isNoPlateDetectedText("NOPLATEDETECTED")).toBe(true);
+    });
+
+    it("returns false for valid plates or non-matching strings", () => {
+      expect(isNoPlateDetectedText("MH12AB1234")).toBe(false);
+      expect(isNoPlateDetectedText("plate detected")).toBe(false);
+      expect(isNoPlateDetectedText("")).toBe(false);
+      expect(isNoPlateDetectedText(null)).toBe(false);
+      expect(isNoPlateDetectedText(undefined)).toBe(false);
+      expect(isNoPlateDetectedText(123)).toBe(false);
+    });
+  });
+
+  describe("isValidIndianPlate", () => {
+    it("returns true for valid standard, BH, and VA series plates", () => {
+      expect(isValidIndianPlate("MH12AB1234")).toBe(true);
+      expect(isValidIndianPlate("mh-12-ab-1234")).toBe(true);
+      expect(isValidIndianPlate("DL 1 C AB 1234")).toBe(true);
+      expect(isValidIndianPlate("22BH1234AA")).toBe(true);
+      expect(isValidIndianPlate("DLVAAB0001")).toBe(true);
+    });
+
+    it("returns false for no plate detected strings", () => {
+      expect(isValidIndianPlate("NO_PLATE_DETECTED")).toBe(false);
+      expect(isValidIndianPlate("no plate detected")).toBe(false);
+      expect(isValidIndianPlate("no_plate_detected")).toBe(false);
+    });
+
+    it("returns false for invalid state codes or malformed plates", () => {
+      expect(isValidIndianPlate("ZZ01AB1234")).toBe(false);
+      expect(isValidIndianPlate("INVALID")).toBe(false);
+      expect(isValidIndianPlate("")).toBe(false);
+      expect(isValidIndianPlate(null)).toBe(false);
+      expect(isValidIndianPlate(undefined)).toBe(false);
     });
   });
 });

@@ -109,6 +109,23 @@ export const cleanPlateString = (val: unknown): unknown => {
     .toUpperCase();
 };
 
+export const isNoPlateDetectedText = (val: unknown): boolean => {
+  if (typeof val !== "string") return false;
+  const clean = val
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+  return clean === "noplatedetected";
+};
+
+export const isValidIndianPlate = (val: unknown): boolean => {
+  if (typeof val !== "string") return false;
+  const clean = cleanPlateString(val);
+  if (typeof clean !== "string" || !clean || clean.length > 15) return false;
+  if (!INDIAN_PLATE_REGEX.test(clean)) return false;
+  return validateIndianPlateStateCode(clean);
+};
+
 export const indianPlateSchema = (fieldName = "Vehicle Number") =>
   z.preprocess(
     cleanPlateString,

@@ -336,6 +336,57 @@ describe("Entries [id] route handlers", () => {
     expect(json.error).toBe(ApiErrorMessage.CANNOT_APPROVE_NO_PLATE);
   });
 
+  it("rejects approving an entry when vehicle_number is lowercase/spaced no plate detected", async () => {
+    const patchRequest = createMockJsonRequest("http://localhost/api/entries/10", "PATCH", {
+      status: EntryStatus.APPROVED,
+    });
+
+    const mockDb = createMockSupabase({
+      entries: createMockQueryBuilder({
+        maybeSingleData: createMockEntry({
+          id: 10,
+          status: EntryStatus.PENDING,
+          vehicle_number: "no plate detected",
+          detected_vehicle_number: "no plate detected",
+          auto_approved: false,
+        }),
+      }),
+    });
+
+    const handler = PATCH as unknown as RawHandler;
+    const response = await handler(patchRequest, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(400);
+    const json = await response.json();
+    expect(json.error).toBe(ApiErrorMessage.CANNOT_APPROVE_NO_PLATE);
+  });
+
+  it("rejects approving an entry when vehicle_number does not match Indian plate regex", async () => {
+    const patchRequest = createMockJsonRequest("http://localhost/api/entries/10", "PATCH", {
+      status: EntryStatus.APPROVED,
+    });
+
+    const mockDb = createMockSupabase({
+      entries: createMockQueryBuilder({
+        maybeSingleData: createMockEntry({
+          id: 10,
+          status: EntryStatus.PENDING,
+          vehicle_number: "INVALID123",
+          detected_vehicle_number: null,
+          auto_approved: false,
+        }),
+      }),
+    });
+
+    const handler = PATCH as unknown as RawHandler;
+    const response = await handler(patchRequest, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(400);
+    const json = await response.json();
+    expect(json.error).toBeDefined();
+    expect(json.error).not.toBe(ApiErrorMessage.CANNOT_APPROVE_NO_PLATE);
+  });
+
   it("disbands linked weighment by deleting it and re-merges when auto-approved entry plate changes", async () => {
     const patchRequest = createMockJsonRequest("http://localhost/api/entries/10", "PATCH", {
       vehicle_number: "MH04AB1212",

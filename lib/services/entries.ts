@@ -8,6 +8,7 @@ import { EntryStatus, EntrySource, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { uploadBase64ImagesToStorage, deleteStorageImages } from "./storage";
 import { validateSequentialApproval, tryMergeEntries } from "./weighments";
+import { isNoPlateDetectedText } from "@/lib/validation";
 
 export interface CreateEntryParams {
   factoryId: number;
@@ -96,7 +97,7 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
 
   const isDevice = creator?.role === Role.HARDWARE;
   const isNoPlate =
-    vehicleNumber === "NO_PLATE_DETECTED" || detectedVehicleNumber === "NO_PLATE_DETECTED";
+    isNoPlateDetectedText(vehicleNumber) || isNoPlateDetectedText(detectedVehicleNumber);
 
   // 1 & 2. Verify center and customer (if provided) concurrently
   // When no plate detected is received from device, skip fetching the centers table since auto-approval is impossible.

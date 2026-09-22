@@ -15,7 +15,7 @@ import {
   validateAndBuildEntryUpdates,
   handleVehicleChangeSync,
 } from "@/lib/services/entries/edit-rules";
-import { editEntrySchema } from "@/lib/validation";
+import { editEntrySchema, indianPlateSchema, isNoPlateDetectedText } from "@/lib/validation";
 
 export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
   if (!hasPermission(user, ProjectSlug.ENTRIES, PermissionKey.READ)) return forbiddenError();
@@ -190,10 +190,21 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   const newStatus = (updates["status"] as string) || existing.status;
   const targetVehicle = (updates["vehicle_number"] as string) || existing.vehicle_number;
+  let finalVehicle = targetVehicle;
 
-  // 3. Prevent approving an entry with NO_PLATE_DETECTED
-  if (newStatus === EntryStatus.APPROVED && targetVehicle === "NO_PLATE_DETECTED") {
-    return apiError(ApiErrorMessage.CANNOT_APPROVE_NO_PLATE, StatusCodes.BAD_REQUEST);
+  // 3. Prevent approving an entry with NO_PLATE_DETECTED or invalid vehicle number
+  if (newStatus === EntryStatus.APPROVED) {
+    if (isNoPlateDetectedText(targetVehicle)) {
+      return apiError(ApiErrorMessage.CANNOT_APPROVE_NO_PLATE, StatusCodes.BAD_REQUEST);
+    }
+    const plateValidation = indianPlateSchema("Vehicle Number").safeParse(targetVehicle);
+    if (!plateValidation.success) {
+      return apiError(plateValidation.error.issues[0].message, StatusCodes.BAD_REQUEST);
+    }
+    finalVehicle = plateValidation.data;
+    if (updates["vehicle_number"] !== undefined || existing.status !== EntryStatus.APPROVED) {
+      updates["vehicle_number"] = finalVehicle;
+    }
   }
 
   // 4. Sequential Approval Validation
@@ -210,7 +221,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
       await validateSequentialApproval(
         client,
         (updates["center_id"] as number) || existing.center_id,
-        targetVehicle,
+        finalVehicle,
         existing.created_at,
         entryId,
       );

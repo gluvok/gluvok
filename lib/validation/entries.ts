@@ -12,6 +12,7 @@ import {
   optionalIndianPlateSchema,
   positiveWeightSchema,
   optionalPositiveWeightSchema,
+  isNoPlateDetectedText,
 } from "./helpers";
 
 export const entryStatusSchema = z
@@ -19,7 +20,10 @@ export const entryStatusSchema = z
   .default(EntryStatus.PENDING);
 
 export const deviceVehicleNumberSchema = (fieldName = "Vehicle Number") =>
-  z.union([z.literal("NO_PLATE_DETECTED"), indianPlateSchema(fieldName)]);
+  z.preprocess(
+    (val) => (isNoPlateDetectedText(val) ? "NO_PLATE_DETECTED" : val),
+    z.union([z.literal("NO_PLATE_DETECTED"), indianPlateSchema(fieldName)]),
+  );
 
 /**
  * Common schema fields shared across addEntrySchema and addDeviceEntrySchema.

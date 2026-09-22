@@ -13,6 +13,7 @@ import { getField, useEntitiesStore, useAuthStore, hasPermission } from "@/lib/s
 import { type EntityRecord } from "@/types";
 import { type ColumnActionsCallbacks } from "../index";
 import { ProjectSlug, WeighmentType, EntryStatus, PermissionKey } from "@/lib/constants/enums";
+import { isValidIndianPlate } from "@/lib/validation";
 import { hasRowWritePermission, hasRowDeletePermission } from "./permissions";
 import { ActionMenu } from "./action-menu";
 import { ActionCellDialogs } from "./action-cell-dialogs";
@@ -83,7 +84,7 @@ export function ActionCell<T extends EntityRecord>({
     const isApproved = entryStatus === EntryStatus.APPROVED || isAutoApproved;
     const hasCustomer = customerId !== null && customerId !== undefined && customerId !== "";
 
-    const isNoPlate = vehicleNumber === "NO_PLATE_DETECTED";
+    const isValidPlate = isValidIndianPlate(vehicleNumber);
 
     if (entryStatus === EntryStatus.REJECTED) {
       hasRowWrite = false;
@@ -92,7 +93,7 @@ export function ActionCell<T extends EntityRecord>({
         hasRowWrite = false;
       }
     } else if (entryStatus === EntryStatus.PENDING) {
-      canApproveEntry = hasRowWrite && !isNoPlate;
+      canApproveEntry = hasRowWrite && isValidPlate;
       canRejectEntry = hasRowWrite;
     }
   }

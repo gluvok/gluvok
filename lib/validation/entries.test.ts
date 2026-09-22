@@ -67,6 +67,23 @@ describe("entries validation", () => {
     expect(withNoPlate.detected_vehicle_number).toBe("NO_PLATE_DETECTED");
   });
 
+  it("normalizes variations of no plate detected to canonical NO_PLATE_DETECTED", () => {
+    for (const variant of [
+      "no plate detected",
+      "No Plate Detected",
+      "NO PLATE DETECTED",
+      "no_plate_detected",
+      "no-plate-detected",
+    ]) {
+      const parsed = addDeviceEntrySchema.parse({
+        detected_vehicle_number: variant,
+        weight: "18000",
+        center_id: "3",
+      });
+      expect(parsed.detected_vehicle_number).toBe("NO_PLATE_DETECTED");
+    }
+  });
+
   it("rejects omitting center_id in device entry schema", () => {
     expect(() =>
       addDeviceEntrySchema.parse({

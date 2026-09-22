@@ -5,7 +5,6 @@ import { ENTITY_ADD_SCHEMAS, ENTITY_EDIT_SCHEMAS } from "./registry";
 describe("validation registry", () => {
   it("registers add schemas for all creatable project entities", () => {
     const creatableSlugs = [
-      ProjectSlug.CENTERS,
       ProjectSlug.RATES,
       ProjectSlug.CUSTOMERS,
       ProjectSlug.ENTRIES,
@@ -17,7 +16,8 @@ describe("validation registry", () => {
       expect(ENTITY_ADD_SCHEMAS[slug]).toBeDefined();
     }
 
-    // Weighments, Commodities, and Settings are not manually creatable
+    // Centers, Weighments, Commodities, and Settings are not manually creatable
+    expect((ENTITY_ADD_SCHEMAS as Record<string, unknown>)[ProjectSlug.CENTERS]).toBeUndefined();
     expect((ENTITY_ADD_SCHEMAS as Record<string, unknown>)[ProjectSlug.WEIGHMENTS]).toBeUndefined();
     expect(
       (ENTITY_ADD_SCHEMAS as Record<string, unknown>)[ProjectSlug.COMMODITIES],

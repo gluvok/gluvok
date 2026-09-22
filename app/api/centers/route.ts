@@ -7,13 +7,10 @@ import {
   hasPermission,
   StatusCodes,
   fetchPaginatedResult,
-  formatEntityResponse,
   parseBulkIds,
-  isUniqueConstraintError,
 } from "@/db/helpers";
 import { ProjectSlug, PermissionKey } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
-import { addCenterSchema } from "@/lib/validation";
 
 export const GET = withAuth(async (req, user, client) => {
   if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.READ)) return forbiddenError();
@@ -46,38 +43,6 @@ export const GET = withAuth(async (req, user, client) => {
   }
 
   return fetchPaginatedResult(query, pagination);
-});
-
-export const POST = withAuth(async (req, user, client) => {
-  if (!hasPermission(user, ProjectSlug.CENTERS, PermissionKey.CREATE)) return forbiddenError();
-  const body = await req.json();
-  const parsed = addCenterSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
-  }
-
-  const { name, auto_approve } = parsed.data;
-  const insertValues: Record<string, unknown> = {
-    name,
-    auto_approve: Boolean(auto_approve),
-    factory_id: user.factory_id,
-  };
-
-  const { data: newCenter, error } = await client
-    .from("centers")
-    .insert(insertValues)
-    .select()
-    .single();
-
-  if (error) {
-    console.error("POST center error:", error);
-    if (isUniqueConstraintError(error)) {
-      return apiError(ApiErrorMessage.CENTER_NAME_EXISTS, StatusCodes.CONFLICT);
-    }
-    return apiError(error.message || ApiErrorMessage.CREATE_CENTER_FAILED, StatusCodes.BAD_REQUEST);
-  }
-
-  return formatEntityResponse(newCenter, StatusCodes.CREATED);
 });
 
 export const DELETE = withAuth(async (req, user, client) => {

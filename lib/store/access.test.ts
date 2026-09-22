@@ -54,19 +54,19 @@ describe("RBAC Access Controls", () => {
         read: true,
         write: true,
         delete: true,
-        create: true,
+        create: false,
         show: true,
         filter: true,
       });
     });
 
-    it("should grant Operator correct permissions (CRUD centers, write customers, read-only rates)", () => {
+    it("should grant Operator correct permissions (write/delete centers, write customers, read-only rates)", () => {
       const centerPerms = getPermissions(Role.OPERATOR, ProjectSlug.CENTERS);
       expect(centerPerms).toMatchObject({
         read: true,
         write: true,
         delete: true,
-        create: true,
+        create: false,
         show: true,
         filter: true,
       });
@@ -125,9 +125,9 @@ describe("RBAC Access Controls", () => {
   });
 
   describe("hasCreateAccess", () => {
-    it("should return false for WEIGHMENTS, COMMODITIES and true for CENTERS, USERS, CUSTOMERS, ENTRIES", () => {
+    it("should return false for WEIGHMENTS, COMMODITIES, CENTERS and true for USERS, CUSTOMERS, ENTRIES", () => {
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.WEIGHMENTS)).toBe(false);
-      expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.CENTERS)).toBe(true);
+      expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.CENTERS)).toBe(false);
       expect(hasCreateAccess(Role.OPERATOR, ProjectSlug.ENTRIES)).toBe(true);
       expect(hasCreateAccess(Role.ADMIN, ProjectSlug.ENTRIES)).toBe(true);
       expect(hasCreateAccess(Role.MANAGER, ProjectSlug.USERS)).toBe(true);
@@ -232,6 +232,16 @@ describe("RBAC Access Controls", () => {
 
       expect(hasPermission(Role.OPERATOR, ProjectSlug.TICKETS, PermissionKey.CREATE)).toBe(true);
       expect(hasPermission(Role.BASE, ProjectSlug.TICKETS, PermissionKey.CREATE)).toBe(false);
+    });
+  });
+
+  describe("Centers Access", () => {
+    it("disallows create for all roles", () => {
+      const roles = [Role.ADMIN, Role.MANAGER, Role.OPERATOR, Role.BASE, Role.HARDWARE];
+      for (const role of roles) {
+        expect(hasCreateAccess(role, ProjectSlug.CENTERS)).toBe(false);
+        expect(hasPermission(role, ProjectSlug.CENTERS, PermissionKey.CREATE)).toBe(false);
+      }
     });
   });
 

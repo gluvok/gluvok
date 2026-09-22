@@ -39,6 +39,7 @@ export function hasPageAccess(role: Role | null | undefined, projectSlug: string
 
 export function hasCreateAccess(role: Role | null | undefined, projectSlug: string): boolean {
   if (
+    projectSlug === ProjectSlug.CENTERS ||
     projectSlug === ProjectSlug.COMMODITIES ||
     projectSlug === ProjectSlug.WEIGHMENTS ||
     projectSlug === ProjectSlug.SETTINGS ||

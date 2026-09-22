@@ -4,7 +4,7 @@
  */
 
 import { ProjectSlug } from "@/lib/constants/enums";
-import { addCenterSchema, editCenterSchema } from "./centers";
+import { editCenterSchema } from "./centers";
 import { addRateSchema, editRateSchema } from "./rates";
 import { addCustomerSchema, editCustomerSchema } from "./customers";
 import { addEntrySchema, editEntrySchema } from "./entries";
@@ -15,13 +15,12 @@ import { createTicketSchema, updateTicketConcernSchema } from "./tickets";
 
 export type CreatableProjectSlug = Exclude<
   ProjectSlug,
-  ProjectSlug.WEIGHMENTS | ProjectSlug.COMMODITIES | ProjectSlug.SETTINGS
+  ProjectSlug.WEIGHMENTS | ProjectSlug.COMMODITIES | ProjectSlug.SETTINGS | ProjectSlug.CENTERS
 >;
 
 export type EditableProjectSlug = Exclude<ProjectSlug, ProjectSlug.COMMODITIES>;
 
 export type EntityAddSchema =
-  | typeof addCenterSchema
   | typeof addRateSchema
   | typeof addCustomerSchema
   | typeof addEntrySchema
@@ -39,7 +38,6 @@ export type EntityEditSchema =
   | typeof updateTicketConcernSchema;
 
 export const ENTITY_ADD_SCHEMAS: Record<CreatableProjectSlug, EntityAddSchema> = {
-  [ProjectSlug.CENTERS]: addCenterSchema,
   [ProjectSlug.RATES]: addRateSchema,
   [ProjectSlug.CUSTOMERS]: addCustomerSchema,
   [ProjectSlug.ENTRIES]: addEntrySchema,

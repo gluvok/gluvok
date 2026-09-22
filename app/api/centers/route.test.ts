@@ -17,7 +17,8 @@ vi.mock("@/db/helpers", async (importOriginal) => {
   };
 });
 
-import { GET, POST } from "./route";
+import * as routeHandlers from "./route";
+import { GET, DELETE } from "./route";
 
 type RawHandler = (
   request: NextRequest,
@@ -107,71 +108,27 @@ describe("Centers route handlers (/api/centers)", () => {
   });
 
   describe("POST /api/centers", () => {
-    it("successfully creates a center with auto_approve flag", async () => {
-      const createdCenter = {
-        id: 5,
-        name: "North Center",
-        auto_approve: true,
-        factory_id: 1,
-      };
-
-      const mockQuery: Record<string, unknown> = {};
-      mockQuery.insert = vi.fn(() => mockQuery);
-      mockQuery.select = vi.fn(() => mockQuery);
-      mockQuery.single = vi.fn().mockResolvedValue({ data: createdCenter, error: null });
-
-      const mockDb = {
-        from: vi.fn(() => mockQuery),
-      };
-
-      const req = new NextRequest("http://localhost/api/centers", {
-        method: "POST",
-        body: JSON.stringify({
-          name: "North Center",
-          auto_approve: true,
-        }),
-      });
-
-      const handler = POST as unknown as RawHandler;
-      const response = await handler(req, sampleUser, mockDb, context);
-
-      expect(response.status).toBe(201);
-      const json = await response.json();
-      expect(json.data.name).toBe("North Center");
-      expect(json.data.auto_approve).toBe(true);
-      expect(mockQuery.insert).toHaveBeenCalledWith({
-        name: "North Center",
-        auto_approve: true,
-        factory_id: 1,
-      });
+    it("does not export a POST handler (center creation is disallowed)", () => {
+      expect((routeHandlers as Record<string, unknown>).POST).toBeUndefined();
     });
+  });
 
-    it("returns 409 Conflict when center name already exists in factory", async () => {
-      const mockQuery: Record<string, unknown> = {};
-      mockQuery.insert = vi.fn(() => mockQuery);
-      mockQuery.select = vi.fn(() => mockQuery);
-      mockQuery.single = vi.fn().mockResolvedValue({
-        data: null,
-        error: { code: "23505", message: "duplicate key value violates unique constraint" },
-      });
-
-      const mockDb = {
-        from: vi.fn(() => mockQuery),
-      };
-
+  describe("DELETE /api/centers", () => {
+    it("rejects when user lacks DELETE permission", async () => {
+      mockHasPermission.mockReturnValue(false);
       const req = new NextRequest("http://localhost/api/centers", {
-        method: "POST",
-        body: JSON.stringify({
-          name: "Existing Center",
-        }),
+        method: "DELETE",
+        body: JSON.stringify({ ids: [1, 2] }),
       });
+      const handler = DELETE as unknown as RawHandler;
+      const response = await handler(req, sampleUser, {}, context);
 
-      const handler = POST as unknown as RawHandler;
-      const response = await handler(req, sampleUser, mockDb, context);
-
-      expect(response.status).toBe(409);
-      const json = await response.json();
-      expect(json.error).toContain("already exists in this factory");
+      expect(response.status).toBe(403);
+      expect(mockHasPermission).toHaveBeenCalledWith(
+        sampleUser,
+        ProjectSlug.CENTERS,
+        PermissionKey.DELETE,
+      );
     });
   });
 });

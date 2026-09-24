@@ -12,7 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, X } from "lucide-react";
+import { CheckCircle2, Loader2, XCircle, X } from "lucide-react";
 
 interface EntryApproveDialogProps {
   open: boolean;
@@ -71,7 +71,12 @@ export function EntryApproveDialog({
             disabled={loading}
             className="gap-1.5 h-8 px-3 text-xs shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700"
           >
-            <CheckCircle2 className="h-3.5 w-3.5" /> Approve
+            {loading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            )}
+            Approve
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -137,7 +142,12 @@ export function EntryRejectDialog({
             disabled={loading}
             className="gap-1.5 h-8 px-3 text-xs shadow-sm bg-rose-600 hover:bg-rose-700 text-white dark:bg-rose-600 dark:hover:bg-rose-700"
           >
-            <XCircle className="h-3.5 w-3.5" /> Reject
+            {loading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <XCircle className="h-3.5 w-3.5" />
+            )}
+            Reject
           </Button>
         </DialogFooter>
       </DialogContent>

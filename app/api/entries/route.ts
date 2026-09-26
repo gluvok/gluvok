@@ -100,6 +100,7 @@ export const GET = withAuth(async (req, user, client) => {
       center_name: centers?.name || "",
       created_by_name: createdByUser?.name || "",
       approved_by_name: approvedByUser?.name || "",
+      user_id: row.created_by ?? (row.user_id as number | undefined) ?? null,
       user_name: createdByUser?.name || "",
       customer_name: customers?.name || "",
     };

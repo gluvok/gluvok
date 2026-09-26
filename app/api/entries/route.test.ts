@@ -112,6 +112,7 @@ describe("Entries route handlers (/api/entries)", () => {
                       {
                         id: 1,
                         vehicle_number: "MH12AB1234",
+                        created_by: 5,
                         centers: { name: "Main Center" },
                         users: { name: "Operator 1" },
                         customers: { name: "Customer A" },
@@ -134,6 +135,7 @@ describe("Entries route handlers (/api/entries)", () => {
       expect(response.status).toBe(200);
       const json = await response.json();
       expect(json.data[0].center_name).toBe("Main Center");
+      expect(json.data[0].user_id).toBe(5);
       expect(json.data[0].user_name).toBe("Operator 1");
       expect(json.data[0].customer_name).toBe("Customer A");
       expect(json.pagination.total).toBe(1);

@@ -82,6 +82,7 @@ export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
     center_name: centers?.name || "",
     created_by_name: createdByUser?.name || "",
     approved_by_name: approvedByUser?.name || "",
+    user_id: data.created_by ?? (data.user_id as number | undefined) ?? null,
     user_name: createdByUser?.name || "",
     customer_name: customers?.name || "",
     linked_weighment: weighmentInfo,

@@ -85,14 +85,19 @@ export function createIdColumn<T extends RowData>(
   label: string,
   Icon: React.ComponentType<{ className?: string }>,
   id?: string,
+  accessorFn?: (row: T) => string | number | null | undefined,
 ): AnyCol<T> {
   const colId = id || key;
   return {
     id: colId,
     accessorFn: (row: T) => {
+      if (accessorFn) {
+        const customVal = accessorFn(row);
+        return customVal !== undefined && customVal !== null ? String(customVal) : "";
+      }
       const record = row as Record<string, unknown>;
       const val = record[key];
-      return val ? String(val) : "";
+      return val !== undefined && val !== null ? String(val) : "";
     },
     header: ({ column }) => (
       <DataTableColumnHeader

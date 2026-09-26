@@ -132,7 +132,10 @@ export function getEntriesColumns<T extends RowData>(): ColumnDef<ProjectTableFe
         (rec.center_name as string) || (rec.centers as { name?: string } | undefined)?.name || "";
       return <div className="font-semibold text-foreground text-xs">{name || "—"}</div>;
     }),
-    createIdColumn("user_id", "User ID", User),
+    createIdColumn("user_id", "User ID", User, undefined, (row) => {
+      const rec = row as Record<string, unknown>;
+      return (rec.user_id ?? rec.created_by) as string | number | undefined;
+    }),
     createCustomColumn("user_name", "User Name", User, (_val, row) => {
       const rec = row as Record<string, unknown>;
       const name =

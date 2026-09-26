@@ -104,6 +104,7 @@ export interface Entry {
   center_name?: string;
   created_by_name?: string;
   approved_by_name?: string;
+  user_id?: number;
   user_name?: string;
   customer_name?: string;
   linked_weighment?: { id: number; partner_entry_id: number } | null;

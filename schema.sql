@@ -49,7 +49,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS factories (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    check_center_on_merge BOOLEAN NOT NULL DEFAULT FALSE,
+    check_center_on_merge BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ

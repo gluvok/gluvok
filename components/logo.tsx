@@ -44,27 +44,28 @@ function getDimensions(imageAsset: string | StaticImageData, targetWidth: number
 }
 
 /**
- * Square / icon-only logo — uses static import of /logo.png
+ * Square / icon-only logo — uses static dimensions with /logo.png
  */
 export function Logo({ size = 32, className, priority = true, style, ...props }: LogoProps) {
   const dims = getDimensions(logoSquare, size);
 
   return (
     <Image
-      src={logoSquare}
+      src="/logo.png"
       alt="Gluvok logo"
       width={dims.width}
       height={dims.height}
       priority={priority}
+      unoptimized
       style={{ aspectRatio: dims.aspectRatio, ...style }}
-      className={cn("h-auto w-auto object-contain", className)}
+      className={cn("object-contain", className)}
       {...props}
     />
   );
 }
 
 /**
- * Horizontal logo (wide) — uses static import of /logo-horizontal.png
+ * Horizontal logo (wide) — uses static dimensions with /logo-horizontal.png
  */
 export function LogoHorizontal({
   size = 64,
@@ -77,20 +78,21 @@ export function LogoHorizontal({
 
   return (
     <Image
-      src={logoHorizontal}
+      src="/logo-horizontal.png"
       alt="Gluvok logo"
       width={dims.width}
       height={dims.height}
       priority={priority}
+      unoptimized
       style={{ aspectRatio: dims.aspectRatio, ...style }}
-      className={cn("h-auto w-auto object-contain", className)}
+      className={cn("object-contain", className)}
       {...props}
     />
   );
 }
 
 /**
- * Vertical logo (stacked) — uses static import of /logo-vertical.png
+ * Vertical logo (stacked) — uses static dimensions with /logo-vertical.png
  */
 export function LogoVertical({
   size = 64,
@@ -103,13 +105,14 @@ export function LogoVertical({
 
   return (
     <Image
-      src={logoVertical}
+      src="/logo-vertical.png"
       alt="Gluvok logo"
       width={dims.width}
       height={dims.height}
       priority={priority}
+      unoptimized
       style={{ aspectRatio: dims.aspectRatio, ...style }}
-      className={cn("h-auto w-auto object-contain", className)}
+      className={cn("object-contain", className)}
       {...props}
     />
   );

@@ -110,8 +110,7 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
                             src={src}
                             alt={`Weighment image ${i + 1}`}
                             fill
-                            sizes="(max-width: 480px) 100vw, 480px"
-                            className="object-cover transition-transform duration-500 ease-out group-hover:scale-125"
+                            className="object-cover transition-transform duration-500 ease-out group-hover:scale-300"
                             priority={i === 0}
                             unoptimized
                           />

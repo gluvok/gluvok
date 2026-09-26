@@ -84,23 +84,29 @@ async function main() {
     centerId = existingCenter.id;
   }
 
-  console.log("Hashing passwords for users...");
-  const adminPasswordHash = await hashPassword("admin123");
+  const adminUsername = process.env.ADMIN_USERNAME || "admin1";
+  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+  const adminName =
+    process.env.ADMIN_NAME ||
+    (adminUsername === "admin1" ? "Admin User 1" : `${adminUsername} (Admin)`);
 
-  console.log("Inserting admin user ('admin1')...");
+  console.log("Hashing passwords for users...");
+  const adminPasswordHash = await hashPassword(adminPassword);
+
+  console.log(`Inserting admin user ('${adminUsername}')...`);
   const { data: existingAdmin } = await supabase
     .from("users")
     .select("id")
-    .eq("username", "admin1")
+    .eq("username", adminUsername)
     .maybeSingle();
 
   if (!existingAdmin) {
     const { data: newAdmin, error: adminErr } = await supabase
       .from("users")
       .insert({
-        username: "admin1",
+        username: adminUsername,
         password_hash: adminPasswordHash,
-        name: "Admin User 1",
+        name: adminName,
         role: Role.ADMIN,
         factory_id: factoryId,
       })
@@ -109,7 +115,7 @@ async function main() {
     if (adminErr || !newAdmin) throw adminErr || new Error("Failed to create admin user");
     console.log(`Admin user inserted with id=${newAdmin.id}`);
   } else {
-    console.log("Admin user ('admin1') already exists.");
+    console.log(`Admin user ('${adminUsername}') already exists.`);
   }
 
   console.log("Inserting default weighbridge edge device users (pi1, pi2)...");

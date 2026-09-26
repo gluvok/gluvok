@@ -81,7 +81,7 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
 
       {hasImages && (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent className="sm:max-w-sm p-0 overflow-hidden bg-background/95 backdrop-blur-sm border-muted-foreground/15 shadow-2xl rounded-2xl gap-0">
+          <DialogContent className="w-[92vw] sm:max-w-xl md:max-w-2xl p-0 overflow-hidden bg-background/95 backdrop-blur-sm border-muted-foreground/15 shadow-2xl rounded-2xl gap-0">
             <DialogHeader className="p-5 pb-4 border-b border-muted-foreground/10 bg-muted/20">
               <DialogTitle className="flex items-center gap-2 text-foreground text-sm font-semibold">
                 <ImageIcon className="h-4 w-4 text-primary" />
@@ -96,7 +96,7 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
             </DialogHeader>
 
             <div className="p-6 pb-2 flex flex-col items-center justify-center bg-black/5 dark:bg-black/20 w-full overflow-hidden">
-              <Carousel setApi={setApi} className="w-full max-w-full relative px-10">
+              <Carousel setApi={setApi} className="w-full max-w-full relative px-10 sm:px-12">
                 <CarouselContent>
                   {images.map((img, i) => {
                     const src = img.startsWith("/") || img.startsWith("http") ? img : `/${img}`;
@@ -132,8 +132,8 @@ export function WeighmentImagesCell({ images = [], vehicleNumber }: WeighmentIma
                 </CarouselContent>
                 {images.length > 1 && (
                   <>
-                    <CarouselPrevious className="left-0 h-8 w-8 rounded-full border bg-background/80 shadow hover:bg-background active:scale-95 transition-transform" />
-                    <CarouselNext className="right-0 h-8 w-8 rounded-full border bg-background/80 shadow hover:bg-background active:scale-95 transition-transform" />
+                    <CarouselPrevious className="left-1 sm:left-2 h-8 w-8 sm:h-9 sm:w-9 rounded-full border bg-background/80 shadow hover:bg-background active:scale-95 transition-transform" />
+                    <CarouselNext className="right-1 sm:right-2 h-8 w-8 sm:h-9 sm:w-9 rounded-full border bg-background/80 shadow hover:bg-background active:scale-95 transition-transform" />
                   </>
                 )}
               </Carousel>

@@ -82,7 +82,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
   const updates: Record<string, unknown> = {};
 
   // 2. Validate 'type' update lock if type is NOT 'unassigned'
-  if (body.type !== undefined) {
+  if (parsed.data.type !== undefined) {
     if (
       existing.type !== WeighmentType.UNASSIGNED &&
       existing.type !== null &&
@@ -90,19 +90,19 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
     ) {
       return apiError(ApiErrorMessage.WEIGHMENT_TYPE_ALREADY_SET, StatusCodes.BAD_REQUEST);
     }
-    updates["type"] = body.type;
+    updates["type"] = parsed.data.type;
   }
 
   // 3. Validate 'rate_id' update lock if rate_id is NOT null
-  if (body.rate_id !== undefined) {
+  if (parsed.data.rate_id !== undefined) {
     if (existing.rate_id !== null && existing.rate_id !== undefined) {
       return apiError(ApiErrorMessage.WEIGHMENT_RATE_ALREADY_SET, StatusCodes.BAD_REQUEST);
     }
-    if (body.rate_id !== null) {
+    if (parsed.data.rate_id !== null) {
       const { data: validRate } = await client
         .from("rates")
         .select("id, unit")
-        .eq("id", body.rate_id)
+        .eq("id", parsed.data.rate_id)
         .eq("factory_id", user.factory_id!)
         .is("deleted_at", null)
         .maybeSingle();
@@ -112,7 +112,7 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
       }
       updates["unit"] = validRate.unit;
     }
-    updates["rate_id"] = body.rate_id;
+    updates["rate_id"] = parsed.data.rate_id;
   }
 
   if (Object.keys(updates).length === 0) {

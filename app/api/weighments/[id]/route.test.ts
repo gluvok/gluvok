@@ -198,6 +198,50 @@ describe("Weighments [id] PATCH route handler", () => {
     expect(json.data.type).toBe("in");
   });
 
+  it("updates weighment type when rate_id is passed as empty string", async () => {
+    const patchRequest = new Request("http://localhost/api/weighments/100", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "in", rate_id: "" }),
+    });
+
+    const updateMock = vi.fn(() => ({
+      eq: vi.fn(() => ({
+        is: vi.fn(() => ({
+          select: vi.fn(() => ({
+            single: vi.fn().mockResolvedValue({
+              data: { id: 100, type: "in", rate_id: null },
+              error: null,
+            }),
+          })),
+        })),
+      })),
+    }));
+
+    const mockDb = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            is: vi.fn(() => ({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: 100, type: "unassigned", rate_id: null },
+                error: null,
+              }),
+            })),
+          })),
+        })),
+        update: updateMock,
+      })),
+    };
+
+    const handler = PATCH as unknown as RawHandler;
+    const response = await handler(patchRequest, sampleUser, mockDb, context);
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.data.type).toBe("in");
+  });
+
   it("rejects modifying type if type is already set to 'in' or 'out'", async () => {
     const patchRequest = new Request("http://localhost/api/weighments/100", {
       method: "PATCH",

@@ -118,7 +118,7 @@ export async function prepareSubmitPayload(
     if (values["type"] !== undefined && values["type"] !== "") {
       updateValues["type"] = values["type"];
     }
-    if (values["rate_id"] !== undefined && values["rate_id"] !== "") {
+    if (values["rate_id"] !== undefined && values["rate_id"] !== "" && values["rate_id"] !== null) {
       updateValues["rate_id"] = Number(values["rate_id"]);
     }
   } else {

@@ -67,7 +67,7 @@ export function ImagePreviewCarousel({
                       src={imageSrc}
                       alt={`Preview ${index + 1}`}
                       fill
-                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-300"
+                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-200"
                       unoptimized
                     />
                     <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">

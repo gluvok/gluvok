@@ -443,17 +443,18 @@ describe("Weighments [id] GET route handler", () => {
 
   it("returns 404 when weighment does not exist", async () => {
     const req = new Request("http://localhost/api/weighments/100");
-    const mockDb = {
-      from: vi.fn(() => ({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              is: vi.fn(() => ({
-                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-              })),
-            })),
+    const selectMock = vi.fn(() => ({
+      eq: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          is: vi.fn(() => ({
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
           })),
         })),
+      })),
+    }));
+    const mockDb = {
+      from: vi.fn(() => ({
+        select: selectMock,
       })),
     };
 
@@ -461,6 +462,9 @@ describe("Weighments [id] GET route handler", () => {
     const response = await handler(req, sampleUser, mockDb, context);
 
     expect(response.status).toBe(404);
+    expect(selectMock).toHaveBeenCalledWith(
+      expect.stringContaining("in_entry:entries!in_entry_id!inner"),
+    );
   });
 
   it("returns 200 with formatted weighment record for authorized user", async () => {

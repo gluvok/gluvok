@@ -100,6 +100,24 @@ describe("GET /api/weighments", () => {
     expect(json.data[0].rate_id).toBe(5);
   });
 
+  it("uses !inner on in_entry and returns empty list with 200 when no weighments exist for factory", async () => {
+    const weighmentsQuery = createMockQueryBuilder({ data: [], count: 0 });
+    const mockDb = createMockSupabase({ weighments: weighmentsQuery });
+
+    const req = new NextRequest("http://localhost/api/weighments?page=1&limit=10");
+    const handler = GET as unknown as RawHandler;
+    const response = await handler(req, sampleUser, mockDb);
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.data).toEqual([]);
+    expect(json.pagination.total).toBe(0);
+    expect(weighmentsQuery.select).toHaveBeenCalledWith(
+      expect.stringContaining("in_entry:entries!in_entry_id!inner"),
+      { count: "exact" },
+    );
+  });
+
   it("filters by user_id using entry ID pre-resolution without PostgREST syntax error", async () => {
     const weighmentsQuery = createMockQueryBuilder({ data: [], count: 0 });
 

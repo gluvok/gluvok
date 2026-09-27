@@ -337,6 +337,85 @@ describe("Weighments Service", () => {
         updated_at: "2026-08-31T10:00:00Z",
       });
     });
+
+    it("safely handles weighment when in_entry and out_entry are missing or null", () => {
+      const mockRow = {
+        id: 20,
+        unit: Unit.KG,
+        type: "unassigned",
+        rate_id: null,
+        in_entry_id: 1,
+        out_entry_id: 2,
+        created_at: "2026-08-31T10:00:00Z",
+        updated_at: "2026-08-31T10:00:00Z",
+        in_entry: null,
+        out_entry: null,
+      };
+
+      const result = formatWeighmentRecord(mockRow);
+      expect(result).toEqual({
+        id: 20,
+        unit: Unit.KG,
+        type: "unassigned",
+        rate_id: null,
+        gross_weight: 0,
+        tare_weight: 0,
+        net_weight: 0,
+        images: [],
+        in_entry_id: 1,
+        in_entry_created_at: undefined,
+        out_entry_id: 2,
+        out_entry_created_at: undefined,
+        in_center_id: null,
+        in_center_name: "",
+        out_center_id: null,
+        out_center_name: "",
+        in_user_id: null,
+        in_user_name: "",
+        out_user_id: null,
+        out_user_name: "",
+        in_customer_id: null,
+        in_customer_name: "",
+        out_customer_id: null,
+        out_customer_name: "",
+        vehicle_number: "",
+        created_at: "2026-08-31T10:00:00Z",
+        updated_at: "2026-08-31T10:00:00Z",
+      });
+    });
+
+    it("safely handles weighment when centers is missing on in_entry", () => {
+      const mockRow = {
+        id: 30,
+        unit: Unit.KG,
+        type: "unassigned",
+        rate_id: null,
+        in_entry_id: 1,
+        out_entry_id: 2,
+        created_at: "2026-08-31T10:00:00Z",
+        updated_at: "2026-08-31T10:00:00Z",
+        in_entry: {
+          created_at: "2026-08-31T08:00:00Z",
+          weight: 1000,
+          vehicle_number: "KA01AB1234",
+          center_id: 5,
+          centers: null,
+        },
+        out_entry: {
+          created_at: "2026-08-31T10:00:00Z",
+          weight: 500,
+          vehicle_number: "KA01AB1234",
+          center_id: 6,
+          centers: null,
+        },
+      };
+
+      const result = formatWeighmentRecord(mockRow);
+      expect(result.in_center_id).toBe(5);
+      expect(result.in_center_name).toBe("");
+      expect(result.out_center_id).toBe(6);
+      expect(result.out_center_name).toBe("");
+    });
   });
 
   describe("deleteWeighments", () => {

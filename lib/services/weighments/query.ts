@@ -150,7 +150,7 @@ export async function fetchWeighmentsList(
   let query = client
     .from("weighments")
     .select(
-      `*, in_entry:entries!in_entry_id(id, weight, images, created_at, center_id, created_by, approved_by, customer_id, vehicle_number, centers(name), users:users!created_by(name), customers(name)), out_entry:entries!out_entry_id(id, weight, images, created_at, center_id, created_by, approved_by, customer_id, vehicle_number, centers(name), users:users!created_by(name), customers(name))`,
+      `*, in_entry:entries!in_entry_id!inner(id, weight, images, created_at, center_id, created_by, approved_by, customer_id, vehicle_number, centers(name), users:users!created_by(name), customers(name)), out_entry:entries!out_entry_id(id, weight, images, created_at, center_id, created_by, approved_by, customer_id, vehicle_number, centers(name), users:users!created_by(name), customers(name))`,
       { count: "exact" },
     )
     .eq("in_entry.factory_id", user.factory_id!)

@@ -96,17 +96,17 @@ export function formatWeighmentRecord(row: Record<string, unknown>): Record<stri
     in_entry_created_at: inEntry.created_at,
     out_entry_id: row.out_entry_id,
     out_entry_created_at: outEntry.created_at,
-    in_center_id: inEntry.center_id,
-    in_center_name: (inEntry.centers as { name: string }).name,
+    in_center_id: (inEntry.center_id as number | undefined) ?? null,
+    in_center_name: (inEntry.centers as { name?: string } | undefined)?.name ?? "",
     out_center_id: (outEntry.center_id as number | undefined) ?? null,
     out_center_name: (outEntry.centers as { name?: string } | undefined)?.name ?? "",
-    in_user_id: inEntry.created_by ?? inEntry.user_id,
+    in_user_id: inEntry.created_by ?? inEntry.user_id ?? null,
     in_user_name: inUsers?.name || "",
-    out_user_id: outEntry.created_by ?? outEntry.user_id,
+    out_user_id: outEntry.created_by ?? outEntry.user_id ?? null,
     out_user_name: outUsers?.name || "",
-    in_customer_id: inEntry.customer_id,
+    in_customer_id: (inEntry.customer_id as number | undefined) ?? null,
     in_customer_name: inCustomers?.name || "",
-    out_customer_id: outEntry.customer_id,
+    out_customer_id: (outEntry.customer_id as number | undefined) ?? null,
     out_customer_name: outCustomers?.name || "",
     vehicle_number: inEntry.vehicle_number || outEntry.vehicle_number || "",
     created_at: row.created_at,
@@ -126,7 +126,7 @@ export async function deleteWeighments(
   // 1. Fetch weighments with factory verification
   const { data: weighments, error: fetchErr } = await client
     .from("weighments")
-    .select(`id, in_entry_id, out_entry_id, in_entry:entries!in_entry_id(factory_id)`)
+    .select(`id, in_entry_id, out_entry_id, in_entry:entries!in_entry_id!inner(factory_id)`)
     .in("id", weighmentIds)
     .is("deleted_at", null);
 

@@ -53,6 +53,7 @@ export function SettingsView({ desc }: SettingsViewProps) {
   // Form states
   const [name, setName] = React.useState("");
   const [checkCenterOnMerge, setCheckCenterOnMerge] = React.useState(false);
+  const [receiptImagesPerRow, setReceiptImagesPerRow] = React.useState(3);
 
   const loadSettings = React.useCallback(async () => {
     try {
@@ -63,6 +64,11 @@ export function SettingsView({ desc }: SettingsViewProps) {
         setFactory(item);
         setName(item.name || "");
         setCheckCenterOnMerge(Boolean(item.check_center_on_merge));
+        setReceiptImagesPerRow(item.receipt_images_per_row ?? 3);
+        useAuthStore.getState?.().updateUser?.({
+          factory_name: item.name,
+          receipt_images_per_row: item.receipt_images_per_row ?? 3,
+        });
       }
     } catch (err) {
       console.error("Failed to load factory settings:", err);
@@ -80,14 +86,16 @@ export function SettingsView({ desc }: SettingsViewProps) {
     if (!factory) return false;
     return (
       name.trim() !== (factory.name || "") ||
-      checkCenterOnMerge !== Boolean(factory.check_center_on_merge)
+      checkCenterOnMerge !== Boolean(factory.check_center_on_merge) ||
+      receiptImagesPerRow !== (factory.receipt_images_per_row ?? 3)
     );
-  }, [factory, name, checkCenterOnMerge]);
+  }, [factory, name, checkCenterOnMerge, receiptImagesPerRow]);
 
   const handleReset = () => {
     if (!factory) return;
     setName(factory.name || "");
     setCheckCenterOnMerge(Boolean(factory.check_center_on_merge));
+    setReceiptImagesPerRow(factory.receipt_images_per_row ?? 3);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -107,11 +115,17 @@ export function SettingsView({ desc }: SettingsViewProps) {
       const updated = (await updateRow(ProjectSlug.SETTINGS, factory.id, {
         name: name.trim(),
         check_center_on_merge: checkCenterOnMerge,
+        receipt_images_per_row: receiptImagesPerRow,
       })) as unknown as Factory;
 
       setFactory(updated);
       setName(updated.name);
       setCheckCenterOnMerge(Boolean(updated.check_center_on_merge));
+      setReceiptImagesPerRow(updated.receipt_images_per_row ?? 3);
+      useAuthStore.getState?.().updateUser?.({
+        factory_name: updated.name,
+        receipt_images_per_row: updated.receipt_images_per_row ?? 3,
+      });
       toast.success("Factory settings updated successfully.");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to update factory settings.";
@@ -123,7 +137,7 @@ export function SettingsView({ desc }: SettingsViewProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-96 flex flex-col items-center justify-center gap-3">
+      <div className="py-12 flex flex-col items-center justify-center gap-3">
         <Spinner />
         <span className="text-xs font-medium text-muted-foreground/70">
           Loading factory settings...
@@ -134,7 +148,7 @@ export function SettingsView({ desc }: SettingsViewProps) {
 
   if (!factory) {
     return (
-      <div className="min-h-96 flex flex-col items-center justify-center gap-3 text-center">
+      <div className="py-12 flex flex-col items-center justify-center gap-3 text-center">
         <p className="text-sm font-medium text-muted-foreground">No factory settings found.</p>
         <Button variant="outline" size="sm" onClick={loadSettings}>
           Retry
@@ -144,81 +158,76 @@ export function SettingsView({ desc }: SettingsViewProps) {
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] w-full py-6">
-      <div className="w-full max-w-2xl space-y-4">
-        {desc && <p className="text-xs text-muted-foreground text-center">{desc}</p>}
+    <div className="flex-1 flex flex-col items-center justify-center w-full my-auto">
+      <div className="w-full max-w-2xl">
+        {desc && <p className="text-xs text-muted-foreground mb-3 text-center">{desc}</p>}
 
         <Card className="border-border/70 shadow-xs">
-          <CardHeader className="border-b border-border/60 pb-4">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <FactoryIcon className="h-4.5 w-4.5 text-primary" />
-              Factory Settings
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Manage factory identification and automated entry merging behavior.
-            </CardDescription>
+          <CardHeader className="border-b border-border/60 py-3 px-5">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <FactoryIcon className="h-4 w-4 text-primary" />
+                Factory Settings
+              </CardTitle>
+              <CardDescription className="text-xs hidden sm:block">
+                Manage factory identification and weighment behaviors.
+              </CardDescription>
+            </div>
           </CardHeader>
 
           <form onSubmit={handleSave}>
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="p-4 sm:p-5 space-y-3.5">
               {/* Row 1: Factory Name */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-                <div className="space-y-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 items-center">
+                <div>
                   <label
                     htmlFor="factory-name-input"
                     className="text-xs font-semibold text-foreground block"
                   >
                     Factory Name
                   </label>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Official display name shown on weighment slips and PDF export reports.
+                  <p className="text-2xs text-muted-foreground">
+                    Official display name shown on weighment slips and reports.
                   </p>
                 </div>
-                <div className="md:col-span-2 space-y-1.5">
+                <div className="sm:col-span-2">
                   <Input
                     id="factory-name-input"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     disabled={!isAdmin || isSaving}
                     placeholder="e.g. Acme Processing Plant"
-                    className="h-9 text-sm"
+                    className="h-8.5 text-xs sm:text-sm"
                   />
                   {!isAdmin && (
-                    <p className="text-2xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5 pt-0.5">
-                      <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+                    <p className="text-2xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5 pt-1">
+                      <ShieldAlert className="h-3 w-3 shrink-0" />
                       Only administrators have permission to modify the factory name.
                     </p>
                   )}
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="my-0.5" />
 
               {/* Row 2: Check Center On Merge */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-                <div className="space-y-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 items-center">
+                <div>
                   <span className="text-xs font-semibold text-foreground block">
                     Collection Center Scope
                   </span>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Controls whether automated weighment pairing checks collection centers.
+                  <p className="text-2xs text-muted-foreground">
+                    Require tare and gross entries to originate from the same center.
                   </p>
                 </div>
-                <div className="md:col-span-2 flex items-start justify-between gap-4 p-3.5 rounded-lg border border-border/60 bg-muted/20">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />
-                      <span className="text-xs font-medium text-foreground">
-                        Check Center on Entry Merge
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      When enabled, tare and gross entries must originate from the same collection
-                      center to merge. When disabled, entries are merged factory-wide regardless of
-                      center.
-                    </p>
+                <div className="sm:col-span-2 flex items-center justify-between gap-3 p-2.5 rounded-lg border border-border/60 bg-muted/20">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="text-xs font-medium text-foreground truncate">
+                      Check Center on Entry Merge
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2.5 shrink-0 mt-0.5">
+                  <div className="flex items-center gap-2 shrink-0">
                     <Badge
                       variant={checkCenterOnMerge ? "default" : "secondary"}
                       className="text-2xs px-1.5 py-0 h-4 font-normal"
@@ -234,18 +243,66 @@ export function SettingsView({ desc }: SettingsViewProps) {
                   </div>
                 </div>
               </div>
+
+              <Separator className="my-0.5" />
+
+              {/* Row 3: Receipt Images Per Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 items-center">
+                <div>
+                  <span className="text-xs font-semibold text-foreground block">
+                    Weighment Receipt Layout
+                  </span>
+                  <p className="text-2xs text-muted-foreground">
+                    Camera images shown per row on receipts and PDF reports.
+                  </p>
+                </div>
+                <div className="sm:col-span-2 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+                  <div className="flex items-center gap-1.5">
+                    {[1, 2, 3, 4].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        id={`receipt-images-per-row-${n}`}
+                        disabled={!isAdmin || isSaving}
+                        onClick={() => setReceiptImagesPerRow(n)}
+                        className={[
+                          "h-8 w-10 rounded-md border text-xs font-semibold transition-all",
+                          receiptImagesPerRow === n
+                            ? "border-primary bg-primary/10 text-primary shadow-xs"
+                            : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                          !isAdmin || isSaving ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
+                        ].join(" ")}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-2xs text-muted-foreground shrink-0">
+                    <span className="font-semibold text-foreground">{receiptImagesPerRow}</span> per
+                    row
+                  </span>
+                  {!isAdmin && (
+                    <p className="text-2xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5 w-full pt-1">
+                      <ShieldAlert className="h-3 w-3 shrink-0" />
+                      Only administrators have permission to modify this setting.
+                    </p>
+                  )}
+                </div>
+              </div>
             </CardContent>
 
-            <CardFooter className="flex items-center justify-between border-t border-border/60 bg-muted/30 px-6 py-3">
-              <div className="text-xs text-muted-foreground flex items-center gap-2.5">
+            <CardFooter className="flex items-center justify-between border-t border-border/60 bg-muted/20 px-5 py-2.5">
+              <div className="text-xs text-muted-foreground flex items-center gap-2">
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5 text-muted-foreground/70" />
-                  <span>Last updated {formatDateTime(factory.updated_at)}</span>
+                  <span className="text-2xs sm:text-xs">
+                    Last updated {formatDateTime(factory.updated_at)}
+                  </span>
                 </div>
                 {isDirty && (
                   <Badge
                     variant="outline"
-                    className="text-2xs border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/20"
+                    className="text-2xs border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/20 px-1.5 py-0 h-4"
                   >
                     Unsaved changes
                   </Badge>
@@ -260,21 +317,21 @@ export function SettingsView({ desc }: SettingsViewProps) {
                     size="sm"
                     onClick={handleReset}
                     disabled={!isDirty || isSaving}
-                    className="gap-1.5 h-8 text-xs"
+                    className="gap-1.5 h-7.5 px-2.5 text-xs"
                   >
-                    <RotateCcw className="h-3.5 w-3.5" />
+                    <RotateCcw className="h-3 w-3" />
                     Reset
                   </Button>
                   <Button
                     type="submit"
                     size="sm"
                     disabled={!isDirty || isSaving || !name.trim()}
-                    className="gap-1.5 h-8 text-xs shadow-xs"
+                    className="gap-1.5 h-7.5 px-2.5 text-xs shadow-xs"
                   >
                     {isSaving ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <Loader2 className="h-3 w-3 animate-spin" />
                     ) : (
-                      <Save className="h-3.5 w-3.5" />
+                      <Save className="h-3 w-3" />
                     )}
                     Save Changes
                   </Button>

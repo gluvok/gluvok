@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { downloadPDF } from "@/lib/pdf";
+import { useAuthStore } from "@/lib/store";
 import { ProjectSlug } from "@/lib/constants/enums";
 import { type EntityRecord } from "@/types";
 import { type ColumnActionsCallbacks } from "../index";
@@ -71,6 +72,8 @@ export function ActionMenu<T extends EntityRecord>({
   onApproveEntry,
   onRejectEntry,
 }: ActionMenuProps<T>) {
+  const user = useAuthStore((state) => state.user);
+
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
@@ -102,7 +105,16 @@ export function ActionMenu<T extends EntityRecord>({
         <DropdownMenuItem
           id={`actions-download-pdf-${projectSlug}-${itemId}`}
           className="text-xs cursor-pointer gap-2 py-1.5 px-2 rounded-lg transition-colors focus:bg-rose-500/10 focus:text-foreground"
-          onClick={() => downloadPDF(table, projectName, undefined, [row], projectSlug)}
+          onClick={() =>
+            downloadPDF(
+              table,
+              projectName,
+              undefined,
+              [row],
+              projectSlug,
+              user?.receipt_images_per_row,
+            )
+          }
         >
           <FileDown className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400" /> Download PDF
         </DropdownMenuItem>

@@ -91,7 +91,7 @@ export function renderScansSection(imagesHtml?: string): string {
  */
 export function renderFooterSection(finalCompanyName: string): string {
   return `
-    <footer class="border-t border-slate-200/80 pt-2.5 flex items-center justify-between text-2xs text-slate-400 font-sans tracking-wide">
+    <footer class="border-t border-slate-200/80 pt-3 mt-8 flex items-center justify-between text-2xs text-slate-400 font-sans tracking-wide">
       <div class="flex items-center gap-1.5">
         <span>Generated for <strong class="text-slate-700 font-semibold">${finalCompanyName}</strong></span>
       </div>
@@ -178,6 +178,8 @@ export function generatePdfHtml(
             -webkit-font-smoothing: antialiased;
           }
           .text-2xs { font-size: 0.625rem; line-height: calc(1 / 0.625); }
+          .aspect-video { aspect-ratio: 16 / 9; }
+          .pdf-scan-card img { width: 100%; height: 100%; object-fit: cover; }
           tr, .pdf-scan-card {
             page-break-inside: avoid;
             break-inside: avoid;
@@ -193,10 +195,9 @@ export function generatePdfHtml(
             break-inside: auto;
           }
           footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            margin-top: auto;
+            padding-top: 1rem;
+            width: 100%;
             page-break-inside: avoid;
             break-inside: avoid;
           }
@@ -211,13 +212,13 @@ export function generatePdfHtml(
               position: relative;
             }
             .pdf-content-wrapper {
-              padding-bottom: 12mm;
+              padding-bottom: 6mm;
             }
             footer {
-              position: fixed;
-              bottom: 0;
-              left: 0;
-              right: 0;
+              position: static;
+              margin-top: 8mm;
+              page-break-inside: avoid;
+              break-inside: avoid;
             }
           }
         </style>

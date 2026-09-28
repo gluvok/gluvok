@@ -14,6 +14,11 @@ import { EntrySource, EntryStatus, ProjectSlug, PermissionKey, Role } from "@/li
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { createEntry, deleteEntries } from "@/lib/services/entries";
 import { uploadFilesToStorage, deleteStorageImages } from "@/lib/services/storage";
+import {
+  preprocessCameraFiles,
+  DEFAULT_CAMERA_CROPS,
+  type CameraCropConfig,
+} from "@/lib/services/image-processor";
 import { hasDeviceCredentials, verifyDeviceRequest } from "@/lib/auth/device";
 import { supabase } from "@/db";
 import { addEntrySchema, addDeviceEntrySchema } from "@/lib/validation";
@@ -183,43 +188,22 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
     const customerId = customerIdRaw ? Number(customerIdRaw) : null;
     const status = (formData.get("status") as EntryStatus) || EntryStatus.PENDING;
 
-    // Extract files
+    // Extract files positionally — order is preserved by the sender (first file = cam 1, etc.)
     const files: File[] = [];
     for (const key of ["files", "file", "images", "image"]) {
       for (const entry of formData.getAll(key)) {
-        if (entry instanceof File && entry.size > 0) {
-          files.push(entry);
-        }
-      }
-    }
-
-    // Extract existing string URLs
-    const existingUrls: string[] = [];
-    for (const key of ["image_urls", "images"]) {
-      for (const entry of formData.getAll(key)) {
-        if (
-          typeof entry === "string" &&
-          (entry.startsWith("http://") || entry.startsWith("https://"))
-        ) {
-          existingUrls.push(entry);
-        }
+        if (entry instanceof File && entry.size > 0) files.push(entry);
       }
     }
 
     const validationData = isHardware
-      ? {
-          detected_vehicle_number: detectedVehicleNumber,
-          weight,
-          center_id: centerId,
-          images: existingUrls,
-        }
+      ? { detected_vehicle_number: detectedVehicleNumber, weight, center_id: centerId }
       : {
           vehicle_number: vehicleNumber,
           weight,
           center_id: centerId,
           customer_id: customerId,
           status,
-          images: existingUrls,
         };
 
     const parsed = isHardware
@@ -230,9 +214,10 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
       return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
     }
 
+    // Validate that the center belongs to this factory and retrieve camera_crops in one query
     const { data: centerRecord } = await supabase
       .from("centers")
-      .select("id, factory_id")
+      .select("id, factories(camera_crops)")
       .eq("id", centerId)
       .eq("factory_id", factoryId)
       .is("deleted_at", null)
@@ -242,12 +227,24 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
       return apiError(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND, StatusCodes.BAD_REQUEST);
     }
 
-    // Upload files to Supabase Storage
+    // Resolve camera crops from the joined factory row, fall back to defaults
+    const rawCrops = (centerRecord.factories as { camera_crops?: unknown } | null)?.camera_crops;
+    const cameraCrops: CameraCropConfig[] = Array.isArray(rawCrops)
+      ? (rawCrops as CameraCropConfig[])
+      : DEFAULT_CAMERA_CROPS;
+
+    // Crop and upload files to Supabase Storage
     let uploadedUrls: string[] = [];
     if (files.length > 0) {
-      uploadedUrls = await uploadFilesToStorage(files, factoryId);
+      const croppedBuffers = await preprocessCameraFiles(files, cameraCrops);
+      uploadedUrls = await uploadFilesToStorage(
+        croppedBuffers.map((buf, i) => {
+          const ext = files[i]?.name?.split(".").pop() || "jpg";
+          return new File([new Uint8Array(buf)], `cam${i + 1}.${ext}`, { type: "image/jpeg" });
+        }),
+        factoryId,
+      );
     }
-    const allImages = [...existingUrls, ...uploadedUrls];
 
     const finalVehicleNumber = isHardware
       ? (parsed.data as { detected_vehicle_number: string }).detected_vehicle_number
@@ -267,7 +264,7 @@ export async function POST(req: NextRequest, ...rest: unknown[]) {
         weight,
         customerId,
         status: isHardware ? EntryStatus.PENDING : status,
-        images: allImages,
+        images: uploadedUrls,
       });
     } catch (dbErr: unknown) {
       // Compensating rollback: delete uploaded images if DB insertion fails

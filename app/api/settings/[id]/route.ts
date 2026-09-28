@@ -31,13 +31,15 @@ export const PATCH = withAuth(
       return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
     }
 
-    const { name, check_center_on_merge } = parsed.data;
+    const { name, check_center_on_merge, receipt_images_per_row } = parsed.data;
 
     const updates: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
     if (name !== undefined) updates.name = name;
     if (check_center_on_merge !== undefined) updates.check_center_on_merge = check_center_on_merge;
+    if (receipt_images_per_row !== undefined)
+      updates.receipt_images_per_row = receipt_images_per_row;
 
     const { data: updated, error } = await client
       .from("factories")

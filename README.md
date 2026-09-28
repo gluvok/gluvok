@@ -97,7 +97,54 @@ pnpm seed:test
 
 ---
 
-## 4. Verification Gates
+## 4. Image Preprocessing (Camera Crop)
+
+All images submitted via `POST /api/entries` are preprocessed by `sharp` before being saved to Supabase Storage:
+
+- **Camera ordering**: Send files as `camera_1`, `camera_2` (preferred) or `files[]` (positional fallback). The first file is always treated as Camera 1, the second as Camera 2.
+- **Per-factory crop**: Each factory stores a `camera_crops` JSONB column defining percentage-based crop insets (top/bottom/left/right, 0–100) per camera. Default values are derived from visual analysis of the factory's IP camera feeds.
+- **Output**: Cropped JPEG at quality 85, re-uploaded in place.
+
+### Database Migration
+
+For existing databases, run the following to add the new columns:
+
+```bash
+psql "$DATABASE_URL" -f migrate_factory_crops.sql
+```
+
+### Retroactive Crop of Existing Images
+
+To apply crop configs to images already stored in the bucket:
+
+```bash
+# Dry run first (no writes)
+pnpm crop:images --dry-run
+
+# Live run for all factories
+pnpm crop:images
+
+# Live run for a specific factory
+pnpm crop:images --factory-id 1
+```
+
+---
+
+## 5. Factory Settings
+
+Configurable via the **Settings** page (admin-only):
+
+| Setting                      | Description                                                          |
+| ---------------------------- | -------------------------------------------------------------------- |
+| **Factory Name**             | Display name used in receipts and PDF exports                        |
+| **Check Center on Merge**    | Whether to enforce center consistency when merging weighment entries |
+| **Weighment Receipt Layout** | Number of camera images per row on printed receipts (1–4)            |
+
+> Camera crop coordinates are managed server-side in the `camera_crops` DB column and are not exposed in the UI.
+
+---
+
+## 6. Verification Gates
 
 ```bash
 pnpm run lint:fix && pnpm run fmt:check && pnpm run type-check && pnpm test && pnpm run build

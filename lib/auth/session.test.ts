@@ -160,7 +160,7 @@ describe("lib/auth/session", () => {
                       role: "operator",
                       factory_id: 2,
                       deleted_at: null,
-                      factories: { name: "Main Factory" },
+                      factories: { name: "Main Factory", receipt_images_per_row: 2 },
                     },
                   },
                   error: null,
@@ -179,6 +179,7 @@ describe("lib/auth/session", () => {
         role: Role.OPERATOR,
         factory_id: 2,
         factory_name: "Main Factory",
+        receipt_images_per_row: 2,
       });
     });
 

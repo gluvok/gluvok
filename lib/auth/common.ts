@@ -15,7 +15,7 @@ export interface AuthenticatedUserRecord {
   password_hash: string;
   role: Role;
   factory_id: number;
-  factories?: { name?: string };
+  factories?: { name?: string; receipt_images_per_row?: number };
 }
 
 export interface UserSessionPayload {
@@ -25,6 +25,7 @@ export interface UserSessionPayload {
   role: Role;
   factory_id: number;
   factory_name?: string;
+  receipt_images_per_row?: number;
 }
 
 export interface CredentialsVerificationResult {
@@ -36,13 +37,15 @@ export function toUserSessionPayload(
   user: AuthenticatedUserRecord,
   factoryName?: string,
 ): UserSessionPayload {
+  const factoryObj = Array.isArray(user.factories) ? user.factories[0] : user.factories;
   return {
     id: user.id,
     username: user.username,
     name: user.name,
     role: user.role,
     factory_id: user.factory_id,
-    factory_name: factoryName || user.factories?.name,
+    factory_name: factoryName || factoryObj?.name,
+    receipt_images_per_row: factoryObj?.receipt_images_per_row,
   };
 }
 
@@ -52,7 +55,7 @@ export function toUserSessionPayload(
 export async function fetchActiveUserById(userId: number): Promise<AuthenticatedUserRecord | null> {
   const { data: user, error } = await db
     .from("users")
-    .select("*, factories(name)")
+    .select("*, factories(name, receipt_images_per_row)")
     .eq("id", userId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -77,7 +80,7 @@ export async function verifyUserCredentials(
 
   const { data: user, error: userError } = await db
     .from("users")
-    .select("*, factories(name)")
+    .select("*, factories(name, receipt_images_per_row)")
     .eq("username", username)
     .is("deleted_at", null)
     .maybeSingle();

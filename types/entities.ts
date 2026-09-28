@@ -69,6 +69,14 @@ export interface Factory {
   id: number;
   name: string;
   check_center_on_merge?: boolean;
+  receipt_images_per_row?: number;
+  camera_crops?: Array<{
+    camera: number;
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+  }>;
   created_at: string;
   updated_at: string;
 }
@@ -154,6 +162,7 @@ export interface AuthUserPayload {
   role: Role;
   factory_id: number;
   factory_name?: string;
+  receipt_images_per_row?: number;
 }
 
 export interface Ticket {

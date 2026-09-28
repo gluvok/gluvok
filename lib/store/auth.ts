@@ -17,6 +17,7 @@ export interface AuthUser {
   role: Role;
   factory_id: number;
   factory_name?: string;
+  receipt_images_per_row?: number;
 }
 
 interface AuthStore {
@@ -29,6 +30,7 @@ interface AuthStore {
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   setHydrated: (state: boolean) => void;
+  updateUser: (fields: Partial<AuthUser>) => void;
 }
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
@@ -36,6 +38,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   hydrated: false,
   initialized: false,
   userLoading: false,
+  updateUser: (fields) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, ...fields } : null,
+    }));
+  },
   clearSession: () => {
     set({ user: null, initialized: true, userLoading: false });
   },

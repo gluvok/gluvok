@@ -106,6 +106,34 @@ describe("Auth Store (Zustand with session API via Axios)", () => {
     });
   });
 
+  describe("updateUser", () => {
+    it("should partially update the user when user is logged in", () => {
+      useAuthStore.setState({
+        user: {
+          id: "user-999",
+          username: "operator1",
+          name: "Op",
+          role: Role.OPERATOR,
+          factory_id: 1,
+          receipt_images_per_row: 3,
+        },
+      });
+
+      useAuthStore.getState().updateUser({ receipt_images_per_row: 4, factory_name: "New Mill" });
+
+      const state = useAuthStore.getState();
+      expect(state.user?.receipt_images_per_row).toBe(4);
+      expect(state.user?.factory_name).toBe("New Mill");
+      expect(state.user?.username).toBe("operator1");
+    });
+
+    it("should keep user null if no user is logged in", () => {
+      useAuthStore.setState({ user: null });
+      useAuthStore.getState().updateUser({ receipt_images_per_row: 2 });
+      expect(useAuthStore.getState().user).toBeNull();
+    });
+  });
+
   describe("login", () => {
     it("should call /api/auth/login with username & password and welcome by name", async () => {
       const mockUser = {

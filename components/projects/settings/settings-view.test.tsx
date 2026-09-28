@@ -4,15 +4,18 @@ import { SettingsView } from "./settings-view";
 import { Role, ProjectSlug } from "@/lib/constants/enums";
 
 const mockUseAuthStore = vi.fn();
+const mockUpdateUser = vi.fn();
 const mockFetchEntityListFromApi = vi.fn();
 const mockUpdateRow = vi.fn();
 const mockToastSuccess = vi.fn();
 const mockToastError = vi.fn();
 
-vi.mock("@/lib/store", () => ({
-  useAuthStore: (selector: (state: { user: { role: Role; factory_id: number } }) => unknown) =>
-    mockUseAuthStore(selector),
-}));
+vi.mock("@/lib/store", () => {
+  const store = (selector: (state: { user: { role: Role; factory_id: number } }) => unknown) =>
+    mockUseAuthStore(selector);
+  store.getState = () => ({ updateUser: mockUpdateUser });
+  return { useAuthStore: store };
+});
 
 vi.mock("@/lib/services/common", () => ({
   fetchEntityListFromApi: (...args: unknown[]) => mockFetchEntityListFromApi(...args),
@@ -119,6 +122,11 @@ describe("SettingsView Component", () => {
       expect(mockUpdateRow).toHaveBeenCalledWith(ProjectSlug.SETTINGS, 1, {
         name: "Renamed Sugar Mill",
         check_center_on_merge: false,
+        receipt_images_per_row: 3,
+      });
+      expect(mockUpdateUser).toHaveBeenCalledWith({
+        factory_name: "Renamed Sugar Mill",
+        receipt_images_per_row: 3,
       });
       expect(mockToastSuccess).toHaveBeenCalledWith("Factory settings updated successfully.");
     });

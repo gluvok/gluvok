@@ -105,7 +105,8 @@ export async function validateSession(token: string, client = db): Promise<AuthU
           factory_id,
           deleted_at,
           factories (
-            name
+            name,
+            receipt_images_per_row
           )
         )
       `)
@@ -126,12 +127,17 @@ export async function validateSession(token: string, client = db): Promise<AuthU
       role: string;
       factory_id: number;
       deleted_at?: string | null;
-      factories?: { name?: string } | null;
+      factories?:
+        | { name?: string; receipt_images_per_row?: number }
+        | { name?: string; receipt_images_per_row?: number }[]
+        | null;
     } | null;
 
     if (!user || user.deleted_at != null) {
       return null;
     }
+
+    const factoryObj = Array.isArray(user.factories) ? user.factories[0] : user.factories;
 
     return {
       sub: String(user.id),
@@ -139,7 +145,8 @@ export async function validateSession(token: string, client = db): Promise<AuthU
       name: user.name,
       role: user.role as Role,
       factory_id: user.factory_id,
-      factory_name: user.factories?.name,
+      factory_name: factoryObj?.name,
+      receipt_images_per_row: factoryObj?.receipt_images_per_row,
     };
   } catch {
     return null;

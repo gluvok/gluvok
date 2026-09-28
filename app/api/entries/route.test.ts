@@ -55,6 +55,16 @@ vi.mock("@/lib/services/entries", async (importOriginal) => {
   };
 });
 
+// Mock sharp-dependent image-processor to pass buffers through without actual cropping
+vi.mock("@/lib/services/image-processor", () => ({
+  preprocessCameraFiles: async (files: File[]) =>
+    Promise.all(files.map((f) => f.arrayBuffer().then((ab) => Buffer.from(ab)))),
+  DEFAULT_CAMERA_CROPS: [
+    { camera: 1, top: 5, bottom: 34, left: 37, right: 28 },
+    { camera: 2, top: 12, bottom: 31, left: 20, right: 49 },
+  ],
+}));
+
 import { NextRequest } from "next/server";
 import { GET, POST, DELETE } from "./route";
 
@@ -307,18 +317,12 @@ describe("Entries route handlers (/api/entries)", () => {
       mockCreateEntry.mockResolvedValue(createdEntry);
       mockUploadFilesToStorage.mockResolvedValue(["https://storage.supabase.co/photo.jpg"]);
 
+      const maybeSingleFn = vi.fn().mockResolvedValue({ data: { id: 1, factory_id: 1 } });
+      const innerIs = vi.fn().mockReturnValue({ maybeSingle: maybeSingleFn });
+      const innerEq = vi.fn().mockReturnValue({ is: innerIs, maybeSingle: maybeSingleFn });
+      const outerEq = vi.fn().mockReturnValue({ eq: innerEq, is: innerIs });
       mockDb.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              is: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({
-                  data: { id: 1, factory_id: 1 },
-                }),
-              }),
-            }),
-          }),
-        }),
+        select: vi.fn().mockReturnValue({ eq: outerEq }),
       });
 
       const file = new File([new Uint8Array([1, 2, 3])], "photo.jpg", { type: "image/jpeg" });
@@ -338,7 +342,7 @@ describe("Entries route handlers (/api/entries)", () => {
       const json = await response.json();
       expect(json.data).toEqual(createdEntry);
       expect(mockUploadFilesToStorage).toHaveBeenCalledWith(
-        [expect.objectContaining({ name: "photo.jpg", type: "image/jpeg" })],
+        [expect.objectContaining({ name: "cam1.jpg", type: "image/jpeg" })],
         1,
       );
       expect(mockCreateEntry).toHaveBeenCalledWith(
@@ -588,18 +592,12 @@ describe("Entries route handlers (/api/entries)", () => {
       mockUploadFilesToStorage.mockResolvedValue(["https://storage.supabase.co/uploaded.jpg"]);
       mockCreateEntry.mockRejectedValue(new Error(ApiErrorMessage.SELECTED_CENTER_NOT_FOUND));
 
+      const maybeSingle2 = vi.fn().mockResolvedValue({ data: { id: 999, factory_id: 1 } });
+      const is2 = vi.fn().mockReturnValue({ maybeSingle: maybeSingle2 });
+      const innerEq2 = vi.fn().mockReturnValue({ is: is2, maybeSingle: maybeSingle2 });
+      const outerEq2 = vi.fn().mockReturnValue({ eq: innerEq2, is: is2 });
       mockDb.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              is: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({
-                  data: { id: 999, factory_id: 1 },
-                }),
-              }),
-            }),
-          }),
-        }),
+        select: vi.fn().mockReturnValue({ eq: outerEq2 }),
       });
 
       const file = new File([new Uint8Array([1, 2, 3])], "photo.jpg", { type: "image/jpeg" });

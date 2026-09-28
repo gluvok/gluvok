@@ -1,8 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import axios from "axios";
 import { downloadPDF, printPdf } from "./exporter";
 import { getExportFileName } from "@/lib/utils/export";
 import { type Table } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
+
+vi.mock("axios");
 
 vi.mock("./template", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./template")>();
@@ -14,6 +17,7 @@ vi.mock("./template", async (importOriginal) => {
 describe("PDF Exporter (downloadPDF & printPdf)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(axios.get).mockResolvedValue({ status: 200, data: { user: null } });
   });
 
   const createMockTable = (rows: Array<Record<string, unknown>>) => {
@@ -53,7 +57,7 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
     appendChildSpy.mockRestore();
   });
 
-  it("renders company name, image count in table cell, IST dates, and scans in generated PDF HTML", () => {
+  it("renders company name, image count in table cell, IST dates, and scans in generated PDF HTML", async () => {
     const table = createMockTable([
       {
         id: 1,
@@ -65,7 +69,7 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
 
     const appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => null!);
 
-    downloadPDF(table, "Entries", "Apex Industries");
+    await downloadPDF(table, "Entries", "Apex Industries");
 
     expect(appendChildSpy).toHaveBeenCalled();
     const iframe = appendChildSpy.mock.calls[0][0] as HTMLIFrameElement;
@@ -102,7 +106,7 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
     appendChildSpy.mockRestore();
   });
 
-  it("handles tables without an images column without errors", () => {
+  it("handles tables without an images column without errors", async () => {
     const tableWithoutImages = {
       getFilteredSelectedRowModel: () => ({
         rows: [
@@ -122,7 +126,7 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
 
     const appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => null!);
 
-    expect(() => downloadPDF(tableWithoutImages, "Settings", "Acme")).not.toThrow();
+    await expect(downloadPDF(tableWithoutImages, "Settings", "Acme")).resolves.not.toThrow();
 
     expect(appendChildSpy).toHaveBeenCalled();
     const iframe = appendChildSpy.mock.calls[0][0] as HTMLIFrameElement;
@@ -131,7 +135,7 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
     appendChildSpy.mockRestore();
   });
 
-  it("exports multiple rows with scan cards having pdf-scan-card class and avoid page breaks", () => {
+  it("exports multiple rows with scan cards having pdf-scan-card class and avoid page breaks", async () => {
     const table = createMockTable([
       {
         id: 1,
@@ -149,7 +153,7 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
 
     const appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => null!);
 
-    downloadPDF(table, "Weighments", "Apex Industries");
+    await downloadPDF(table, "Weighments", "Apex Industries");
 
     expect(appendChildSpy).toHaveBeenCalled();
     const iframe = appendChildSpy.mock.calls[0][0] as HTMLIFrameElement;
@@ -168,7 +172,7 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
     appendChildSpy.mockRestore();
   });
 
-  it("exports single row using rowsOverride in downloadPDF", () => {
+  it("exports single row using rowsOverride in downloadPDF", async () => {
     const table = createMockTable([
       {
         id: 1,
@@ -187,7 +191,7 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
     const appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => null!);
 
     const singleRow = table.getFilteredSelectedRowModel().rows[1];
-    downloadPDF(table, "Entries", "Apex Industries", [singleRow]);
+    await downloadPDF(table, "Entries", "Apex Industries", [singleRow]);
 
     expect(appendChildSpy).toHaveBeenCalled();
     const iframe = appendChildSpy.mock.calls[0][0] as HTMLIFrameElement;
@@ -199,7 +203,7 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
     appendChildSpy.mockRestore();
   });
 
-  it("includes all mandatory weighments fields (id, vehicle_number, unit, gross, tare, net, images, created_at) even when not visible in table", () => {
+  it("includes all mandatory weighments fields (id, vehicle_number, unit, gross, tare, net, images, created_at) even when not visible in table", async () => {
     const allColumns = [
       { id: "id", columnDef: { meta: { label: "ID" } } },
       { id: "vehicle_number", columnDef: { meta: { label: "Vehicle Number" } } },
@@ -246,7 +250,7 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
 
     const appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => null!);
 
-    downloadPDF(table, "Weighments", "Apex Industries");
+    await downloadPDF(table, "Weighments", "Apex Industries");
 
     expect(appendChildSpy).toHaveBeenCalled();
     const iframe = appendChildSpy.mock.calls[0][0] as HTMLIFrameElement;
@@ -271,6 +275,48 @@ describe("PDF Exporter (downloadPDF & printPdf)", () => {
     expect(html).toContain("7000");
     expect(html).toContain("8000");
     expect(html).toContain("North Center");
+
+    appendChildSpy.mockRestore();
+  });
+
+  it("fetches fresh factory settings from /api/auth/me and reflects them in the PDF", async () => {
+    vi.mocked(axios.get).mockResolvedValueOnce({
+      status: 200,
+      data: {
+        user: {
+          id: "1",
+          username: "admin1",
+          name: "Admin User",
+          role: "admin" as never,
+          factory_id: 1,
+          factory_name: "Fresh Dynamic Factory",
+          receipt_images_per_row: 2,
+        },
+      },
+    });
+
+    const table = createMockTable([
+      {
+        id: 1,
+        vehicle_number: "PB10XY1234",
+        images: ["https://example.com/scan1.jpg", "https://example.com/scan2.jpg"],
+        created_at: "2026-08-27T20:54:16.000Z",
+      },
+    ]);
+
+    const appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => null!);
+
+    await downloadPDF(table, "Entries");
+
+    expect(axios.get).toHaveBeenCalledWith("/api/auth/me", expect.any(Object));
+    expect(appendChildSpy).toHaveBeenCalled();
+    const iframe = appendChildSpy.mock.calls[0][0] as HTMLIFrameElement;
+    const html = iframe.srcdoc;
+
+    // Fresh factory name
+    expect(html).toContain("Fresh Dynamic Factory");
+    // Grid configured for 2 columns per row
+    expect(html).toContain("repeat(2,minmax(0,1fr))");
 
     appendChildSpy.mockRestore();
   });

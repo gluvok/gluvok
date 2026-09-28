@@ -5,7 +5,9 @@
 
 import { type RowData, type Table, type Row } from "@tanstack/react-table";
 import { type ProjectTableFeatures } from "@/components/data-table/features";
+import axios from "axios";
 import { useAuthStore } from "@/lib/store";
+import { type AuthUser } from "@/lib/store/auth";
 import { formatDateTime } from "@/lib/utils";
 import { DATE_COLUMN_IDS, getExportFileName } from "@/lib/utils/export";
 import { generatePdfHtml } from "./template";
@@ -18,14 +20,30 @@ export { MANDATORY_PDF_FIELDS, printPdf, type MandatoryPdfField };
  * Downloads the selected rows in a table as a styled PDF with company branding,
  * inline image badges, IST date formatting, and an attached scan gallery.
  */
-export function downloadPDF<TData extends RowData>(
+export async function downloadPDF<TData extends RowData>(
   table: Table<ProjectTableFeatures, TData>,
   projectName: string,
   companyName?: string,
   rowsOverride?: Row<ProjectTableFeatures, TData>[],
   projectSlug?: string,
+  receiptImagesPerRow?: number,
 ) {
-  const finalCompanyName = companyName || useAuthStore.getState().user?.factory_name || "Gluvok";
+  let freshUser = useAuthStore.getState().user;
+  try {
+    const res = await axios.get<{ user: AuthUser | null }>("/api/auth/me", {
+      timeout: 3000,
+      validateStatus: (status) => status === 200,
+    });
+    if (res.data?.user) {
+      freshUser = res.data.user;
+      useAuthStore.getState().updateUser?.(freshUser);
+    }
+  } catch {
+    // If offline or network fails, gracefully proceed with current store user
+  }
+
+  const finalCompanyName = companyName || freshUser?.factory_name || "Gluvok";
+  const resolvedImagesPerRow = receiptImagesPerRow ?? freshUser?.receipt_images_per_row ?? 3;
   const fileName = getExportFileName(projectName, "pdf", finalCompanyName);
 
   const selectedRows = rowsOverride ?? table.getFilteredSelectedRowModel().rows;
@@ -140,6 +158,7 @@ export function downloadPDF<TData extends RowData>(
 
   let imagesHtml: string | undefined;
   if (imagesList.length > 0) {
+    const perRow = Math.max(1, Math.min(6, resolvedImagesPerRow));
     imagesHtml = imagesList
       .map(
         (group) => `
@@ -148,7 +167,7 @@ export function downloadPDF<TData extends RowData>(
             <span>Record #${group.id}${group.vehicleNumber ? ` &bull; Vehicle: ${group.vehicleNumber}` : ""}</span>
             <span class="text-slate-500 font-normal">${group.images.length} attachment${group.images.length === 1 ? "" : "s"}</span>
           </div>
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div style="display:grid;grid-template-columns:repeat(${perRow},minmax(0,1fr));gap:0.75rem">
             ${group.images
               .map(
                 (url) => `

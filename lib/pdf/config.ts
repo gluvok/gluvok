@@ -18,8 +18,8 @@ export const MANDATORY_PDF_FIELDS: Record<string, MandatoryPdfField[]> = {
     { id: "gross_weight", label: "Gross Weight" },
     { id: "tare_weight", label: "Tare Weight" },
     { id: "net_weight", label: "Net Weight" },
-    { id: "images", label: "Images" },
-    { id: "created_at", label: "Created At" },
+    { id: "in_entry_created_at", label: "In-Entry Time" },
+    { id: "out_entry_created_at", label: "Out-Entry Time" },
   ],
   [ProjectSlug.ENTRIES]: [
     { id: "id", label: "ID" },
@@ -27,7 +27,6 @@ export const MANDATORY_PDF_FIELDS: Record<string, MandatoryPdfField[]> = {
     { id: "weight", label: "Weight" },
     { id: "source", label: "Source" },
     { id: "status", label: "Status" },
-    { id: "images", label: "Images" },
     { id: "created_at", label: "Created At" },
   ],
   [ProjectSlug.CENTERS]: [

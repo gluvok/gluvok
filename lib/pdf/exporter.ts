@@ -98,7 +98,7 @@ export async function downloadPDF<TData extends RowData>(
   const headersHtml = cols
     .map(
       (c) =>
-        `<th class="px-4 py-3 bg-slate-50/90 border-b border-slate-200 text-slate-700 font-bold text-left text-2xs uppercase tracking-wider">${c.label}</th>`,
+        `<th class="px-2.5 py-1.5 bg-slate-50/90 border-b border-slate-200 text-slate-700 font-bold text-left text-2xs uppercase tracking-wider">${c.label}</th>`,
     )
     .join("");
 
@@ -121,13 +121,13 @@ export async function downloadPDF<TData extends RowData>(
 
           if (Array.isArray(val)) {
             if (val.length === 0)
-              return '<td class="px-4 py-3 border-b border-slate-100 text-xs text-slate-400 align-middle">—</td>';
-            return `<td class="px-4 py-3 border-b border-slate-100 text-xs text-slate-700 align-middle"><span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/70 font-mono">${val.length} image${val.length === 1 ? "" : "s"}</span></td>`;
+              return '<td class="px-2.5 py-1.5 border-b border-slate-100 text-xs text-slate-400 align-middle">—</td>';
+            return `<td class="px-2.5 py-1.5 border-b border-slate-100 text-xs text-slate-700 align-middle"><span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/70 font-mono">${val.length} image${val.length === 1 ? "" : "s"}</span></td>`;
           }
           if (DATE_COLUMN_IDS.has(c.id)) {
-            return `<td class="px-4 py-3 border-b border-slate-100 text-xs text-slate-600 align-middle font-mono">${formatDateTime(val as string)}</td>`;
+            return `<td class="px-2.5 py-1.5 border-b border-slate-100 text-xs text-slate-600 align-middle font-mono">${formatDateTime(val as string)}</td>`;
           }
-          return `<td class="px-4 py-3 border-b border-slate-100 text-xs text-slate-900 align-middle font-medium">${val !== null && val !== undefined && val !== "" ? String(val) : '<span class="text-slate-400">—</span>'}</td>`;
+          return `<td class="px-2.5 py-1.5 border-b border-slate-100 text-xs text-slate-900 align-middle font-medium">${val !== null && val !== undefined && val !== "" ? String(val) : '<span class="text-slate-400">—</span>'}</td>`;
         })
         .join("");
       return `<tr class="even:bg-slate-50/40 hover:bg-slate-50/80 transition-colors">${cells}</tr>`;
@@ -162,16 +162,16 @@ export async function downloadPDF<TData extends RowData>(
     imagesHtml = imagesList
       .map(
         (group) => `
-        <div class="pdf-scan-card mb-6 p-4 rounded-xl border border-slate-200 bg-slate-50/50 break-inside-avoid">
-          <div class="font-semibold text-xs text-slate-700 mb-3 flex items-center justify-between">
+        <div class="pdf-scan-card mb-3 p-2.5 rounded-lg border border-slate-200 bg-slate-50/50 break-inside-avoid">
+          <div class="font-semibold text-xs text-slate-700 mb-2 flex items-center justify-between">
             <span>Record #${group.id}${group.vehicleNumber ? ` &bull; Vehicle: ${group.vehicleNumber}` : ""}</span>
             <span class="text-slate-500 font-normal">${group.images.length} attachment${group.images.length === 1 ? "" : "s"}</span>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(${perRow},minmax(0,1fr));gap:0.75rem">
+          <div style="display:grid;grid-template-columns:repeat(${perRow},minmax(0,1fr));gap:0.5rem">
             ${group.images
               .map(
                 (url) => `
-              <div class="aspect-video bg-white rounded-lg overflow-hidden border border-slate-200 shadow-2xs flex items-center justify-center">
+              <div class="aspect-video bg-white rounded-md overflow-hidden border border-slate-200 shadow-2xs flex items-center justify-center">
                 <img src="${url}" alt="Attachment for Record #${group.id}" class="w-full h-full object-cover" />
               </div>`,
               )

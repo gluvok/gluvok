@@ -10,35 +10,56 @@ export async function tryMergeEntries(
   client: typeof supabase,
   factoryId: number,
   entryId: number,
+  existingEntry?: Record<string, unknown> | null,
 ): Promise<Record<string, unknown> | null> {
-  // 1. Fetch current entry E2
-  const { data: e2, error: fetchErr } = await client
-    .from("entries")
-    .select(
-      "id, status, vehicle_number, created_at, created_by, center_id, creator:users!created_by(role)",
-    )
-    .eq("id", entryId)
-    .eq("factory_id", factoryId)
-    .is("deleted_at", null)
-    .maybeSingle();
+  // 1. Fetch current entry E2 (or reuse provided existingEntry if valid)
+  let e2 = existingEntry;
+  if (!e2 || !e2.vehicle_number || !e2.created_at || e2.status !== EntryStatus.APPROVED) {
+    const { data, error: fetchErr } = await client
+      .from("entries")
+      .select(
+        "id, status, vehicle_number, created_at, created_by, center_id, creator:users!created_by(role)",
+      )
+      .eq("id", entryId)
+      .eq("factory_id", factoryId)
+      .is("deleted_at", null)
+      .maybeSingle();
 
-  if (fetchErr || !e2 || e2.status !== EntryStatus.APPROVED) {
+    if (fetchErr || !data || data.status !== EntryStatus.APPROVED) {
+      return null;
+    }
+    e2 = data;
+  }
+
+  const creatorRole =
+    (e2.creator as { role?: string } | undefined)?.role ||
+    (e2.created_by_user as { role?: string } | undefined)?.role;
+  const isDevice =
+    creatorRole === Role.HARDWARE || (e2 as { device_id?: number | null }).device_id != null;
+
+  // 2. Fetch factory configuration and check if E2 is already linked in parallel
+  const [factoryRes, w2Check] = await Promise.all([
+    client
+      .from("factories")
+      .select("check_center_on_merge")
+      .eq("id", factoryId)
+      .is("deleted_at", null)
+      .maybeSingle(),
+    client
+      .from("weighments")
+      .select("id")
+      .or(`in_entry_id.eq.${entryId},out_entry_id.eq.${entryId}`)
+      .is("deleted_at", null)
+      .maybeSingle(),
+  ]);
+
+  if (w2Check.data) {
     return null;
   }
 
-  const isDevice =
-    (e2.creator as { role?: string } | undefined)?.role === Role.HARDWARE ||
-    (e2 as { device_id?: number | null }).device_id != null;
+  const factory = factoryRes.data;
 
-  // 2. Fetch factory configuration to check if center scoping is enabled
-  const { data: factory } = await client
-    .from("factories")
-    .select("check_center_on_merge")
-    .eq("id", factoryId)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  // 3. Check if E2 is already linked in weighments AND query E1 candidates in parallel
+  // 3. Query E1 candidates
   let e1Query = client
     .from("entries")
     .select(
@@ -61,19 +82,7 @@ export async function tryMergeEntries(
     e1Query = e1Query.eq("center_id", e2.center_id);
   }
 
-  const [w2Check, e1Res] = await Promise.all([
-    client
-      .from("weighments")
-      .select("id")
-      .or(`in_entry_id.eq.${entryId},out_entry_id.eq.${entryId}`)
-      .is("deleted_at", null)
-      .maybeSingle(),
-    e1Query.order("created_at", { ascending: false }).limit(1),
-  ]);
-
-  if (w2Check.data) {
-    return null;
-  }
+  const e1Res = await e1Query.order("created_at", { ascending: false }).limit(1);
 
   // 4. Try backward merge: look for an earlier unmerged entry (E1 In, E2 Out)
   if (!e1Res.error && e1Res.data && e1Res.data.length > 0) {

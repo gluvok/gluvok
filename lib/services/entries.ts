@@ -136,7 +136,15 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
 
   // 5. Validate sequential approval if approved
   if (finalStatus === EntryStatus.APPROVED) {
-    await validateSequentialApproval(client, Number(centerId), vehicleNumber, nowStr, 0, isDevice);
+    await validateSequentialApproval(
+      client,
+      Number(centerId),
+      vehicleNumber,
+      nowStr,
+      0,
+      isDevice,
+      factoryId,
+    );
   }
 
   // 6. Insert new entry into database
@@ -167,7 +175,10 @@ export async function createEntry(client: typeof supabase, params: CreateEntryPa
 
   // 7. Attempt automatic weighment merging if approved
   if (newEntry.status === EntryStatus.APPROVED) {
-    await tryMergeEntries(client, factoryId, newEntry.id);
+    await tryMergeEntries(client, factoryId, newEntry.id, {
+      ...newEntry,
+      creator: { role: creator?.role },
+    });
   }
 
   return {

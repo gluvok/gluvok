@@ -14,6 +14,7 @@ export async function validateSequentialApproval(
   targetCreatedAt: string,
   targetEntryId: number,
   entrySource?: EntrySource | boolean | number | null,
+  factoryId?: number,
 ): Promise<void> {
   let query = client
     .from("entries")
@@ -24,6 +25,10 @@ export async function validateSequentialApproval(
     .lt("created_at", targetCreatedAt)
     .neq("id", targetEntryId)
     .is("deleted_at", null);
+
+  if (factoryId !== undefined && factoryId !== null) {
+    query = query.eq("factory_id", factoryId);
+  }
 
   if (entrySource !== undefined && entrySource !== null) {
     const isDevice =

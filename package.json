@@ -31,6 +31,7 @@
     "date-fns": "^4.4.0",
     "embla-carousel-react": "^8.6.0",
     "http-status-codes": "^2.3.0",
+    "lru-cache": "^11.5.3",
     "lucide-react": "^1.48.0",
     "next": "16.3.6",
     "p-retry": "^8.0.1",

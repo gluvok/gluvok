@@ -23,6 +23,9 @@ DROP TYPE IF EXISTS field_requirement_mode CASCADE;
 DROP TYPE IF EXISTS unit_enum CASCADE;
 DROP TYPE IF EXISTS role_enum CASCADE;
 
+-- EXTENSIONS
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 -- 1. CREATE ENUM TYPES (IF NOT EXISTS)
 DO $$
 BEGIN
@@ -198,6 +201,14 @@ CREATE INDEX IF NOT EXISTS idx_entries_customer
 ON entries (factory_id, customer_id)
 WHERE deleted_at IS NULL;
 
+CREATE INDEX IF NOT EXISTS idx_entries_fifo_approval
+ON entries (factory_id, center_id, vehicle_number, status, created_at ASC)
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_entries_vehicle_trgm
+ON entries USING gin (vehicle_number gin_trgm_ops)
+WHERE deleted_at IS NULL;
+
 -- WEIGHMENTS TABLE (Merged double-entry pair)
 CREATE TABLE IF NOT EXISTS weighments (
     id SERIAL PRIMARY KEY,
@@ -250,6 +261,14 @@ CREATE INDEX IF NOT EXISTS idx_tickets_weighment
 ON tickets (weighment_id) 
 WHERE deleted_at IS NULL;
 
+CREATE INDEX IF NOT EXISTS idx_tickets_created_desc
+ON tickets (created_at DESC)
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_tickets_search_trgm
+ON tickets USING gin (concern gin_trgm_ops, reply gin_trgm_ops)
+WHERE deleted_at IS NULL;
+
 -- INDEXES FOR RATES, CUSTOMERS, CENTERS
 CREATE INDEX IF NOT EXISTS idx_rates_factory_commodity
 ON rates (factory_id, commodity_id)
@@ -261,6 +280,14 @@ WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_customers_user
 ON customers (user_id)
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_customers_search_trgm
+ON customers USING gin (name gin_trgm_ops, father_name gin_trgm_ops)
+WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_users_search_trgm
+ON users USING gin (name gin_trgm_ops, username gin_trgm_ops)
 WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_centers_factory

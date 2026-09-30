@@ -240,8 +240,14 @@ describe("Entries Service", () => {
         expect.any(String),
         0,
         true,
+        10,
       );
-      expect(mockTryMerge).toHaveBeenCalledWith(mockClient, 10, 101);
+      expect(mockTryMerge).toHaveBeenCalledWith(
+        mockClient,
+        10,
+        101,
+        expect.objectContaining({ id: 101 }),
+      );
     });
 
     it("creates a device entry with NO_PLATE_DETECTED without querying centers table", async () => {

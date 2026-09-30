@@ -22,15 +22,23 @@ export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
   const { id } = await ctx.params;
   const entryId = Number(id);
 
-  const { data, error } = await client
-    .from("entries")
-    .select(
-      `*, centers(name), created_by_user:users!created_by(name, role), approved_by_user:users!approved_by(name, role), customers(name, user_id)`,
-    )
-    .eq("id", entryId)
-    .eq("factory_id", user.factory_id!)
-    .is("deleted_at", null)
-    .maybeSingle();
+  const [{ data, error }, { data: linkedWeighment }] = await Promise.all([
+    client
+      .from("entries")
+      .select(
+        `*, centers(name), created_by_user:users!created_by(name, role), approved_by_user:users!approved_by(name, role), customers(name, user_id)`,
+      )
+      .eq("id", entryId)
+      .eq("factory_id", user.factory_id!)
+      .is("deleted_at", null)
+      .maybeSingle(),
+    client
+      .from("weighments")
+      .select("id, in_entry_id, out_entry_id")
+      .or(`in_entry_id.eq.${entryId},out_entry_id.eq.${entryId}`)
+      .is("deleted_at", null)
+      .maybeSingle(),
+  ]);
 
   if (error || !data) {
     return apiError(ApiErrorMessage.ENTRY_NOT_FOUND, StatusCodes.NOT_FOUND);
@@ -57,13 +65,6 @@ export const GET = withAuth<{ id: string }>(async (_req, user, client, ctx) => {
   const approvedByUser = data.approved_by_user as Record<string, unknown> | undefined;
   const customers = data.customers as Record<string, unknown> | undefined;
   const isHardware = createdByUser?.role === Role.HARDWARE;
-
-  const { data: linkedWeighment } = await client
-    .from("weighments")
-    .select("id, in_entry_id, out_entry_id")
-    .or(`in_entry_id.eq.${entryId},out_entry_id.eq.${entryId}`)
-    .is("deleted_at", null)
-    .maybeSingle();
 
   const weighmentInfo = linkedWeighment
     ? {
@@ -225,6 +226,8 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
         finalVehicle,
         existing.created_at,
         entryId,
+        undefined,
+        user.factory_id!,
       );
     } catch (seqErr: unknown) {
       const msg =
@@ -272,7 +275,10 @@ export const PATCH = withAuth<{ id: string }>(async (req, user, client, ctx) => 
 
   // 7. Auto-merge trigger if transitioning to APPROVED
   if (isTransitioningToApproved) {
-    await tryMergeEntries(client, user.factory_id!, entryId);
+    await tryMergeEntries(client, user.factory_id!, entryId, {
+      ...updatedEntry,
+      creator: existing.created_by_user,
+    });
   }
   if (unlinkedPartnerId) {
     await tryMergeEntries(client, user.factory_id!, unlinkedPartnerId);

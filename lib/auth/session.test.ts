@@ -6,6 +6,7 @@ import {
   validateSession,
   deleteSession,
   deleteAllUserSessions,
+  clearSessionCache,
 } from "./session";
 import { SESSION_MAX_AGE_SECONDS } from "./cookies";
 import { Role } from "@/lib/constants/enums";
@@ -14,6 +15,7 @@ describe("lib/auth/session", () => {
   let mockClient: any;
 
   beforeEach(() => {
+    clearSessionCache();
     mockClient = {
       from: vi.fn(),
     };
@@ -318,6 +320,112 @@ describe("lib/auth/session", () => {
     it("ignores falsy or zero user_id", async () => {
       await deleteAllUserSessions(0, mockClient);
       expect(mockClient.from).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("sessionCache and instant invalidation", () => {
+    const mockSessionRow = {
+      id: 1,
+      token: "cache-token-1",
+      user_id: 88,
+      expires_at: new Date(Date.now() + 100000).toISOString(),
+      deleted_at: null,
+      users: {
+        id: 88,
+        username: "cached_user",
+        name: "Cached User",
+        role: "admin",
+        factory_id: 1,
+        deleted_at: null,
+        factories: { name: "Factory X" },
+      },
+    };
+
+    it("serves subsequent requests from memory without hitting the database", async () => {
+      mockClient.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            is: vi.fn().mockReturnValue({
+              gt: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: mockSessionRow,
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        }),
+      });
+
+      // First call - cache miss, hits database
+      const first = await validateSession("cache-token-1", mockClient);
+      expect(first?.username).toBe("cached_user");
+      expect(mockClient.from).toHaveBeenCalledTimes(1);
+
+      // Second call - cache hit, should NOT call mockClient.from again
+      const second = await validateSession("cache-token-1", mockClient);
+      expect(second?.username).toBe("cached_user");
+      expect(mockClient.from).toHaveBeenCalledTimes(1);
+    });
+
+    it("immediately evicts cached token on deleteSession (logout)", async () => {
+      mockClient.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            is: vi.fn().mockReturnValue({
+              gt: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: mockSessionRow,
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
+      });
+
+      await validateSession("cache-token-1", mockClient);
+      expect(mockClient.from).toHaveBeenCalledTimes(1);
+
+      // Logout
+      await deleteSession("cache-token-1", mockClient);
+
+      // Next validateSession should miss cache and attempt database query
+      await validateSession("cache-token-1", mockClient);
+      expect(mockClient.from).toHaveBeenCalledTimes(3);
+    });
+
+    it("immediately evicts all user tokens on deleteAllUserSessions (password change)", async () => {
+      mockClient.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            is: vi.fn().mockReturnValue({
+              gt: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: mockSessionRow,
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
+      });
+
+      await validateSession("cache-token-1", mockClient);
+      expect(mockClient.from).toHaveBeenCalledTimes(1);
+
+      // Admin changes password -> deleteAllUserSessions(88)
+      await deleteAllUserSessions(88, mockClient);
+
+      // Next request must miss cache and hit database
+      await validateSession("cache-token-1", mockClient);
+      expect(mockClient.from).toHaveBeenCalledTimes(3);
     });
   });
 });

@@ -9,8 +9,54 @@ import { AuthUserPayload } from "@/types";
 import { Role } from "@/lib/constants/enums";
 
 import { SESSION_MAX_AGE_SECONDS } from "./cookies";
+import { LRUCache } from "lru-cache";
 
 export type { AuthUserPayload };
+
+/**
+ * Reverse index mapping userId -> Set of active cached tokens for instant multi-token invalidation.
+ */
+export const userTokensMap = new Map<number, Set<string>>();
+
+/**
+ * In-memory LRU cache for valid sessions with a 30-second TTL.
+ * Eliminates redundant database hits on rapid consecutive requests.
+ */
+export const sessionCache = new LRUCache<string, AuthUserPayload>({
+  max: 5000,
+  ttl: 30 * 1000, // 30 seconds
+  ttlAutopurge: true,
+  dispose: (user, token) => {
+    const userId = Number(user.sub);
+    if (!isNaN(userId)) {
+      userTokensMap.get(userId)?.delete(token);
+    }
+  },
+});
+
+export function clearSessionCache(): void {
+  sessionCache.clear();
+  userTokensMap.clear();
+}
+
+export function invalidateSessionInCache(token: string): void {
+  const cached = sessionCache.get(token);
+  if (cached) {
+    const userId = Number(cached.sub);
+    userTokensMap.get(userId)?.delete(token);
+  }
+  sessionCache.delete(token);
+}
+
+export function invalidateUserSessionsInCache(userId: number): void {
+  const tokens = userTokensMap.get(userId);
+  if (tokens) {
+    for (const token of tokens) {
+      sessionCache.delete(token);
+    }
+    userTokensMap.delete(userId);
+  }
+}
 
 /**
  * Generates a cryptographically secure 256-bit random session token string.
@@ -79,11 +125,24 @@ export async function refreshSessionExpiry(token: string, client = db): Promise<
 
 /**
  * Validates an incoming session token against active database sessions and returns the user payload.
+ * Checks the in-memory LRU cache first; misses fall back to the database.
  * Instantly returns null if the session is revoked, expired, or the user account is soft-deleted.
  */
-export async function validateSession(token: string, client = db): Promise<AuthUserPayload | null> {
+export async function validateSession(
+  token: string,
+  client = db,
+  skipCache = false,
+): Promise<AuthUserPayload | null> {
   if (!token || typeof token !== "string" || token.trim().length === 0) {
     return null;
+  }
+
+  // 1. Fast in-memory cache lookup
+  if (!skipCache) {
+    const cached = sessionCache.get(token);
+    if (cached) {
+      return cached;
+    }
   }
 
   try {
@@ -139,7 +198,7 @@ export async function validateSession(token: string, client = db): Promise<AuthU
 
     const factoryObj = Array.isArray(user.factories) ? user.factories[0] : user.factories;
 
-    return {
+    const payload: AuthUserPayload = {
       sub: String(user.id),
       username: user.username,
       name: user.name,
@@ -148,6 +207,17 @@ export async function validateSession(token: string, client = db): Promise<AuthU
       factory_name: factoryObj?.name,
       receipt_images_per_row: factoryObj?.receipt_images_per_row,
     };
+
+    // Store in LRU cache and update reverse user index
+    sessionCache.set(token, payload);
+    let userTokens = userTokensMap.get(user.id);
+    if (!userTokens) {
+      userTokens = new Set<string>();
+      userTokensMap.set(user.id, userTokens);
+    }
+    userTokens.add(token);
+
+    return payload;
   } catch {
     return null;
   }
@@ -155,18 +225,22 @@ export async function validateSession(token: string, client = db): Promise<AuthU
 
 /**
  * Soft-deletes a session by its token (used during logout).
+ * Immediately purges the token from the in-memory cache.
  */
 export async function deleteSession(token: string, client = db): Promise<void> {
   if (!token) return;
+  invalidateSessionInCache(token);
   const now = new Date().toISOString();
   await client.from("sessions").update({ deleted_at: now, updated_at: now }).eq("token", token);
 }
 
 /**
  * Soft-deletes all active sessions for a user (used on password change, user deactivation, or security reset).
+ * Immediately purges all tokens for the user from the in-memory cache.
  */
 export async function deleteAllUserSessions(userId: number, client = db): Promise<void> {
   if (!userId) return;
+  invalidateUserSessionsInCache(userId);
   const now = new Date().toISOString();
   await client.from("sessions").update({ deleted_at: now, updated_at: now }).eq("user_id", userId);
 }

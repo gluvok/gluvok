@@ -51,6 +51,14 @@ export const GET = withAuth(async (req, user, client) => {
   }
 
   const sourceParam = req.nextUrl.searchParams.get("source");
+  if (sourceParam && sourceParam !== "all") {
+    if (sourceParam === EntrySource.DEVICE) {
+      query = query.eq("created_by_user.role", Role.HARDWARE);
+    } else if (sourceParam === EntrySource.MANUAL) {
+      query = query.neq("created_by_user.role", Role.HARDWARE);
+    }
+  }
+
   const filterParams: Record<string, string | null> = {
     status: req.nextUrl.searchParams.get("status"),
     center_id: req.nextUrl.searchParams.get("center_id"),
@@ -91,7 +99,7 @@ export const GET = withAuth(async (req, user, client) => {
     );
   }
 
-  let formattedData = (data || []).map((row: Record<string, unknown>) => {
+  const formattedData = (data || []).map((row: Record<string, unknown>) => {
     const centers = row.centers as Record<string, unknown> | undefined;
     const createdByUser = (row.created_by_user || row.users) as Record<string, unknown> | undefined;
     const approvedByUser = row.approved_by_user as Record<string, unknown> | undefined;
@@ -110,10 +118,6 @@ export const GET = withAuth(async (req, user, client) => {
       customer_name: customers?.name || "",
     };
   });
-
-  if (sourceParam && sourceParam !== "all") {
-    formattedData = formattedData.filter((item) => item.source === sourceParam);
-  }
 
   const total = count ?? formattedData.length;
   return NextResponse.json({

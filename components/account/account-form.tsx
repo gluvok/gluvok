@@ -22,7 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -222,8 +222,6 @@ export function AccountForm() {
               </div>
             </FieldGroup>
           </div>
-
-    
         </CardContent>
         <CardFooter className="flex justify-end gap-3 mt-4">
           <Button

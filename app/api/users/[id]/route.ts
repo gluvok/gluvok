@@ -91,6 +91,7 @@ export const PATCH = withAuth(
         .select("id")
         .eq("username", newUsername)
         .neq("id", entityId)
+        .is("deleted_at", null)
         .maybeSingle();
 
       if (existingUserWithUsername) {

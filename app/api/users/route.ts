@@ -79,6 +79,7 @@ export const POST = withAuth(async (req, user, client) => {
     .from("users")
     .select("id")
     .eq("username", username)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (existingUser) return apiError(ApiErrorMessage.USERNAME_TAKEN, StatusCodes.BAD_REQUEST);

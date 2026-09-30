@@ -34,6 +34,11 @@ export const addUserSchema = z
 export const editUserSchema = z
   .object({
     name: z.string().min(1, "Name cannot be empty").optional(),
+    username: z
+      .string()
+      .min(3, "Username must be at least 3 characters")
+      .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain alphanumeric characters and underscores")
+      .optional(),
     role: manageableRoleSchema.optional(),
     password: z.string().optional(),
     confirmPassword: z.string().optional(),

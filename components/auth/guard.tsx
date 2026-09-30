@@ -76,7 +76,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     switch (true) {
       // 1. Unauthenticated users trying to access protected pages
       case !user && !isAuthPage && !isPublicPage: {
-        router.push(getNextRedirectUrl(AppRoutes.LOGIN, pathname));
+        window.location.href = getNextRedirectUrl(AppRoutes.LOGIN, pathname);
         break;
       }
 

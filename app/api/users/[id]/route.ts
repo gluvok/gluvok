@@ -66,7 +66,7 @@ export const PATCH = withAuth(
       return apiError(parsed.error.issues[0].message, StatusCodes.BAD_REQUEST);
     }
 
-    const { name, password, role } = parsed.data;
+    const { name, username, password, role } = parsed.data;
     if ((role as string) === Role.HARDWARE) {
       return apiError("Cannot assign hardware role via web API", StatusCodes.FORBIDDEN);
     }
@@ -83,11 +83,18 @@ export const PATCH = withAuth(
     if (validRole) {
       updates["role"] = validRole;
     }
+    const newUsername = username && typeof username === "string" ? username.trim() : null;
+    const isUsernameUpdated = Boolean(newUsername && newUsername !== existing.username);
+    if (isUsernameUpdated) {
+      updates["username"] = newUsername;
+    }
     const isPasswordUpdated = Boolean(
       password && typeof password === "string" && password.trim().length > 0,
     );
     if (isPasswordUpdated) {
       updates.password_hash = await hashPassword(password!.trim());
+    }
+    if (isPasswordUpdated || isUsernameUpdated) {
       await deleteAllUserSessions(entityId, client);
     }
 

@@ -621,8 +621,10 @@ $$;
 CREATE OR REPLACE FUNCTION trigger_invalidate_sessions_on_user_update()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Soft-delete active sessions when password changes OR user is soft deleted / deactivated
-    IF (NEW.password_hash <> OLD.password_hash) OR (NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL) THEN
+    -- Soft-delete active sessions when password changes, username changes, OR user is soft deleted / deactivated
+    IF (NEW.password_hash <> OLD.password_hash)
+       OR (NEW.username <> OLD.username)
+       OR (NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL) THEN
         UPDATE sessions
         SET deleted_at = NOW(), updated_at = NOW()
         WHERE user_id = NEW.id AND deleted_at IS NULL;
@@ -633,7 +635,7 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_invalidate_sessions_on_user_update ON users;
 CREATE TRIGGER trg_invalidate_sessions_on_user_update
-AFTER UPDATE OF password_hash, deleted_at ON users
+AFTER UPDATE OF password_hash, deleted_at, username ON users
 FOR EACH ROW
 EXECUTE FUNCTION trigger_invalidate_sessions_on_user_update();
 

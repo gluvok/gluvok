@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { PermissionKey, ProjectSlug, Role } from "@/lib/constants/enums";
+import { ApiErrorMessage } from "@/lib/constants/messages";
 
 const { mockHasPermission } = vi.hoisted(() => ({
   mockHasPermission: vi.fn(),
@@ -294,6 +295,51 @@ describe("User mutation guards", () => {
     expect(json.is_self_password_changed).toBe(true);
     const setCookie = response.headers.get("set-cookie") || "";
     expect(setCookie).toContain("Max-Age=0");
+  });
+
+  it("returns 400 Bad Request when updating username to an already existing username", async () => {
+    mockHasPermission.mockReturnValue(true);
+    const updateRequest = new Request("http://localhost/api/users/1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: "taken_username",
+      }),
+    });
+
+    const existingUser = {
+      id: 1,
+      username: "original_username",
+      name: "User 1",
+      role: Role.OPERATOR,
+      factory_id: 1,
+    };
+
+    let maybeSingleCalls = 0;
+    const mockDbWithDuplicate = {
+      from: vi.fn(() => {
+        const userChain: Record<string, unknown> = {};
+        userChain.select = vi.fn(() => userChain);
+        userChain.eq = vi.fn(() => userChain);
+        userChain.neq = vi.fn(() => userChain);
+        userChain.is = vi.fn(() => userChain);
+        userChain.maybeSingle = vi.fn().mockImplementation(() => {
+          maybeSingleCalls++;
+          if (maybeSingleCalls === 1) {
+            return Promise.resolve({ data: existingUser, error: null });
+          }
+          return Promise.resolve({ data: { id: 99 }, error: null });
+        });
+        return userChain;
+      }),
+    };
+
+    const patchHandler = PATCH as unknown as RawUserHandler;
+    const response = await patchHandler(updateRequest, sampleUser, mockDbWithDuplicate, context);
+
+    expect(response.status).toBe(400);
+    const json = await response.json();
+    expect(json.error).toBe(ApiErrorMessage.USERNAME_TAKEN);
   });
 
   it("purges all active user sessions when user is soft deleted", async () => {

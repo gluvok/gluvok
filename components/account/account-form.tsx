@@ -46,6 +46,19 @@ export function AccountForm() {
     },
   });
 
+  const watchedValues = form.watch();
+
+  const isUnchanged = React.useMemo(() => {
+    if (!user) return true;
+    const nameChanged = (watchedValues.name ?? "").trim() !== (user.name ?? "");
+    const usernameChanged = (watchedValues.username ?? "").trim() !== (user.username ?? "");
+    const passwordChanged = Boolean(watchedValues.password && watchedValues.password.length > 0);
+    const confirmChanged = Boolean(
+      watchedValues.confirmPassword && watchedValues.confirmPassword.length > 0,
+    );
+    return !nameChanged && !usernameChanged && !passwordChanged && !confirmChanged;
+  }, [user, watchedValues]);
+
   // Sync default values when user loads
   React.useEffect(() => {
     if (user) {
@@ -117,6 +130,9 @@ export function AccountForm() {
         message = err.message;
       }
       toast.error(message);
+      if (message.toLowerCase().includes("username")) {
+        form.setError("username", { type: "manual", message });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -223,11 +239,16 @@ export function AccountForm() {
             </FieldGroup>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-end gap-3 mt-4">
+        <CardFooter className="flex items-center justify-between gap-3 mt-4">
+          {isUnchanged ? (
+            <span className="text-xs text-muted-foreground italic">No changes to save</span>
+          ) : (
+            <span />
+          )}
           <Button
             type="submit"
             id="account-submit-btn"
-            disabled={submitting}
+            disabled={submitting || isUnchanged}
             className="cursor-pointer"
           >
             {submitting ? (

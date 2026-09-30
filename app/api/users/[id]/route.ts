@@ -85,7 +85,18 @@ export const PATCH = withAuth(
     }
     const newUsername = username && typeof username === "string" ? username.trim() : null;
     const isUsernameUpdated = Boolean(newUsername && newUsername !== existing.username);
-    if (isUsernameUpdated) {
+    if (isUsernameUpdated && newUsername) {
+      const { data: existingUserWithUsername } = await client
+        .from("users")
+        .select("id")
+        .eq("username", newUsername)
+        .neq("id", entityId)
+        .maybeSingle();
+
+      if (existingUserWithUsername) {
+        return apiError(ApiErrorMessage.USERNAME_TAKEN, StatusCodes.BAD_REQUEST);
+      }
+
       updates["username"] = newUsername;
     }
     const isPasswordUpdated = Boolean(
@@ -107,6 +118,9 @@ export const PATCH = withAuth(
       .single();
 
     if (updateErr || !updated) {
+      if ((updateErr as { code?: string })?.code === "23505") {
+        return apiError(ApiErrorMessage.USERNAME_TAKEN, StatusCodes.BAD_REQUEST);
+      }
       return apiError(ApiErrorMessage.FAILED_TO_UPDATE_USER, StatusCodes.INTERNAL_SERVER_ERROR);
     }
 

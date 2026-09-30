@@ -6,6 +6,7 @@
 export const AppRoutes = {
   HOME: "/",
   LOGIN: "/login",
+  ACCOUNT: "/account",
   SERVICES: "/services",
   TICKETS: "/tickets",
   SUPPORT: "/support",

@@ -109,7 +109,7 @@ export const RBAC_MATRIX: RbacMatrix = {
     [ProjectSlug.USERS]: {
       read: true,
       write: true,
-      delete: true,
+      delete: false,
       create: true,
       show: true,
       filter: true,
@@ -185,9 +185,9 @@ export const RBAC_MATRIX: RbacMatrix = {
     [ProjectSlug.USERS]: {
       read: true,
       write: true,
-      delete: true,
+      delete: false,
       create: false,
-      show: false,
+      show: true,
       filter: true,
       deletableRoles: [Role.BASE],
     },
@@ -209,10 +209,10 @@ export const RBAC_MATRIX: RbacMatrix = {
     },
     [ProjectSlug.RATES]: {
       read: true,
-      write: false,
+      write: true,
       delete: false,
-      create: false,
-      show: false,
+      create: true,
+      show: true,
       filter: true,
     },
     [ProjectSlug.CUSTOMERS]: {
@@ -240,12 +240,13 @@ export const RBAC_MATRIX: RbacMatrix = {
       filter: true,
     },
     [ProjectSlug.SETTINGS]: {
-      read: false,
+      read: true,
       write: false,
       delete: false,
       create: false,
-      show: false,
+      show: true,
       filter: false,
+      editableFields: [],
     },
     [ProjectSlug.TICKETS]: {
       read: true,

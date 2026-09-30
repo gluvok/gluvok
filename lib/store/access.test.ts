@@ -38,12 +38,12 @@ describe("RBAC Access Controls", () => {
       });
     });
 
-    it("should grant Manager correct permissions (can write/create/delete users and centers)", () => {
+    it("should grant Manager correct permissions (can write/create users without delete, and write centers)", () => {
       const userPerms = getPermissions(Role.MANAGER, ProjectSlug.USERS);
       expect(userPerms).toMatchObject({
         read: true,
         write: true,
-        delete: true,
+        delete: false,
         create: true,
         show: true,
         filter: true,
@@ -60,7 +60,7 @@ describe("RBAC Access Controls", () => {
       });
     });
 
-    it("should grant Operator correct permissions (write centers, write customers, read-only rates)", () => {
+    it("should grant Operator correct permissions (write centers, write customers, write/create rates)", () => {
       const centerPerms = getPermissions(Role.OPERATOR, ProjectSlug.CENTERS);
       expect(centerPerms).toMatchObject({
         read: true,
@@ -94,10 +94,10 @@ describe("RBAC Access Controls", () => {
       const ratePerms = getPermissions(Role.OPERATOR, ProjectSlug.RATES);
       expect(ratePerms).toMatchObject({
         read: true,
-        write: false,
+        write: true,
         delete: false,
-        create: false,
-        show: false,
+        create: true,
+        show: true,
         filter: true,
       });
     });
@@ -119,7 +119,7 @@ describe("RBAC Access Controls", () => {
     it("should use show permission for page access", () => {
       expect(hasPageAccess(Role.OPERATOR, ProjectSlug.WEIGHMENTS)).toBe(true);
       expect(hasPageAccess(Role.OPERATOR, ProjectSlug.CENTERS)).toBe(true);
-      expect(hasPageAccess(Role.OPERATOR, ProjectSlug.RATES)).toBe(false);
+      expect(hasPageAccess(Role.OPERATOR, ProjectSlug.RATES)).toBe(true);
       expect(hasPageAccess(Role.BASE, ProjectSlug.WEIGHMENTS)).toBe(true);
     });
   });
@@ -215,10 +215,10 @@ describe("RBAC Access Controls", () => {
       }
     });
 
-    it("shows settings page to Admin and Manager but hides from others", () => {
+    it("shows settings page to Admin, Manager, and Operator but hides from Base", () => {
       expect(hasPageAccess(Role.ADMIN, ProjectSlug.SETTINGS)).toBe(true);
       expect(hasPageAccess(Role.MANAGER, ProjectSlug.SETTINGS)).toBe(true);
-      expect(hasPageAccess(Role.OPERATOR, ProjectSlug.SETTINGS)).toBe(false);
+      expect(hasPageAccess(Role.OPERATOR, ProjectSlug.SETTINGS)).toBe(true);
       expect(hasPageAccess(Role.BASE, ProjectSlug.SETTINGS)).toBe(false);
     });
   });

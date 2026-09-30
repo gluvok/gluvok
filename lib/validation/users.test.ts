@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Role } from "@/lib/constants/enums";
-import { addUserSchema, editUserSchema } from "./users";
+import { addUserSchema, editUserSchema, accountSchema } from "./users";
 
 describe("users validation", () => {
   describe("addUserSchema", () => {
@@ -115,6 +115,88 @@ describe("users validation", () => {
         editUserSchema.parse({
           password: "newpassword123",
           confirmPassword: "wrongpassword",
+        }),
+      ).toThrow("Passwords do not match");
+    });
+  });
+
+  describe("accountSchema", () => {
+    it("parses valid account input without password", () => {
+      const result = accountSchema.parse({
+        name: "Test User",
+        username: "test_user_1",
+      });
+
+      expect(result.name).toBe("Test User");
+      expect(result.username).toBe("test_user_1");
+      expect(result.password).toBeUndefined();
+    });
+
+    it("parses valid account input with matching password", () => {
+      const result = accountSchema.parse({
+        name: "Test User",
+        username: "test_user_1",
+        password: "newpassword123",
+        confirmPassword: "newpassword123",
+      });
+
+      expect(result.password).toBe("newpassword123");
+    });
+
+    it("allows empty string password", () => {
+      const result = accountSchema.parse({
+        name: "Test User",
+        username: "test_user_1",
+        password: "",
+        confirmPassword: "",
+      });
+
+      expect(result.password).toBe("");
+    });
+
+    it("rejects missing or empty name", () => {
+      expect(() =>
+        accountSchema.parse({
+          name: "",
+          username: "test_user",
+        }),
+      ).toThrow("Name is required");
+    });
+
+    it("rejects username with invalid characters or under 3 characters", () => {
+      expect(() =>
+        accountSchema.parse({
+          name: "Test User",
+          username: "ab",
+        }),
+      ).toThrow("Username must be at least 3 characters");
+
+      expect(() =>
+        accountSchema.parse({
+          name: "Test User",
+          username: "test-user!",
+        }),
+      ).toThrow("Username can only contain alphanumeric characters and underscores");
+    });
+
+    it("rejects password under 6 characters", () => {
+      expect(() =>
+        accountSchema.parse({
+          name: "Test User",
+          username: "test_user",
+          password: "123",
+          confirmPassword: "123",
+        }),
+      ).toThrow("Password must be at least 6 characters");
+    });
+
+    it("rejects mismatched passwords", () => {
+      expect(() =>
+        accountSchema.parse({
+          name: "Test User",
+          username: "test_user",
+          password: "newpassword123",
+          confirmPassword: "differentpassword",
         }),
       ).toThrow("Passwords do not match");
     });

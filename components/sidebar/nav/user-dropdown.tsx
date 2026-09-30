@@ -23,12 +23,6 @@ interface NavUserDropdownProps {
   isMobile: boolean;
 }
 
-const MENU_ITEMS = [
-  { id: "user-menu-account", label: "Account", icon: BadgeCheckIcon },
-  { id: "user-menu-billing", label: "Billing", icon: CreditCardIcon },
-  { id: "user-menu-notifications", label: "Notifications", icon: BellIcon },
-];
-
 /**
  * NavUserDropdown Component
  * Populates dropdown options for the user trigger in the sidebar footer.
@@ -56,14 +50,19 @@ export function NavUserDropdown({ user, isMobile }: NavUserDropdownProps) {
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        {MENU_ITEMS.map((item) => {
-          const Icon = item.icon;
-          return (
-            <DropdownMenuItem key={item.id} id={item.id}>
-              <Icon className="mr-2 h-4 w-4" /> {item.label}
-            </DropdownMenuItem>
-          );
-        })}
+        <DropdownMenuItem
+          id="user-menu-account"
+          className="cursor-pointer"
+          onClick={() => router.push(AppRoutes.ACCOUNT)}
+        >
+          <BadgeCheckIcon className="mr-2 h-4 w-4" /> Account
+        </DropdownMenuItem>
+        <DropdownMenuItem id="user-menu-billing">
+          <CreditCardIcon className="mr-2 h-4 w-4" /> Billing
+        </DropdownMenuItem>
+        <DropdownMenuItem id="user-menu-notifications">
+          <BellIcon className="mr-2 h-4 w-4" /> Notifications
+        </DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
       <DropdownMenuItem

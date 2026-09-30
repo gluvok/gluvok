@@ -152,7 +152,25 @@ Configurable via the **Settings** page (admin-only):
 
 ---
 
-## 7. Verification Gates
+## 7. Role-Based Access Control (RBAC) & Account Management
+
+- **Admin**: Full administrative management (manages Operator & Base users, soft-deletes users, updates factory settings).
+- **Manager**: Operational management (views Users, Rates, Settings, Tickets, Customers, Entries, Weighments; can create/edit Operator & Base users and customers; user deletion disabled).
+- **Operator**: Operational execution (shares Manager view access across Users, Rates, Settings, Tickets, Customers, Entries, Weighments; can edit Base users and self; user creation/deletion disabled; settings read-only).
+- **Base**: Field worker (views Entries and Weighments; manages own credentials via `/account`).
+- **Hardware**: Edge device integration (API-only for automated entry creation).
+
+### Self-Service Account Management (`/account`)
+
+All authenticated users can access the `/account` portal from the sidebar user menu to:
+
+- Update their display name and unique username.
+- Update their password with instant multi-session invalidation.
+- View their current assigned system role and factory affiliation.
+
+---
+
+## 8. Verification Gates
 
 ```bash
 pnpm run lint:fix && pnpm run fmt:check && pnpm run type-check && pnpm test && pnpm run build

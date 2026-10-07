@@ -52,13 +52,7 @@ export function NavUser({ user }: { user: UserProps }) {
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <SidebarMenuButton
-                size="lg"
-              />
-            }
-          >
+          <DropdownMenuTrigger render={<SidebarMenuButton size="lg" />}>
             <UserAvatarInfo user={user} />
             <HugeiconsIcon icon={Sorting05Icon} />
           </DropdownMenuTrigger>

@@ -7,6 +7,7 @@ import {
   deleteSession,
   deleteAllUserSessions,
   clearSessionCache,
+  invalidateFactorySessionsInCache,
 } from "./session";
 import { SESSION_MAX_AGE_SECONDS } from "./cookies";
 import { Role } from "@/lib/constants/enums";
@@ -426,6 +427,33 @@ describe("lib/auth/session", () => {
       // Next request must miss cache and hit database
       await validateSession("cache-token-1", mockClient);
       expect(mockClient.from).toHaveBeenCalledTimes(3);
+    });
+
+    it("immediately evicts all cached tokens for a factory on invalidateFactorySessionsInCache", async () => {
+      mockClient.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            is: vi.fn().mockReturnValue({
+              gt: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: mockSessionRow,
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        }),
+      });
+
+      await validateSession("cache-token-1", mockClient);
+      expect(mockClient.from).toHaveBeenCalledTimes(1);
+
+      // Admin updates factory 1 -> invalidateFactorySessionsInCache(1)
+      invalidateFactorySessionsInCache(1);
+
+      // Next request must miss cache and hit database
+      await validateSession("cache-token-1", mockClient);
+      expect(mockClient.from).toHaveBeenCalledTimes(2);
     });
   });
 });

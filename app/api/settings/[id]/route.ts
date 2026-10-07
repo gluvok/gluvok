@@ -9,6 +9,7 @@ import {
 import { ProjectSlug, PermissionKey, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
 import { editSettingsSchema } from "@/lib/validation";
+import { invalidateFactorySessionsInCache } from "@/lib/auth/session";
 
 export const PATCH = withAuth(
   withEntityScope(async (req, user, client, _ctx, { entityId, factoryId }) => {
@@ -52,6 +53,8 @@ export const PATCH = withAuth(
     if (error || !updated) {
       return apiError(ApiErrorMessage.FACTORY_SETTINGS_NOT_FOUND, StatusCodes.NOT_FOUND);
     }
+
+    invalidateFactorySessionsInCache(factoryId);
 
     return formatEntityResponse(updated);
   }),

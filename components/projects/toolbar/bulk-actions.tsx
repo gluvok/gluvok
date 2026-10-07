@@ -48,14 +48,7 @@ export function BulkActions<TData extends EntityRecord = EntityRecord>({
   const canDelete = permissions.delete;
 
   const handleDownloadPDF = async () => {
-    await downloadPDF(
-      table,
-      projectName,
-      companyName,
-      undefined,
-      projectSlug,
-      user?.receipt_images_per_row,
-    );
+    await downloadPDF(table, projectName, undefined, undefined, projectSlug);
   };
 
   const handleDownloadCSV = () => {

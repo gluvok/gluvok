@@ -19,12 +19,12 @@ export type { AuthUserPayload };
 export const userTokensMap = new Map<number, Set<string>>();
 
 /**
- * In-memory LRU cache for valid sessions with a 30-second TTL.
+ * In-memory LRU cache for valid sessions with a 5-minute TTL.
  * Eliminates redundant database hits on rapid consecutive requests.
  */
 export const sessionCache = new LRUCache<string, AuthUserPayload>({
   max: 5000,
-  ttl: 30 * 1000, // 30 seconds
+  ttl: 5 * 60 * 1000, // 5 minutes
   ttlAutopurge: true,
   dispose: (user, token) => {
     const userId = Number(user.sub);
@@ -55,6 +55,14 @@ export function invalidateUserSessionsInCache(userId: number): void {
       sessionCache.delete(token);
     }
     userTokensMap.delete(userId);
+  }
+}
+
+export function invalidateFactorySessionsInCache(factoryId: number): void {
+  for (const [token, payload] of sessionCache.entries()) {
+    if (payload.factory_id === factoryId) {
+      invalidateSessionInCache(token);
+    }
   }
 }
 
@@ -205,7 +213,7 @@ export async function validateSession(
       role: user.role as Role,
       factory_id: user.factory_id,
       factory_name: factoryObj?.name,
-      receipt_images_per_row: factoryObj?.receipt_images_per_row,
+      receipt_images_per_row: factoryObj ? (factoryObj.receipt_images_per_row ?? 3) : undefined,
     };
 
     // Store in LRU cache and update reverse user index

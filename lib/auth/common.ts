@@ -45,7 +45,7 @@ export function toUserSessionPayload(
     role: user.role,
     factory_id: user.factory_id,
     factory_name: factoryName || factoryObj?.name,
-    receipt_images_per_row: factoryObj?.receipt_images_per_row,
+    receipt_images_per_row: factoryObj ? (factoryObj.receipt_images_per_row ?? 3) : undefined,
   };
 }
 

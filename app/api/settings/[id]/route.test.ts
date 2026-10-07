@@ -1,7 +1,14 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { PermissionKey, ProjectSlug, Role } from "@/lib/constants/enums";
 
-const { mockHasPermission } = vi.hoisted(() => ({ mockHasPermission: vi.fn() }));
+const { mockHasPermission, mockInvalidateFactorySessionsInCache } = vi.hoisted(() => ({
+  mockHasPermission: vi.fn(),
+  mockInvalidateFactorySessionsInCache: vi.fn(),
+}));
+
+vi.mock("@/lib/auth/session", () => ({
+  invalidateFactorySessionsInCache: mockInvalidateFactorySessionsInCache,
+}));
 
 vi.mock("@/db/helpers", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/db/helpers")>();
@@ -151,5 +158,39 @@ describe("PATCH /api/settings/:id", () => {
     const json = await response.json();
     expect(json.data.name).toBe("Acme Sugars");
     expect(json.data.check_center_on_merge).toBe(true);
+    expect(mockInvalidateFactorySessionsInCache).toHaveBeenCalledWith(1);
+  });
+
+  it("allows Admin to update receipt_images_per_row and invalidates factory sessions in cache", async () => {
+    const updated = {
+      id: 1,
+      name: "Acme Sugars",
+      receipt_images_per_row: 2,
+      updated_at: new Date().toISOString(),
+    };
+    const mockQuery: Record<string, unknown> = {};
+    mockQuery.update = vi.fn(() => mockQuery);
+    mockQuery.eq = vi.fn(() => mockQuery);
+    mockQuery.is = vi.fn(() => mockQuery);
+    mockQuery.select = vi.fn(() => mockQuery);
+    mockQuery.maybeSingle = vi.fn().mockResolvedValue({ data: updated, error: null });
+
+    const mockDb = { from: vi.fn(() => mockQuery) };
+
+    const patchReq = new Request("http://localhost/api/settings/1", {
+      method: "PATCH",
+      body: JSON.stringify({ receipt_images_per_row: 2 }),
+    });
+    const response = await (PATCH as unknown as RawPatchHandler)(
+      patchReq,
+      adminUser,
+      mockDb,
+      context,
+      scope,
+    );
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.data.receipt_images_per_row).toBe(2);
+    expect(mockInvalidateFactorySessionsInCache).toHaveBeenCalledWith(1);
   });
 });

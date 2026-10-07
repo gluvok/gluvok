@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Manrope } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -27,7 +28,10 @@ export const metadata: Metadata = {
   description: "Gluvok Management Platform",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
+
   return (
     <html
       lang="en"
@@ -40,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       )}
     >
       <body className="min-h-full flex flex-col">
-        <SidebarProvider>
+        <SidebarProvider defaultOpen={defaultOpen}>
           <AppSidebar />
           <SidebarInset>
             <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">

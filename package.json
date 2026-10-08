@@ -11,6 +11,7 @@
     "fmt": "oxfmt",
     "type-check": "tsc --noEmit",
     "seed": "node scripts/seed.ts",
+    "seed:clean": "node scripts/test-seed.ts --clean",
     "seed:test": "node scripts/test-seed.ts",
     "seed:test:clean": "node scripts/test-seed.ts --clean"
   },

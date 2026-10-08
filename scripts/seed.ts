@@ -9,7 +9,7 @@
  */
 
 import argon2 from "argon2";
-import { supabase } from "@/lib/supabase.ts";
+import { supabase } from "./supabase.ts";
 
 interface ParsedArgs {
   factoryName?: string;

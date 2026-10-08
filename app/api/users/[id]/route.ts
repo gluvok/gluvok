@@ -11,7 +11,7 @@ import {
 import { editUserSchema } from "@/lib/validation";
 import { hashPassword } from "@/lib/auth/password";
 import { clearAuthCookies } from "@/lib/auth/cookies";
-import { deleteAllUserSessions } from "@/lib/auth/session";
+import { deleteAllUserSessions, invalidateUserSessionsInCache } from "@/lib/auth/session";
 import { canDeleteUserRole } from "@/lib/store";
 import { PermissionKey, ProjectSlug, Role } from "@/lib/constants/enums";
 import { ApiErrorMessage } from "@/lib/constants/messages";
@@ -106,8 +106,15 @@ export const PATCH = withAuth(
     if (isPasswordUpdated) {
       updates.password_hash = await hashPassword(password!.trim());
     }
+    const isRoleUpdated = Boolean(validRole && validRole !== existing.role);
+    const isNameUpdated = Boolean(
+      name && typeof name === "string" && name.trim() !== existing.name,
+    );
+
     if (isPasswordUpdated || isUsernameUpdated) {
       await deleteAllUserSessions(entityId, client);
+    } else if (isRoleUpdated || isNameUpdated) {
+      invalidateUserSessionsInCache(entityId);
     }
 
     const { data: updated, error: updateErr } = await client

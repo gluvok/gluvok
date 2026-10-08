@@ -19,12 +19,12 @@ export type { AuthUserPayload };
 export const userTokensMap = new Map<number, Set<string>>();
 
 /**
- * In-memory LRU cache for valid sessions with a 5-minute TTL.
+ * In-memory LRU cache for valid sessions with a 1-hour TTL.
  * Eliminates redundant database hits on rapid consecutive requests.
  */
 export const sessionCache = new LRUCache<string, AuthUserPayload>({
   max: 5000,
-  ttl: 5 * 60 * 1000, // 5 minutes
+  ttl: 60 * 60 * 1000, // 1 hour
   ttlAutopurge: true,
   dispose: (user, token) => {
     const userId = Number(user.sub);

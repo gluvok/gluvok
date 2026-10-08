@@ -410,4 +410,53 @@ describe("User mutation guards", () => {
     const json = await response.json();
     expect(json.error).toContain("Invalid role selected");
   });
+
+  it("successfully updates user role and updates in database", async () => {
+    mockHasPermission.mockReturnValue(true);
+    const existingUser = {
+      id: 1,
+      name: "User 1",
+      username: "user1",
+      role: Role.OPERATOR,
+      factory_id: 1,
+    };
+    const updatedUser = {
+      ...existingUser,
+      role: Role.MANAGER,
+    };
+
+    const mockDbWithRoleChange = {
+      from: vi.fn(() => {
+        const userChain: Record<string, unknown> = {};
+        userChain.select = vi.fn(() => userChain);
+        userChain.eq = vi.fn(() => userChain);
+        userChain.is = vi.fn(() => userChain);
+        userChain.maybeSingle = vi.fn().mockResolvedValue({ data: existingUser, error: null });
+        userChain.update = vi.fn(() => userChain);
+        userChain.single = vi.fn().mockResolvedValue({ data: updatedUser, error: null });
+        return userChain;
+      }),
+    };
+
+    const updateRequest = new Request("http://localhost/api/users/1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        role: "manager",
+      }),
+    });
+
+    const patchHandler = PATCH as unknown as RawUserHandler;
+    const adminActor = {
+      sub: "99",
+      username: "admin",
+      role: Role.ADMIN,
+      factory_id: 1,
+    };
+    const response = await patchHandler(updateRequest, adminActor, mockDbWithRoleChange, context);
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.data.role).toBe(Role.MANAGER);
+  });
 });

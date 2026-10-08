@@ -96,7 +96,7 @@ For any JavaScript / TypeScript / Node modifications:
 **The mandatory commands that must always pass:**
 
 - `pnpm run lint` (0 errors, 0 warnings)
-- `pnpm run fmt:check` (0 formatting issues)
+- `pnpm run fmt` (0 formatting issues)
 - `pnpm run type-check` (0 errors, 0 warnings)
 - `pnpm test` (all tests pass)
 - `pnpm run build` (clean exit 0)

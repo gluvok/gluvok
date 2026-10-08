@@ -54,13 +54,13 @@ pnpm run seed:clean
 - **Manager**: `manager1` / `manager123`
 - **Operator**: `operator1` / `operator123`
 - **Customer (Base)**: `customer1` / `user123`
-- **Hardware (Edge Scale)**: `pi1` / `pi123`
+- **Hardware (Edge Scale)**: `pi1` / `hardware123`
 
 **Factory 2**:
 
 - **Admin**: `admin2` / `admin123`
 - **Operator**: `operator2` / `operator123`
-- **Hardware (Edge Scale)**: `pi2` / `pi123`
+- **Hardware (Edge Scale)**: `pi2` / `hardware123`
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

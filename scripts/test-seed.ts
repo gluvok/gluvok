@@ -130,12 +130,12 @@ async function main() {
   // 2. USERS (Admin, Manager, Operator, Base, Hardware)
   console.log("\n👥 [2/8] Seeding Users across all personnel roles...");
   console.log("  🔒 Hashing passwords with Argon2id...");
-  const [adminHash, managerHash, operatorHash, userHash, piHash] = await Promise.all([
+  const [adminHash, managerHash, operatorHash, userHash, hardwareHash] = await Promise.all([
     argon2.hash("admin123"),
     argon2.hash("manager123"),
     argon2.hash("operator123"),
     argon2.hash("user123"),
-    argon2.hash("pi123"),
+    argon2.hash("hardware123"),
   ]);
 
   const userConfigs: Array<{
@@ -177,7 +177,7 @@ async function main() {
       username: "pi1",
       name: "Hardware Scale Factory 1",
       role: "hardware",
-      passwordHash: piHash,
+      passwordHash: hardwareHash,
       factoryId: primaryFactoryId,
     },
     {
@@ -198,7 +198,7 @@ async function main() {
       username: "pi2",
       name: "Hardware Scale Factory 2",
       role: "hardware",
-      passwordHash: piHash,
+      passwordHash: hardwareHash,
       factoryId: secondaryFactoryId,
     },
   ];
@@ -560,11 +560,11 @@ async function main() {
   console.log("  • Manager:   manager1 / manager123");
   console.log("  • Operator:  operator1 / operator123");
   console.log("  • Customer:  customer1 / user123");
-  console.log("  • Hardware:  pi1 / pi123");
+  console.log("  • Hardware:  pi1 / hardware123");
   console.log("  [Factory 2]");
   console.log("  • Admin:     admin2 / admin123");
   console.log("  • Operator:  operator2 / operator123");
-  console.log("  • Hardware:  pi2 / pi123");
+  console.log("  • Hardware:  pi2 / hardware123");
   console.log("=================================================");
 }
 

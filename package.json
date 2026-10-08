@@ -10,8 +10,9 @@
     "lint": "oxlint --fix",
     "fmt": "oxfmt",
     "type-check": "tsc --noEmit",
-    "seed": "node --experimental-strip-types scripts/test-seed.ts",
-    "seed:clean": "node --experimental-strip-types scripts/test-seed.ts --clean"
+    "seed": "node scripts/seed.ts",
+    "seed:test": "node scripts/test-seed.ts",
+    "seed:test:clean": "node scripts/test-seed.ts --clean"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

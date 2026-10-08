@@ -39,11 +39,17 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 To seed the database with test data matching `schema.sql`:
 
 ```bash
-# Seed test data (idempotent / additive)
+# Onboard a new client (provisions a new Factory, auto-indexed Admin, Center, and 1:1 Hardware Pi)
 pnpm run seed
 
-# Clean reset and re-seed all tables & sequence counters
-pnpm run seed:clean
+# Onboard a client with options (custom factory name, multiple centers, etc.)
+pnpm run seed -- --factory "Acme Logistics" --centers 2
+
+# Seed full test demo fixtures (idempotent / additive)
+pnpm run seed:test
+
+# Clean reset and re-seed all tables & sequence counters with test fixtures
+pnpm run seed:test:clean
 ```
 
 ### Seeded Test Credentials

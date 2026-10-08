@@ -6,33 +6,8 @@
  * matching schema.sql.
  */
 
-import { createClient } from "@supabase/supabase-js";
 import argon2 from "argon2";
-
-// Load environment variables from .env.local if not already populated
-if (process.loadEnvFile) {
-  try {
-    process.loadEnvFile(".env.local");
-  } catch {
-    try {
-      process.loadEnvFile(".env");
-    } catch {
-      // Ignore if env files are missing
-    }
-  }
-}
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error(
-    "Error: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables are required.",
-  );
-  process.exit(1);
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from "../lib/supabase.ts";
 
 type Role = "admin" | "manager" | "operator" | "base" | "hardware";
 type EntryStatus = "pending" | "approved" | "rejected";
@@ -89,7 +64,7 @@ async function main() {
 
   console.log("=================================================");
   console.log("🚀 Starting Database Seeding");
-  console.log(`📡 Supabase Endpoint: ${supabaseUrl}`);
+  console.log(`📡 Supabase Endpoint: ${process.env.SUPABASE_URL}`);
   console.log(`🧹 Clean Mode: ${shouldClean ? "ENABLED" : "DISABLED"}`);
   console.log("=================================================");
 

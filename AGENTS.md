@@ -25,6 +25,7 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 Before implementing:
 
 - State your assumptions explicitly. If uncertain, ask.
+- Always read `schema.sql` before writing any code to understand the existing database structure, types, and constraints.
 - If multiple interpretations exist, present them - don't pick silently.
 - If a simpler approach exists, say so. Push back when warranted.
 - If something is unclear, stop. Name what's confusing. Ask.
@@ -94,7 +95,7 @@ For any JavaScript / TypeScript / Node modifications:
 
 **The mandatory commands that must always pass:**
 
-- `pnpm run lint:fix` (0 errors, 0 warnings)
+- `pnpm run lint` (0 errors, 0 warnings)
 - `pnpm run fmt:check` (0 formatting issues)
 - `pnpm run type-check` (0 errors, 0 warnings)
 - `pnpm test` (all tests pass)
@@ -106,6 +107,13 @@ For any JavaScript / TypeScript / Node modifications:
 
 - Explicitly update `README.md` whenever adding, modifying, or removing features, API endpoints, environment variables, dependencies, or workflows.
 - Ensure all setup instructions, configuration options, and usage examples remain accurate and up-to-date.
+
+## 7. Database Schema & Migrations
+
+**Read `schema.sql` before writing code. Track changes in `migration.sql`.**
+
+- **Inspect schema first**: Always read `schema.sql` before writing any code to understand the existing database tables, columns, relationships, types, and constraints. Never assume database structures.
+- **Update migrations on schema changes**: In case the schema is modified or new tables, columns, triggers, or policies are introduced, update `schema.sql` to reflect the target state and record the corresponding migration statements in `migration.sql`.
 
 ---
 

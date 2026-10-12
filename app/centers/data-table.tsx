@@ -35,6 +35,25 @@ import {
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { DatePickerWithRange } from "@/components/data-table/date-range-picker";
+import { SortableSortChip, SortChipOverlay } from "@/components/data-table/sortable-sort-chip";
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  type DragStartEvent,
+  DragOverlay,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  horizontalListSortingStrategy,
+  SortableContext,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AlertCircleIcon, Cancel01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { columns } from "./columns";
@@ -123,6 +142,62 @@ export function CentersDataTable() {
     resetAllFilters();
     resetSorting();
   };
+
+  // Drag and drop state and sensors for multi-column sort priority reordering
+  const [activeSortId, setActiveSortId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveSortId(String(event.active.id));
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      setActiveSortId(null);
+
+      if (!over || active.id === over.id) return;
+
+      setSorting((prev) => {
+        const oldIndex = prev.findIndex((s) => s.id === active.id);
+        const newIndex = prev.findIndex((s) => s.id === over.id);
+        if (oldIndex === -1 || newIndex === -1) return prev;
+        return arrayMove(prev, oldIndex, newIndex);
+      });
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    },
+    [setSorting, setPagination],
+  );
+
+  const handleDragCancel = useCallback(() => {
+    setActiveSortId(null);
+  }, []);
+
+  const activeSortRule = useMemo(() => {
+    if (!activeSortId) return null;
+    return sorting.find((s) => s.id === activeSortId) ?? null;
+  }, [activeSortId, sorting]);
+
+  const activeSortIndex = useMemo(() => {
+    if (!activeSortId) return -1;
+    return sorting.findIndex((s) => s.id === activeSortId);
+  }, [activeSortId, sorting]);
 
   // Fetch centers via axios with strict multi-column sorting and filtering
   const fetchCenters = useCallback(async () => {
@@ -353,32 +428,46 @@ export function CentersDataTable() {
           )}
 
           {hasActiveSorts && (
-            <>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragCancel={handleDragCancel}
+            >
               <span className="shrink-0 text-2xs font-medium text-muted-foreground">Sorts:</span>
-              {sorting.map((sortRule, index) => {
-                const colTitle = COLUMN_LABELS[sortRule.id] ?? sortRule.id;
-                const dirLabel = sortRule.desc ? "Desc" : "Asc";
-                return (
-                  <Badge
-                    key={sortRule.id}
-                    variant="secondary"
-                    className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
-                  >
-                    <span className="font-semibold text-primary">#{index + 1}</span>
-                    <span className="text-muted-foreground">{colTitle}:</span>
-                    <span className="font-medium">{dirLabel}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeSort(sortRule.id)}
-                      className="rounded-full p-0.5 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
-                      aria-label={`Remove ${colTitle} sort`}
-                    >
-                      <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
-                    </button>
-                  </Badge>
-                );
-              })}
-            </>
+              <SortableContext
+                items={sorting.map((s) => s.id)}
+                strategy={horizontalListSortingStrategy}
+              >
+                {sorting.map((sortRule, index) => {
+                  const colTitle = COLUMN_LABELS[sortRule.id] ?? sortRule.id;
+                  return (
+                    <SortableSortChip
+                      key={sortRule.id}
+                      sortRule={sortRule}
+                      index={index}
+                      colTitle={colTitle}
+                      isDraggable={sorting.length > 1}
+                      onRemove={(columnId) => {
+                        removeSort(columnId);
+                        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+                      }}
+                    />
+                  );
+                })}
+              </SortableContext>
+
+              <DragOverlay>
+                {activeSortRule && activeSortIndex !== -1 ? (
+                  <SortChipOverlay
+                    sortRule={activeSortRule}
+                    index={activeSortIndex}
+                    colTitle={COLUMN_LABELS[activeSortRule.id] ?? activeSortRule.id}
+                  />
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           )}
 
           {/* Clear Actions */}

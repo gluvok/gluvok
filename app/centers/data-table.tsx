@@ -215,11 +215,11 @@ export function CentersDataTable() {
   return (
     <div className="flex flex-col gap-2.5">
       {/* Primary Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
         {/* Filters Group (Left) */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full sm:w-auto">
           {/* Search Input with Clear (Cross) Button */}
-          <div className="relative">
+          <div className="relative w-full sm:w-60">
             <HugeiconsIcon
               icon={Search01Icon}
               className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
@@ -228,7 +228,7 @@ export function CentersDataTable() {
               placeholder="Search centers by name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-60 pl-8 pr-7 text-xs"
+              className="h-8 w-full pl-8 pr-7 text-xs"
             />
             {search && (
               <button
@@ -243,35 +243,37 @@ export function CentersDataTable() {
           </div>
 
           {/* Auto Approve Filter Combobox */}
-          <Combobox
-            items={AUTO_APPROVE_OPTIONS}
-            value={selectedAutoApproveOption}
-            onValueChange={(val: AutoApproveOption | null) => {
-              setAutoApproveFilter(val ? val.value : "all");
-              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-            }}
-            itemToStringValue={(item: AutoApproveOption) => item.label}
-          >
-            <ComboboxInput
-              placeholder="Auto Approve filter"
-              className="h-8 w-48 text-xs"
-              showClear={autoApproveFilter !== "all"}
-            />
-            <ComboboxContent>
-              <ComboboxEmpty>No options found.</ComboboxEmpty>
-              <ComboboxList>
-                {AUTO_APPROVE_OPTIONS.map((item) => (
-                  <ComboboxItem key={item.value} value={item}>
-                    {item.label}
-                  </ComboboxItem>
-                ))}
-              </ComboboxList>
-            </ComboboxContent>
-          </Combobox>
+          <div className="w-full sm:w-48">
+            <Combobox
+              items={AUTO_APPROVE_OPTIONS}
+              value={selectedAutoApproveOption}
+              onValueChange={(val: AutoApproveOption | null) => {
+                setAutoApproveFilter(val ? val.value : "all");
+                setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+              }}
+              itemToStringValue={(item: AutoApproveOption) => item.label}
+            >
+              <ComboboxInput
+                placeholder="Auto Approve filter"
+                className="h-8 w-full text-xs"
+                showClear={autoApproveFilter !== "all"}
+              />
+              <ComboboxContent>
+                <ComboboxEmpty>No options found.</ComboboxEmpty>
+                <ComboboxList>
+                  {AUTO_APPROVE_OPTIONS.map((item) => (
+                    <ComboboxItem key={item.value} value={item}>
+                      {item.label}
+                    </ComboboxItem>
+                  ))}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          </div>
         </div>
 
         {/* Action Controls Group (Right) - Date Range & Columns side-by-side */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
           {/* Date Range Picker for created_at */}
           <DatePickerWithRange
             date={dateRange}
@@ -279,6 +281,7 @@ export function CentersDataTable() {
               setDateRange(range);
               setPagination((prev) => ({ ...prev, pageIndex: 0 }));
             }}
+            className="flex-1 sm:flex-initial"
           />
 
           {/* Column Visibility Options */}
@@ -288,14 +291,17 @@ export function CentersDataTable() {
 
       {/* Active Criteria Bar (Badges) - Compact unified filters and sorts */}
       {hasActiveCriteria && (
-        <div className="flex flex-wrap items-center gap-1.5 rounded-md bg-muted/30 px-2 py-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto rounded-md bg-muted/30 px-2 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden whitespace-nowrap">
           {hasActiveFilters && (
             <>
-              <span className="text-2xs font-medium text-muted-foreground">Filters:</span>
+              <span className="shrink-0 text-2xs font-medium text-muted-foreground">Filters:</span>
 
               {/* Auto Approve Chip */}
               {autoApproveFilter !== "all" && (
-                <Badge variant="secondary" className="gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal">
+                <Badge
+                  variant="secondary"
+                  className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
+                >
                   <span className="text-muted-foreground">Auto Approve:</span>
                   <span className="font-medium">
                     {autoApproveFilter === "true" ? "Enabled" : "Disabled"}
@@ -316,7 +322,10 @@ export function CentersDataTable() {
 
               {/* Date Range Chip */}
               {dateRange?.from && (
-                <Badge variant="secondary" className="gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal">
+                <Badge
+                  variant="secondary"
+                  className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
+                >
                   <span className="text-muted-foreground">Created:</span>
                   <span className="font-medium">
                     {dateRange.to
@@ -340,12 +349,12 @@ export function CentersDataTable() {
           )}
 
           {hasActiveFilters && hasActiveSorts && (
-            <span className="mx-0.5 h-3 w-px bg-border/80" aria-hidden="true" />
+            <span className="mx-0.5 h-3 w-px shrink-0 bg-border/80" aria-hidden="true" />
           )}
 
           {hasActiveSorts && (
             <>
-              <span className="text-2xs font-medium text-muted-foreground">Sorts:</span>
+              <span className="shrink-0 text-2xs font-medium text-muted-foreground">Sorts:</span>
               {sorting.map((sortRule, index) => {
                 const colTitle = COLUMN_LABELS[sortRule.id] ?? sortRule.id;
                 const dirLabel = sortRule.desc ? "Desc" : "Asc";
@@ -353,7 +362,7 @@ export function CentersDataTable() {
                   <Badge
                     key={sortRule.id}
                     variant="secondary"
-                    className="gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
+                    className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
                   >
                     <span className="font-semibold text-primary">#{index + 1}</span>
                     <span className="text-muted-foreground">{colTitle}:</span>
@@ -377,7 +386,7 @@ export function CentersDataTable() {
             variant="ghost"
             size="sm"
             onClick={resetAllCriteria}
-            className="h-5 px-1.5 text-2xs text-muted-foreground hover:text-foreground"
+            className="shrink-0 ml-auto h-5 px-1.5 text-2xs text-muted-foreground hover:text-foreground"
           >
             Clear all
           </Button>

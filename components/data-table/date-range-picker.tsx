@@ -127,29 +127,59 @@ export function DatePickerWithRange({
               variant="outline"
               id="date-picker-range"
               className={cn(
-                "h-8 justify-start gap-1.5 px-2.5 text-xs font-normal",
+                "h-8 max-w-full justify-start gap-1.5 px-2.5 text-xs font-normal",
                 !date?.from && "text-muted-foreground",
               )}
             >
-              <HugeiconsIcon icon={Calendar01Icon} data-icon="inline-start" className="size-3.5" />
-              {date?.from ? (
-                date.to ? (
-                  <>
-                    {format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}
-                  </>
+              <HugeiconsIcon
+                icon={Calendar01Icon}
+                data-icon="inline-start"
+                className="size-3.5 shrink-0"
+              />
+              <span className="truncate">
+                {date?.from ? (
+                  date.to ? (
+                    <>
+                      {format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}
+                    </>
+                  ) : (
+                    format(date.from, "LLL dd, y")
+                  )
                 ) : (
-                  format(date.from, "LLL dd, y")
-                )
-              ) : (
-                <span>Pick a date</span>
-              )}
+                  <span>Pick a date</span>
+                )}
+              </span>
             </Button>
           }
         />
-        <PopoverContent className="w-auto p-0" align="end">
-          <div className="flex divide-x divide-border">
-            {/* Presets Sidebar (Left) */}
-            <div className="flex w-32 shrink-0 flex-col gap-1 p-2">
+        <PopoverContent className="w-auto max-w-[calc(100vw-2rem)] p-0" align="end">
+          <div className="flex flex-col divide-y divide-border sm:flex-row sm:divide-x sm:divide-y-0">
+            {/* Mobile Top Presets (Visible on <sm, hidden on sm+) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border p-2 [scrollbar-width:none] sm:hidden [&::-webkit-scrollbar]:hidden">
+              <span className="shrink-0 px-1 text-2xs font-semibold tracking-wider text-muted-foreground uppercase">
+                Presets:
+              </span>
+              {PRESETS.map((preset) => {
+                const isSelected = isPresetSelected(preset, date);
+                return (
+                  <Button
+                    key={preset.label}
+                    variant={isSelected ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => handlePresetSelect(preset.getValue())}
+                    className={cn(
+                      "h-6 shrink-0 rounded-full px-2.5 text-2xs font-normal",
+                      isSelected && "bg-accent font-medium text-accent-foreground",
+                    )}
+                  >
+                    {preset.label}
+                  </Button>
+                );
+              })}
+            </div>
+
+            {/* Desktop Left Presets Sidebar (Hidden on <sm, flex on sm+) */}
+            <div className="hidden w-32 shrink-0 flex-col gap-1 p-2 sm:flex">
               <span className="px-2 py-1 text-2xs font-semibold tracking-wider text-muted-foreground uppercase">
                 Presets
               </span>
@@ -172,18 +202,33 @@ export function DatePickerWithRange({
               })}
             </div>
 
-            {/* Calendar & Footer (Right) */}
+            {/* Calendar & Footer */}
             <div className="flex flex-col">
-              <Calendar
-                mode="range"
-                defaultMonth={date?.from}
-                selected={date}
-                onSelect={handleSelect}
-                numberOfMonths={2}
-              />
+              {/* Mobile Single-Month Calendar (block on <sm, hidden on sm+) */}
+              <div className="block sm:hidden">
+                <Calendar
+                  mode="range"
+                  defaultMonth={date?.from}
+                  selected={date}
+                  onSelect={handleSelect}
+                  numberOfMonths={1}
+                />
+              </div>
+
+              {/* Desktop Dual-Month Calendar (hidden on <sm, block on sm+) */}
+              <div className="hidden sm:block">
+                <Calendar
+                  mode="range"
+                  defaultMonth={date?.from}
+                  selected={date}
+                  onSelect={handleSelect}
+                  numberOfMonths={2}
+                />
+              </div>
+
               {date?.from && (
                 <div className="flex items-center justify-between border-t border-border px-3 py-2">
-                  <span className="text-2xs text-muted-foreground">
+                  <span className="max-w-48 truncate text-2xs text-muted-foreground">
                     {format(date.from, "LLL dd, y")}
                     {date.to ? ` - ${format(date.to, "LLL dd, y")}` : ""}
                   </span>
@@ -194,7 +239,7 @@ export function DatePickerWithRange({
                       handleSelect(undefined);
                       setOpen(false);
                     }}
-                    className="h-6 gap-1 px-1.5 text-2xs text-muted-foreground hover:text-foreground"
+                    className="h-6 shrink-0 gap-1 px-1.5 text-2xs text-muted-foreground hover:text-foreground"
                   >
                     <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
                     <span>Clear</span>

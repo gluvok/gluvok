@@ -10,14 +10,16 @@ export const metadata: Metadata = {
 export default function CentersPage() {
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight font-heading">Centers</h1>
           <p className="text-sm text-muted-foreground">
             Manage processing facilities and operational locations.
           </p>
         </div>
-        <CentersRefreshButton />
+        <div className="shrink-0">
+          <CentersRefreshButton />
+        </div>
       </div>
 
       <CentersDataTable />

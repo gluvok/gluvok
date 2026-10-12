@@ -35,11 +35,11 @@ export function DataTablePagination<TData extends RowData>({
   const totalPages = Math.max(1, table.getPageCount());
 
   return (
-    <div className="flex flex-col items-center justify-between gap-3 px-2 py-2.5 sm:flex-row">
-      <div className="text-xs text-muted-foreground">
+    <div className="flex flex-col items-center justify-between gap-2.5 px-2 py-2 sm:flex-row">
+      <div className="w-full text-center text-xs text-muted-foreground sm:w-auto sm:text-left">
         {selectedCount} of {currentRowsCount} row(s) selected.
       </div>
-      <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+      <div className="flex w-full flex-wrap items-center justify-between gap-3 sm:w-auto sm:justify-end sm:gap-6">
         <div className="flex items-center gap-2">
           <p className="text-xs font-medium">Rows per page</p>
           <Select

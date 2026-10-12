@@ -272,11 +272,11 @@ export function CentersDataTable() {
       {/* Active Filter Chips Bar (Badges) - Secondary filters only */}
       {hasActiveFilters && (
         <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted/30 p-2">
-          <span className="text-xs font-medium text-muted-foreground">Active Filters:</span>
+          <span className="text-2xs font-medium text-muted-foreground">Active Filters:</span>
 
           {/* Auto Approve Chip */}
           {autoApproveFilter !== "all" && (
-            <Badge variant="secondary" className="gap-1.5 py-1 pl-2.5 pr-1.5 text-xs font-normal">
+            <Badge variant="secondary" className="gap-1.5 py-1 pl-2.5 pr-1.5 text-2xs font-normal">
               <span className="text-muted-foreground">Auto Approve:</span>
               <span className="font-medium">
                 {autoApproveFilter === "true" ? "Enabled" : "Disabled"}

@@ -16,13 +16,13 @@ import { DataTableColumnHeader } from "@/components/data-table/data-table-column
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Calendar01Icon,
-  Cancel01Icon,
+  CancelCircleIcon,
+  CheckmarkCircle02Icon,
   Clock01Icon,
   Copy01Icon,
   HashtagIcon,
   MoreHorizontalIcon,
   TextFontIcon,
-  Tick02Icon,
   ToggleOnIcon,
 } from "@hugeicons/core-free-icons";
 import { type DataTableFeatures } from "@/components/data-table/data-table-features";
@@ -87,7 +87,7 @@ export const columns = columnHelper.columns([
           className="gap-1 px-1.5 py-0.5 text-2xs font-normal"
         >
           <HugeiconsIcon
-            icon={autoApprove ? Tick02Icon : Cancel01Icon}
+            icon={autoApprove ? CheckmarkCircle02Icon : CancelCircleIcon}
             className="size-2.5"
             data-icon="inline-start"
           />

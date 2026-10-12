@@ -26,7 +26,12 @@ import { DataTablePagination } from "@/components/data-table/data-table-paginati
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { DatePickerWithRange } from "@/components/data-table/date-range-picker";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Cancel01Icon, Layers01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import {
+  Cancel01Icon,
+  CancelCircleIcon,
+  CheckmarkCircle02Icon,
+  Layers01Icon,
+} from "@hugeicons/core-free-icons";
 import { columns } from "./columns";
 import { features } from "@/components/data-table/data-table-features";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -39,8 +44,8 @@ import { type Center } from "./types";
 
 const AUTO_APPROVE_OPTIONS: FacetedFilterOption[] = [
   { label: "All Auto Approve", value: "all", icon: Layers01Icon },
-  { label: "Enabled", value: "true", icon: Tick02Icon },
-  { label: "Disabled", value: "false", icon: Cancel01Icon },
+  { label: "Enabled", value: "true", icon: CheckmarkCircle02Icon },
+  { label: "Disabled", value: "false", icon: CancelCircleIcon },
 ];
 
 interface CentersApiResponse {
@@ -255,10 +260,6 @@ export function CentersDataTable() {
             variant="secondary"
             className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
           >
-            <HugeiconsIcon
-              icon={autoApproveFilter === "true" ? Tick02Icon : Cancel01Icon}
-              className="size-2.5 text-muted-foreground"
-            />
             <span className="text-muted-foreground">Auto Approve:</span>
             <span className="font-medium">
               {autoApproveFilter === "true" ? "Enabled" : "Disabled"}

@@ -156,7 +156,11 @@ export const ComboboxContent = ({ className, popoverOptions, ...props }: Combobo
   const { width } = useContext(ComboboxContext);
 
   return (
-    <PopoverContent className={cn("p-0", className)} style={{ width }} {...popoverOptions}>
+    <PopoverContent
+      className={cn("p-0 w-auto min-w-52", className)}
+      style={{ minWidth: width }}
+      {...popoverOptions}
+    >
       <Command {...props} />
     </PopoverContent>
   );
@@ -226,7 +230,7 @@ export const ComboboxItem = ({ className, ...props }: ComboboxItemProps) => {
         onValueChange(props.value ?? currentValue);
         onOpenChange(false);
       }}
-      className={cn(className)}
+      className={cn("whitespace-nowrap", className)}
       {...props}
     />
   );

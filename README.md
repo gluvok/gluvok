@@ -34,16 +34,16 @@ The `/centers` route provides a full-featured data table built with **TanStack T
   - Server-side sorting: `?sort=<col>&order=asc|desc` (`.order(...)`)
 - **Schema Mapping**: Maps directly to `centers` table in `schema.sql` (`id`, `name`, `auto_approve`, `created_at`, `updated_at`).
 - **Features**:
-  - **Zero Layout Shift Loading**: Clean centered `Spinner` card during data fetch; mounts table headers, rows, and pagination simultaneously only after data is ready.
+  - **Scoped Datatable Loading**: Toolbar (search, combobox, datepicker), active filter badges, and pagination remain permanently mounted; the loading spinner is scoped exclusively to the table card area, eliminating focus loss and toolbar flicker during searches or pagination.
   - **Compact & Sleek Height**: Streamlined row styling (`h-9` rows with `py-1.5 px-3` cell padding; `h-9 px-3` header) for an efficient data display.
   - **Page Header Refresh Button**: Dedicated reload button (`CentersRefreshButton`) located on the complete right side of the "Centers" heading, invoking a full page reload (`window.location.reload()`).
   - **Axios API Client**: Native `fetch` replaced with typed `axios.get()` requests.
-  - **Debounced Search Hook**: Reusable `useDebounce` custom hook (`hooks/use-debounce.ts`) with a 300ms debounce.
-  - **Decluttered Toolbar & Active Filter Chips**: Clear top toolbar with Search, Auto-Approve Combobox, and DatePickerWithRange on the left; View Options on the right. When filters are active, displays responsive `<Badge variant="secondary">` chips with individual dismiss buttons and a "Clear all" action.
+  - **Debounced Search with Cross Button**: Reusable `useDebounce` hook (300ms) with an inline `(x)` clear cross button inside the search input for 1-click clearing.
+  - **Uniform Inline Toolbar & Secondary Filter Chips**: Search, Auto-Approve Combobox, and DatePickerWithRange align flush at `h-8`. Active filter chips (`<Badge variant="secondary">`) are reserved for secondary filters (Auto Approve, Date Range) with individual dismiss buttons and a "Clear all" action.
   - **Server-Side Pagination**: TanStack Table `manualPagination` with Base UI `Select` rows-per-page selector (`10, 20, 30, 40, 50`) and spaced Previous/Next buttons (`gap-2`).
   - **Accurate Selection Counter**: Selection count displays `{selectedCount} of {currentRowsCount} row(s) selected.` representing the number of rows currently in the datatable on this page.
   - **Auto Approve Combobox**: Base UI Combobox component for filtering by Auto Approve status.
-  - **Date Picker Range**: `DatePickerWithRange` component featuring shadcn `Field` and `FieldLabel`, Base UI `Popover`, 2-month side-by-side calendar (`numberOfMonths={2}`), and Hugeicons `Calendar01Icon` with server-side date range filtering.
+  - **Date Picker Range**: Flush `h-8` `DatePickerWithRange` component featuring shadcn `Field` with accessible label, Base UI `Popover`, 2-month side-by-side calendar (`numberOfMonths={2}`), and Hugeicons `Calendar01Icon` with server-side date range filtering.
   - **Column Visibility & Sorting**: Columns dropdown toggle and asc/desc header sorting.
   - **Row Selection & Actions**: Indeterminate select-all checkbox and row actions dropdown (`Copy Center ID`, `Copy Center Name`).
 

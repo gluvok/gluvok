@@ -153,10 +153,9 @@ export function CentersDataTable() {
     },
   });
 
-  const hasActiveFilters = Boolean(search || autoApproveFilter !== "all" || dateRange?.from);
+  const hasActiveFilters = Boolean(autoApproveFilter !== "all" || dateRange?.from);
 
   const resetAllFilters = () => {
-    setSearch("");
     setAutoApproveFilter("all");
     setDateRange(undefined);
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
@@ -165,41 +164,13 @@ export function CentersDataTable() {
   const selectedAutoApproveOption =
     AUTO_APPROVE_OPTIONS.find((opt) => opt.value === autoApproveFilter) ?? AUTO_APPROVE_OPTIONS[0];
 
-  // 1. Loading state: render ONLY the centered spinner to eliminate layout shift
-  if (loading) {
-    return (
-      <div className="flex h-72 items-center justify-center rounded-md border border-border bg-card">
-        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-          <Spinner className="size-6 text-muted-foreground" />
-          <span className="text-xs">Loading centers...</span>
-        </div>
-      </div>
-    );
-  }
-
-  // 2. Error state
-  if (error) {
-    return (
-      <div className="flex h-72 items-center justify-center rounded-md border border-border bg-card">
-        <div className="flex flex-col items-center justify-center gap-2 text-destructive">
-          <HugeiconsIcon icon={AlertCircleIcon} className="size-5" />
-          <span className="text-xs">{error}</span>
-          <Button variant="outline" size="sm" onClick={() => fetchCenters()} className="mt-1">
-            Try again
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // 3. Complete Data Table with uncluttered toolbar, active filter chips, and comfortable height
   return (
     <div className="flex flex-col gap-3.5">
       {/* Primary Toolbar */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Filters Group (Left) */}
-        <div className="flex flex-wrap items-end gap-2.5">
-          {/* Search Input */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Search Input with Clear (Cross) Button */}
           <div className="relative">
             <HugeiconsIcon
               icon={Search01Icon}
@@ -209,8 +180,18 @@ export function CentersDataTable() {
               placeholder="Search centers by name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-60 pl-8 text-xs"
+              className="h-8 w-60 pl-8 pr-7 text-xs"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                aria-label="Clear search"
+              >
+                <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Auto Approve Filter Combobox */}
@@ -257,26 +238,10 @@ export function CentersDataTable() {
         </div>
       </div>
 
-      {/* Active Filter Chips Bar (Badges) */}
+      {/* Active Filter Chips Bar (Badges) - Secondary filters only */}
       {hasActiveFilters && (
         <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted/30 p-2">
           <span className="text-xs font-medium text-muted-foreground">Active Filters:</span>
-
-          {/* Search Chip */}
-          {search && (
-            <Badge variant="secondary" className="gap-1.5 py-1 pl-2.5 pr-1.5 text-xs font-normal">
-              <span className="text-muted-foreground">Name:</span>
-              <span className="font-medium">"{search}"</span>
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                className="rounded-full p-0.5 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
-                aria-label="Remove search filter"
-              >
-                <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
-              </button>
-            </Badge>
-          )}
 
           {/* Auto Approve Chip */}
           {autoApproveFilter !== "all" && (
@@ -334,47 +299,66 @@ export function CentersDataTable() {
         </div>
       )}
 
-      {/* Compact Clean Table Container */}
+      {/* Compact Clean Table Container with Scoped Loading State */}
       <div className="overflow-hidden rounded-md border border-border bg-card">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="h-9 hover:bg-transparent">
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="h-9 px-3 text-xs font-semibold">
-                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="h-9 hover:bg-muted/40"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-3 py-1.5 text-xs">
-                      <table.FlexRender cell={cell} />
-                    </TableCell>
+        {error ? (
+          <div className="flex h-72 items-center justify-center">
+            <div className="flex flex-col items-center justify-center gap-2 text-destructive">
+              <HugeiconsIcon icon={AlertCircleIcon} className="size-5" />
+              <span className="text-xs">{error}</span>
+              <Button variant="outline" size="sm" onClick={() => fetchCenters()} className="mt-1">
+                Try again
+              </Button>
+            </div>
+          </div>
+        ) : loading ? (
+          <div className="flex h-72 items-center justify-center">
+            <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+              <Spinner className="size-6 text-muted-foreground" />
+              <span className="text-xs">Loading centers...</span>
+            </div>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="h-9 hover:bg-transparent">
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id} className="h-9 px-3 text-xs font-semibold">
+                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={table.getVisibleLeafColumns().length}
-                  className="h-24 text-center text-xs text-muted-foreground"
-                >
-                  No centers found matching the specified filters.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className="h-9 hover:bg-muted/40"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="px-3 py-1.5 text-xs">
+                        <table.FlexRender cell={cell} />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={table.getVisibleLeafColumns().length}
+                    className="h-24 text-center text-xs text-muted-foreground"
+                  >
+                    No centers found matching the specified filters.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       {/* Pagination Controls */}

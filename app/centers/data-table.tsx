@@ -54,8 +54,8 @@ interface AutoApproveOption {
 
 const AUTO_APPROVE_OPTIONS: AutoApproveOption[] = [
   { label: "All Auto Approve", value: "all" },
-  { label: "Enabled Only", value: "true" },
-  { label: "Disabled Only", value: "false" },
+  { label: "Enabled", value: "true" },
+  { label: "Disabled", value: "false" },
 ];
 
 interface CentersApiResponse {

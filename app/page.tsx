@@ -1,13 +1,5 @@
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { appIcons } from "@/lib/icons";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
@@ -54,7 +46,7 @@ const sections = [
 export default function Home() {
   return (
     <div className="flex flex-col gap-6">
-      <div>
+      <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold tracking-tight font-heading">Dashboard</h1>
         <p className="text-sm text-muted-foreground">
           Welcome to Gluvok. Select a module from the sidebar or choose a section below.
@@ -63,32 +55,33 @@ export default function Home() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {sections.map((section) => (
-          <Card key={section.title} className="flex flex-col justify-between">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <div className="flex size-8 items-center justify-center rounded-md bg-muted text-foreground">
-                  <HugeiconsIcon icon={section.icon} />
+          <Link
+            key={section.title}
+            href={section.href}
+            className="group rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Card className="h-full transition-all duration-200 group-hover:border-primary/50 group-hover:bg-muted/30 group-hover:shadow-sm">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-muted text-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                    <HugeiconsIcon icon={section.icon} />
+                  </div>
+                  <CardTitle className="transition-colors group-hover:text-primary">
+                    {section.title}
+                  </CardTitle>
                 </div>
-                <CardTitle>{section.title}</CardTitle>
-              </div>
-              <CardDescription>{section.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <span className="text-xs text-muted-foreground">Quick access module</span>
-            </CardContent>
-            <CardFooter>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-between"
-                nativeButton={false}
-                render={<Link href={section.href} />}
-              >
-                <span>Open {section.title}</span>
-                <HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" />
-              </Button>
-            </CardFooter>
-          </Card>
+                <CardAction>
+                  <HugeiconsIcon
+                    icon={ArrowRight01Icon}
+                    className="size-4 text-muted-foreground/40 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary"
+                  />
+                </CardAction>
+                <CardDescription className="mt-2 line-clamp-2">
+                  {section.description}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
         ))}
       </div>
     </div>

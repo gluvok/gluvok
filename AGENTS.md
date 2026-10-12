@@ -92,6 +92,7 @@ For any JavaScript / TypeScript / Node modifications:
 4. **Test Suite**: Run `pnpm test` (`vitest run`) to confirm all tests pass without regression.
 5. **Build Verification**: Run `pnpm run build` (`next build`) to confirm production builds compile cleanly.
 6. **Iterative Verification**: Keep looping through `pnpm lint`, `pnpm fmt`, `pnpm type-check`, `pnpm test`, and `pnpm run build` until all yield **0 errors, 0 warnings, and clean builds**.
+7. **Clean React Imports**: Always check for and eliminate stale `import * as React from "react";`. Do not use blanket namespace React imports. Use modern React 19 / JSX transform conventions: import only the specific hooks (e.g., `import { useState, useEffect } from "react";`) or type definitions (e.g., `import type { ComponentProps } from "react";`) actually referenced in the file. Remove `import * as React from "react";` when no `React.` symbols are used.
 
 **The mandatory commands that must always pass:**
 

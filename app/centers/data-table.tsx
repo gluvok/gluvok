@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   useTable,
   type ColumnFiltersState,
@@ -25,20 +25,29 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { AlertCircleIcon, RefreshIcon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { columns } from "./columns";
-import { features } from "./data-table-features";
+import { features } from "@/components/data-table/data-table-features";
 import { type Center } from "./types";
 
+const SKELETON_CLASSES = [
+  "size-4 rounded-xs",
+  "h-4 w-6",
+  "h-4 w-36",
+  "h-4 w-16",
+  "h-4 w-24",
+  "size-6 rounded-md",
+];
+
 export function CentersDataTable() {
-  const [data, setData] = React.useState<Center[]>([]);
-  const [loading, setLoading] = React.useState<boolean>(true);
-  const [error, setError] = React.useState<string | null>(null);
+  const [data, setData] = useState<Center[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
-  const fetchCenters = React.useCallback(async () => {
+  const fetchCenters = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -57,7 +66,7 @@ export function CentersDataTable() {
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchCenters();
   }, [fetchCenters]);
 
@@ -124,9 +133,9 @@ export function CentersDataTable() {
             {loading ? (
               Array.from({ length: 5 }).map((_, index) => (
                 <TableRow key={`skeleton-${index}`}>
-                  {columns.map((_, colIndex) => (
+                  {SKELETON_CLASSES.map((cls, colIndex) => (
                     <TableCell key={`col-${colIndex}`}>
-                      <Skeleton className="h-5 w-full" />
+                      <Skeleton className={cls} />
                     </TableCell>
                   ))}
                 </TableRow>

@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
@@ -15,7 +15,7 @@ import {
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Copy01Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
-import { type DataTableFeatures } from "./data-table-features";
+import { type DataTableFeatures } from "@/components/data-table/data-table-features";
 import { type Center } from "./types";
 
 const columnHelper = createColumnHelper<DataTableFeatures, Center>();
@@ -48,10 +48,6 @@ export const columns = columnHelper.columns([
   columnHelper.accessor("name", {
     header: ({ column }) => <DataTableColumnHeader column={column} title="Center Name" />,
     cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
-  }),
-  columnHelper.accessor("factory_id", {
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Factory ID" />,
-    cell: ({ row }) => <span className="text-muted-foreground">{row.getValue("factory_id")}</span>,
   }),
   columnHelper.accessor("auto_approve", {
     header: ({ column }) => <DataTableColumnHeader column={column} title="Auto Approve" />,
@@ -93,15 +89,17 @@ export const columns = columnHelper.columns([
             }
           />
           <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(String(center.id))}>
-              <HugeiconsIcon icon={Copy01Icon} />
-              <span>Copy Center ID</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(center.name)}>
-              <HugeiconsIcon icon={Copy01Icon} />
-              <span>Copy Center Name</span>
-            </DropdownMenuItem>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(String(center.id))}>
+                <HugeiconsIcon icon={Copy01Icon} />
+                <span>Copy Center ID</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(center.name)}>
+                <HugeiconsIcon icon={Copy01Icon} />
+                <span>Copy Center Name</span>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       );

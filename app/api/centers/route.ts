@@ -4,21 +4,13 @@ import { supabase } from "@/lib/supabase";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const factoryId = searchParams.get("factory_id");
     const search = searchParams.get("search");
 
     let query = supabase
       .from("centers")
-      .select("id, name, auto_approve, factory_id, created_at, updated_at")
+      .select("id, name, auto_approve, created_at, updated_at")
       .is("deleted_at", null)
       .order("id", { ascending: true });
-
-    if (factoryId) {
-      const parsedFactoryId = parseInt(factoryId, 10);
-      if (!isNaN(parsedFactoryId)) {
-        query = query.eq("factory_id", parsedFactoryId);
-      }
-    }
 
     if (search) {
       query = query.ilike("name", `%${search}%`);

@@ -1,12 +1,11 @@
-"use client";
-
-import * as React from "react";
+import type { HTMLAttributes } from "react";
 import type { Column, RowData } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -18,7 +17,7 @@ import { type DataTableFeatures } from "./data-table-features";
 interface DataTableColumnHeaderProps<
   TData extends RowData,
   TValue = unknown,
-> extends React.HTMLAttributes<HTMLDivElement> {
+> extends HTMLAttributes<HTMLDivElement> {
   column: Column<DataTableFeatures, TData, TValue>;
   title: string;
 }
@@ -60,23 +59,25 @@ export function DataTableColumnHeader<TData extends RowData, TValue = unknown>({
           }
         />
         <DropdownMenuContent align="start" className="w-32">
-          <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-            <HugeiconsIcon icon={ArrowUp01Icon} />
-            <span>Asc</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-            <HugeiconsIcon icon={ArrowDown01Icon} />
-            <span>Desc</span>
-          </DropdownMenuItem>
-          {column.getCanHide() && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-                <HugeiconsIcon icon={EyeIcon} />
-                <span>Hide</span>
-              </DropdownMenuItem>
-            </>
-          )}
+          <DropdownMenuGroup>
+            <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
+              <HugeiconsIcon icon={ArrowUp01Icon} />
+              <span>Asc</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
+              <HugeiconsIcon icon={ArrowDown01Icon} />
+              <span>Desc</span>
+            </DropdownMenuItem>
+            {column.getCanHide() && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
+                  <HugeiconsIcon icon={EyeIcon} />
+                  <span>Hide</span>
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

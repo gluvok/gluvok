@@ -24,21 +24,28 @@ The layout integrates `SidebarProvider` and `SidebarInset` with a collapsible si
 
 ## Centers Module & Data Table
 
-The `/centers` route provides a data table built with **TanStack Table v9**:
+The `/centers` route provides a full-featured data table built with **TanStack Table v9** powered by server-side execution directly against Supabase:
 
-- **Backend Endpoint**: `GET /api/centers` (supports optional `?factory_id=<id>` and `?search=<text>` query params).
-- **Schema Mapping**: Maps directly to `centers` table in `schema.sql` (`id`, `name`, `auto_approve`, `factory_id`, `created_at`, `updated_at`).
+- **Backend Endpoint**: `GET /api/centers`
+  - Slicing and exact counting: `?page=<N>&pageSize=<N>` (`.range()` + `{ count: "exact" }`)
+  - Server-side text search: `?search=<text>` (`.ilike("name", ...)`)
+  - Server-side auto-approve filter: `?auto_approve=true|false|all` (`.eq("auto_approve", ...)`)
+  - Server-side created date range: `?from=<ISO>&to=<ISO>` (`.gte("created_at", ...)`, `.lte("created_at", ...)`)
+  - Server-side sorting: `?sort=<col>&order=asc|desc` (`.order(...)`)
+- **Schema Mapping**: Maps directly to `centers` table in `schema.sql` (`id`, `name`, `auto_approve`, `created_at`, `updated_at`).
 - **Features**:
-  - Columns: `ID`, `Name`, `Auto Approve`, `Created At`, and `Updated At` with consistent entity icons.
-  - Client-side text filtering by center name.
-  - Ascending / descending column sorting.
-  - Column visibility toggles (Columns dropdown menu with synced labels and icons).
-  - Row selection with header select-all and indeterminate state.
-  - Auto-approve status badge formatting with icons (`Tick02Icon` for Enabled, `Cancel01Icon` for Disabled).
-  - Date formatting with `Intl.DateTimeFormat`.
-  - Row actions dropdown menu (`Copy Center ID`, `Copy Center Name`).
-  - Pagination controls with shadcn `Select` page size selector and selection counts.
-  - Clean centered `Spinner` loading state and error retry controls.
+  - **Zero Layout Shift Loading**: Clean centered `Spinner` card during data fetch; mounts table headers, rows, and pagination simultaneously only after data is ready.
+  - **Spacious & Balanced Height**: Comfortable row styling (`h-12` rows with `py-3 px-3` cell padding; `h-10 px-3` header).
+  - **Axios API Client**: Native `fetch` replaced with typed `axios.get()` requests.
+  - **Debounced Search Hook**: Reusable `useDebounce` custom hook (`hooks/use-debounce.ts`) with a 300ms debounce.
+  - **Decluttered Toolbar & Active Filter Chips**: Clear top toolbar with Search, Auto-Approve Combobox, and Date Range Picker on the left; Refresh and View Options on the right. When filters are active, displays responsive `<Badge variant="secondary">` chips with individual dismiss buttons and a "Clear all" action.
+  - **Server-Side Pagination**: TanStack Table `manualPagination` with Base UI `Select` rows-per-page selector (`10, 20, 30, 40, 50`) and spaced Previous/Next buttons (`gap-2`).
+  - **Accurate Selection Counter**: Selection count displays `{selectedCount} of {currentRowsCount} row(s) selected.` representing the number of rows currently in the datatable on this page.
+  - **Auto Approve Combobox**: Base UI Combobox component for filtering by Auto Approve status.
+  - **Date Range Picker**: Popover + Calendar range picker for filtering centers by creation date range.
+  - **In-place Refresh**: Re-fetches data via Axios with animated button spinner without unmounting table rows.
+  - **Column Visibility & Sorting**: Columns dropdown toggle and asc/desc header sorting.
+  - **Row Selection & Actions**: Indeterminate select-all checkbox and row actions dropdown (`Copy Center ID`, `Copy Center Name`).
 
 ## Getting Started
 

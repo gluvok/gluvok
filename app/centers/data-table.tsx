@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import axios from "axios";
 import {
   useTable,
-  type ColumnFiltersState,
   type ColumnVisibilityState,
+  type PaginationState,
   type RowSelectionState,
   type SortingState,
 } from "@tanstack/react-table";
+import type { DateRange } from "react-day-picker";
+import { format } from "date-fns";
 import {
   Table,
   TableBody,
@@ -16,46 +19,130 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
+import { DateRangePicker } from "@/components/data-table/date-range-picker";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { AlertCircleIcon, RefreshIcon } from "@hugeicons/core-free-icons";
+import {
+  AlertCircleIcon,
+  Cancel01Icon,
+  RefreshIcon,
+  Search01Icon,
+} from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { columns } from "./columns";
 import { features } from "@/components/data-table/data-table-features";
+import { useDebounce } from "@/hooks/use-debounce";
 import { type Center } from "./types";
+
+interface AutoApproveOption {
+  label: string;
+  value: string;
+}
+
+const AUTO_APPROVE_OPTIONS: AutoApproveOption[] = [
+  { label: "All Auto Approve", value: "all" },
+  { label: "Enabled Only", value: "true" },
+  { label: "Disabled Only", value: "false" },
+];
+
+interface CentersApiResponse {
+  data: Center[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
 
 export function CentersDataTable() {
   const [data, setData] = useState<Center[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  // Server-controlled pagination and sorting
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+  const [sorting, setSorting] = useState<SortingState>([{ id: "id", desc: false }]);
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
-  const fetchCenters = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/centers");
-      if (!res.ok) {
-        const errPayload = await res.json().catch(() => ({}));
-        throw new Error(errPayload.error || `HTTP ${res.status}: Failed to fetch centers`);
+  // Filter states
+  const [search, setSearch] = useState<string>("");
+  const debouncedSearch = useDebounce(search, 300);
+  const [autoApproveFilter, setAutoApproveFilter] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
+  // Reset pagination to first page whenever search query changes
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, [debouncedSearch]);
+
+  // Fetch centers via axios with full server-side query params
+  const fetchCenters = useCallback(
+    async (isBackground = false) => {
+      if (!isBackground) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
       }
-      const json = await res.json();
-      setData(json.data ?? []);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "An unexpected error occurred";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      setError(null);
+
+      try {
+        const response = await axios.get<CentersApiResponse>("/api/centers", {
+          params: {
+            page: pagination.pageIndex + 1,
+            pageSize: pagination.pageSize,
+            ...(sorting.length > 0 && {
+              sort: sorting[0].id,
+              order: sorting[0].desc ? "desc" : "asc",
+            }),
+            ...(debouncedSearch && { search: debouncedSearch }),
+            ...(autoApproveFilter !== "all" && { auto_approve: autoApproveFilter }),
+            ...(dateRange?.from && { from: dateRange.from.toISOString() }),
+            ...(dateRange?.to && { to: dateRange.to.toISOString() }),
+          },
+        });
+
+        setData(response.data.data ?? []);
+        setTotalCount(response.data.totalCount ?? 0);
+      } catch (err) {
+        const msg =
+          axios.isAxiosError(err) && err.response?.data?.error
+            ? err.response.data.error
+            : err instanceof Error
+              ? err.message
+              : "An unexpected error occurred";
+        setError(msg);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [
+      pagination.pageIndex,
+      pagination.pageSize,
+      sorting,
+      debouncedSearch,
+      autoApproveFilter,
+      dateRange,
+    ],
+  );
 
   useEffect(() => {
     fetchCenters();
@@ -65,55 +152,227 @@ export function CentersDataTable() {
     features,
     data,
     columns,
+    manualPagination: true,
+    rowCount: totalCount,
+    manualSorting: true,
+    manualFiltering: true,
+    onPaginationChange: setPagination,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: {
+      pagination,
       sorting,
-      columnFilters,
       columnVisibility,
       rowSelection,
     },
   });
 
+  const hasActiveFilters = Boolean(search || autoApproveFilter !== "all" || dateRange?.from);
+
+  const resetAllFilters = () => {
+    setSearch("");
+    setAutoApproveFilter("all");
+    setDateRange(undefined);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  };
+
+  const selectedAutoApproveOption =
+    AUTO_APPROVE_OPTIONS.find((opt) => opt.value === autoApproveFilter) ?? AUTO_APPROVE_OPTIONS[0];
+
+  // 1. Loading state: render ONLY the centered spinner to eliminate layout shift
+  if (loading) {
+    return (
+      <div className="flex h-96 items-center justify-center rounded-md border border-border bg-card">
+        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+          <Spinner className="size-6 text-muted-foreground" />
+          <span className="text-xs">Loading centers...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Error state
+  if (error) {
+    return (
+      <div className="flex h-96 items-center justify-center rounded-md border border-border bg-card">
+        <div className="flex flex-col items-center justify-center gap-2 text-destructive">
+          <HugeiconsIcon icon={AlertCircleIcon} className="size-5" />
+          <span className="text-xs">{error}</span>
+          <Button variant="outline" size="sm" onClick={() => fetchCenters()} className="mt-1">
+            Try again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Complete Data Table with uncluttered toolbar, active filter chips, and comfortable height
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 items-center gap-2">
-          <Input
-            placeholder="Filter centers by name..."
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-            onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
-            className="h-8 max-w-xs text-xs"
+    <div className="flex flex-col gap-3.5">
+      {/* Primary Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* Filters Group (Left) */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Search Input */}
+          <div className="relative">
+            <HugeiconsIcon
+              icon={Search01Icon}
+              className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              placeholder="Search centers by name..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-8 w-60 pl-8 text-xs"
+            />
+          </div>
+
+          {/* Auto Approve Filter Combobox */}
+          <Combobox
+            items={AUTO_APPROVE_OPTIONS}
+            value={selectedAutoApproveOption}
+            onValueChange={(val: AutoApproveOption | null) => {
+              setAutoApproveFilter(val ? val.value : "all");
+              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+            }}
+            itemToStringValue={(item: AutoApproveOption) => item.label}
+          >
+            <ComboboxInput
+              placeholder="Auto Approve filter"
+              className="h-8 w-48 text-xs"
+              showClear={autoApproveFilter !== "all"}
+            />
+            <ComboboxContent>
+              <ComboboxEmpty>No options found.</ComboboxEmpty>
+              <ComboboxList>
+                {AUTO_APPROVE_OPTIONS.map((item) => (
+                  <ComboboxItem key={item.value} value={item}>
+                    {item.label}
+                  </ComboboxItem>
+                ))}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+
+          {/* Date Range Picker for created_at */}
+          <DateRangePicker
+            date={dateRange}
+            onDateChange={(range) => {
+              setDateRange(range);
+              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+            }}
           />
+        </div>
+
+        {/* Action Controls Group (Right) */}
+        <div className="flex items-center gap-2">
+          {/* In-place Refresh Button */}
           <Button
             variant="outline"
             size="sm"
-            onClick={() => fetchCenters()}
-            disabled={loading}
+            onClick={() => fetchCenters(true)}
+            disabled={refreshing}
             className="h-8 gap-1 px-2.5 text-xs"
           >
             <HugeiconsIcon
               icon={RefreshIcon}
               data-icon="inline-start"
-              className={cn(loading && "animate-spin")}
+              className={cn(refreshing && "animate-spin")}
             />
             <span>Refresh</span>
           </Button>
-        </div>
-        <div className="flex items-center gap-2">
+
+          {/* Column Visibility Options */}
           <DataTableViewOptions table={table} />
         </div>
       </div>
 
+      {/* Active Filter Chips Bar (Badges) */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted/30 p-2">
+          <span className="text-xs font-medium text-muted-foreground">Active Filters:</span>
+
+          {/* Search Chip */}
+          {search && (
+            <Badge variant="secondary" className="gap-1.5 py-1 pl-2.5 pr-1.5 text-xs font-normal">
+              <span className="text-muted-foreground">Name:</span>
+              <span className="font-medium">"{search}"</span>
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="rounded-full p-0.5 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
+                aria-label="Remove search filter"
+              >
+                <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
+              </button>
+            </Badge>
+          )}
+
+          {/* Auto Approve Chip */}
+          {autoApproveFilter !== "all" && (
+            <Badge variant="secondary" className="gap-1.5 py-1 pl-2.5 pr-1.5 text-xs font-normal">
+              <span className="text-muted-foreground">Auto Approve:</span>
+              <span className="font-medium">
+                {autoApproveFilter === "true" ? "Enabled" : "Disabled"}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setAutoApproveFilter("all");
+                  setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+                }}
+                className="rounded-full p-0.5 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
+                aria-label="Remove auto approve filter"
+              >
+                <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
+              </button>
+            </Badge>
+          )}
+
+          {/* Date Range Chip */}
+          {dateRange?.from && (
+            <Badge variant="secondary" className="gap-1.5 py-1 pl-2.5 pr-1.5 text-xs font-normal">
+              <span className="text-muted-foreground">Created:</span>
+              <span className="font-medium">
+                {dateRange.to
+                  ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
+                  : format(dateRange.from, "LLL dd, y")}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setDateRange(undefined);
+                  setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+                }}
+                className="rounded-full p-0.5 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
+                aria-label="Remove date range filter"
+              >
+                <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
+              </button>
+            </Badge>
+          )}
+
+          {/* Clear All Filters Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={resetAllFilters}
+            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            Clear all
+          </Button>
+        </div>
+      )}
+
+      {/* Spacious Comfortable Table Container */}
       <div className="overflow-hidden rounded-md border border-border bg-card">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="h-10 hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead key={header.id} className="h-10 px-3 text-xs font-semibold">
                     {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                   </TableHead>
                 ))}
@@ -121,43 +380,15 @@ export function CentersDataTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={table.getVisibleLeafColumns().length}
-                  className="h-36 text-center"
-                >
-                  <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                    <Spinner className="size-6 text-muted-foreground" />
-                    <span className="text-xs">Loading centers...</span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : error ? (
-              <TableRow>
-                <TableCell
-                  colSpan={table.getVisibleLeafColumns().length}
-                  className="h-28 text-center text-destructive"
-                >
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <HugeiconsIcon icon={AlertCircleIcon} className="size-5" />
-                    <span className="text-xs">{error}</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fetchCenters()}
-                      className="mt-1"
-                    >
-                      Try again
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : table.getRowModel().rows?.length ? (
+            {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  className="h-12 hover:bg-muted/40"
+                >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="px-3 py-3 text-xs">
                       <table.FlexRender cell={cell} />
                     </TableCell>
                   ))}
@@ -167,9 +398,9 @@ export function CentersDataTable() {
               <TableRow>
                 <TableCell
                   colSpan={table.getVisibleLeafColumns().length}
-                  className="h-24 text-center text-xs text-muted-foreground"
+                  className="h-32 text-center text-xs text-muted-foreground"
                 >
-                  No centers found.
+                  No centers found matching the specified filters.
                 </TableCell>
               </TableRow>
             )}
@@ -177,7 +408,8 @@ export function CentersDataTable() {
         </Table>
       </div>
 
-      {!loading && !error && <DataTablePagination table={table} />}
+      {/* Pagination Controls */}
+      <DataTablePagination table={table} />
     </div>
   );
 }

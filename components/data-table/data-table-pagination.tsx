@@ -13,7 +13,13 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { type DataTableFeatures } from "./data-table-features";
 
-const PAGE_SIZE_OPTIONS = [10, 20, 30, 40, 50];
+const PAGE_SIZE_OPTIONS = [
+  { label: "10", value: 10 },
+  { label: "20", value: 20 },
+  { label: "30", value: 30 },
+  { label: "40", value: 40 },
+  { label: "50", value: 50 },
+];
 
 interface DataTablePaginationProps<TData extends RowData> {
   table: ReactTable<DataTableFeatures, TData>;
@@ -23,19 +29,21 @@ export function DataTablePagination<TData extends RowData>({
   table,
 }: DataTablePaginationProps<TData>) {
   const selectedCount = table.getFilteredSelectedRowModel().rows.length;
-  const totalCount = table.getFilteredRowModel().rows.length;
+  // Number of rows currently rendered in datatable on the current page
+  const currentRowsCount = table.getRowModel().rows.length;
   const currentPage = table.state.pagination.pageIndex + 1;
   const totalPages = Math.max(1, table.getPageCount());
 
   return (
-    <div className="flex flex-col items-center justify-between gap-4 px-2 py-4 sm:flex-row">
+    <div className="flex flex-col items-center justify-between gap-3 px-2 py-2.5 sm:flex-row">
       <div className="text-xs text-muted-foreground">
-        {selectedCount} of {totalCount} row(s) selected.
+        {selectedCount} of {currentRowsCount} row(s) selected.
       </div>
       <div className="flex flex-wrap items-center gap-4 sm:gap-6">
         <div className="flex items-center gap-2">
           <p className="text-xs font-medium">Rows per page</p>
           <Select
+            items={PAGE_SIZE_OPTIONS}
             value={table.state.pagination.pageSize}
             onValueChange={(val) => {
               if (val) table.setPageSize(Number(val));
@@ -46,9 +54,9 @@ export function DataTablePagination<TData extends RowData>({
             </SelectTrigger>
             <SelectContent align="start" className="min-w-18">
               <SelectGroup>
-                {PAGE_SIZE_OPTIONS.map((pageSize) => (
-                  <SelectItem key={pageSize} value={pageSize}>
-                    {pageSize}
+                {PAGE_SIZE_OPTIONS.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -59,12 +67,12 @@ export function DataTablePagination<TData extends RowData>({
           Page {currentPage} of {totalPages}
         </div>
         <Pagination className="mx-0 w-auto">
-          <PaginationContent>
+          <PaginationContent className="gap-2">
             <PaginationItem>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 gap-1 px-2 text-xs"
+                className="h-7 gap-1 px-2.5 text-xs"
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
               >
@@ -76,7 +84,7 @@ export function DataTablePagination<TData extends RowData>({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 gap-1 px-2 text-xs"
+                className="h-7 gap-1 px-2.5 text-xs"
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
               >

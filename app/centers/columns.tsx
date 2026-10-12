@@ -34,19 +34,25 @@ export const columns = columnHelper.columns([
   columnHelper.display({
     id: "select",
     header: ({ table }) => (
-      <Checkbox
-        checked={table.getIsAllPageRowsSelected()}
-        indeterminate={table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()}
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
+      <div className="flex items-center justify-center">
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          indeterminate={table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+          className="size-4"
+        />
+      </div>
     ),
     cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
+      <div className="flex items-center justify-center">
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+          className="size-4"
+        />
+      </div>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -63,7 +69,7 @@ export const columns = columnHelper.columns([
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Name" icon={TextFontIcon} />
     ),
-    cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+    cell: ({ row }) => <span className="font-medium text-xs">{row.getValue("name")}</span>,
     meta: {
       title: "Name",
       icon: TextFontIcon,
@@ -76,10 +82,13 @@ export const columns = columnHelper.columns([
     cell: ({ row }) => {
       const autoApprove = row.getValue("auto_approve") as boolean;
       return (
-        <Badge variant={autoApprove ? "default" : "secondary"} className="gap-1">
+        <Badge
+          variant={autoApprove ? "default" : "secondary"}
+          className="h-5.5 gap-1.5 px-2 text-xs font-normal"
+        >
           <HugeiconsIcon
             icon={autoApprove ? Tick02Icon : Cancel01Icon}
-            className="size-2.5"
+            className="size-3"
             data-icon="inline-start"
           />
           <span>{autoApprove ? "Enabled" : "Disabled"}</span>
@@ -103,7 +112,7 @@ export const columns = columnHelper.columns([
             timeStyle: "short",
           }).format(new Date(dateVal))
         : "—";
-      return <span className="text-muted-foreground">{formatted}</span>;
+      return <span className="text-xs text-muted-foreground">{formatted}</span>;
     },
     meta: {
       title: "Created At",
@@ -122,7 +131,7 @@ export const columns = columnHelper.columns([
             timeStyle: "short",
           }).format(new Date(dateVal))
         : "—";
-      return <span className="text-muted-foreground">{formatted}</span>;
+      return <span className="text-xs text-muted-foreground">{formatted}</span>;
     },
     meta: {
       title: "Updated At",
@@ -135,29 +144,31 @@ export const columns = columnHelper.columns([
       const center = row.original;
 
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button variant="ghost" size="icon-sm" className="size-7 p-0">
-                <HugeiconsIcon icon={MoreHorizontalIcon} />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            }
-          />
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(String(center.id))}>
-                <HugeiconsIcon icon={Copy01Icon} />
-                <span>Copy Center ID</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(center.name)}>
-                <HugeiconsIcon icon={Copy01Icon} />
-                <span>Copy Center Name</span>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button variant="ghost" size="icon-sm" className="size-7 p-0">
+                  <HugeiconsIcon icon={MoreHorizontalIcon} className="size-3.5" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(String(center.id))}>
+                  <HugeiconsIcon icon={Copy01Icon} />
+                  <span>Copy Center ID</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(center.name)}>
+                  <HugeiconsIcon icon={Copy01Icon} />
+                  <span>Copy Center Name</span>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       );
     },
     enableSorting: false,

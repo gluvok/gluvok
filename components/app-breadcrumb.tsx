@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import type { ComponentProps } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +17,7 @@ const ROUTE_TITLES: Record<string, string> = {
   "/services": "Services",
 };
 
-export function AppBreadcrumb({ className, ...props }: React.ComponentProps<"span">) {
+export function AppBreadcrumb({ className, ...props }: ComponentProps<"span">) {
   const pathname = usePathname();
   const title = (pathname && ROUTE_TITLES[pathname]) || "Home";
 

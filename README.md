@@ -37,7 +37,7 @@ The `/centers` route provides a data table built with **TanStack Table v9**:
   - Auto-approve status badge formatting with icons (`Tick02Icon` for Enabled, `Cancel01Icon` for Disabled).
   - Date formatting with `Intl.DateTimeFormat`.
   - Row actions dropdown menu (`Copy Center ID`, `Copy Center Name`).
-  - Pagination controls with comfortable chevron spacing, page size selector, and selection counts.
+  - Pagination controls with shadcn `Select` page size selector and selection counts.
   - Clean centered `Spinner` loading state and error retry controls.
 
 ## Getting Started

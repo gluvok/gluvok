@@ -1,9 +1,19 @@
 import type { ReactTable, RowData } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { type DataTableFeatures } from "./data-table-features";
+
+const PAGE_SIZE_OPTIONS = [10, 20, 30, 40, 50];
 
 interface DataTablePaginationProps<TData extends RowData> {
   table: ReactTable<DataTableFeatures, TData>;
@@ -25,19 +35,25 @@ export function DataTablePagination<TData extends RowData>({
       <div className="flex flex-wrap items-center gap-4 sm:gap-6">
         <div className="flex items-center gap-2">
           <p className="text-xs font-medium">Rows per page</p>
-          <select
-            className="h-7 cursor-pointer rounded-md border border-input bg-background py-0.5 pr-6 pl-2 text-xs outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+          <Select
             value={table.state.pagination.pageSize}
-            onChange={(e) => {
-              table.setPageSize(Number(e.target.value));
+            onValueChange={(val) => {
+              if (val) table.setPageSize(Number(val));
             }}
           >
-            {[10, 20, 30, 40, 50].map((pageSize) => (
-              <option key={pageSize} value={pageSize}>
-                {pageSize}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-7 w-18 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start" className="min-w-18">
+              <SelectGroup>
+                {PAGE_SIZE_OPTIONS.map((pageSize) => (
+                  <SelectItem key={pageSize} value={pageSize}>
+                    {pageSize}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center justify-center text-xs font-medium">
           Page {currentPage} of {totalPages}

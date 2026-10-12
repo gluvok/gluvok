@@ -92,7 +92,6 @@ For any JavaScript / TypeScript / Node modifications:
 4. **Test Suite**: Run `pnpm test` (`vitest run`) to confirm all tests pass without regression.
 5. **Build Verification**: Run `pnpm run build` (`next build`) to confirm production builds compile cleanly.
 6. **Iterative Verification**: Keep looping through `pnpm lint`, `pnpm fmt`, `pnpm type-check`, `pnpm test`, and `pnpm run build` until all yield **0 errors, 0 warnings, and clean builds**.
-7. **Clean React Imports**: Always check for and eliminate stale `import * as React from "react";`. Remove `import * as React from "react";` when no `React.` symbols are used.
 
 **The mandatory commands that must always pass:**
 
@@ -120,8 +119,10 @@ For any JavaScript / TypeScript / Node modifications:
 
 **Official shadcn docs are in the `docs/` folder. Never manually create `components/ui/` files.**
 
-- **Official Documentation**: Canonical shadcn / UI documentation for components in this repository is kept inside the `docs/` folder (e.g., `docs/datatable.md`, `docs/pagination.md`, `docs/spinner.md`). Always consult `docs/` first for canonical component APIs, props, and design guidelines.
+- **Official Documentation**: Canonical shadcn / UI documentation for components in this repository is kept inside the `docs/` folder (e.g., `docs/datatable.md`, `docs/pagination.md`, `docs/spinner.md`, `docs/select.md`). Always consult `docs/` first for canonical component APIs, props, and design guidelines.
 - **CLI Component Addition**: NEVER create components inside the `components/ui/` directory manually. Always install and scaffold UI components using the `pnpm shadcn` CLI command (e.g., `pnpm dlx shadcn@latest add <component>` or `pnpm shadcn add <component>`). If project-specific adjustments or imports need tuning after installation, edit the CLI-generated file rather than crafting it from scratch.
+- **Prefer shadcn Components Over Raw HTML Tags**: Always check whether a shadcn component exists for any raw HTML tag (e.g., `<select>` -> `<Select>`, `<button>` -> `<Button>`, `<input>` -> `<Input>`, `<checkbox>` -> `<Checkbox>`, `<table>` -> `<Table>`, `<dialog>` -> `<Dialog>`). If a shadcn component exists (or is available in shadcn registry / `docs/`), you MUST use the shadcn component instead of barebone HTML tags. If not yet added to `components/ui/`, install it using `pnpm dlx shadcn@latest add <component>`.
+- **No Arbitrary Bracket Values (e.g., `[70px]`)**: NEVER use raw bracket arbitrary values (e.g., `w-[70px]`, `min-w-[70px]`, `h-[30px]`, `p-[12px]`). Always use standard Tailwind design system scale utilities (e.g., `w-16`, `w-20`, `min-w-16`, `min-w-20`, `h-7`, `p-3`) or semantic theme tokens.
 
 ---
 

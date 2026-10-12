@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { addDays, format } from "date-fns";
+import { addDays, endOfMonth, format, isSameDay, startOfMonth, subDays, subMonths } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
@@ -11,6 +11,70 @@ import { Calendar } from "@/components/ui/calendar";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+
+interface DatePreset {
+  label: string;
+  getValue: () => DateRange;
+}
+
+const PRESETS: DatePreset[] = [
+  {
+    label: "Today",
+    getValue: () => {
+      const today = new Date();
+      return { from: today, to: today };
+    },
+  },
+  {
+    label: "Yesterday",
+    getValue: () => {
+      const yesterday = subDays(new Date(), 1);
+      return { from: yesterday, to: yesterday };
+    },
+  },
+  {
+    label: "Last 7 days",
+    getValue: () => ({
+      from: subDays(new Date(), 6),
+      to: new Date(),
+    }),
+  },
+  {
+    label: "Last 30 days",
+    getValue: () => ({
+      from: subDays(new Date(), 29),
+      to: new Date(),
+    }),
+  },
+  {
+    label: "This month",
+    getValue: () => ({
+      from: startOfMonth(new Date()),
+      to: endOfMonth(new Date()),
+    }),
+  },
+  {
+    label: "Last month",
+    getValue: () => {
+      const prevMonth = subMonths(new Date(), 1);
+      return {
+        from: startOfMonth(prevMonth),
+        to: endOfMonth(prevMonth),
+      };
+    },
+  },
+];
+
+function isPresetSelected(preset: DatePreset, current: DateRange | undefined): boolean {
+  if (!current?.from) return false;
+  const p = preset.getValue();
+  if (!p.from) return false;
+
+  const currentTo = current.to ?? current.from;
+  const pTo = p.to ?? p.from;
+
+  return isSameDay(current.from, p.from) && isSameDay(currentTo, pTo);
+}
 
 export interface DatePickerWithRangeProps {
   date?: DateRange | undefined;
@@ -31,6 +95,7 @@ export function DatePickerWithRange({
     from: new Date(new Date().getFullYear(), 0, 20),
     to: addDays(new Date(new Date().getFullYear(), 0, 20), 20),
   });
+  const [open, setOpen] = React.useState(false);
 
   const isControlled = onDateChange !== undefined;
   const date = isControlled ? controlledDate : internalDate;
@@ -42,6 +107,11 @@ export function DatePickerWithRange({
     onDateChange?.(selected);
   };
 
+  const handlePresetSelect = (presetRange: DateRange) => {
+    handleSelect(presetRange);
+    setOpen(false);
+  };
+
   return (
     <Field className={cn("w-auto", className)}>
       <FieldLabel
@@ -50,7 +120,7 @@ export function DatePickerWithRange({
       >
         {label}
       </FieldLabel>
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
             <Button
@@ -76,27 +146,63 @@ export function DatePickerWithRange({
             </Button>
           }
         />
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="range"
-            defaultMonth={date?.from}
-            selected={date}
-            onSelect={handleSelect}
-            numberOfMonths={2}
-          />
-          {date?.from && (
-            <div className="flex items-center justify-end border-t border-border p-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleSelect(undefined)}
-                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
-              >
-                <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
-                <span>Clear date filter</span>
-              </Button>
+        <PopoverContent className="w-auto p-0" align="end">
+          <div className="flex divide-x divide-border">
+            {/* Presets Sidebar (Left) */}
+            <div className="flex w-32 shrink-0 flex-col gap-1 p-2">
+              <span className="px-2 py-1 text-2xs font-semibold tracking-wider text-muted-foreground uppercase">
+                Presets
+              </span>
+              {PRESETS.map((preset) => {
+                const isSelected = isPresetSelected(preset, date);
+                return (
+                  <Button
+                    key={preset.label}
+                    variant={isSelected ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => handlePresetSelect(preset.getValue())}
+                    className={cn(
+                      "h-7 justify-start px-2 text-xs font-normal",
+                      isSelected && "bg-accent font-medium text-accent-foreground",
+                    )}
+                  >
+                    {preset.label}
+                  </Button>
+                );
+              })}
             </div>
-          )}
+
+            {/* Calendar & Footer (Right) */}
+            <div className="flex flex-col">
+              <Calendar
+                mode="range"
+                defaultMonth={date?.from}
+                selected={date}
+                onSelect={handleSelect}
+                numberOfMonths={2}
+              />
+              {date?.from && (
+                <div className="flex items-center justify-between border-t border-border px-3 py-2">
+                  <span className="text-2xs text-muted-foreground">
+                    {format(date.from, "LLL dd, y")}
+                    {date.to ? ` - ${format(date.to, "LLL dd, y")}` : ""}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      handleSelect(undefined);
+                      setOpen(false);
+                    }}
+                    className="h-6 gap-1 px-1.5 text-2xs text-muted-foreground hover:text-foreground"
+                  >
+                    <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
+                    <span>Clear</span>
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
         </PopoverContent>
       </Popover>
     </Field>

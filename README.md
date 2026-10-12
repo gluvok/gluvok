@@ -44,6 +44,7 @@ The `/centers` route provides a full-featured data table built with **TanStack T
   - **Axios API Client**: Native `fetch` replaced with typed `axios.get()` requests.
   - **Debounced Search with Cross Button**: Reusable `useDebounce` hook (300ms) with an inline `(x)` clear cross button inside the search input for 1-click clearing.
   - **Clean Toolbar Layout**: Clean left-vs-right split: search input and Auto Approve combobox on the left (expandable for future filters), and Date Range Picker (`DatePickerWithRange`) directly beside the Columns visibility toggle on the right.
+  - **Date Range Picker with Presets**: Interactive popover combining a quick-select left sidebar of standard presets (`Today`, `Yesterday`, `Last 7 days`, `Last 30 days`, `This month`, `Last month`) with a 2-month calendar. Selecting any preset instantly applies the date range filter, syncs to server-side query params (`?from=<ISO>&to=<ISO>`), and auto-closes the popover, while highlighting active presets matching current bounds.
   - **Server-Side Pagination**: TanStack Table `manualPagination` with Base UI `Select` rows-per-page selector (`10, 20, 30, 40, 50`) and spaced Previous/Next buttons (`gap-2`).
   - **Accurate Selection Counter**: Selection count displays `{selectedCount} of {currentRowsCount} row(s) selected.` representing the number of rows currently in the datatable on this page.
   - **Auto Approve Combobox**: Base UI Combobox component for filtering by Auto Approve status.

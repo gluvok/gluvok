@@ -33,15 +33,9 @@ import {
 } from "@/components/ui/combobox";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
-import { DateRangePicker } from "@/components/data-table/date-range-picker";
+import { DatePickerWithRange } from "@/components/data-table/date-range-picker";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  AlertCircleIcon,
-  Cancel01Icon,
-  RefreshIcon,
-  Search01Icon,
-} from "@hugeicons/core-free-icons";
-import { cn } from "@/lib/utils";
+import { AlertCircleIcon, Cancel01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { columns } from "./columns";
 import { features } from "@/components/data-table/data-table-features";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -70,7 +64,6 @@ export function CentersDataTable() {
   const [data, setData] = useState<Center[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   // Server-controlled pagination and sorting
@@ -94,55 +87,47 @@ export function CentersDataTable() {
   }, [debouncedSearch]);
 
   // Fetch centers via axios with full server-side query params
-  const fetchCenters = useCallback(
-    async (isBackground = false) => {
-      if (!isBackground) {
-        setLoading(true);
-      } else {
-        setRefreshing(true);
-      }
-      setError(null);
+  const fetchCenters = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-      try {
-        const response = await axios.get<CentersApiResponse>("/api/centers", {
-          params: {
-            page: pagination.pageIndex + 1,
-            pageSize: pagination.pageSize,
-            ...(sorting.length > 0 && {
-              sort: sorting[0].id,
-              order: sorting[0].desc ? "desc" : "asc",
-            }),
-            ...(debouncedSearch && { search: debouncedSearch }),
-            ...(autoApproveFilter !== "all" && { auto_approve: autoApproveFilter }),
-            ...(dateRange?.from && { from: dateRange.from.toISOString() }),
-            ...(dateRange?.to && { to: dateRange.to.toISOString() }),
-          },
-        });
+    try {
+      const response = await axios.get<CentersApiResponse>("/api/centers", {
+        params: {
+          page: pagination.pageIndex + 1,
+          pageSize: pagination.pageSize,
+          ...(sorting.length > 0 && {
+            sort: sorting[0].id,
+            order: sorting[0].desc ? "desc" : "asc",
+          }),
+          ...(debouncedSearch && { search: debouncedSearch }),
+          ...(autoApproveFilter !== "all" && { auto_approve: autoApproveFilter }),
+          ...(dateRange?.from && { from: dateRange.from.toISOString() }),
+          ...(dateRange?.to && { to: dateRange.to.toISOString() }),
+        },
+      });
 
-        setData(response.data.data ?? []);
-        setTotalCount(response.data.totalCount ?? 0);
-      } catch (err) {
-        const msg =
-          axios.isAxiosError(err) && err.response?.data?.error
-            ? err.response.data.error
-            : err instanceof Error
-              ? err.message
-              : "An unexpected error occurred";
-        setError(msg);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [
-      pagination.pageIndex,
-      pagination.pageSize,
-      sorting,
-      debouncedSearch,
-      autoApproveFilter,
-      dateRange,
-    ],
-  );
+      setData(response.data.data ?? []);
+      setTotalCount(response.data.totalCount ?? 0);
+    } catch (err) {
+      const msg =
+        axios.isAxiosError(err) && err.response?.data?.error
+          ? err.response.data.error
+          : err instanceof Error
+            ? err.message
+            : "An unexpected error occurred";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    pagination.pageIndex,
+    pagination.pageSize,
+    sorting,
+    debouncedSearch,
+    autoApproveFilter,
+    dateRange,
+  ]);
 
   useEffect(() => {
     fetchCenters();
@@ -183,7 +168,7 @@ export function CentersDataTable() {
   // 1. Loading state: render ONLY the centered spinner to eliminate layout shift
   if (loading) {
     return (
-      <div className="flex h-96 items-center justify-center rounded-md border border-border bg-card">
+      <div className="flex h-72 items-center justify-center rounded-md border border-border bg-card">
         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
           <Spinner className="size-6 text-muted-foreground" />
           <span className="text-xs">Loading centers...</span>
@@ -195,7 +180,7 @@ export function CentersDataTable() {
   // 2. Error state
   if (error) {
     return (
-      <div className="flex h-96 items-center justify-center rounded-md border border-border bg-card">
+      <div className="flex h-72 items-center justify-center rounded-md border border-border bg-card">
         <div className="flex flex-col items-center justify-center gap-2 text-destructive">
           <HugeiconsIcon icon={AlertCircleIcon} className="size-5" />
           <span className="text-xs">{error}</span>
@@ -211,9 +196,9 @@ export function CentersDataTable() {
   return (
     <div className="flex flex-col gap-3.5">
       {/* Primary Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         {/* Filters Group (Left) */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-end gap-2.5">
           {/* Search Input */}
           <div className="relative">
             <HugeiconsIcon
@@ -256,7 +241,7 @@ export function CentersDataTable() {
           </Combobox>
 
           {/* Date Range Picker for created_at */}
-          <DateRangePicker
+          <DatePickerWithRange
             date={dateRange}
             onDateChange={(range) => {
               setDateRange(range);
@@ -267,22 +252,6 @@ export function CentersDataTable() {
 
         {/* Action Controls Group (Right) */}
         <div className="flex items-center gap-2">
-          {/* In-place Refresh Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fetchCenters(true)}
-            disabled={refreshing}
-            className="h-8 gap-1 px-2.5 text-xs"
-          >
-            <HugeiconsIcon
-              icon={RefreshIcon}
-              data-icon="inline-start"
-              className={cn(refreshing && "animate-spin")}
-            />
-            <span>Refresh</span>
-          </Button>
-
           {/* Column Visibility Options */}
           <DataTableViewOptions table={table} />
         </div>
@@ -365,14 +334,14 @@ export function CentersDataTable() {
         </div>
       )}
 
-      {/* Spacious Comfortable Table Container */}
+      {/* Compact Clean Table Container */}
       <div className="overflow-hidden rounded-md border border-border bg-card">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="h-10 hover:bg-transparent">
+              <TableRow key={headerGroup.id} className="h-9 hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="h-10 px-3 text-xs font-semibold">
+                  <TableHead key={header.id} className="h-9 px-3 text-xs font-semibold">
                     {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                   </TableHead>
                 ))}
@@ -385,10 +354,10 @@ export function CentersDataTable() {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="h-12 hover:bg-muted/40"
+                  className="h-9 hover:bg-muted/40"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-3 py-3 text-xs">
+                    <TableCell key={cell.id} className="px-3 py-1.5 text-xs">
                       <table.FlexRender cell={cell} />
                     </TableCell>
                   ))}
@@ -398,7 +367,7 @@ export function CentersDataTable() {
               <TableRow>
                 <TableCell
                   colSpan={table.getVisibleLeafColumns().length}
-                  className="h-32 text-center text-xs text-muted-foreground"
+                  className="h-24 text-center text-xs text-muted-foreground"
                 >
                   No centers found matching the specified filters.
                 </TableCell>

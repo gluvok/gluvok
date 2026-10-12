@@ -22,7 +22,7 @@ import {
 } from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
 import { SortableSortChip, SortChipOverlay } from "./sortable-sort-chip";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 export interface DataTableCriteriaBarProps {
   hasActiveFilters?: boolean;

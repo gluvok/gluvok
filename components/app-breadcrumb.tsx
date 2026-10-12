@@ -4,22 +4,11 @@ import type { ComponentProps } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-const ROUTE_TITLES: Record<string, string> = {
-  "/": "Home",
-  "/centers": "Centers",
-  "/entries": "Entries",
-  "/weighments": "Weighments",
-  "/customers": "Customers",
-  "/users": "Users",
-  "/settings": "Settings",
-  "/tickets": "Tickets",
-  "/support": "Support",
-  "/services": "Services",
-};
+import { getRouteTitle } from "@/lib/navigation";
 
 export function AppBreadcrumb({ className, ...props }: ComponentProps<"span">) {
   const pathname = usePathname();
-  const title = (pathname && ROUTE_TITLES[pathname]) || "Home";
+  const title = getRouteTitle(pathname);
 
   return (
     <span className={cn("text-sm font-medium", className)} {...props}>

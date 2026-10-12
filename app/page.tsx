@@ -1,47 +1,8 @@
 import Link from "next/link";
 import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { appIcons } from "@/lib/icons";
+import { mainNavItems } from "@/lib/navigation";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
-
-const sections = [
-  {
-    title: "Centers",
-    description: "Manage processing facilities and operational locations.",
-    href: "/centers",
-    icon: appIcons.centers,
-  },
-  {
-    title: "Entries",
-    description: "View and record incoming and outgoing transport entries.",
-    href: "/entries",
-    icon: appIcons.entries,
-  },
-  {
-    title: "Weighments",
-    description: "Track weighbridge measurements, gross, tare, and net weights.",
-    href: "/weighments",
-    icon: appIcons.weighments,
-  },
-  {
-    title: "Customers",
-    description: "Maintain client profiles, billing contacts, and contracts.",
-    href: "/customers",
-    icon: appIcons.customers,
-  },
-  {
-    title: "Users",
-    description: "Configure system operators, roles, and access credentials.",
-    href: "/users",
-    icon: appIcons.users,
-  },
-  {
-    title: "Settings",
-    description: "Platform preferences, system defaults, and configurations.",
-    href: "/settings",
-    icon: appIcons.settings,
-  },
-];
 
 export default function Home() {
   return (
@@ -54,10 +15,10 @@ export default function Home() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {sections.map((section) => (
+        {mainNavItems.map((section) => (
           <Link
             key={section.title}
-            href={section.href}
+            href={section.url}
             className="group rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Card className="h-full transition-all duration-200 group-hover:border-primary/50 group-hover:bg-muted/30 group-hover:shadow-sm">

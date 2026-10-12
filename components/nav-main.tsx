@@ -1,49 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { HugeiconsIcon } from "@hugeicons/react";
 import type { ComponentProps } from "react";
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
+import type { SidebarGroup } from "@/components/ui/sidebar";
+import { NavGroup } from "@/components/nav-group";
+import { mainNavItems, type NavItem } from "@/lib/navigation";
 
-export type NavItem = {
-  title: string;
-  url: string;
-  icon: ComponentProps<typeof HugeiconsIcon>["icon"];
-};
+export type { NavItem };
 
-export function NavMain({ items }: { items: NavItem[] }) {
-  const pathname = usePathname();
-
-  return (
-    <SidebarGroup>
-      <SidebarGroupLabel>Main</SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {items.map((item) => {
-            const isActive = pathname === item.url;
-            return (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton
-                  render={<Link href={item.url} />}
-                  isActive={isActive}
-                  tooltip={item.title}
-                >
-                  <HugeiconsIcon icon={item.icon} />
-                  <span>{item.title}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
-  );
+export function NavMain({
+  items = mainNavItems,
+  ...props
+}: { items?: NavItem[] } & ComponentProps<typeof SidebarGroup>) {
+  return <NavGroup label="Main" items={items} {...props} />;
 }

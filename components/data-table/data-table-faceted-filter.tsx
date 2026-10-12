@@ -9,7 +9,7 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/components/ui/combobox";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 export interface FacetedFilterOption {
   label: string;
@@ -58,13 +58,13 @@ export function DataTableFacetedFilter({
           showClear={isFiltered}
         />
         <ComboboxContent>
-          <ComboboxEmpty className="text-2xs">No options found.</ComboboxEmpty>
+          <ComboboxEmpty className="text-xs">No options found.</ComboboxEmpty>
           <ComboboxList>
             {options.map((item) => {
               const Icon = item.icon;
               return (
-                <ComboboxItem key={item.value} value={item} className="text-2xs">
-                  {Icon && <Icon className="mr-1.5 size-3 text-muted-foreground" />}
+                <ComboboxItem key={item.value} value={item} className="text-xs">
+                  {Icon && <Icon className="mr-1.5 size-3.5 text-muted-foreground" />}
                   <span>{item.label}</span>
                 </ComboboxItem>
               );

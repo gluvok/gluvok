@@ -140,15 +140,7 @@ For any JavaScript / TypeScript / Node modifications:
 - Window-width JS hooks like `useIsMobile()` cause hydration mismatches, layout shifts during load, and flash of desktop layout on mobile devices.
 - Pure CSS media queries render correctly on the server and hydrate with zero layout shift.
 
-## 10. Micro-Typography & Component Density Scale
-
-**Maintain consistent typography and density hierarchy across tables and toolbars.**
-
-- **Primary Filters & Toolbars**: Use `text-2xs` (0.625rem / 10px) for compact filter inputs, search inputs, comboboxes, date-picker triggers, and columns selectors to achieve high-density, zero-scroll layouts.
-- **Table Data**: Use `text-xs` (0.75rem / 12px) for table headers and body cells.
-- **Badges & Criteria Chips**: Always use `text-2xs` (0.625rem / 10px) with `h-5` height, `px-1.5 py-0.5` padding, and `size-2.5` to `size-3` icons. Never inflate badges to `text-xs` or `h-5.5` inside compact tables.
-
-## 11. Mandatory Pre-Completion Code Audit Gates
+## 10. Mandatory Pre-Completion Code Audit Gates
 
 **Before declaring any task complete, verify these audits return 0 violations:**
 

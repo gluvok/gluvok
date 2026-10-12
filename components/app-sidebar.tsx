@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { appIcons } from "@/lib/icons";
 import {
   Sidebar,
   SidebarContent,
@@ -13,60 +12,9 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { NavMain, type NavItem } from "@/components/nav-main";
-import { NavSecondary, type NavSecondaryItem } from "@/components/nav-secondary";
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser, type UserProps } from "@/components/nav-user";
-
-const navMainItems: NavItem[] = [
-  {
-    title: "Centers",
-    url: "/centers",
-    icon: appIcons.centers,
-  },
-  {
-    title: "Entries",
-    url: "/entries",
-    icon: appIcons.entries,
-  },
-  {
-    title: "Weighments",
-    url: "/weighments",
-    icon: appIcons.weighments,
-  },
-  {
-    title: "Customers",
-    url: "/customers",
-    icon: appIcons.customers,
-  },
-  {
-    title: "Users",
-    url: "/users",
-    icon: appIcons.users,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: appIcons.settings,
-  },
-];
-
-const navSecondaryItems: NavSecondaryItem[] = [
-  {
-    title: "Tickets",
-    url: "/tickets",
-    icon: appIcons.tickets,
-  },
-  {
-    title: "Support",
-    url: "/support",
-    icon: appIcons.support,
-  },
-  {
-    title: "Services",
-    url: "/services",
-    icon: appIcons.services,
-  },
-];
 
 const currentUser: UserProps = {
   name: "User",
@@ -93,8 +41,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMainItems} />
-        <NavSecondary items={navSecondaryItems} className="mt-auto" />
+        <NavMain />
+        <NavSecondary className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={currentUser} />

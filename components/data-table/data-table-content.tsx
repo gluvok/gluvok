@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AlertCircleIcon } from "@hugeicons/core-free-icons";
 import { type DataTableFeatures } from "./data-table-features";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 export interface DataTableContentProps<TData extends RowData> {
   table: ReactTable<DataTableFeatures, TData>;

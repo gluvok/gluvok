@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon, Search01Icon } from "@hugeicons/core-free-icons";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 export interface DataTableSearchInputProps {
   value: string;

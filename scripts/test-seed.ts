@@ -1,9 +1,9 @@
 /**
  * @file scripts/test-seed.ts
- * @description Simplified database seed script for development and testing.
- * Seeds representative test datasets across factories, users (all 5 roles),
- * centers, commodities, customers, entries, weighments, and support tickets
- * matching schema.sql.
+ * @description High-volume database seed script for development, pagination, and testing.
+ * Seeds rich test datasets across factories, users (all 5 roles), centers,
+ * commodities, customers, entries (paired & standalone), weighments, and support tickets
+ * matching schema.sql with staggered timestamps for authentic pagination & sorting.
  */
 
 import argon2 from "argon2";
@@ -27,6 +27,19 @@ const TABLES_IN_CLEAR_ORDER = [
   "factories",
 ];
 
+/**
+ * Returns an ISO timestamp offset by `days` days and `minutesOffset` minutes into the past.
+ */
+function daysAgo(days: number, minutesOffset = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  d.setMinutes(d.getMinutes() - minutesOffset);
+  return d.toISOString();
+}
+
+/**
+ * Clear all existing records and reset sequences.
+ */
 async function clearDatabase() {
   console.log("🧹 [Clean Mode] Clearing all existing records from database...");
 
@@ -63,7 +76,7 @@ async function main() {
     args.includes("--clean") || args.includes("--reset") || process.env.RESET === "true";
 
   console.log("=================================================");
-  console.log("🚀 Starting Database Seeding");
+  console.log("🚀 Starting GluVok High-Volume Test Database Seeding");
   console.log(`📡 Supabase Endpoint: ${process.env.SUPABASE_URL}`);
   console.log(`🧹 Clean Mode: ${shouldClean ? "ENABLED" : "DISABLED"}`);
   console.log("=================================================");
@@ -72,7 +85,7 @@ async function main() {
     await clearDatabase();
   }
 
-  // 1. FACTORIES
+  // 1. FACTORIES (2 Factories)
   console.log("\n🏭 [1/8] Seeding Factories...");
   const factoryConfigs = [{ name: "Default Factory" }, { name: "Apex Agro Logistics" }];
   const factoryMap = new Map<string, number>();
@@ -102,9 +115,9 @@ async function main() {
   const primaryFactoryId = factoryMap.get("Default Factory")!;
   const secondaryFactoryId = factoryMap.get("Apex Agro Logistics")!;
 
-  // 2. USERS (Admin, Manager, Operator, Base, Hardware)
-  console.log("\n👥 [2/8] Seeding Users across all personnel roles...");
-  console.log("  🔒 Hashing passwords with Argon2id...");
+  // 2. USERS (28 Users across all 5 roles)
+  console.log("\n👥 [2/8] Seeding Users (28 personnel & client profiles)...");
+  console.log("  🔒 Pre-hashing role passwords once with Argon2id...");
   const [adminHash, managerHash, operatorHash, userHash, hardwareHash] = await Promise.all([
     argon2.hash("admin123"),
     argon2.hash("manager123"),
@@ -113,13 +126,16 @@ async function main() {
     argon2.hash("hardware123"),
   ]);
 
-  const userConfigs: Array<{
+  interface UserSeedConfig {
     username: string;
     name: string;
     role: Role;
     passwordHash: string;
     factoryId: number;
-  }> = [
+  }
+
+  const userConfigs: UserSeedConfig[] = [
+    // Factory 1 Core & Staff
     {
       username: "admin1",
       name: "Admin Factory 1",
@@ -129,32 +145,111 @@ async function main() {
     },
     {
       username: "manager1",
-      name: "Manager Factory 1",
+      name: "Operations Manager 1",
       role: "manager",
       passwordHash: managerHash,
       factoryId: primaryFactoryId,
     },
     {
       username: "operator1",
-      name: "Operator Factory 1",
+      name: "Main Scale Operator",
+      role: "operator",
+      passwordHash: operatorHash,
+      factoryId: primaryFactoryId,
+    },
+    {
+      username: "operator3",
+      name: "Inbound Gate Operator",
+      role: "operator",
+      passwordHash: operatorHash,
+      factoryId: primaryFactoryId,
+    },
+    {
+      username: "operator4",
+      name: "Silo Platform Operator",
+      role: "operator",
+      passwordHash: operatorHash,
+      factoryId: primaryFactoryId,
+    },
+    {
+      username: "operator5",
+      name: "Night Shift Operator",
       role: "operator",
       passwordHash: operatorHash,
       factoryId: primaryFactoryId,
     },
     {
       username: "customer1",
-      name: "Customer Factory 1",
+      name: "Ramesh Kumar (Account)",
+      role: "base",
+      passwordHash: userHash,
+      factoryId: primaryFactoryId,
+    },
+    {
+      username: "customer2",
+      name: "Anita Sharma (Account)",
+      role: "base",
+      passwordHash: userHash,
+      factoryId: primaryFactoryId,
+    },
+    {
+      username: "customer3",
+      name: "Suresh Patel (Account)",
+      role: "base",
+      passwordHash: userHash,
+      factoryId: primaryFactoryId,
+    },
+    {
+      username: "customer4",
+      name: "Rajendra Singh (Account)",
+      role: "base",
+      passwordHash: userHash,
+      factoryId: primaryFactoryId,
+    },
+    {
+      username: "customer5",
+      name: "Vikram Rathore (Account)",
       role: "base",
       passwordHash: userHash,
       factoryId: primaryFactoryId,
     },
     {
       username: "pi1",
-      name: "Hardware Scale Factory 1",
+      name: "Hardware Scale - Main Weighbridge",
       role: "hardware",
       passwordHash: hardwareHash,
       factoryId: primaryFactoryId,
     },
+    {
+      username: "pi3",
+      name: "Hardware Scale - North Automatic",
+      role: "hardware",
+      passwordHash: hardwareHash,
+      factoryId: primaryFactoryId,
+    },
+    {
+      username: "pi4",
+      name: "Hardware Scale - South Gate",
+      role: "hardware",
+      passwordHash: hardwareHash,
+      factoryId: primaryFactoryId,
+    },
+    {
+      username: "pi5",
+      name: "Hardware Scale - East Inbound",
+      role: "hardware",
+      passwordHash: hardwareHash,
+      factoryId: primaryFactoryId,
+    },
+    {
+      username: "pi6",
+      name: "Hardware Scale - West Outbound",
+      role: "hardware",
+      passwordHash: hardwareHash,
+      factoryId: primaryFactoryId,
+    },
+
+    // Factory 2 Core & Staff
     {
       username: "admin2",
       name: "Admin Factory 2",
@@ -163,15 +258,78 @@ async function main() {
       factoryId: secondaryFactoryId,
     },
     {
+      username: "manager2",
+      name: "Apex Logistics Manager",
+      role: "manager",
+      passwordHash: managerHash,
+      factoryId: secondaryFactoryId,
+    },
+    {
       username: "operator2",
-      name: "Operator Factory 2",
+      name: "Apex Terminal Operator 1",
       role: "operator",
       passwordHash: operatorHash,
       factoryId: secondaryFactoryId,
     },
     {
+      username: "operator6",
+      name: "Apex Terminal Operator 2",
+      role: "operator",
+      passwordHash: operatorHash,
+      factoryId: secondaryFactoryId,
+    },
+    {
+      username: "customer6",
+      name: "Apex Agritech Rep (Account)",
+      role: "base",
+      passwordHash: userHash,
+      factoryId: secondaryFactoryId,
+    },
+    {
+      username: "customer7",
+      name: "Kalyan Krishi Kendra (Account)",
+      role: "base",
+      passwordHash: userHash,
+      factoryId: secondaryFactoryId,
+    },
+    {
+      username: "customer8",
+      name: "Vidarbha Agro Farms (Account)",
+      role: "base",
+      passwordHash: userHash,
+      factoryId: secondaryFactoryId,
+    },
+    {
+      username: "customer9",
+      name: "Marathwada Bio Fuels (Account)",
+      role: "base",
+      passwordHash: userHash,
+      factoryId: secondaryFactoryId,
+    },
+    {
+      username: "customer10",
+      name: "Deccan Grain Carriers (Account)",
+      role: "base",
+      passwordHash: userHash,
+      factoryId: secondaryFactoryId,
+    },
+    {
       username: "pi2",
-      name: "Hardware Scale Factory 2",
+      name: "Hardware Scale - Apex Terminal 1",
+      role: "hardware",
+      passwordHash: hardwareHash,
+      factoryId: secondaryFactoryId,
+    },
+    {
+      username: "pi7",
+      name: "Hardware Scale - Apex South Scale",
+      role: "hardware",
+      passwordHash: hardwareHash,
+      factoryId: secondaryFactoryId,
+    },
+    {
+      username: "pi8",
+      name: "Hardware Scale - Apex East Gate",
       role: "hardware",
       passwordHash: hardwareHash,
       factoryId: secondaryFactoryId,
@@ -189,7 +347,6 @@ async function main() {
 
     if (existing) {
       userMap.set(u.username, existing.id);
-      console.log(`  ✓ Found user: '${u.username}' (${u.role}, id: ${existing.id})`);
     } else {
       const { data: created, error } = await supabase
         .from("users")
@@ -204,50 +361,145 @@ async function main() {
         .single();
       if (error || !created) throw error || new Error(`Failed to create user ${u.username}`);
       userMap.set(u.username, created.id);
-      console.log(`  + Created user: '${u.username}' (${u.role}, id: ${created.id})`);
     }
   }
+  console.log(`  ✓ Seeded ${userMap.size} users across all 5 roles.`);
 
-  // 3. CENTERS
-  console.log("\n🏢 [3/8] Seeding Centers...");
-  const centerConfigs = [
-    { name: "Main Weighbridge", autoApprove: false, factoryId: primaryFactoryId },
-    { name: "North Automatic Scale", autoApprove: true, factoryId: primaryFactoryId },
-    { name: "Apex Terminal 1", autoApprove: false, factoryId: secondaryFactoryId },
+  // 3. CENTERS (50 Centers: 35 for Factory 1, 15 for Factory 2)
+  console.log("\n🏢 [3/8] Seeding 50 Centers (enabling rich multi-page pagination)...");
+  const factory1CenterNames = [
+    "Main Weighbridge",
+    "North Automatic Scale",
+    "South Gate Weighbridge",
+    "East Inbound Scale",
+    "West Outbound Scale",
+    "Grain Silo Platform 1",
+    "Grain Silo Platform 2",
+    "Fertilizer Bulk Terminal",
+    "Rail Inflow Weighbridge",
+    "Central Logistics Platform",
+    "North-East Weighbridge A",
+    "North-East Weighbridge B",
+    "South-West Rapid Scale",
+    "Automated Bypass Scale 1",
+    "Automated Bypass Scale 2",
+    "Processing Unit 1 Scale",
+    "Processing Unit 2 Scale",
+    "Bulk Hopper Weighbridge",
+    "Container Yard Scale A",
+    "Container Yard Scale B",
+    "Liquid Terminal Scale",
+    "Feed Mill Weighbridge",
+    "Storage Silo Scale 3",
+    "Storage Silo Scale 4",
+    "Express Exit Platform",
+    "Raw Material Inflow Scale",
+    "Finished Goods Scale",
+    "Secondary Gate Weighbridge",
+    "Dispatch Weighbridge 1",
+    "Dispatch Weighbridge 2",
+    "Heavy Freight Weighbridge",
+    "Quality Check Scale",
+    "Tare Verification Scale",
+    "Reserve Auxiliary Scale",
+    "Emergency Overflow Scale",
   ];
+
+  const factory2CenterNames = [
+    "Apex Terminal 1",
+    "Apex South Scale",
+    "Apex East Gate Platform",
+    "Apex Railhead Scale",
+    "Apex Bulk Grain Terminal",
+    "Apex Automated Scale A",
+    "Apex Automated Scale B",
+    "Apex Silo Weighbridge",
+    "Apex Express Scale",
+    "Apex Inbound Platform 2",
+    "Apex Outbound Platform 2",
+    "Apex Dispatch Scale",
+    "Apex Freight Yard Bridge",
+    "Apex Auxiliary Scale",
+    "Apex Inspection Scale",
+  ];
+
+  interface CenterInsertData {
+    name: string;
+    auto_approve: boolean;
+    factory_id: number;
+    created_at: string;
+  }
+
+  const centersToInsert: CenterInsertData[] = [];
+
+  factory1CenterNames.forEach((name, idx) => {
+    centersToInsert.push({
+      name,
+      // Approximately 35% auto_approve enabled for visual variation
+      auto_approve: idx % 3 === 1,
+      factory_id: primaryFactoryId,
+      created_at: daysAgo(50 - idx, idx * 12),
+    });
+  });
+
+  factory2CenterNames.forEach((name, idx) => {
+    centersToInsert.push({
+      name,
+      auto_approve: idx % 4 === 0,
+      factory_id: secondaryFactoryId,
+      created_at: daysAgo(30 - idx, idx * 18),
+    });
+  });
 
   const centerMap = new Map<string, number>();
 
-  for (const c of centerConfigs) {
+  for (const c of centersToInsert) {
     const { data: existing } = await supabase
       .from("centers")
       .select("id")
       .eq("name", c.name)
-      .eq("factory_id", c.factoryId)
+      .eq("factory_id", c.factory_id)
       .maybeSingle();
 
     if (existing) {
       centerMap.set(c.name, existing.id);
-      console.log(`  ✓ Found center: '${c.name}' (id: ${existing.id})`);
     } else {
       const { data: created, error } = await supabase
         .from("centers")
-        .insert({
-          name: c.name,
-          auto_approve: c.autoApprove,
-          factory_id: c.factoryId,
-        })
+        .insert(c)
         .select("id")
         .single();
       if (error || !created) throw error || new Error(`Failed to create center ${c.name}`);
       centerMap.set(c.name, created.id);
-      console.log(`  + Created center: '${c.name}' (id: ${created.id})`);
     }
   }
+  console.log(`  ✓ Seeded ${centerMap.size} centers (35 Default Factory, 15 Apex Agro Logistics).`);
 
-  // 4. COMMODITIES
-  console.log("\n🌾 [4/8] Seeding Commodities...");
-  const commodityNames = ["Wheat", "Corn", "Soybeans", "Sugarcane", "Cotton"];
+  // 4. COMMODITIES (20 Agricultural Commodities)
+  console.log("\n🌾 [4/8] Seeding 20 Commodities...");
+  const commodityNames = [
+    "Wheat",
+    "Corn",
+    "Soybeans",
+    "Sugarcane",
+    "Cotton",
+    "Rice",
+    "Barley",
+    "Sorghum",
+    "Oats",
+    "Sunflower Seed",
+    "Canola",
+    "Mustard Seed",
+    "Groundnut",
+    "Coffee Beans",
+    "Tea Leaves",
+    "Chickpeas",
+    "Red Lentils",
+    "Pigeon Peas",
+    "Jowar",
+    "Bajra",
+  ];
+
   const commodityMap = new Map<string, number>();
 
   for (const name of commodityNames) {
@@ -271,32 +523,373 @@ async function main() {
   }
   console.log(`  ✓ Seeded ${commodityMap.size} commodities.`);
 
-  // 5. CUSTOMERS
-  console.log("\n🧑‍🌾 [5/8] Seeding Customers...");
-  const customerConfigs = [
+  // 5. CUSTOMERS (50 Customer Profiles)
+  console.log("\n🧑‍🌾 [5/8] Seeding 50 Customers...");
+  const customerRawConfigs: Array<{
+    name: string;
+    fatherName: string;
+    username: string | null;
+    factoryId: number;
+    daysOffset: number;
+  }> = [
+    // Factory 1 Customers
     {
       name: "Ramesh Kumar",
       fatherName: "Suresh Kumar",
       username: "customer1",
       factoryId: primaryFactoryId,
+      daysOffset: 45,
     },
     {
       name: "Anita Sharma",
       fatherName: "Vijay Sharma",
+      username: "customer2",
+      factoryId: primaryFactoryId,
+      daysOffset: 44,
+    },
+    {
+      name: "Suresh Patel",
+      fatherName: "Raman Patel",
+      username: "customer3",
+      factoryId: primaryFactoryId,
+      daysOffset: 43,
+    },
+    {
+      name: "Rajendra Singh",
+      fatherName: "Dungar Singh",
+      username: "customer4",
+      factoryId: primaryFactoryId,
+      daysOffset: 42,
+    },
+    {
+      name: "Vikram Rathore",
+      fatherName: "Pratap Rathore",
+      username: "customer5",
+      factoryId: primaryFactoryId,
+      daysOffset: 41,
+    },
+    {
+      name: "Pooja Verma",
+      fatherName: "Om Prakash Verma",
       username: null,
       factoryId: primaryFactoryId,
+      daysOffset: 40,
     },
+    {
+      name: "Devendra Yadav",
+      fatherName: "Ram Prasad Yadav",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 39,
+    },
+    {
+      name: "Kavita Choudhary",
+      fatherName: "Kishan Choudhary",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 38,
+    },
+    {
+      name: "Sunil Deshmukh",
+      fatherName: "Balwant Deshmukh",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 37,
+    },
+    {
+      name: "Prakash Joshi",
+      fatherName: "Ganesh Joshi",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 36,
+    },
+    {
+      name: "Mahesh Kulkarni",
+      fatherName: "Vasant Kulkarni",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 35,
+    },
+    {
+      name: "Geeta Meena",
+      fatherName: "Ramavatar Meena",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 34,
+    },
+    {
+      name: "Harish Rawat",
+      fatherName: "Kundan Rawat",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 33,
+    },
+    {
+      name: "Manoj Tiwari",
+      fatherName: "Shiv Tiwari",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 32,
+    },
+    {
+      name: "Anil Chauhan",
+      fatherName: "Dheeraj Chauhan",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 31,
+    },
+    {
+      name: "Babulal Gurjar",
+      fatherName: "Chhaganlal Gurjar",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 30,
+    },
+    {
+      name: "Santosh Dhakad",
+      fatherName: "Pannalal Dhakad",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 29,
+    },
+    {
+      name: "Mukesh Bhati",
+      fatherName: "Mangi Lal Bhati",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 28,
+    },
+    {
+      name: "Dharmendra Saini",
+      fatherName: "Ramdev Saini",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 27,
+    },
+    {
+      name: "Rajeshwari Bai",
+      fatherName: "Ramchandra Bai",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 26,
+    },
+    {
+      name: "Jagdish Bishnoi",
+      fatherName: "Pokar Ram Bishnoi",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 25,
+    },
+    {
+      name: "Kailash Mali",
+      fatherName: "Pukhraj Mali",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 24,
+    },
+    {
+      name: "Govind Dan",
+      fatherName: "Hari Dan",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 23,
+    },
+    {
+      name: "Bhawani Singh",
+      fatherName: "Karan Singh",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 22,
+    },
+    {
+      name: "Manish Solanki",
+      fatherName: "Bhikha Solanki",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 21,
+    },
+    {
+      name: "Gopal Agarwal",
+      fatherName: "Radheshyam Agarwal",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 20,
+    },
+    {
+      name: "Nandkishore Vyas",
+      fatherName: "Brijmohan Vyas",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 19,
+    },
+    {
+      name: "Kamla Devi",
+      fatherName: "Bhairon Singh",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 18,
+    },
+    {
+      name: "Mohanlal Kumhar",
+      fatherName: "Kalu Ram Kumhar",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 17,
+    },
+    {
+      name: "Ramswaroop Jat",
+      fatherName: "Teja Ram Jat",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 16,
+    },
+    {
+      name: "Bhagwan Sahay",
+      fatherName: "Gokul Sahay",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 15,
+    },
+    {
+      name: "Shyam Sundar",
+      fatherName: "Damodar Sundar",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 14,
+    },
+    {
+      name: "Ratan Lal",
+      fatherName: "Harchand Lal",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 13,
+    },
+    {
+      name: "Narendra Modi Logistics",
+      fatherName: "Commercial Account",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 12,
+    },
+    {
+      name: "Suraj Agro Traders",
+      fatherName: "Commercial Account",
+      username: null,
+      factoryId: primaryFactoryId,
+      daysOffset: 11,
+    },
+
+    // Factory 2 Customers
     {
       name: "Apex Agritech Co.",
       fatherName: "Commercial Account",
+      username: "customer6",
+      factoryId: secondaryFactoryId,
+      daysOffset: 30,
+    },
+    {
+      name: "Kalyan Krishi Kendra",
+      fatherName: "Corporate Account",
+      username: "customer7",
+      factoryId: secondaryFactoryId,
+      daysOffset: 28,
+    },
+    {
+      name: "Vidarbha Agro Farms",
+      fatherName: "State Co-op",
+      username: "customer8",
+      factoryId: secondaryFactoryId,
+      daysOffset: 26,
+    },
+    {
+      name: "Marathwada Bio Fuels",
+      fatherName: "Commercial Account",
+      username: "customer9",
+      factoryId: secondaryFactoryId,
+      daysOffset: 24,
+    },
+    {
+      name: "Deccan Grain Carriers",
+      fatherName: "Corporate Account",
+      username: "customer10",
+      factoryId: secondaryFactoryId,
+      daysOffset: 22,
+    },
+    {
+      name: "Sahyadri Agro Allied",
+      fatherName: "Commercial Entity",
       username: null,
       factoryId: secondaryFactoryId,
+      daysOffset: 20,
+    },
+    {
+      name: "Baramati FPO",
+      fatherName: "Farmer Producer Org",
+      username: null,
+      factoryId: secondaryFactoryId,
+      daysOffset: 18,
+    },
+    {
+      name: "Godavari Agro Exporters",
+      fatherName: "Corporate Entity",
+      username: null,
+      factoryId: secondaryFactoryId,
+      daysOffset: 16,
+    },
+    {
+      name: "Krishna Valley Mills",
+      fatherName: "Commercial Account",
+      username: null,
+      factoryId: secondaryFactoryId,
+      daysOffset: 14,
+    },
+    {
+      name: "Western Agro Terminal",
+      fatherName: "Corporate Entity",
+      username: null,
+      factoryId: secondaryFactoryId,
+      daysOffset: 12,
+    },
+    {
+      name: "Satpura Crop Sciences",
+      fatherName: "Corporate Account",
+      username: null,
+      factoryId: secondaryFactoryId,
+      daysOffset: 10,
+    },
+    {
+      name: "Panchganga Seed Co.",
+      fatherName: "Commercial Entity",
+      username: null,
+      factoryId: secondaryFactoryId,
+      daysOffset: 8,
+    },
+    {
+      name: "Narmada Agri Products",
+      fatherName: "Corporate Account",
+      username: null,
+      factoryId: secondaryFactoryId,
+      daysOffset: 6,
+    },
+    {
+      name: "Malwa Agro Consortium",
+      fatherName: "Commercial Consortium",
+      username: null,
+      factoryId: secondaryFactoryId,
+      daysOffset: 4,
+    },
+    {
+      name: "Chambal Grain Storage",
+      fatherName: "Corporate Account",
+      username: null,
+      factoryId: secondaryFactoryId,
+      daysOffset: 2,
     },
   ];
 
   const customerMap = new Map<string, number>();
 
-  for (const cust of customerConfigs) {
+  for (const cust of customerRawConfigs) {
     const userId = cust.username ? (userMap.get(cust.username) ?? null) : null;
     const { data: existing } = await supabase
       .from("customers")
@@ -307,7 +900,6 @@ async function main() {
 
     if (existing) {
       customerMap.set(cust.name, existing.id);
-      console.log(`  ✓ Found customer: '${cust.name}' (id: ${existing.id})`);
     } else {
       const { data: created, error } = await supabase
         .from("customers")
@@ -316,93 +908,187 @@ async function main() {
           father_name: cust.fatherName,
           user_id: userId,
           factory_id: cust.factoryId,
+          created_at: daysAgo(cust.daysOffset, 25),
         })
         .select("id")
         .single();
       if (error || !created) throw error || new Error(`Failed to create customer ${cust.name}`);
       customerMap.set(cust.name, created.id);
-      console.log(`  + Created customer: '${cust.name}' (id: ${created.id})`);
     }
   }
+  console.log(`  ✓ Seeded ${customerMap.size} customers.`);
 
-  // 6. ENTRIES & WEIGHMENTS
-  console.log("\n🚛 [6/8] Seeding Paired Entries and Weighments...");
-  const mainCenterId = centerMap.get("Main Weighbridge")!;
-  const northCenterId = centerMap.get("North Automatic Scale")!;
+  // Helpers to get arrays of IDs for relationships
+  const factory1CenterIds = factory1CenterNames.map((n) => centerMap.get(n)!);
+  const factory2CenterIds = factory2CenterNames.map((n) => centerMap.get(n)!);
+  const customerIdsArray = Array.from(customerMap.values());
+
   const operator1Id = userMap.get("operator1")!;
+  const operator3Id = userMap.get("operator3")!;
   const manager1Id = userMap.get("manager1")!;
   const pi1Id = userMap.get("pi1")!;
-  const rameshCustomerId = customerMap.get("Ramesh Kumar")!;
-  const anitaCustomerId = customerMap.get("Anita Sharma")!;
 
-  // Inbound entry for paired weighment
-  const { data: inEntry, error: inErr } = await supabase
-    .from("entries")
-    .insert({
-      vehicle_number: "MH12AB1234",
-      detected_vehicle_number: "MH12AB1234",
-      weight: 32500.0,
-      status: "approved" as EntryStatus,
-      auto_approved: false,
-      center_id: mainCenterId,
-      customer_id: rameshCustomerId,
-      factory_id: primaryFactoryId,
-      created_by: operator1Id,
-      approved_by: operator1Id,
-      images: [],
-    })
-    .select("id")
-    .single();
+  const operator2Id = userMap.get("operator2")!;
+  const manager2Id = userMap.get("manager2")!;
+  const pi2Id = userMap.get("pi2")!;
 
-  if (inErr || !inEntry) {
-    throw inErr || new Error("Failed to insert inEntry");
+  // 6. PAIRED ENTRIES & WEIGHMENTS (30 Pairs = 60 Entries & 30 Weighments)
+  console.log("\n🚛 [6/8] Seeding 30 Paired Inbound/Outbound Entries and Linked Weighments...");
+  const pairedVehicles: Array<{
+    vehicle: string;
+    factoryId: number;
+    centerId: number;
+    customerId: number;
+    operatorId: number;
+    grossWeight: number;
+    tareWeight: number;
+    daysOffset: number;
+  }> = [];
+
+  // 20 Paired vehicles in Factory 1
+  for (let i = 1; i <= 20; i++) {
+    const vehicleNum = `MH12AB${1000 + i}`;
+    const centerId = factory1CenterIds[i % factory1CenterIds.length];
+    const customerId = customerIdsArray[i % 35]; // Factory 1 customer
+    const gross = 28000 + ((i * 950) % 22000); // 28,000 - 50,000 kg
+    const tare = 9000 + ((i * 350) % 6500); // 9,000 - 15,500 kg
+    pairedVehicles.push({
+      vehicle: vehicleNum,
+      factoryId: primaryFactoryId,
+      centerId,
+      customerId,
+      operatorId: i % 2 === 0 ? operator1Id : operator3Id,
+      grossWeight: gross,
+      tareWeight: tare,
+      daysOffset: 32 - i,
+    });
   }
 
-  // Outbound entry for paired weighment
-  const { data: outEntry, error: outErr } = await supabase
-    .from("entries")
-    .insert({
-      vehicle_number: "MH12AB1234",
-      detected_vehicle_number: "MH12AB1234",
-      weight: 14200.0,
-      status: "approved" as EntryStatus,
-      auto_approved: false,
-      center_id: mainCenterId,
-      customer_id: rameshCustomerId,
-      factory_id: primaryFactoryId,
-      created_by: operator1Id,
-      approved_by: operator1Id,
-      images: [],
-    })
-    .select("id")
-    .single();
-
-  if (outErr || !outEntry) {
-    throw outErr || new Error("Failed to insert outEntry");
+  // 10 Paired vehicles in Factory 2
+  for (let i = 1; i <= 10; i++) {
+    const vehicleNum = `MH14CD${2000 + i}`;
+    const centerId = factory2CenterIds[i % factory2CenterIds.length];
+    const customerId = customerIdsArray[35 + (i % 15)]; // Factory 2 customer
+    const gross = 30000 + ((i * 800) % 20000);
+    const tare = 10000 + ((i * 300) % 5500);
+    pairedVehicles.push({
+      vehicle: vehicleNum,
+      factoryId: secondaryFactoryId,
+      centerId,
+      customerId,
+      operatorId: operator2Id,
+      grossWeight: gross,
+      tareWeight: tare,
+      daysOffset: 20 - i,
+    });
   }
 
-  // Linked double-entry weighment
-  const { data: weighment, error: weighmentErr } = await supabase
+  interface EntryInsert {
+    vehicle_number: string;
+    detected_vehicle_number: string;
+    weight: number;
+    status: EntryStatus;
+    auto_approved: boolean;
+    center_id: number;
+    customer_id: number;
+    factory_id: number;
+    created_by: number;
+    approved_by: number;
+    images: string[];
+    created_at: string;
+  }
+
+  const inEntriesToInsert: EntryInsert[] = [];
+  const outEntriesToInsert: EntryInsert[] = [];
+
+  for (const pv of pairedVehicles) {
+    inEntriesToInsert.push({
+      vehicle_number: pv.vehicle,
+      detected_vehicle_number: pv.vehicle,
+      weight: pv.grossWeight,
+      status: "approved",
+      auto_approved: false,
+      center_id: pv.centerId,
+      customer_id: pv.customerId,
+      factory_id: pv.factoryId,
+      created_by: pv.operatorId,
+      approved_by: pv.operatorId,
+      images: [],
+      created_at: daysAgo(pv.daysOffset, 120),
+    });
+
+    outEntriesToInsert.push({
+      vehicle_number: pv.vehicle,
+      detected_vehicle_number: pv.vehicle,
+      weight: pv.tareWeight,
+      status: "approved",
+      auto_approved: false,
+      center_id: pv.centerId,
+      customer_id: pv.customerId,
+      factory_id: pv.factoryId,
+      created_by: pv.operatorId,
+      approved_by: pv.operatorId,
+      images: [],
+      created_at: daysAgo(pv.daysOffset, 0),
+    });
+  }
+
+  const { data: createdInEntries, error: inErr } = await supabase
+    .from("entries")
+    .insert(inEntriesToInsert)
+    .select("id");
+
+  if (inErr || !createdInEntries) {
+    throw inErr || new Error("Failed to bulk insert inbound entries");
+  }
+
+  const { data: createdOutEntries, error: outErr } = await supabase
+    .from("entries")
+    .insert(outEntriesToInsert)
+    .select("id");
+
+  if (outErr || !createdOutEntries) {
+    throw outErr || new Error("Failed to bulk insert outbound entries");
+  }
+
+  // Create linked weighments
+  interface WeighmentInsert {
+    in_entry_id: number;
+    out_entry_id: number;
+    unit: Unit;
+    type: WeighmentType;
+    created_at: string;
+  }
+
+  const weighmentsToInsert: WeighmentInsert[] = [];
+  for (let i = 0; i < createdInEntries.length; i++) {
+    const pv = pairedVehicles[i];
+    weighmentsToInsert.push({
+      in_entry_id: createdInEntries[i].id,
+      out_entry_id: createdOutEntries[i].id,
+      unit: "kg",
+      type: i % 4 === 0 ? "out" : i % 7 === 0 ? "unassigned" : "in",
+      created_at: daysAgo(pv.daysOffset, 0),
+    });
+  }
+
+  const { data: createdWeighments, error: weighmentErr } = await supabase
     .from("weighments")
-    .insert({
-      in_entry_id: inEntry.id,
-      out_entry_id: outEntry.id,
-      unit: "kg" as Unit,
-      type: "in" as WeighmentType,
-    })
-    .select("id")
-    .single();
+    .insert(weighmentsToInsert)
+    .select("id");
 
-  if (weighmentErr || !weighment) {
-    throw weighmentErr || new Error("Failed to insert weighment");
+  if (weighmentErr || !createdWeighments) {
+    throw weighmentErr || new Error("Failed to bulk insert weighments");
   }
 
   console.log(
-    `  ✓ Created weighment (id: ${weighment.id}) linking in-entry (${inEntry.id}) and out-entry (${outEntry.id})`,
+    `  ✓ Created ${createdWeighments.length} weighments linking ${createdInEntries.length} inbound and ${createdOutEntries.length} outbound entries.`,
   );
 
-  // 7. STANDALONE UNPAIRED ENTRIES
-  console.log("\n📋 [7/8] Seeding Standalone Entries (Pending, Auto-Approved, Rejected)...");
+  // 7. STANDALONE UNPAIRED ENTRIES (40 Entries: Pending, Auto-Approved, Rejected)
+  console.log(
+    "\n📋 [7/8] Seeding 40 Standalone Entries (20 Pending, 10 Auto-Approved, 10 Rejected)...",
+  );
   interface StandaloneEntryData {
     vehicle_number: string;
     detected_vehicle_number: string;
@@ -415,131 +1101,286 @@ async function main() {
     created_by: number;
     approved_by: number | null;
     images: string[];
+    created_at: string;
   }
 
-  const standaloneEntriesData: StandaloneEntryData[] = [
-    {
-      vehicle_number: "DL01XY9876",
-      detected_vehicle_number: "DL01XY9876",
-      weight: 28400.0,
+  const standaloneEntriesToInsert: StandaloneEntryData[] = [];
+
+  // 20 Pending Entries
+  for (let i = 1; i <= 20; i++) {
+    const plate = `DL01XY${3000 + i}`;
+    const factoryId = i <= 14 ? primaryFactoryId : secondaryFactoryId;
+    const centerList = factoryId === primaryFactoryId ? factory1CenterIds : factory2CenterIds;
+    const centerId = centerList[i % centerList.length];
+    const customerId = i % 3 === 0 ? null : customerIdsArray[i % customerIdsArray.length];
+    const operatorId = factoryId === primaryFactoryId ? operator1Id : operator2Id;
+
+    standaloneEntriesToInsert.push({
+      vehicle_number: plate,
+      detected_vehicle_number: plate,
+      weight: 18000 + ((i * 1150) % 25000),
       status: "pending",
       auto_approved: false,
-      center_id: mainCenterId,
-      customer_id: anitaCustomerId,
-      factory_id: primaryFactoryId,
-      created_by: operator1Id,
+      center_id: centerId,
+      customer_id: customerId,
+      factory_id: factoryId,
+      created_by: operatorId,
       approved_by: null,
       images: [],
-    },
-    {
-      vehicle_number: "KA04CD5678",
-      detected_vehicle_number: "KA04CD5678",
-      weight: 18900.0,
-      status: "approved",
-      auto_approved: true,
-      center_id: northCenterId,
-      customer_id: null,
-      factory_id: primaryFactoryId,
-      created_by: pi1Id,
-      approved_by: pi1Id,
-      images: [],
-    },
-    {
-      vehicle_number: "GJ03EF4321",
-      detected_vehicle_number: "GJ03EF4321",
-      weight: 15000.0,
-      status: "rejected",
-      auto_approved: false,
-      center_id: mainCenterId,
-      customer_id: null,
-      factory_id: primaryFactoryId,
-      created_by: operator1Id,
-      approved_by: operator1Id,
-      images: [],
-    },
-  ];
-
-  const createdStandaloneEntries: number[] = [];
-  for (const entryData of standaloneEntriesData) {
-    const { data: created, error } = await supabase
-      .from("entries")
-      .insert(entryData)
-      .select("id")
-      .single();
-
-    if (error || !created) {
-      console.warn(
-        `  ⚠️ Failed to insert standalone entry ${entryData.vehicle_number}:`,
-        error?.message,
-      );
-    } else {
-      createdStandaloneEntries.push(created.id);
-      console.log(
-        `  + Created standalone entry: ${entryData.vehicle_number} [${entryData.status}] (id: ${created.id})`,
-      );
-    }
+      created_at: daysAgo(Math.floor(i / 4), (i * 37) % 60),
+    });
   }
 
-  // 8. TICKETS
-  console.log("\n🎫 [8/8] Seeding Support Tickets (Constraint Validated)...");
-  const pendingEntryId = createdStandaloneEntries[0] ?? inEntry.id;
+  // 10 Auto-Approved Entries (Hardware Scales)
+  for (let i = 1; i <= 10; i++) {
+    const plate = `KA04CD${4000 + i}`;
+    const factoryId = i <= 6 ? primaryFactoryId : secondaryFactoryId;
+    const centerList = factoryId === primaryFactoryId ? factory1CenterIds : factory2CenterIds;
+    const centerId = centerList[i % centerList.length];
+    const piId = factoryId === primaryFactoryId ? pi1Id : pi2Id;
 
-  interface TicketData {
+    standaloneEntriesToInsert.push({
+      vehicle_number: plate,
+      detected_vehicle_number: plate,
+      weight: 20000 + ((i * 1250) % 18000),
+      status: "approved",
+      auto_approved: true,
+      center_id: centerId,
+      customer_id: customerIdsArray[(i * 3) % customerIdsArray.length],
+      factory_id: factoryId,
+      created_by: piId,
+      approved_by: piId,
+      images: [],
+      created_at: daysAgo(5 + i, (i * 45) % 60),
+    });
+  }
+
+  // 10 Rejected Entries
+  for (let i = 1; i <= 10; i++) {
+    const plate = `GJ03EF${5000 + i}`;
+    const factoryId = i <= 7 ? primaryFactoryId : secondaryFactoryId;
+    const centerList = factoryId === primaryFactoryId ? factory1CenterIds : factory2CenterIds;
+    const centerId = centerList[i % centerList.length];
+    const operatorId = factoryId === primaryFactoryId ? operator1Id : operator2Id;
+    const managerId = factoryId === primaryFactoryId ? manager1Id : manager2Id;
+
+    standaloneEntriesToInsert.push({
+      vehicle_number: plate,
+      detected_vehicle_number: plate,
+      weight: 14000 + ((i * 2100) % 36000),
+      status: "rejected",
+      auto_approved: false,
+      center_id: centerId,
+      customer_id: null,
+      factory_id: factoryId,
+      created_by: operatorId,
+      approved_by: managerId,
+      images: [],
+      created_at: daysAgo(8 + i, (i * 50) % 60),
+    });
+  }
+
+  const { data: createdStandaloneEntries, error: standaloneErr } = await supabase
+    .from("entries")
+    .insert(standaloneEntriesToInsert)
+    .select("id");
+
+  if (standaloneErr || !createdStandaloneEntries) {
+    throw standaloneErr || new Error("Failed to bulk insert standalone entries");
+  }
+
+  console.log(
+    `  ✓ Created ${createdStandaloneEntries.length} standalone entries (Total Entries: ${
+      createdInEntries.length + createdOutEntries.length + createdStandaloneEntries.length
+    }).`,
+  );
+
+  // 8. TICKETS (40 Support Tickets: 20 linked to entries, 20 linked to weighments)
+  console.log("\n🎫 [8/8] Seeding 40 Support Tickets (Constraint Validated)...");
+  interface TicketInsert {
     concern: string;
     reply: string | null;
     status: TicketStatus;
     entry_id: number | null;
     weighment_id: number | null;
     user_id: number;
+    created_at: string;
   }
 
-  const ticketsData: TicketData[] = [
+  const ticketConcerns = [
     {
       concern: "Vehicle plate mismatch with transport manifest.",
-      reply: null,
-      status: "pending",
-      entry_id: pendingEntryId,
-      weighment_id: null,
-      user_id: operator1Id,
+      reply: "Verified physical gate register; operator corrected plate.",
+      status: "approved" as TicketStatus,
     },
     {
-      concern: "Tare weight discrepancy exceeds allowed tolerance margin.",
+      concern: "Tare weight discrepancy exceeds allowed ±20kg tolerance margin.",
       reply: "Recalibrated weighbridge and re-verified tare weight.",
-      status: "approved",
-      entry_id: null,
-      weighment_id: weighment.id,
-      user_id: manager1Id,
+      status: "approved" as TicketStatus,
+    },
+    {
+      concern: "Driver disputed net weight recorded on outbound receipt.",
+      reply: null,
+      status: "pending" as TicketStatus,
+    },
+    {
+      concern: "Camera 1 crop obscured by mud spatter on lens.",
+      reply: "Cleaned optical sensor housing; test frame verified.",
+      status: "approved" as TicketStatus,
+    },
+    {
+      concern: "Moisture rebate query from farmer on grain shipment.",
+      reply: null,
+      status: "pending" as TicketStatus,
+    },
+    {
+      concern: "Gross weight exceeds legal highway payload rating (50MT).",
+      reply: "Excess cargo offloaded at auxiliary depot prior to transit.",
+      status: "approved" as TicketStatus,
+    },
+    {
+      concern: "Scale indicator oscillated due to high crosswinds.",
+      reply: "Wind deflectors inspected and tightened.",
+      status: "approved" as TicketStatus,
+    },
+    {
+      concern: "OCR failed to read obscured rear number plate.",
+      reply: null,
+      status: "pending" as TicketStatus,
+    },
+    {
+      concern: "Entry submitted with incorrect commodity destination center.",
+      reply: "Re-routed shipment to Silo Unit 2.",
+      status: "approved" as TicketStatus,
+    },
+    {
+      concern: "Duplicate inbound ticket generated during network timeout.",
+      reply: "Duplicate entry voided by shift supervisor.",
+      status: "rejected" as TicketStatus,
+    },
+    {
+      concern: "Driver attempted re-entry without clearing outbound tare.",
+      reply: "Vehicle turned back to outbound scale for proper cycle.",
+      status: "rejected" as TicketStatus,
+    },
+    {
+      concern: "Hardware scale disconnected from network during weighment.",
+      reply: null,
+      status: "pending" as TicketStatus,
+    },
+    {
+      concern: "Uncalibrated zero-point offset detected during morning zero check.",
+      reply: "Zero-point balanced by weighing technician.",
+      status: "approved" as TicketStatus,
+    },
+    {
+      concern: "Customer account mapping missing on delivery challan.",
+      reply: null,
+      status: "pending" as TicketStatus,
+    },
+    {
+      concern: "Axle sensor trigger skipped second trailer axle.",
+      reply: "Multi-axle bridge sequencing sensor adjusted.",
+      status: "approved" as TicketStatus,
+    },
+    {
+      concern: "Driver requested duplicate printed receipt copy.",
+      reply: "Reprint issued with duplicate watermark.",
+      status: "approved" as TicketStatus,
+    },
+    {
+      concern: "Unregistered transport carrier entered facility.",
+      reply: "Vehicle redirected to visitor registration kiosk.",
+      status: "rejected" as TicketStatus,
+    },
+    {
+      concern: "Tare weight lighter than expected for truck empty chassis.",
+      reply: null,
+      status: "pending" as TicketStatus,
+    },
+    {
+      concern: "Customer disputed commodity deduction grade.",
+      reply: "Quality control lab sample re-tested; confirmed grade B.",
+      status: "rejected" as TicketStatus,
+    },
+    {
+      concern: "Weighbridge surface debris accumulation warning.",
+      reply: "Platform power-washed and inspected for zero stability.",
+      status: "approved" as TicketStatus,
     },
   ];
 
-  for (const t of ticketsData) {
-    const { data: created, error } = await supabase.from("tickets").insert(t).select("id").single();
+  const ticketsToInsert: TicketInsert[] = [];
 
-    if (error || !created) {
-      console.warn("  ⚠️ Failed to insert ticket:", error?.message);
-    } else {
-      console.log(
-        `  + Created ticket (id: ${created.id}, status: ${t.status}) linked to ${
-          t.entry_id ? `entry #${t.entry_id}` : `weighment #${t.weighment_id}`
-        }`,
-      );
-    }
+  // 20 Tickets linked to standalone entries (entry_id set, weighment_id null)
+  for (let i = 0; i < 20; i++) {
+    const entryId = createdStandaloneEntries[i].id;
+    const template = ticketConcerns[i % ticketConcerns.length];
+    ticketsToInsert.push({
+      concern: template.concern,
+      reply: template.reply,
+      status: template.status,
+      entry_id: entryId,
+      weighment_id: null,
+      user_id: i % 2 === 0 ? operator1Id : manager1Id,
+      created_at: daysAgo(10 - Math.floor(i / 2), (i * 20) % 60),
+    });
   }
+
+  // 20 Tickets linked to weighments (entry_id null, weighment_id set)
+  for (let i = 0; i < 20; i++) {
+    const weighmentId = createdWeighments[i].id;
+    const template = ticketConcerns[(i + 5) % ticketConcerns.length];
+    ticketsToInsert.push({
+      concern: `[Weighment #${weighmentId}] ${template.concern}`,
+      reply: template.reply,
+      status: template.status,
+      entry_id: null,
+      weighment_id: weighmentId,
+      user_id: i % 2 === 0 ? manager1Id : operator1Id,
+      created_at: daysAgo(15 - Math.floor(i / 2), (i * 25) % 60),
+    });
+  }
+
+  const { data: createdTickets, error: ticketErr } = await supabase
+    .from("tickets")
+    .insert(ticketsToInsert)
+    .select("id");
+
+  if (ticketErr || !createdTickets) {
+    throw ticketErr || new Error("Failed to bulk insert tickets");
+  }
+
+  console.log(`  ✓ Seeded ${createdTickets.length} support tickets.`);
 
   console.log("\n=================================================");
   console.log("🎉 Database Seeding Completed Successfully!");
   console.log("=================================================");
+  console.log("📊 Summary of Seeded Data Volumes:");
+  console.log(`  • Factories:   ${factoryMap.size}`);
+  console.log(`  • Users:       ${userMap.size} (Admin, Manager, Operator, Base, Hardware)`);
+  console.log(`  • Centers:     ${centerMap.size} (Ideal for multi-page pagination testing)`);
+  console.log(`  • Commodities: ${commodityMap.size}`);
+  console.log(`  • Customers:   ${customerMap.size}`);
+  console.log(
+    `  • Entries:     ${createdInEntries.length + createdOutEntries.length + createdStandaloneEntries.length} (${createdInEntries.length + createdOutEntries.length} paired, ${createdStandaloneEntries.length} standalone)`,
+  );
+  console.log(`  • Weighments:  ${createdWeighments.length} (Linked paired cycles)`);
+  console.log(`  • Tickets:     ${createdTickets.length} (20 linked to entries, 20 to weighments)`);
+  console.log("=================================================");
   console.log("📋 Test User Credentials Summary:");
-  console.log("  [Factory 1]");
+  console.log("  [Factory 1: Default Factory]");
   console.log("  • Admin:     admin1 / admin123");
   console.log("  • Manager:   manager1 / manager123");
-  console.log("  • Operator:  operator1 / operator123");
-  console.log("  • Customer:  customer1 / user123");
-  console.log("  • Hardware:  pi1 / hardware123");
-  console.log("  [Factory 2]");
+  console.log("  • Operator:  operator1, operator3, operator4, operator5 / operator123");
+  console.log("  • Customer:  customer1, customer2, customer3, customer4, customer5 / user123");
+  console.log("  • Hardware:  pi1, pi3, pi4, pi5, pi6 / hardware123");
+  console.log("  [Factory 2: Apex Agro Logistics]");
   console.log("  • Admin:     admin2 / admin123");
-  console.log("  • Operator:  operator2 / operator123");
-  console.log("  • Hardware:  pi2 / hardware123");
+  console.log("  • Manager:   manager2 / manager123");
+  console.log("  • Operator:  operator2, operator6 / operator123");
+  console.log("  • Customer:  customer6, customer7, customer8, customer9, customer10 / user123");
+  console.log("  • Hardware:  pi2, pi7, pi8 / hardware123");
   console.log("=================================================");
 }
 

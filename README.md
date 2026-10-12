@@ -70,21 +70,36 @@ pnpm run seed:test
 pnpm run seed:test:clean
 ```
 
+### High-Volume Test Data & Pagination
+
+Running `pnpm run seed:test` or `pnpm run seed:test:clean` provisions high-volume fixtures specifically tailored for testing TanStack Table pagination, column sorting, and filtering:
+
+- **Factories**: 2 (`Default Factory`, `Apex Agro Logistics`)
+- **Users**: 28 across all 5 roles (`admin`, `manager`, `operator`, `base`, `hardware`)
+- **Centers**: 50 (35 in Factory 1, 15 in Factory 2) with varied `auto_approve` flags and staggered `created_at` dates (ideal for testing 10, 20, 30, 40, and 50 page sizes)
+- **Commodities**: 20 bulk agricultural commodities
+- **Customers**: 50 customer profiles
+- **Entries**: 100 entries (60 paired for weighment cycles + 40 standalone with `pending`, `approved`, and `rejected` statuses)
+- **Weighments**: 30 linked inbound/outbound cycles
+- **Tickets**: 40 support tickets (20 linked to entries, 20 linked to weighments)
+
 ### Seeded Test Credentials
 
-**Factory 1**:
+**Factory 1 (`Default Factory`)**:
 
 - **Admin**: `admin1` / `admin123`
 - **Manager**: `manager1` / `manager123`
-- **Operator**: `operator1` / `operator123`
-- **Customer (Base)**: `customer1` / `user123`
-- **Hardware (Edge Scale)**: `pi1` / `hardware123`
+- **Operator**: `operator1`, `operator3`, `operator4`, `operator5` / `operator123`
+- **Customer (Base)**: `customer1`, `customer2`, `customer3`, `customer4`, `customer5` / `user123`
+- **Hardware (Edge Scale)**: `pi1`, `pi3`, `pi4`, `pi5`, `pi6` / `hardware123`
 
-**Factory 2**:
+**Factory 2 (`Apex Agro Logistics`)**:
 
 - **Admin**: `admin2` / `admin123`
-- **Operator**: `operator2` / `operator123`
-- **Hardware (Edge Scale)**: `pi2` / `hardware123`
+- **Manager**: `manager2` / `manager123`
+- **Operator**: `operator2`, `operator6` / `operator123`
+- **Customer (Base)**: `customer6`, `customer7`, `customer8`, `customer9`, `customer10` / `user123`
+- **Hardware (Edge Scale)**: `pi2`, `pi7`, `pi8` / `hardware123`
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

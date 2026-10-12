@@ -43,7 +43,8 @@ The `/centers` route provides a full-featured data table built with **TanStack T
   - **Server-Side Pagination**: TanStack Table `manualPagination` with Base UI `Select` rows-per-page selector (`10, 20, 30, 40, 50`) and spaced Previous/Next buttons (`gap-2`).
   - **Accurate Selection Counter**: Selection count displays `{selectedCount} of {currentRowsCount} row(s) selected.` representing the number of rows currently in the datatable on this page.
   - **Auto Approve Combobox**: Base UI Combobox component for filtering by Auto Approve status.
-  - **Date Picker Range**: Flush `h-8` `DatePickerWithRange` component featuring shadcn `Field` with accessible label, Base UI `Popover`, 2-month side-by-side calendar (`numberOfMonths={2}`), and Hugeicons `Calendar01Icon` with server-side date range filtering.
+  - **Unified Multi-Table State Persistence**: Powered by Zustand (`stores/use-data-table-store.ts`) with `persist` middleware storing all entity tables (`centers`, `entries`, etc.) under a single `localStorage` key (`gluvok-tables-state`). Retains `search`, `filters`, `dateRange`, `sorting`, `pagination`, and `columnVisibility` across browser restarts and route transitions.
+  - **Zero Layout Shift Hydration Guard**: Utilizes `useTableHydrated` hook to render a centered spinner card until `localStorage` rehydration completes, ensuring zero layout shift, zero flash of default state, and zero duplicate API requests.
   - **Column Visibility & Sorting**: Columns dropdown toggle and asc/desc header sorting.
   - **Row Selection & Actions**: Indeterminate select-all checkbox and row actions dropdown (`Copy Center ID`, `Copy Center Name`).
 

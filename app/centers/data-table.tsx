@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
   useTable,
@@ -8,6 +8,7 @@ import {
   type PaginationState,
   type RowSelectionState,
   type SortingState,
+  type Updater,
 } from "@tanstack/react-table";
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
@@ -39,6 +40,11 @@ import { AlertCircleIcon, Cancel01Icon, Search01Icon } from "@hugeicons/core-fre
 import { columns } from "./columns";
 import { features } from "@/components/data-table/data-table-features";
 import { useDebounce } from "@/hooks/use-debounce";
+import {
+  DEFAULT_TABLE_ITEM_STATE,
+  useDataTableStore,
+  useTableHydrated,
+} from "@/stores/use-data-table-store";
 import { type Center } from "./types";
 
 interface AutoApproveOption {
@@ -60,31 +66,49 @@ interface CentersApiResponse {
   totalPages: number;
 }
 
+const TABLE_ID = "centers";
+
 export function CentersDataTable() {
+  const hasHydrated = useTableHydrated();
+  const store = useDataTableStore();
+  const tableState = store.tables[TABLE_ID] ?? DEFAULT_TABLE_ITEM_STATE;
+
   const [data, setData] = useState<Center[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Server-controlled pagination and sorting
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
-  const [sorting, setSorting] = useState<SortingState>([{ id: "id", desc: false }]);
-  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
+  // Read persisted state for 'centers' table from store
+  const search = tableState.search;
+  const autoApproveFilter = tableState.filters["auto_approve"] ?? "all";
+  const dateRange = useMemo<DateRange | undefined>(() => {
+    if (!tableState.dateRange?.from) return undefined;
+    return {
+      from: new Date(tableState.dateRange.from),
+      to: tableState.dateRange.to ? new Date(tableState.dateRange.to) : undefined,
+    };
+  }, [tableState.dateRange]);
+  const sorting = tableState.sorting;
+  const pagination = tableState.pagination;
+  const columnVisibility = tableState.columnVisibility;
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
-  // Filter states
-  const [search, setSearch] = useState<string>("");
   const debouncedSearch = useDebounce(search, 300);
-  const [autoApproveFilter, setAutoApproveFilter] = useState<string>("all");
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
-  // Reset pagination to first page whenever search query changes
-  useEffect(() => {
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-  }, [debouncedSearch]);
+  // Actions updating persisted store
+  const setSearch = (val: string) => store.setTableSearch(TABLE_ID, val);
+  const setAutoApproveFilter = (val: string) => store.setTableFilter(TABLE_ID, "auto_approve", val);
+  const setDateRange = (range: DateRange | undefined) =>
+    store.setTableDateRange(
+      TABLE_ID,
+      range ? { from: range.from?.toISOString(), to: range.to?.toISOString() } : undefined,
+    );
+  const setSorting = (updater: Updater<SortingState>) => store.setTableSorting(TABLE_ID, updater);
+  const setPagination = (updater: Updater<PaginationState>) =>
+    store.setTablePagination(TABLE_ID, updater);
+  const setColumnVisibility = (updater: Updater<ColumnVisibilityState>) =>
+    store.setTableColumnVisibility(TABLE_ID, updater);
+  const resetAllFilters = () => store.resetTableFilters(TABLE_ID);
 
   // Fetch centers via axios with full server-side query params
   const fetchCenters = useCallback(async () => {
@@ -130,8 +154,9 @@ export function CentersDataTable() {
   ]);
 
   useEffect(() => {
+    if (!hasHydrated) return;
     fetchCenters();
-  }, [fetchCenters]);
+  }, [hasHydrated, fetchCenters]);
 
   const table = useTable({
     features,
@@ -155,14 +180,20 @@ export function CentersDataTable() {
 
   const hasActiveFilters = Boolean(autoApproveFilter !== "all" || dateRange?.from);
 
-  const resetAllFilters = () => {
-    setAutoApproveFilter("all");
-    setDateRange(undefined);
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-  };
-
   const selectedAutoApproveOption =
     AUTO_APPROVE_OPTIONS.find((opt) => opt.value === autoApproveFilter) ?? AUTO_APPROVE_OPTIONS[0];
+
+  // Hydration guard: show clean centered spinner until localStorage is hydrated, preventing layout shift!
+  if (!hasHydrated) {
+    return (
+      <div className="flex h-72 items-center justify-center rounded-md border border-border bg-card">
+        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+          <Spinner className="size-6 text-muted-foreground" />
+          <span className="text-xs">Loading table preferences...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3.5">

@@ -339,8 +339,8 @@ async function main() {
   const { data: inEntry, error: inErr } = await supabase
     .from("entries")
     .insert({
-      vehicle_number: "MH-12-AB-1234",
-      detected_vehicle_number: "MH-12-AB-1234",
+      vehicle_number: "MH12AB1234",
+      detected_vehicle_number: "MH12AB1234",
       weight: 32500.0,
       status: "approved" as EntryStatus,
       auto_approved: false,
@@ -362,8 +362,8 @@ async function main() {
   const { data: outEntry, error: outErr } = await supabase
     .from("entries")
     .insert({
-      vehicle_number: "MH-12-AB-1234",
-      detected_vehicle_number: "MH-12-AB-1234",
+      vehicle_number: "MH12AB1234",
+      detected_vehicle_number: "MH12AB1234",
       weight: 14200.0,
       status: "approved" as EntryStatus,
       auto_approved: false,
@@ -419,8 +419,8 @@ async function main() {
 
   const standaloneEntriesData: StandaloneEntryData[] = [
     {
-      vehicle_number: "DL-01-XY-9876",
-      detected_vehicle_number: "DL-01-XY-9876",
+      vehicle_number: "DL01XY9876",
+      detected_vehicle_number: "DL01XY9876",
       weight: 28400.0,
       status: "pending",
       auto_approved: false,
@@ -432,8 +432,8 @@ async function main() {
       images: [],
     },
     {
-      vehicle_number: "KA-04-CD-5678",
-      detected_vehicle_number: "KA-04-CD-5678",
+      vehicle_number: "KA04CD5678",
+      detected_vehicle_number: "KA04CD5678",
       weight: 18900.0,
       status: "approved",
       auto_approved: true,
@@ -445,8 +445,8 @@ async function main() {
       images: [],
     },
     {
-      vehicle_number: "GJ-03-EF-4321",
-      detected_vehicle_number: "GJ-03-EF-4321",
+      vehicle_number: "GJ03EF4321",
+      detected_vehicle_number: "GJ03EF4321",
       weight: 15000.0,
       status: "rejected",
       auto_approved: false,

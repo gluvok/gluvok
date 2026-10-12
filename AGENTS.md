@@ -121,8 +121,53 @@ For any JavaScript / TypeScript / Node modifications:
 
 - **Official Documentation**: Canonical shadcn / UI documentation for components in this repository is kept inside the `docs/` folder (e.g., `docs/datatable.md`, `docs/pagination.md`, `docs/spinner.md`, `docs/select.md`). Always consult `docs/` first for canonical component APIs, props, and design guidelines.
 - **CLI Component Addition**: NEVER create components inside the `components/ui/` directory manually. Always install and scaffold UI components using the `pnpm shadcn` CLI command (e.g., `pnpm dlx shadcn@latest add <component>` or `pnpm shadcn add <component>`). If project-specific adjustments or imports need tuning after installation, edit the CLI-generated file rather than crafting it from scratch.
-- **Must use shadcn Components Over Raw HTML Tags**: Always check whether a shadcn component exists for any raw HTML tag (e.g., `<select>` -> `<Select>`, `<button>` -> `<Button>`, `<input>` -> `<Input>`, `<checkbox>` -> `<Checkbox>`, `<table>` -> `<Table>`, `<dialog>` -> `<Dialog>`). If a shadcn component exists (or is available in shadcn registry / `docs/`), you MUST use the shadcn component instead of barebone HTML tags. If not yet added to `components/ui/`, install it using `pnpm dlx shadcn@latest add <component>`.
-- **No Arbitrary Bracket Values (e.g., `[70px]`)**: NEVER use raw bracket arbitrary values (e.g., `w-[70px]`, `min-w-[70px]`, `h-[30px]`, `p-[12px]`). Always use standard Tailwind design system scale utilities (e.g., `w-16`, `w-20`, `min-w-16`, `min-w-20`, `h-7`, `p-3`) or semantic theme tokens.
+- **Strict Zero Raw HTML Tags in Feature Code**: NEVER use raw HTML tags when a shadcn component exists. This strictly includes:
+  - `<button>` -> `<Button>` (This applies unconditionally to ALL buttons: search clear crosses, badge dismiss `(x)` buttons, icon toggles, dropdown triggers, and popover buttons must all use `<Button variant="ghost" size="icon-xs" ...>` or `<Button>`).
+  - `<input>` -> `<Input>`
+  - `<select>` -> `<Select>`
+  - `<checkbox>` -> `<Checkbox>`
+  - `<table>` -> `<Table>`
+  - `<dialog>` -> `<Dialog>`
+- **Strict Zero Arbitrary Bracket Values (e.g., `[70px]`, `[calc(...)]`)**: NEVER use raw bracket arbitrary values in class names (e.g., `w-[70px]`, `min-w-[70px]`, `max-w-[calc(...)]`, `h-[30px]`, `p-[12px]`, `[scrollbar-width:none]`, `[&::-webkit-scrollbar]:hidden`).
+  - Always use standard Tailwind design system scale utilities (e.g., `w-16`, `w-20`, `min-w-16`, `min-w-20`, `h-7`, `p-3`) or semantic theme tokens.
+  - If a custom reusable CSS utility is required (such as hiding scrollbars), register it declaratively in `app/globals.css` using Tailwind v4 `@utility` (e.g. `@utility no-scrollbar { ... }`) instead of inlining brackets into JSX.
+
+## 9. Responsive Architecture: Pure CSS Over JS Hooks
+
+**Never use `useIsMobile()` JS hooks for responsive layout shifts.**
+
+- Always use pure Tailwind CSS responsive utilities (`sm:`, `md:`, `lg:`, `hidden sm:flex`, `block sm:hidden`).
+- Window-width JS hooks like `useIsMobile()` cause hydration mismatches, layout shifts during load, and flash of desktop layout on mobile devices.
+- Pure CSS media queries render correctly on the server and hydrate with zero layout shift.
+
+## 10. Micro-Typography & Component Density Scale
+
+**Maintain consistent typography and density hierarchy across tables and toolbars.**
+
+- **Primary Filters & Toolbars**: Use `text-2xs` (0.625rem / 10px) for compact filter inputs, search inputs, comboboxes, date-picker triggers, and columns selectors to achieve high-density, zero-scroll layouts.
+- **Table Data**: Use `text-xs` (0.75rem / 12px) for table headers and body cells.
+- **Badges & Criteria Chips**: Always use `text-2xs` (0.625rem / 10px) with `h-5` height, `px-1.5 py-0.5` padding, and `size-2.5` to `size-3` icons. Never inflate badges to `text-xs` or `h-5.5` inside compact tables.
+
+## 11. Mandatory Pre-Completion Code Audit Gates
+
+**Before declaring any task complete, verify these audits return 0 violations:**
+
+1. **Audit for Raw HTML Tags**:
+   ```bash
+   git diff --name-only | grep -E '\.(tsx|jsx)$' | xargs grep -E '<(button|input|select|dialog)\b'
+   # Must yield 0 lines.
+   ```
+2. **Audit for Arbitrary Bracket Classes**:
+   ```bash
+   git diff --name-only | grep -E '\.(tsx|jsx)$' | xargs grep -E '(w|h|max-w|min-w|p|m|text)-\[[^\]]+\]'
+   # Must yield 0 lines.
+   ```
+3. **Mandatory Quality Gates**:
+   - `pnpm run lint` (0 errors, 0 warnings)
+   - `pnpm run fmt` (0 formatting issues)
+   - `pnpm run type-check` (0 errors, 0 warnings)
+   - `pnpm test` (all tests pass)
+   - `pnpm run build` (clean exit 0)
 
 ---
 

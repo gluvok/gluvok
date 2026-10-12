@@ -24,7 +24,7 @@ export function DataTableViewOptions<TData extends RowData>({
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="outline" size="sm" className="ml-auto h-7 gap-1 px-2 text-xs">
+          <Button variant="outline" size="sm" className="ml-auto h-7 gap-1 px-2 text-2xs">
             <HugeiconsIcon icon={SlidersHorizontalIcon} data-icon="inline-start" />
             <span>Columns</span>
           </Button>

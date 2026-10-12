@@ -303,17 +303,19 @@ export function CentersDataTable() {
               placeholder="Search centers by name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-full pl-8 pr-7 text-xs"
+              className="h-8 w-full pl-8 pr-7 text-2xs"
             />
             {search && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-xs"
                 onClick={() => setSearch("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 size-5 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
                 aria-label="Clear search"
               >
-                <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
-              </button>
+                <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
+              </Button>
             )}
           </div>
 
@@ -330,14 +332,14 @@ export function CentersDataTable() {
             >
               <ComboboxInput
                 placeholder="Auto Approve filter"
-                className="h-8 w-full text-xs"
+                className="h-8 w-full text-2xs"
                 showClear={autoApproveFilter !== "all"}
               />
               <ComboboxContent>
-                <ComboboxEmpty>No options found.</ComboboxEmpty>
+                <ComboboxEmpty className="text-2xs">No options found.</ComboboxEmpty>
                 <ComboboxList>
                   {AUTO_APPROVE_OPTIONS.map((item) => (
-                    <ComboboxItem key={item.value} value={item}>
+                    <ComboboxItem key={item.value} value={item} className="text-2xs">
                       {item.label}
                     </ComboboxItem>
                   ))}
@@ -366,7 +368,7 @@ export function CentersDataTable() {
 
       {/* Active Criteria Bar (Badges) - Compact unified filters and sorts */}
       {hasActiveCriteria && (
-        <div className="flex items-center gap-1.5 overflow-x-auto rounded-md bg-muted/30 px-2 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden whitespace-nowrap">
+        <div className="flex items-center gap-1.5 overflow-x-auto rounded-md bg-muted/30 px-2 py-1 no-scrollbar whitespace-nowrap">
           {hasActiveFilters && (
             <>
               <span className="shrink-0 text-2xs font-medium text-muted-foreground">Filters:</span>
@@ -381,17 +383,19 @@ export function CentersDataTable() {
                   <span className="font-medium">
                     {autoApproveFilter === "true" ? "Enabled" : "Disabled"}
                   </span>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon-xs"
                     onClick={() => {
                       setAutoApproveFilter("all");
                       setPagination((prev) => ({ ...prev, pageIndex: 0 }));
                     }}
-                    className="rounded-full p-0.5 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
+                    className="size-4 rounded-full p-0 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
                     aria-label="Remove auto approve filter"
                   >
-                    <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
-                  </button>
+                    <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
+                  </Button>
                 </Badge>
               )}
 
@@ -407,17 +411,19 @@ export function CentersDataTable() {
                       ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
                       : format(dateRange.from, "LLL dd, y")}
                   </span>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon-xs"
                     onClick={() => {
                       setDateRange(undefined);
                       setPagination((prev) => ({ ...prev, pageIndex: 0 }));
                     }}
-                    className="rounded-full p-0.5 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
+                    className="size-4 rounded-full p-0 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
                     aria-label="Remove date range filter"
                   >
-                    <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
-                  </button>
+                    <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
+                  </Button>
                 </Badge>
               )}
             </>

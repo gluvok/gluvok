@@ -3,6 +3,7 @@ import type { ColumnSort } from "@tanstack/react-table";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon, DragDropVerticalIcon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
@@ -53,16 +54,18 @@ export function SortableSortChip({
       <span className="font-semibold text-primary">#{index + 1}</span>
       <span className="text-muted-foreground">{colTitle}:</span>
       <span className="font-medium">{sortRule.desc ? "Desc" : "Asc"}</span>
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon-xs"
         onPointerDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onClick={() => onRemove(sortRule.id)}
-        className="rounded-full p-0.5 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
+        className="size-4 rounded-full p-0 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
         aria-label={`Remove ${colTitle} sort`}
       >
-        <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
-      </button>
+        <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
+      </Button>
     </Badge>
   );
 }

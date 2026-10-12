@@ -127,7 +127,7 @@ export function DatePickerWithRange({
               variant="outline"
               id="date-picker-range"
               className={cn(
-                "h-8 max-w-full justify-start gap-1.5 px-2.5 text-xs font-normal",
+                "h-8 max-w-full justify-start gap-1.5 px-2.5 text-2xs font-normal",
                 !date?.from && "text-muted-foreground",
               )}
             >
@@ -152,10 +152,10 @@ export function DatePickerWithRange({
             </Button>
           }
         />
-        <PopoverContent className="w-auto max-w-[calc(100vw-2rem)] p-0" align="end">
+        <PopoverContent className="w-auto max-w-full sm:max-w-none p-0" align="end">
           <div className="flex flex-col divide-y divide-border sm:flex-row sm:divide-x sm:divide-y-0">
             {/* Mobile Top Presets (Visible on <sm, hidden on sm+) */}
-            <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border p-2 [scrollbar-width:none] sm:hidden [&::-webkit-scrollbar]:hidden">
+            <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border p-2 no-scrollbar sm:hidden">
               <span className="shrink-0 px-1 text-2xs font-semibold tracking-wider text-muted-foreground uppercase">
                 Presets:
               </span>

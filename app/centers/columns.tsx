@@ -84,11 +84,11 @@ export const columns = columnHelper.columns([
       return (
         <Badge
           variant={autoApprove ? "default" : "secondary"}
-          className="h-5.5 gap-1.5 px-2 text-xs font-normal"
+          className="gap-1 px-1.5 py-0.5 text-2xs font-normal"
         >
           <HugeiconsIcon
             icon={autoApprove ? Tick02Icon : Cancel01Icon}
-            className="size-3"
+            className="size-2.5"
             data-icon="inline-start"
           />
           <span>{autoApprove ? "Enabled" : "Disabled"}</span>

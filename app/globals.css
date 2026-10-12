@@ -58,6 +58,13 @@
   --text-2xs--line-height: calc(1 / 0.625);
 }
 
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.153 0.006 107.1);

@@ -35,11 +35,12 @@ The `/centers` route provides a full-featured data table built with **TanStack T
 - **Schema Mapping**: Maps directly to `centers` table in `schema.sql` (`id`, `name`, `auto_approve`, `created_at`, `updated_at`).
 - **Features**:
   - **Scoped Datatable Loading**: Toolbar (search, combobox, datepicker), active filter badges, and pagination remain permanently mounted; the loading spinner is scoped exclusively to the table card area, eliminating focus loss and toolbar flicker during searches or pagination.
-  - **Compact & Sleek Height**: Streamlined row styling (`h-9` rows with `py-1.5 px-3` cell padding; `h-9 px-3` header) for an efficient data display.
+  - **Compact Density & Zero-Scroll Fit**: Ultra-streamlined table rows (`h-8` rows with `py-1 px-3 text-xs` cell padding; `h-8 px-3` header; `px-2 py-1` filter chips bar; `gap-4` and `gap-2.5` container spacing), ensuring all rows, active filter chips, and pagination controls fit comfortably within standard viewports with zero vertical page scrolling.
   - **Page Header Refresh Button**: Dedicated reload button (`CentersRefreshButton`) located on the complete right side of the "Centers" heading, invoking a full page reload (`window.location.reload()`).
   - **Axios API Client**: Native `fetch` replaced with typed `axios.get()` requests.
   - **Debounced Search with Cross Button**: Reusable `useDebounce` hook (300ms) with an inline `(x)` clear cross button inside the search input for 1-click clearing.
-  - **Uniform Inline Toolbar & Secondary Filter Chips**: Search, Auto-Approve Combobox, and DatePickerWithRange align flush at `h-8`. Active filter chips (`<Badge variant="secondary">`) are reserved for secondary filters (Auto Approve, Date Range) with individual dismiss buttons and a "Clear all" action.
+  - **Clean Toolbar Layout**: Clean left-vs-right split: search input and Auto Approve combobox on the left (expandable for future filters), and Date Range Picker (`DatePickerWithRange`) directly beside the Columns visibility toggle on the right.
+  - **Compact Secondary Filter Chips**: Active filter chips (`<Badge variant="secondary">` with `text-2xs`) reserved for secondary filters (Auto Approve, Date Range) with individual dismiss buttons and a compact "Clear all" action.
   - **Server-Side Pagination**: TanStack Table `manualPagination` with Base UI `Select` rows-per-page selector (`10, 20, 30, 40, 50`) and spaced Previous/Next buttons (`gap-2`).
   - **Accurate Selection Counter**: Selection count displays `{selectedCount} of {currentRowsCount} row(s) selected.` representing the number of rows currently in the datatable on this page.
   - **Auto Approve Combobox**: Base UI Combobox component for filtering by Auto Approve status.

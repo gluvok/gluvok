@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function CentersPage() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight font-heading">Centers</h1>

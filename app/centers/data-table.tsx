@@ -186,7 +186,7 @@ export function CentersDataTable() {
   // Hydration guard: show clean centered spinner until localStorage is hydrated, preventing layout shift!
   if (!hasHydrated) {
     return (
-      <div className="flex h-72 items-center justify-center rounded-md border border-border bg-card">
+      <div className="flex h-64 items-center justify-center rounded-md border border-border bg-card">
         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
           <Spinner className="size-6 text-muted-foreground" />
           <span className="text-xs">Loading table preferences...</span>
@@ -196,7 +196,7 @@ export function CentersDataTable() {
   }
 
   return (
-    <div className="flex flex-col gap-3.5">
+    <div className="flex flex-col gap-2.5">
       {/* Primary Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Filters Group (Left) */}
@@ -251,7 +251,10 @@ export function CentersDataTable() {
               </ComboboxList>
             </ComboboxContent>
           </Combobox>
+        </div>
 
+        {/* Action Controls Group (Right) - Date Range & Columns side-by-side */}
+        <div className="flex items-center gap-2">
           {/* Date Range Picker for created_at */}
           <DatePickerWithRange
             date={dateRange}
@@ -260,23 +263,20 @@ export function CentersDataTable() {
               setPagination((prev) => ({ ...prev, pageIndex: 0 }));
             }}
           />
-        </div>
 
-        {/* Action Controls Group (Right) */}
-        <div className="flex items-center gap-2">
           {/* Column Visibility Options */}
           <DataTableViewOptions table={table} />
         </div>
       </div>
 
-      {/* Active Filter Chips Bar (Badges) - Secondary filters only */}
+      {/* Active Filter Chips Bar (Badges) - Compact secondary filters */}
       {hasActiveFilters && (
-        <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted/30 p-2">
+        <div className="flex flex-wrap items-center gap-1.5 rounded-md bg-muted/30 px-2 py-1">
           <span className="text-2xs font-medium text-muted-foreground">Active Filters:</span>
 
           {/* Auto Approve Chip */}
           {autoApproveFilter !== "all" && (
-            <Badge variant="secondary" className="gap-1.5 py-1 pl-2.5 pr-1.5 text-2xs font-normal">
+            <Badge variant="secondary" className="gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal">
               <span className="text-muted-foreground">Auto Approve:</span>
               <span className="font-medium">
                 {autoApproveFilter === "true" ? "Enabled" : "Disabled"}
@@ -297,7 +297,7 @@ export function CentersDataTable() {
 
           {/* Date Range Chip */}
           {dateRange?.from && (
-            <Badge variant="secondary" className="gap-1.5 py-1 pl-2.5 pr-1.5 text-xs font-normal">
+            <Badge variant="secondary" className="gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal">
               <span className="text-muted-foreground">Created:</span>
               <span className="font-medium">
                 {dateRange.to
@@ -323,7 +323,7 @@ export function CentersDataTable() {
             variant="ghost"
             size="sm"
             onClick={resetAllFilters}
-            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+            className="h-5 px-1.5 text-2xs text-muted-foreground hover:text-foreground"
           >
             Clear all
           </Button>
@@ -333,7 +333,7 @@ export function CentersDataTable() {
       {/* Compact Clean Table Container with Scoped Loading State */}
       <div className="overflow-hidden rounded-md border border-border bg-card">
         {error ? (
-          <div className="flex h-72 items-center justify-center">
+          <div className="flex h-64 items-center justify-center">
             <div className="flex flex-col items-center justify-center gap-2 text-destructive">
               <HugeiconsIcon icon={AlertCircleIcon} className="size-5" />
               <span className="text-xs">{error}</span>
@@ -343,7 +343,7 @@ export function CentersDataTable() {
             </div>
           </div>
         ) : loading ? (
-          <div className="flex h-72 items-center justify-center">
+          <div className="flex h-64 items-center justify-center">
             <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
               <Spinner className="size-6 text-muted-foreground" />
               <span className="text-xs">Loading centers...</span>
@@ -353,9 +353,9 @@ export function CentersDataTable() {
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="h-9 hover:bg-transparent">
+                <TableRow key={headerGroup.id} className="h-8 hover:bg-transparent">
                   {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} className="h-9 px-3 text-xs font-semibold">
+                    <TableHead key={header.id} className="h-8 px-3 text-xs font-semibold">
                       {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                     </TableHead>
                   ))}
@@ -368,10 +368,10 @@ export function CentersDataTable() {
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
-                    className="h-9 hover:bg-muted/40"
+                    className="h-8 hover:bg-muted/40"
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="px-3 py-1.5 text-xs">
+                      <TableCell key={cell.id} className="px-3 py-1 text-xs">
                         <table.FlexRender cell={cell} />
                       </TableCell>
                     ))}
@@ -381,7 +381,7 @@ export function CentersDataTable() {
                 <TableRow>
                   <TableCell
                     colSpan={table.getVisibleLeafColumns().length}
-                    className="h-24 text-center text-xs text-muted-foreground"
+                    className="h-20 text-center text-xs text-muted-foreground"
                   >
                     No centers found matching the specified filters.
                   </TableCell>

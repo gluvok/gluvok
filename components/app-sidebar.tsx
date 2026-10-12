@@ -12,9 +12,9 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { NavMain } from "@/components/nav-main";
-import { NavSecondary } from "@/components/nav-secondary";
+import { NavGroup } from "@/components/nav-group";
 import { NavUser, type UserProps } from "@/components/nav-user";
+import { mainNavItems, secondaryNavItems } from "@/lib/navigation";
 
 const currentUser: UserProps = {
   name: "User",
@@ -41,8 +41,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain />
-        <NavSecondary className="mt-auto" />
+        <NavGroup label="Main" items={mainNavItems} />
+        <NavGroup label="Secondary" items={secondaryNavItems} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={currentUser} />

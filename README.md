@@ -2,23 +2,23 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Application Navigation
 
-The application features a responsive sidebar (`AppSidebar`) composed of three main navigation sections:
+The application features a responsive sidebar (`AppSidebar`) driven by a centralized navigation registry in [`lib/navigation.ts`](lib/navigation.ts) and rendered via the unified [`NavGroup`](components/nav-group.tsx) component across main and secondary sections:
 
-- **Nav Main**:
+- **Main Navigation** (`mainNavItems`):
   - `Centers` (`/centers`)
   - `Entries` (`/entries`)
   - `Weighments` (`/weighments`)
   - `Customers` (`/customers`)
   - `Users` (`/users`)
   - `Settings` (`/settings`)
-- **Nav Secondary**:
+- **Secondary Navigation** (`secondaryNavItems`):
   - `Tickets` (`/tickets`)
   - `Support` (`/support`)
   - `Services` (`/services`)
-- **Nav User**:
+- **User Navigation** (`NavUser`):
   - User avatar with interactive dropdown menu (Account, Notifications, Log out).
 
-Navigation and module icons are centrally mapped in [`lib/icons.ts`](lib/icons.ts).
+Navigation routes, metadata, and icons are centrally defined in [`lib/navigation.ts`](lib/navigation.ts) and [`lib/icons.ts`](lib/icons.ts).
 
 The layout integrates `SidebarProvider` and `SidebarInset` with a collapsible sidebar trigger and a dynamic header page title (`AppBreadcrumb`) that reflects the current route without breadcrumb arrows. The sidebar's collapsed/expanded state is persisted across route navigations and page reloads via server-read cookies (`sidebar_state`).
 

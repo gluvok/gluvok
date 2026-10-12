@@ -140,7 +140,16 @@ For any JavaScript / TypeScript / Node modifications:
 - Window-width JS hooks like `useIsMobile()` cause hydration mismatches, layout shifts during load, and flash of desktop layout on mobile devices.
 - Pure CSS media queries render correctly on the server and hydrate with zero layout shift.
 
-## 10. Mandatory Pre-Completion Code Audit Gates
+## 10. Strict Code DRY & Single Source of Truth
+
+**Never duplicate code, types, navigation registries, or parallel component logic.**
+
+- **Single Source of Truth**: Define entity routes, metadata, column titles, and navigation structures in centralized config files (e.g. `lib/navigation.ts`, `app/<entity>/types.ts`). Never maintain duplicate dictionaries or parallel arrays across components and pages.
+- **Consolidate Identical Components**: If two or more components share identical or near-identical JSX structure (such as menu lists, buttons, or filters), generalize them into a single reusable component (e.g. `components/nav-group.tsx`, `components/page-refresh-button.tsx`) parameterized by props.
+- **Eliminate Redundant Wrapper Files**: Do not keep pass-through wrapper components or legacy file aliases that only re-export or delegate to a generalized component. Delete redundant files directly and update imports at callers.
+- **Audit for Duplication Before Coding**: Before implementing a feature or entity table, check if reusable abstractions already exist in `components/data-table/` or `components/`. Never copy-paste whole table files or sensor setups.
+
+## 11. Mandatory Pre-Completion Code Audit Gates
 
 **Before declaring any task complete, verify these audits return 0 violations:**
 

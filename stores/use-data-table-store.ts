@@ -21,7 +21,7 @@ export const DEFAULT_TABLE_ITEM_STATE: TableItemState = {
   search: "",
   filters: {},
   dateRange: undefined,
-  sorting: [{ id: "id", desc: false }],
+  sorting: [{ id: "id", desc: true }],
   pagination: { pageIndex: 0, pageSize: 10 },
   columnVisibility: {},
 };
@@ -45,6 +45,8 @@ interface DataTableStoreState {
     dateRange: { from?: string; to?: string } | undefined,
   ) => void;
   setTableSorting: (tableId: string, updaterOrValue: Updater<SortingState>) => void;
+  removeTableSort: (tableId: string, columnId: string) => void;
+  resetTableSorting: (tableId: string) => void;
   setTablePagination: (tableId: string, updaterOrValue: Updater<PaginationState>) => void;
   setTableColumnVisibility: (
     tableId: string,
@@ -122,6 +124,35 @@ export const useDataTableStore = create<DataTableStoreState>()(
               [tableId]: {
                 ...prev,
                 sorting: resolveUpdater(updaterOrValue, prev.sorting),
+              },
+            },
+          };
+        }),
+
+      removeTableSort: (tableId, columnId) =>
+        set((state) => {
+          const prev = state.tables[tableId] ?? DEFAULT_TABLE_ITEM_STATE;
+          const updated = prev.sorting.filter((s) => s.id !== columnId);
+          return {
+            tables: {
+              ...state.tables,
+              [tableId]: {
+                ...prev,
+                sorting: updated.length > 0 ? updated : [{ id: "id", desc: true }],
+              },
+            },
+          };
+        }),
+
+      resetTableSorting: (tableId) =>
+        set((state) => {
+          const prev = state.tables[tableId] ?? DEFAULT_TABLE_ITEM_STATE;
+          return {
+            tables: {
+              ...state.tables,
+              [tableId]: {
+                ...prev,
+                sorting: [{ id: "id", desc: true }],
               },
             },
           };

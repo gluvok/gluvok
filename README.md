@@ -31,23 +31,25 @@ The `/centers` route provides a full-featured data table built with **TanStack T
   - Server-side text search: `?search=<text>` (`.ilike("name", ...)`)
   - Server-side auto-approve filter: `?auto_approve=true|false|all` (`.eq("auto_approve", ...)`)
   - Server-side created date range: `?from=<ISO>&to=<ISO>` (`.gte("created_at", ...)`, `.lte("created_at", ...)`)
-  - Server-side sorting: `?sort=<col>&order=asc|desc` (`.order(...)`)
+  - Server-side multi-column sorting: `?sort=col1.asc,col2.desc` (defaults to `id.desc`, sequentially executed via `.order()`)
 - **Schema Mapping**: Maps directly to `centers` table in `schema.sql` (`id`, `name`, `auto_approve`, `created_at`, `updated_at`).
 - **Features**:
-  - **Scoped Datatable Loading**: Toolbar (search, combobox, datepicker), active filter badges, and pagination remain permanently mounted; the loading spinner is scoped exclusively to the table card area, eliminating focus loss and toolbar flicker during searches or pagination.
-  - **Compact Density & Zero-Scroll Fit**: Ultra-streamlined table rows (`h-8` rows with `py-1 px-3 text-xs` cell padding; `h-8 px-3` header; `px-2 py-1` filter chips bar; `gap-4` and `gap-2.5` container spacing), ensuring all rows, active filter chips, and pagination controls fit comfortably within standard viewports with zero vertical page scrolling.
+  - **Server-Side Multi-Column Sorting**: Support for sorting across multiple columns simultaneously with defined precedence (e.g., `Auto Approve` -> `Created At` -> `Name`).
+  - **Priority Indicators & Contextual Headers**: Column headers display directional arrows (`ArrowUp01Icon`, `ArrowDown01Icon`) alongside circular priority index badges (`#1`, `#2`, `#3`). Shift+click toggles multi-sorting directly; dropdown menus offer contextual actions ("Sort only: Asc/Desc", "Add to sort (Asc/Desc)", "Remove from sort").
+  - **Default Sort**: Tables default to `id: desc` (highest/newest ID first) for deterministic ordering.
+  - **Unified Active Criteria Bar**: Filters and active sort badges render together in a single compact bar (`Filters: [...] | Sorts: [#1 Auto Approve: Asc (x)] [#2 Created At: Desc (x)] Clear all`) with individual dismiss controls and full reset actions.
+  - **Scoped Datatable Loading**: Toolbar (search, combobox, datepicker), active criteria badges, and pagination remain permanently mounted; the loading spinner is scoped exclusively to the table card area, eliminating focus loss and toolbar flicker during searches or pagination.
+  - **Compact Density & Zero-Scroll Fit**: Ultra-streamlined table rows (`h-8` rows with `py-1 px-3 text-xs` cell padding; `h-8 px-3` header; `px-2 py-1` criteria bar; `gap-4` and `gap-2.5` container spacing), ensuring all rows, active criteria badges, and pagination controls fit comfortably within standard viewports with zero vertical page scrolling.
   - **Page Header Refresh Button**: Dedicated reload button (`CentersRefreshButton`) located on the complete right side of the "Centers" heading, invoking a full page reload (`window.location.reload()`).
   - **Axios API Client**: Native `fetch` replaced with typed `axios.get()` requests.
   - **Debounced Search with Cross Button**: Reusable `useDebounce` hook (300ms) with an inline `(x)` clear cross button inside the search input for 1-click clearing.
   - **Clean Toolbar Layout**: Clean left-vs-right split: search input and Auto Approve combobox on the left (expandable for future filters), and Date Range Picker (`DatePickerWithRange`) directly beside the Columns visibility toggle on the right.
-  - **Compact Secondary Filter Chips**: Active filter chips (`<Badge variant="secondary">` with `text-2xs`) reserved for secondary filters (Auto Approve, Date Range) with individual dismiss buttons and a compact "Clear all" action.
   - **Server-Side Pagination**: TanStack Table `manualPagination` with Base UI `Select` rows-per-page selector (`10, 20, 30, 40, 50`) and spaced Previous/Next buttons (`gap-2`).
   - **Accurate Selection Counter**: Selection count displays `{selectedCount} of {currentRowsCount} row(s) selected.` representing the number of rows currently in the datatable on this page.
   - **Auto Approve Combobox**: Base UI Combobox component for filtering by Auto Approve status.
   - **Unified Multi-Table State Persistence**: Powered by Zustand (`stores/use-data-table-store.ts`) with `persist` middleware storing all entity tables (`centers`, `entries`, etc.) under a single `localStorage` key (`gluvok-tables-state`). Retains `search`, `filters`, `dateRange`, `sorting`, `pagination`, and `columnVisibility` across browser restarts and route transitions.
   - **Zero Layout Shift Hydration Guard**: Utilizes `useTableHydrated` hook to render a centered spinner card until `localStorage` rehydration completes, ensuring zero layout shift, zero flash of default state, and zero duplicate API requests.
-  - **Column Visibility & Sorting**: Columns dropdown toggle and asc/desc header sorting.
-  - **Row Selection & Actions**: Indeterminate select-all checkbox and row actions dropdown (`Copy Center ID`, `Copy Center Name`).
+  - **Column Visibility & Actions**: Columns dropdown toggle, indeterminate select-all checkbox, and row actions dropdown (`Copy Center ID`, `Copy Center Name`).
 
 ## Getting Started
 

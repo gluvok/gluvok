@@ -15,56 +15,74 @@ export async function GET(request: Request) {
     );
     const offset = (page - 1) * pageSize;
 
-    // 2. Filter parameters
-    const search = searchParams.get("search")?.trim();
-    const autoApprove = searchParams.get("auto_approve")?.trim().toLowerCase();
-    const fromParam = searchParams.get("from")?.trim();
-    const toParam = searchParams.get("to")?.trim();
-
-    // 3. Sorting parameters
+    // 2. Multi-column sorting parameters (strict delimited format: "col1.asc,col2.desc")
     const requestedSort = searchParams.get("sort")?.trim();
-    const sortCol = ALLOWED_SORT_COLUMNS.includes(
-      requestedSort as (typeof ALLOWED_SORT_COLUMNS)[number],
-    )
-      ? (requestedSort as (typeof ALLOWED_SORT_COLUMNS)[number])
-      : "id";
-    const isAscending = searchParams.get("order")?.toLowerCase() !== "desc";
+    const sortRules: { col: (typeof ALLOWED_SORT_COLUMNS)[number]; ascending: boolean }[] = [];
 
-    // 4. Build Supabase query with exact total count
+    if (requestedSort) {
+      const parts = requestedSort.split(",");
+      for (const part of parts) {
+        const [colName, dir] = part.split(/[.:]/);
+        const trimmedCol = colName?.trim();
+        if (ALLOWED_SORT_COLUMNS.includes(trimmedCol as (typeof ALLOWED_SORT_COLUMNS)[number])) {
+          const isAsc = dir?.trim().toLowerCase() !== "desc";
+          sortRules.push({
+            col: trimmedCol as (typeof ALLOWED_SORT_COLUMNS)[number],
+            ascending: isAsc,
+          });
+        }
+      }
+    }
+
+    // Default fallback: id descending
+    if (sortRules.length === 0) {
+      sortRules.push({ col: "id", ascending: false });
+    }
+
+    // 3. Build Supabase query with exact total count
     let query = supabase
       .from("centers")
       .select("id, name, auto_approve, created_at, updated_at", { count: "exact" })
       .is("deleted_at", null);
 
-    // Server-side text search on center name
-    if (search) {
-      query = query.ilike("name", `%${search}%`);
+    // Apply active server-side filters dynamically in a loop
+    const filterHandlers: Record<string, (val: string) => void> = {
+      search: (val) => {
+        query = query.ilike("name", `%${val}%`);
+      },
+      auto_approve: (val) => {
+        if (val === "true" || val === "false") {
+          query = query.eq("auto_approve", val === "true");
+        }
+      },
+      from: (val) => {
+        const fromDate = new Date(val);
+        if (!isNaN(fromDate.getTime())) {
+          query = query.gte("created_at", fromDate.toISOString());
+        }
+      },
+      to: (val) => {
+        const toDate = new Date(val);
+        if (!isNaN(toDate.getTime())) {
+          toDate.setHours(23, 59, 59, 999);
+          query = query.lte("created_at", toDate.toISOString());
+        }
+      },
+    };
+
+    for (const [key, rawValue] of searchParams.entries()) {
+      const val = rawValue.trim();
+      if (!val) continue;
+      filterHandlers[key]?.(val);
     }
 
-    // Server-side auto_approve filter
-    if (autoApprove === "true") {
-      query = query.eq("auto_approve", true);
-    } else if (autoApprove === "false") {
-      query = query.eq("auto_approve", false);
+    // Apply multi-sorting rules sequentially
+    for (const rule of sortRules) {
+      query = query.order(rule.col, { ascending: rule.ascending });
     }
 
-    // Server-side date range filter on created_at
-    if (fromParam) {
-      const fromDate = new Date(fromParam);
-      if (!isNaN(fromDate.getTime())) {
-        query = query.gte("created_at", fromDate.toISOString());
-      }
-    }
-    if (toParam) {
-      const toDate = new Date(toParam);
-      if (!isNaN(toDate.getTime())) {
-        toDate.setHours(23, 59, 59, 999);
-        query = query.lte("created_at", toDate.toISOString());
-      }
-    }
-
-    // Apply sorting and range slice
-    query = query.order(sortCol, { ascending: isAscending }).range(offset, offset + pageSize - 1);
+    // Apply pagination range slice
+    query = query.range(offset, offset + pageSize - 1);
 
     const { data, count, error } = await query;
 

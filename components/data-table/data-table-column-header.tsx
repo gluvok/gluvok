@@ -11,7 +11,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowDown01Icon, ArrowUp01Icon, EyeIcon, Sorting05Icon } from "@hugeicons/core-free-icons";
+import {
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  Cancel01Icon,
+  EyeIcon,
+  Sorting05Icon,
+} from "@hugeicons/core-free-icons";
 import { type DataTableFeatures } from "./data-table-features";
 
 interface DataTableColumnHeaderProps<
@@ -47,6 +53,9 @@ export function DataTableColumnHeader<TData extends RowData, TValue = unknown>({
   }
 
   const isSorted = column.getIsSorted();
+  const sortIndex = column.getSortIndex();
+  const sortingState = column.table.options.state?.sorting ?? [];
+  const hasMultipleSorts = sortingState.length > 1;
 
   return (
     <div className={cn("flex items-center gap-1", className)}>
@@ -56,7 +65,13 @@ export function DataTableColumnHeader<TData extends RowData, TValue = unknown>({
             <Button
               variant="ghost"
               size="sm"
-              className="-ml-2 h-7 gap-1.5 px-2 text-xs data-popup-open:bg-accent"
+              onClick={(e) => {
+                if (e.shiftKey) {
+                  e.preventDefault();
+                  column.toggleSorting(undefined, true);
+                }
+              }}
+              className="-ml-2 h-7 gap-1 px-2 text-xs data-popup-open:bg-accent"
             >
               {icon ? (
                 <HugeiconsIcon
@@ -77,19 +92,49 @@ export function DataTableColumnHeader<TData extends RowData, TValue = unknown>({
                   className="text-muted-foreground/70"
                 />
               )}
+              {hasMultipleSorts && sortIndex >= 0 ? (
+                <span className="flex size-3.5 items-center justify-center rounded-full bg-primary/15 text-2xs font-semibold text-primary">
+                  {sortIndex + 1}
+                </span>
+              ) : null}
             </Button>
           }
         />
-        <DropdownMenuContent align="start" className="w-32">
+        <DropdownMenuContent align="start" className="w-38">
           <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
+            <DropdownMenuItem onClick={() => column.toggleSorting(false, false)}>
               <HugeiconsIcon icon={ArrowUp01Icon} />
-              <span>Asc</span>
+              <span>{sortingState.length > 1 ? "Sort only: Asc" : "Asc"}</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
+            <DropdownMenuItem onClick={() => column.toggleSorting(true, false)}>
               <HugeiconsIcon icon={ArrowDown01Icon} />
-              <span>Desc</span>
+              <span>{sortingState.length > 1 ? "Sort only: Desc" : "Desc"}</span>
             </DropdownMenuItem>
+
+            {sortingState.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => column.toggleSorting(false, true)}>
+                  <HugeiconsIcon icon={ArrowUp01Icon} />
+                  <span>Add to sort (Asc)</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => column.toggleSorting(true, true)}>
+                  <HugeiconsIcon icon={ArrowDown01Icon} />
+                  <span>Add to sort (Desc)</span>
+                </DropdownMenuItem>
+              </>
+            )}
+
+            {isSorted ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => column.clearSorting()}>
+                  <HugeiconsIcon icon={Cancel01Icon} />
+                  <span>Remove from sort</span>
+                </DropdownMenuItem>
+              </>
+            ) : null}
+
             {column.getCanHide() && (
               <>
                 <DropdownMenuSeparator />

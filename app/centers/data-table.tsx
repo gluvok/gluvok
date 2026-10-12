@@ -68,6 +68,14 @@ interface CentersApiResponse {
 
 const TABLE_ID = "centers";
 
+const COLUMN_LABELS: Record<string, string> = {
+  id: "ID",
+  name: "Name",
+  auto_approve: "Auto Approve",
+  created_at: "Created At",
+  updated_at: "Updated At",
+};
+
 export function CentersDataTable() {
   const hasHydrated = useTableHydrated();
   const store = useDataTableStore();
@@ -104,13 +112,19 @@ export function CentersDataTable() {
       range ? { from: range.from?.toISOString(), to: range.to?.toISOString() } : undefined,
     );
   const setSorting = (updater: Updater<SortingState>) => store.setTableSorting(TABLE_ID, updater);
+  const removeSort = (columnId: string) => store.removeTableSort(TABLE_ID, columnId);
+  const resetSorting = () => store.resetTableSorting(TABLE_ID);
   const setPagination = (updater: Updater<PaginationState>) =>
     store.setTablePagination(TABLE_ID, updater);
   const setColumnVisibility = (updater: Updater<ColumnVisibilityState>) =>
     store.setTableColumnVisibility(TABLE_ID, updater);
   const resetAllFilters = () => store.resetTableFilters(TABLE_ID);
+  const resetAllCriteria = () => {
+    resetAllFilters();
+    resetSorting();
+  };
 
-  // Fetch centers via axios with full server-side query params
+  // Fetch centers via axios with strict multi-column sorting and filtering
   const fetchCenters = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -121,8 +135,7 @@ export function CentersDataTable() {
           page: pagination.pageIndex + 1,
           pageSize: pagination.pageSize,
           ...(sorting.length > 0 && {
-            sort: sorting[0].id,
-            order: sorting[0].desc ? "desc" : "asc",
+            sort: sorting.map((s) => `${s.id}.${s.desc ? "desc" : "asc"}`).join(","),
           }),
           ...(debouncedSearch && { search: debouncedSearch }),
           ...(autoApproveFilter !== "all" && { auto_approve: autoApproveFilter }),
@@ -166,6 +179,7 @@ export function CentersDataTable() {
     rowCount: totalCount,
     manualSorting: true,
     manualFiltering: true,
+    enableMultiSort: true,
     onPaginationChange: setPagination,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
@@ -178,7 +192,10 @@ export function CentersDataTable() {
     },
   });
 
+  const isDefaultSort = sorting.length === 1 && sorting[0].id === "id" && sorting[0].desc === true;
+  const hasActiveSorts = !isDefaultSort && sorting.length > 0;
   const hasActiveFilters = Boolean(autoApproveFilter !== "all" || dateRange?.from);
+  const hasActiveCriteria = hasActiveFilters || hasActiveSorts;
 
   const selectedAutoApproveOption =
     AUTO_APPROVE_OPTIONS.find((opt) => opt.value === autoApproveFilter) ?? AUTO_APPROVE_OPTIONS[0];
@@ -269,60 +286,97 @@ export function CentersDataTable() {
         </div>
       </div>
 
-      {/* Active Filter Chips Bar (Badges) - Compact secondary filters */}
-      {hasActiveFilters && (
+      {/* Active Criteria Bar (Badges) - Compact unified filters and sorts */}
+      {hasActiveCriteria && (
         <div className="flex flex-wrap items-center gap-1.5 rounded-md bg-muted/30 px-2 py-1">
-          <span className="text-2xs font-medium text-muted-foreground">Active Filters:</span>
+          {hasActiveFilters && (
+            <>
+              <span className="text-2xs font-medium text-muted-foreground">Filters:</span>
 
-          {/* Auto Approve Chip */}
-          {autoApproveFilter !== "all" && (
-            <Badge variant="secondary" className="gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal">
-              <span className="text-muted-foreground">Auto Approve:</span>
-              <span className="font-medium">
-                {autoApproveFilter === "true" ? "Enabled" : "Disabled"}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setAutoApproveFilter("all");
-                  setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-                }}
-                className="rounded-full p-0.5 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
-                aria-label="Remove auto approve filter"
-              >
-                <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
-              </button>
-            </Badge>
+              {/* Auto Approve Chip */}
+              {autoApproveFilter !== "all" && (
+                <Badge variant="secondary" className="gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal">
+                  <span className="text-muted-foreground">Auto Approve:</span>
+                  <span className="font-medium">
+                    {autoApproveFilter === "true" ? "Enabled" : "Disabled"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAutoApproveFilter("all");
+                      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+                    }}
+                    className="rounded-full p-0.5 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
+                    aria-label="Remove auto approve filter"
+                  >
+                    <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
+                  </button>
+                </Badge>
+              )}
+
+              {/* Date Range Chip */}
+              {dateRange?.from && (
+                <Badge variant="secondary" className="gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal">
+                  <span className="text-muted-foreground">Created:</span>
+                  <span className="font-medium">
+                    {dateRange.to
+                      ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
+                      : format(dateRange.from, "LLL dd, y")}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateRange(undefined);
+                      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+                    }}
+                    className="rounded-full p-0.5 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
+                    aria-label="Remove date range filter"
+                  >
+                    <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
+                  </button>
+                </Badge>
+              )}
+            </>
           )}
 
-          {/* Date Range Chip */}
-          {dateRange?.from && (
-            <Badge variant="secondary" className="gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal">
-              <span className="text-muted-foreground">Created:</span>
-              <span className="font-medium">
-                {dateRange.to
-                  ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
-                  : format(dateRange.from, "LLL dd, y")}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setDateRange(undefined);
-                  setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-                }}
-                className="rounded-full p-0.5 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
-                aria-label="Remove date range filter"
-              >
-                <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
-              </button>
-            </Badge>
+          {hasActiveFilters && hasActiveSorts && (
+            <span className="mx-0.5 h-3 w-px bg-border/80" aria-hidden="true" />
           )}
 
-          {/* Clear All Filters Button */}
+          {hasActiveSorts && (
+            <>
+              <span className="text-2xs font-medium text-muted-foreground">Sorts:</span>
+              {sorting.map((sortRule, index) => {
+                const colTitle = COLUMN_LABELS[sortRule.id] ?? sortRule.id;
+                const dirLabel = sortRule.desc ? "Desc" : "Asc";
+                return (
+                  <Badge
+                    key={sortRule.id}
+                    variant="secondary"
+                    className="gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
+                  >
+                    <span className="font-semibold text-primary">#{index + 1}</span>
+                    <span className="text-muted-foreground">{colTitle}:</span>
+                    <span className="font-medium">{dirLabel}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeSort(sortRule.id)}
+                      className="rounded-full p-0.5 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
+                      aria-label={`Remove ${colTitle} sort`}
+                    >
+                      <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
+                    </button>
+                  </Badge>
+                );
+              })}
+            </>
+          )}
+
+          {/* Clear Actions */}
           <Button
             variant="ghost"
             size="sm"
-            onClick={resetAllFilters}
+            onClick={resetAllCriteria}
             className="h-5 px-1.5 text-2xs text-muted-foreground hover:text-foreground"
           >
             Clear all

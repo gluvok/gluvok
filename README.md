@@ -45,12 +45,12 @@ The `/centers` route provides a full-featured data table built with **TanStack T
   - **Axios API Client**: Native `fetch` replaced with typed `axios.get()` requests.
   - **Modular Scalable Data Table Layer (`components/data-table/`)**: Extracted a fully reusable component layer designed to support any current or future entity data tables (`centers`, `factories`, `users`, `tickets`, etc.) while keeping `components/ui/` primitives completely untouched:
     - `DataTableSearchInput`: Search input with search icon, clear button, and micro-typography.
-    - `DataTableFacetedFilter`: Reusable single-select combobox filter with matched option-to-input labels (`All Auto Approve`, `Enabled`, `Disabled`).
+    - `DataTableFacetedFilter`: Reusable single-select combobox filter powered by `kibo-ui/combobox` with matched option-to-input labels (`All Auto Approve`, `Enabled`, `Disabled`), leading option icons, common All category icon (`Layers01Icon`), and status icons (`Tick02Icon` for Enabled, `Cancel01Icon` for Disabled), styled at a compact `sm:w-44` width.
     - `DataTableCriteriaBar`: Unified active criteria bar encapsulating `@dnd-kit` multi-column drag-and-drop sort priority reordering and custom filter badge slots.
     - `DataTableContent`: Reusable TanStack Table container with built-in scoped loading, error/retry, and empty states.
     - `DataTablePagination`: Responsive pagination with row selection count and Base UI rows-per-page selector.
     - `DataTableViewOptions`: Column visibility dropdown menu.
-  - **Clear Typography & Legibility**: Toolbar controls maintain clean compact sizing, while combobox dropdown popover options render at `text-xs` (12px / 0.75rem) font size with `size-3.5` icons for effortless scanning and selection.
+  - **Clear Typography, Icons & Legibility**: Toolbar controls maintain clean compact sizing (`sm:w-44` combobox width), while `kibo-ui` combobox popover options and trigger render leading status icons (`size-3.5`) alongside `text-xs` option labels for effortless scanning and selection.
   - **Refined Status Badges**: `Enabled` and `Disabled` badges in the Auto Approve column are styled at `text-2xs` font size with compact `px-1.5 py-0.5` padding, standard `h-5` height, and `size-2.5` inline status icons, integrating harmoniously into compact `h-8` table rows.
   - **Strict shadcn `<Button>` Compliance**: All interactive buttons—including search clear crosses, date range dismiss buttons, and sortable chip remove triggers—strictly utilize shadcn `<Button>` primitives (`variant="ghost" size="icon-xs"`) with zero raw `<button>` HTML elements.
   - **Clean Responsive Toolbar Layout**: Pure Tailwind CSS responsive stacking with zero JS hooks (`sm:flex-row`): on mobile (`< sm`), Search input occupies full-width (`w-full`), followed by full-width Auto Approve combobox, and responsive Date Picker / Columns action controls; automatically aligns to clean left-vs-right split on tablet/desktop.

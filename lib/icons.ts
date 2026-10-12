@@ -3,6 +3,7 @@ import {
   Building01Icon,
   ClipboardListIcon,
   CustomerSupportIcon,
+  Layers01Icon,
   Settings01Icon,
   Ticket01Icon,
   UserGroupIcon,
@@ -20,6 +21,7 @@ export const appIcons = {
   tickets: Ticket01Icon,
   support: CustomerSupportIcon,
   services: Briefcase01Icon,
+  allFilter: Layers01Icon,
 } as const;
 
 export type AppIconKey = keyof typeof appIcons;

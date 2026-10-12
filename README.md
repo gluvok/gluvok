@@ -22,6 +22,23 @@ Navigation and module icons are centrally mapped in [`lib/icons.ts`](lib/icons.t
 
 The layout integrates `SidebarProvider` and `SidebarInset` with a collapsible sidebar trigger and a dynamic header page title (`AppBreadcrumb`) that reflects the current route without breadcrumb arrows. The sidebar's collapsed/expanded state is persisted across route navigations and page reloads via server-read cookies (`sidebar_state`).
 
+## Centers Module & Data Table
+
+The `/centers` route provides a data table built with **TanStack Table v9**:
+
+- **Backend Endpoint**: `GET /api/centers` (supports optional `?factory_id=<id>` and `?search=<text>` query params).
+- **Schema Mapping**: Maps directly to `centers` table in `schema.sql` (`id`, `name`, `auto_approve`, `factory_id`, `created_at`, `updated_at`).
+- **Features**:
+  - Client-side text filtering by center name.
+  - Ascending / descending column sorting.
+  - Column visibility toggles (Columns dropdown menu).
+  - Row selection with header select-all and indeterminate state.
+  - Auto-approve status badge formatting.
+  - Date formatting with `Intl.DateTimeFormat`.
+  - Row actions dropdown menu (`Copy Center ID`, `Copy Center Name`).
+  - Pagination controls with page size selector and selection counts.
+  - Loading skeleton rows and error retry controls.
+
 ## Getting Started
 
 First, run the development server:

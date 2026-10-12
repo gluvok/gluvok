@@ -12,50 +12,21 @@ import {
 } from "@tanstack/react-table";
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { DataTableSearchInput } from "@/components/data-table/data-table-search-input";
 import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@/components/ui/combobox";
+  DataTableFacetedFilter,
+  type FacetedFilterOption,
+} from "@/components/data-table/data-table-faceted-filter";
+import { DataTableCriteriaBar } from "@/components/data-table/data-table-criteria-bar";
+import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { DatePickerWithRange } from "@/components/data-table/date-range-picker";
-import { SortableSortChip, SortChipOverlay } from "@/components/data-table/sortable-sort-chip";
-import {
-  closestCenter,
-  DndContext,
-  type DragEndEvent,
-  type DragStartEvent,
-  DragOverlay,
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  horizontalListSortingStrategy,
-  SortableContext,
-  sortableKeyboardCoordinates,
-} from "@dnd-kit/sortable";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { AlertCircleIcon, Cancel01Icon, Search01Icon } from "@hugeicons/core-free-icons";
+import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { columns } from "./columns";
 import { features } from "@/components/data-table/data-table-features";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -66,12 +37,7 @@ import {
 } from "@/stores/use-data-table-store";
 import { type Center } from "./types";
 
-interface AutoApproveOption {
-  label: string;
-  value: string;
-}
-
-const AUTO_APPROVE_OPTIONS: AutoApproveOption[] = [
+const AUTO_APPROVE_OPTIONS: FacetedFilterOption[] = [
   { label: "All Auto Approve", value: "all" },
   { label: "Enabled", value: "true" },
   { label: "Disabled", value: "false" },
@@ -142,62 +108,6 @@ export function CentersDataTable() {
     resetAllFilters();
     resetSorting();
   };
-
-  // Drag and drop state and sensors for multi-column sort priority reordering
-  const [activeSortId, setActiveSortId] = useState<string | null>(null);
-
-  const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
-
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveSortId(String(event.active.id));
-  }, []);
-
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event;
-      setActiveSortId(null);
-
-      if (!over || active.id === over.id) return;
-
-      setSorting((prev) => {
-        const oldIndex = prev.findIndex((s) => s.id === active.id);
-        const newIndex = prev.findIndex((s) => s.id === over.id);
-        if (oldIndex === -1 || newIndex === -1) return prev;
-        return arrayMove(prev, oldIndex, newIndex);
-      });
-      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-    },
-    [setSorting, setPagination],
-  );
-
-  const handleDragCancel = useCallback(() => {
-    setActiveSortId(null);
-  }, []);
-
-  const activeSortRule = useMemo(() => {
-    if (!activeSortId) return null;
-    return sorting.find((s) => s.id === activeSortId) ?? null;
-  }, [activeSortId, sorting]);
-
-  const activeSortIndex = useMemo(() => {
-    if (!activeSortId) return -1;
-    return sorting.findIndex((s) => s.id === activeSortId);
-  }, [activeSortId, sorting]);
 
   // Fetch centers via axios with strict multi-column sorting and filtering
   const fetchCenters = useCallback(async () => {
@@ -270,12 +180,8 @@ export function CentersDataTable() {
   const isDefaultSort = sorting.length === 1 && sorting[0].id === "id" && sorting[0].desc === true;
   const hasActiveSorts = !isDefaultSort && sorting.length > 0;
   const hasActiveFilters = Boolean(autoApproveFilter !== "all" || dateRange?.from);
-  const hasActiveCriteria = hasActiveFilters || hasActiveSorts;
 
-  const selectedAutoApproveOption =
-    AUTO_APPROVE_OPTIONS.find((opt) => opt.value === autoApproveFilter) ?? AUTO_APPROVE_OPTIONS[0];
-
-  // Hydration guard: show clean centered spinner until localStorage is hydrated, preventing layout shift!
+  // Hydration guard: show clean centered spinner until localStorage is hydrated
   if (!hasHydrated) {
     return (
       <div className="flex h-64 items-center justify-center rounded-md border border-border bg-card">
@@ -293,65 +199,27 @@ export function CentersDataTable() {
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
         {/* Filters Group (Left) */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full sm:w-auto">
-          {/* Search Input with Clear (Cross) Button */}
-          <div className="relative w-full sm:w-60">
-            <HugeiconsIcon
-              icon={Search01Icon}
-              className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              placeholder="Search centers by name..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-full pl-8 pr-7 text-2xs"
-            />
-            {search && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => setSearch("")}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 size-5 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
-                aria-label="Clear search"
-              >
-                <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
-              </Button>
-            )}
-          </div>
+          {/* Search Input with Clear Button */}
+          <DataTableSearchInput
+            placeholder="Search centers by name..."
+            value={search}
+            onChange={setSearch}
+          />
 
           {/* Auto Approve Filter Combobox */}
-          <div className="w-full sm:w-48">
-            <Combobox
-              items={AUTO_APPROVE_OPTIONS}
-              value={selectedAutoApproveOption}
-              onValueChange={(val: AutoApproveOption | null) => {
-                setAutoApproveFilter(val ? val.value : "all");
-                setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-              }}
-              itemToStringValue={(item: AutoApproveOption) => item.label}
-            >
-              <ComboboxInput
-                placeholder="Auto Approve filter"
-                className="h-8 w-full text-2xs"
-                showClear={autoApproveFilter !== "all"}
-              />
-              <ComboboxContent>
-                <ComboboxEmpty className="text-2xs">No options found.</ComboboxEmpty>
-                <ComboboxList>
-                  {AUTO_APPROVE_OPTIONS.map((item) => (
-                    <ComboboxItem key={item.value} value={item} className="text-2xs">
-                      {item.label}
-                    </ComboboxItem>
-                  ))}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-          </div>
+          <DataTableFacetedFilter
+            title="Auto Approve"
+            options={AUTO_APPROVE_OPTIONS}
+            value={autoApproveFilter}
+            onValueChange={(val) => {
+              setAutoApproveFilter(val);
+              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+            }}
+          />
         </div>
 
-        {/* Action Controls Group (Right) - Date Range & Columns side-by-side */}
+        {/* Action Controls Group (Right) */}
         <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-          {/* Date Range Picker for created_at */}
           <DatePickerWithRange
             date={dateRange}
             onDateChange={(range) => {
@@ -361,194 +229,90 @@ export function CentersDataTable() {
             className="flex-1 sm:flex-initial"
           />
 
-          {/* Column Visibility Options */}
           <DataTableViewOptions table={table} />
         </div>
       </div>
 
-      {/* Active Criteria Bar (Badges) - Compact unified filters and sorts */}
-      {hasActiveCriteria && (
-        <div className="flex items-center gap-1.5 overflow-x-auto rounded-md bg-muted/30 px-2 py-1 no-scrollbar whitespace-nowrap">
-          {hasActiveFilters && (
-            <>
-              <span className="shrink-0 text-2xs font-medium text-muted-foreground">Filters:</span>
-
-              {/* Auto Approve Chip */}
-              {autoApproveFilter !== "all" && (
-                <Badge
-                  variant="secondary"
-                  className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
-                >
-                  <span className="text-muted-foreground">Auto Approve:</span>
-                  <span className="font-medium">
-                    {autoApproveFilter === "true" ? "Enabled" : "Disabled"}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => {
-                      setAutoApproveFilter("all");
-                      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-                    }}
-                    className="size-4 rounded-full p-0 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
-                    aria-label="Remove auto approve filter"
-                  >
-                    <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
-                  </Button>
-                </Badge>
-              )}
-
-              {/* Date Range Chip */}
-              {dateRange?.from && (
-                <Badge
-                  variant="secondary"
-                  className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
-                >
-                  <span className="text-muted-foreground">Created:</span>
-                  <span className="font-medium">
-                    {dateRange.to
-                      ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
-                      : format(dateRange.from, "LLL dd, y")}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => {
-                      setDateRange(undefined);
-                      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-                    }}
-                    className="size-4 rounded-full p-0 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
-                    aria-label="Remove date range filter"
-                  >
-                    <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
-                  </Button>
-                </Badge>
-              )}
-            </>
-          )}
-
-          {hasActiveFilters && hasActiveSorts && (
-            <span className="mx-0.5 h-3 w-px shrink-0 bg-border/80" aria-hidden="true" />
-          )}
-
-          {hasActiveSorts && (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              onDragCancel={handleDragCancel}
-            >
-              <span className="shrink-0 text-2xs font-medium text-muted-foreground">Sorts:</span>
-              <SortableContext
-                items={sorting.map((s) => s.id)}
-                strategy={horizontalListSortingStrategy}
-              >
-                {sorting.map((sortRule, index) => {
-                  const colTitle = COLUMN_LABELS[sortRule.id] ?? sortRule.id;
-                  return (
-                    <SortableSortChip
-                      key={sortRule.id}
-                      sortRule={sortRule}
-                      index={index}
-                      colTitle={colTitle}
-                      isDraggable={sorting.length > 1}
-                      onRemove={(columnId) => {
-                        removeSort(columnId);
-                        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-                      }}
-                    />
-                  );
-                })}
-              </SortableContext>
-
-              <DragOverlay>
-                {activeSortRule && activeSortIndex !== -1 ? (
-                  <SortChipOverlay
-                    sortRule={activeSortRule}
-                    index={activeSortIndex}
-                    colTitle={COLUMN_LABELS[activeSortRule.id] ?? activeSortRule.id}
-                  />
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          )}
-
-          {/* Clear Actions */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={resetAllCriteria}
-            className="shrink-0 ml-auto h-5 px-1.5 text-2xs text-muted-foreground hover:text-foreground"
+      {/* Active Criteria Bar (Badges + Drag-and-Drop Sort Priority Chips) */}
+      <DataTableCriteriaBar
+        hasActiveFilters={hasActiveFilters}
+        hasActiveSorts={hasActiveSorts}
+        sorting={sorting}
+        onSortingChange={(updater) => {
+          setSorting(updater);
+          setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+        }}
+        onRemoveSort={(columnId) => {
+          removeSort(columnId);
+          setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+        }}
+        columnLabels={COLUMN_LABELS}
+        onResetAll={resetAllCriteria}
+      >
+        {/* Auto Approve Chip */}
+        {autoApproveFilter !== "all" && (
+          <Badge
+            variant="secondary"
+            className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
           >
-            Clear all
-          </Button>
-        </div>
-      )}
-
-      {/* Compact Clean Table Container with Scoped Loading State */}
-      <div className="overflow-hidden rounded-md border border-border bg-card">
-        {error ? (
-          <div className="flex h-64 items-center justify-center">
-            <div className="flex flex-col items-center justify-center gap-2 text-destructive">
-              <HugeiconsIcon icon={AlertCircleIcon} className="size-5" />
-              <span className="text-xs">{error}</span>
-              <Button variant="outline" size="sm" onClick={() => fetchCenters()} className="mt-1">
-                Try again
-              </Button>
-            </div>
-          </div>
-        ) : loading ? (
-          <div className="flex h-64 items-center justify-center">
-            <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-              <Spinner className="size-6 text-muted-foreground" />
-              <span className="text-xs">Loading centers...</span>
-            </div>
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="h-8 hover:bg-transparent">
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} className="h-8 px-3 text-xs font-semibold">
-                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                    className="h-8 hover:bg-muted/40"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="px-3 py-1 text-xs">
-                        <table.FlexRender cell={cell} />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={table.getVisibleLeafColumns().length}
-                    className="h-20 text-center text-xs text-muted-foreground"
-                  >
-                    No centers found matching the specified filters.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+            <span className="text-muted-foreground">Auto Approve:</span>
+            <span className="font-medium">
+              {autoApproveFilter === "true" ? "Enabled" : "Disabled"}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => {
+                setAutoApproveFilter("all");
+                setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+              }}
+              className="size-4 rounded-full p-0 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
+              aria-label="Remove auto approve filter"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
+            </Button>
+          </Badge>
         )}
-      </div>
+
+        {/* Date Range Chip */}
+        {dateRange?.from && (
+          <Badge
+            variant="secondary"
+            className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
+          >
+            <span className="text-muted-foreground">Created:</span>
+            <span className="font-medium">
+              {dateRange.to
+                ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
+                : format(dateRange.from, "LLL dd, y")}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => {
+                setDateRange(undefined);
+                setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+              }}
+              className="size-4 rounded-full p-0 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
+              aria-label="Remove date range filter"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
+            </Button>
+          </Badge>
+        )}
+      </DataTableCriteriaBar>
+
+      {/* Reusable Data Table Content */}
+      <DataTableContent
+        table={table}
+        loading={loading}
+        error={error}
+        onRetry={fetchCenters}
+        emptyMessage="No centers found matching the specified filters."
+        loadingMessage="Loading centers..."
+      />
 
       {/* Pagination Controls */}
       <DataTablePagination table={table} />

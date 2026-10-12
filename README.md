@@ -43,6 +43,13 @@ The `/centers` route provides a full-featured data table built with **TanStack T
   - **Compact Density & Zero-Scroll Fit**: Ultra-streamlined table rows (`h-8` rows with `py-1 px-3 text-xs` cell padding; `h-8 px-3` header; `px-2 py-1` criteria bar; `gap-4` and `gap-2.5` container spacing), ensuring all rows, active criteria badges, and pagination controls fit comfortably within standard viewports with zero vertical page scrolling.
   - **Page Header Refresh Button**: Dedicated reload button (`CentersRefreshButton`) located on the complete right side of the "Centers" heading, invoking a full page reload (`window.location.reload()`).
   - **Axios API Client**: Native `fetch` replaced with typed `axios.get()` requests.
+  - **Modular Scalable Data Table Layer (`components/data-table/`)**: Extracted a fully reusable component layer designed to support any current or future entity data tables (`centers`, `factories`, `users`, `tickets`, etc.) while keeping `components/ui/` primitives completely untouched:
+    - `DataTableSearchInput`: Search input with search icon, clear button, and micro-typography.
+    - `DataTableFacetedFilter`: Reusable single-select combobox filter with matched option-to-input labels (`All Auto Approve`, `Enabled`, `Disabled`).
+    - `DataTableCriteriaBar`: Unified active criteria bar encapsulating `@dnd-kit` multi-column drag-and-drop sort priority reordering and custom filter badge slots.
+    - `DataTableContent`: Reusable TanStack Table container with built-in scoped loading, error/retry, and empty states.
+    - `DataTablePagination`: Responsive pagination with row selection count and Base UI rows-per-page selector.
+    - `DataTableViewOptions`: Column visibility dropdown menu.
   - **Micro-Filter Typography & Density (`text-2xs`)**: Toolbar filter controls (Search input, Auto Approve combobox, Date Range Picker trigger, Columns view options) are uniformly styled with `text-2xs` (10px / 0.625rem) typography, maximizing data visibility and visual hierarchy against standard `text-xs` (12px) table contents.
   - **Refined Status Badges**: `Enabled` and `Disabled` badges in the Auto Approve column are styled at `text-2xs` font size with compact `px-1.5 py-0.5` padding, standard `h-5` height, and `size-2.5` inline status icons, integrating harmoniously into compact `h-8` table rows.
   - **Strict shadcn `<Button>` Compliance**: All interactive buttons—including search clear crosses, date range dismiss buttons, and sortable chip remove triggers—strictly utilize shadcn `<Button>` primitives (`variant="ghost" size="icon-xs"`) with zero raw `<button>` HTML elements.
@@ -52,7 +59,6 @@ The `/centers` route provides a full-featured data table built with **TanStack T
   - **Fluid Responsive Pagination**: Clean 2-row layout on mobile viewports: selection summary on row 1 and spaced rows-per-page, page count, and icon-only previous/next controls on row 2, smoothly transitioning to single-line on desktop.
   - **Server-Side Pagination**: TanStack Table `manualPagination` with Base UI `Select` rows-per-page selector (`10, 20, 30, 40, 50`) and spaced Previous/Next buttons (`gap-2`).
   - **Accurate Selection Counter**: Selection count displays `{selectedCount} of {currentRowsCount} row(s) selected.` representing the number of rows currently in the datatable on this page.
-  - **Auto Approve Combobox**: Base UI Combobox component for filtering by Auto Approve status.
   - **Unified Multi-Table State Persistence**: Powered by Zustand (`stores/use-data-table-store.ts`) with `persist` middleware storing all entity tables (`centers`, `entries`, etc.) under a single `localStorage` key (`gluvok-tables-state`). Retains `search`, `filters`, `dateRange`, `sorting`, `pagination`, and `columnVisibility` across browser restarts and route transitions.
   - **Zero Layout Shift Hydration Guard**: Utilizes `useTableHydrated` hook to render a centered spinner card until `localStorage` rehydration completes, ensuring zero layout shift, zero flash of default state, and zero duplicate API requests.
   - **Column Visibility & Actions**: Columns dropdown toggle, indeterminate select-all checkbox, and row actions dropdown (`Copy Center ID`, `Copy Center Name`).

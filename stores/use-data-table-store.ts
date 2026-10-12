@@ -206,23 +206,6 @@ export const useDataTableStore = create<DataTableStoreState>()(
     {
       name: "gluvok-tables-state",
       storage: createJSONStorage(() => localStorage),
-      version: 1,
-      migrate: (persistedState: unknown) => {
-        const state = persistedState as { tables?: Record<string, TableItemState> };
-        if (state?.tables) {
-          for (const key of Object.keys(state.tables)) {
-            const table = state.tables[key];
-            if (
-              table.sorting?.length === 1 &&
-              table.sorting[0].id === "id" &&
-              table.sorting[0].desc
-            ) {
-              table.sorting = [];
-            }
-          }
-        }
-        return state;
-      },
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },

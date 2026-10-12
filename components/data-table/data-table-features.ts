@@ -5,6 +5,7 @@ import {
   createPaginatedRowModel,
   createSortedRowModel,
   filterFn_includesString,
+  metaHelper,
   rowPaginationFeature,
   rowSelectionFeature,
   rowSortingFeature,
@@ -13,12 +14,18 @@ import {
   tableFeatures,
 } from "@tanstack/react-table";
 
+export interface DataTableColumnMeta {
+  title?: string;
+  icon?: unknown;
+}
+
 export const features = tableFeatures({
   columnFilteringFeature,
   columnVisibilityFeature,
   rowPaginationFeature,
   rowSelectionFeature,
   rowSortingFeature,
+  columnMeta: metaHelper<DataTableColumnMeta>(),
   filteredRowModel: createFilteredRowModel(),
   paginatedRowModel: createPaginatedRowModel(),
   sortedRowModel: createSortedRowModel(),

@@ -26,7 +26,7 @@ export function DataTablePagination<TData extends RowData>({
         <div className="flex items-center gap-2">
           <p className="text-xs font-medium">Rows per page</p>
           <select
-            className="h-7 rounded-md border border-input bg-background px-1.5 py-0.5 text-xs outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+            className="h-7 cursor-pointer rounded-md border border-input bg-background py-0.5 pr-6 pl-2 text-xs outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
             value={table.state.pagination.pageSize}
             onChange={(e) => {
               table.setPageSize(Number(e.target.value));

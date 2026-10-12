@@ -14,7 +14,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Copy01Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
+import {
+  Calendar01Icon,
+  Cancel01Icon,
+  Clock01Icon,
+  Copy01Icon,
+  HashtagIcon,
+  MoreHorizontalIcon,
+  TextFontIcon,
+  Tick02Icon,
+  ToggleOnIcon,
+} from "@hugeicons/core-free-icons";
 import { type DataTableFeatures } from "@/components/data-table/data-table-features";
 import { type Center } from "./types";
 
@@ -42,26 +52,49 @@ export const columns = columnHelper.columns([
     enableHiding: false,
   }),
   columnHelper.accessor("id", {
-    header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="ID" icon={HashtagIcon} />,
     cell: ({ row }) => <span className="font-mono text-xs">{row.getValue("id")}</span>,
+    meta: {
+      title: "ID",
+      icon: HashtagIcon,
+    },
   }),
   columnHelper.accessor("name", {
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Center Name" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Name" icon={TextFontIcon} />
+    ),
     cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+    meta: {
+      title: "Name",
+      icon: TextFontIcon,
+    },
   }),
   columnHelper.accessor("auto_approve", {
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Auto Approve" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Auto Approve" icon={ToggleOnIcon} />
+    ),
     cell: ({ row }) => {
       const autoApprove = row.getValue("auto_approve") as boolean;
       return (
-        <Badge variant={autoApprove ? "default" : "secondary"}>
-          {autoApprove ? "Enabled" : "Disabled"}
+        <Badge variant={autoApprove ? "default" : "secondary"} className="gap-1">
+          <HugeiconsIcon
+            icon={autoApprove ? Tick02Icon : Cancel01Icon}
+            className="size-2.5"
+            data-icon="inline-start"
+          />
+          <span>{autoApprove ? "Enabled" : "Disabled"}</span>
         </Badge>
       );
     },
+    meta: {
+      title: "Auto Approve",
+      icon: ToggleOnIcon,
+    },
   }),
   columnHelper.accessor("created_at", {
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Created At" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Created At" icon={Calendar01Icon} />
+    ),
     cell: ({ row }) => {
       const dateVal = row.getValue("created_at") as string;
       const formatted = dateVal
@@ -71,6 +104,29 @@ export const columns = columnHelper.columns([
           }).format(new Date(dateVal))
         : "—";
       return <span className="text-muted-foreground">{formatted}</span>;
+    },
+    meta: {
+      title: "Created At",
+      icon: Calendar01Icon,
+    },
+  }),
+  columnHelper.accessor("updated_at", {
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Updated At" icon={Clock01Icon} />
+    ),
+    cell: ({ row }) => {
+      const dateVal = row.getValue("updated_at") as string;
+      const formatted = dateVal
+        ? new Intl.DateTimeFormat("en-US", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }).format(new Date(dateVal))
+        : "—";
+      return <span className="text-muted-foreground">{formatted}</span>;
+    },
+    meta: {
+      title: "Updated At",
+      icon: Clock01Icon,
     },
   }),
   columnHelper.display({

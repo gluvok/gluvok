@@ -30,7 +30,7 @@ export function DataTableViewOptions<TData extends RowData>({
           </Button>
         }
       />
-      <DropdownMenuContent align="end" className="w-40">
+      <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -38,14 +38,23 @@ export function DataTableViewOptions<TData extends RowData>({
             .getAllColumns()
             .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide())
             .map((column) => {
+              const meta = column.columnDef.meta as { title?: string; icon?: unknown } | undefined;
+              const title = meta?.title ?? column.id.replace(/_/g, " ");
+              const icon = meta?.icon;
+
               return (
                 <DropdownMenuCheckboxItem
                   key={column.id}
-                  className="capitalize"
                   checked={column.getIsVisible()}
                   onCheckedChange={(value) => column.toggleVisibility(!!value)}
                 >
-                  {column.id.replace(/_/g, " ")}
+                  {icon ? (
+                    <HugeiconsIcon
+                      icon={icon as Parameters<typeof HugeiconsIcon>[0]["icon"]}
+                      className="size-3.5 text-muted-foreground"
+                    />
+                  ) : null}
+                  <span>{title}</span>
                 </DropdownMenuCheckboxItem>
               );
             })}

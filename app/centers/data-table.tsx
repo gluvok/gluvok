@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -27,15 +27,6 @@ import { cn } from "@/lib/utils";
 import { columns } from "./columns";
 import { features } from "@/components/data-table/data-table-features";
 import { type Center } from "./types";
-
-const SKELETON_CLASSES = [
-  "size-4 rounded-xs",
-  "h-4 w-6",
-  "h-4 w-36",
-  "h-4 w-16",
-  "h-4 w-24",
-  "size-6 rounded-md",
-];
 
 export function CentersDataTable() {
   const [data, setData] = useState<Center[]>([]);
@@ -131,18 +122,23 @@ export function CentersDataTable() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              Array.from({ length: 5 }).map((_, index) => (
-                <TableRow key={`skeleton-${index}`}>
-                  {SKELETON_CLASSES.map((cls, colIndex) => (
-                    <TableCell key={`col-${colIndex}`}>
-                      <Skeleton className={cls} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              <TableRow>
+                <TableCell
+                  colSpan={table.getVisibleLeafColumns().length}
+                  className="h-36 text-center"
+                >
+                  <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                    <Spinner className="size-6 text-muted-foreground" />
+                    <span className="text-xs">Loading centers...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-28 text-center text-destructive">
+                <TableCell
+                  colSpan={table.getVisibleLeafColumns().length}
+                  className="h-28 text-center text-destructive"
+                >
                   <div className="flex flex-col items-center justify-center gap-2">
                     <HugeiconsIcon icon={AlertCircleIcon} className="size-5" />
                     <span className="text-xs">{error}</span>
@@ -170,7 +166,7 @@ export function CentersDataTable() {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={table.getVisibleLeafColumns().length}
                   className="h-24 text-center text-xs text-muted-foreground"
                 >
                   No centers found.

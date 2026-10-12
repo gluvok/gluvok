@@ -29,15 +29,16 @@ The `/centers` route provides a data table built with **TanStack Table v9**:
 - **Backend Endpoint**: `GET /api/centers` (supports optional `?factory_id=<id>` and `?search=<text>` query params).
 - **Schema Mapping**: Maps directly to `centers` table in `schema.sql` (`id`, `name`, `auto_approve`, `factory_id`, `created_at`, `updated_at`).
 - **Features**:
+  - Columns: `ID`, `Name`, `Auto Approve`, `Created At`, and `Updated At` with consistent entity icons.
   - Client-side text filtering by center name.
   - Ascending / descending column sorting.
-  - Column visibility toggles (Columns dropdown menu).
+  - Column visibility toggles (Columns dropdown menu with synced labels and icons).
   - Row selection with header select-all and indeterminate state.
-  - Auto-approve status badge formatting.
+  - Auto-approve status badge formatting with icons (`Tick02Icon` for Enabled, `Cancel01Icon` for Disabled).
   - Date formatting with `Intl.DateTimeFormat`.
   - Row actions dropdown menu (`Copy Center ID`, `Copy Center Name`).
-  - Pagination controls with page size selector and selection counts.
-  - Loading skeleton rows and error retry controls.
+  - Pagination controls with comfortable chevron spacing, page size selector, and selection counts.
+  - Clean centered `Spinner` loading state and error retry controls.
 
 ## Getting Started
 

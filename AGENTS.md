@@ -92,7 +92,7 @@ For any JavaScript / TypeScript / Node modifications:
 4. **Test Suite**: Run `pnpm test` (`vitest run`) to confirm all tests pass without regression.
 5. **Build Verification**: Run `pnpm run build` (`next build`) to confirm production builds compile cleanly.
 6. **Iterative Verification**: Keep looping through `pnpm lint`, `pnpm fmt`, `pnpm type-check`, `pnpm test`, and `pnpm run build` until all yield **0 errors, 0 warnings, and clean builds**.
-7. **Clean React Imports**: Always check for and eliminate stale `import * as React from "react";`. Do not use blanket namespace React imports. Use modern React 19 / JSX transform conventions: import only the specific hooks (e.g., `import { useState, useEffect } from "react";`) or type definitions (e.g., `import type { ComponentProps } from "react";`) actually referenced in the file. Remove `import * as React from "react";` when no `React.` symbols are used.
+7. **Clean React Imports**: Always check for and eliminate stale `import * as React from "react";`. Remove `import * as React from "react";` when no `React.` symbols are used.
 
 **The mandatory commands that must always pass:**
 
@@ -115,6 +115,13 @@ For any JavaScript / TypeScript / Node modifications:
 
 - **Inspect schema first**: Always read `schema.sql` before writing any code to understand the existing database tables, columns, relationships, types, and constraints. Never assume database structures.
 - **Update migrations on schema changes**: In case the schema is modified or new tables, columns, triggers, or policies are introduced, update `schema.sql` to reflect the target state and record the corresponding migration statements in `migration.sql`.
+
+## 8. shadcn / UI Components & Documentation
+
+**Official shadcn docs are in the `docs/` folder. Never manually create `components/ui/` files.**
+
+- **Official Documentation**: Canonical shadcn / UI documentation for components in this repository is kept inside the `docs/` folder (e.g., `docs/datatable.md`, `docs/pagination.md`, `docs/spinner.md`). Always consult `docs/` first for canonical component APIs, props, and design guidelines.
+- **CLI Component Addition**: NEVER create components inside the `components/ui/` directory manually. Always install and scaffold UI components using the `pnpm shadcn` CLI command (e.g., `pnpm dlx shadcn@latest add <component>` or `pnpm shadcn add <component>`). If project-specific adjustments or imports need tuning after installation, edit the CLI-generated file rather than crafting it from scratch.
 
 ---
 

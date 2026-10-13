@@ -1,6 +1,6 @@
 import type { ReactTable, RowData } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination";
+import { ButtonGroup } from "@/components/ui/button-group";
 import {
   Select,
   SelectContent,
@@ -66,34 +66,28 @@ export function DataTablePagination<TData extends RowData>({
         <div className="flex items-center justify-center text-xs font-medium">
           Page {currentPage} of {totalPages}
         </div>
-        <Pagination className="mx-0 w-auto">
-          <PaginationContent className="gap-2">
-            <PaginationItem>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 gap-1 px-2.5 text-xs"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <HugeiconsIcon icon={ArrowLeft01Icon} data-icon="inline-start" />
-                <span className="hidden sm:inline">Previous</span>
-              </Button>
-            </PaginationItem>
-            <PaginationItem>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 gap-1 px-2.5 text-xs"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                <span className="hidden sm:inline">Next</span>
-                <HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" />
-              </Button>
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <ButtonGroup aria-label="Pagination navigation">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1 px-2.5 text-xs"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <HugeiconsIcon icon={ArrowLeft01Icon} data-icon="inline-start" />
+            <span className="hidden sm:inline">Previous</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1 px-2.5 text-xs"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            <span className="hidden sm:inline">Next</span>
+            <HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" />
+          </Button>
+        </ButtonGroup>
       </div>
     </div>
   );

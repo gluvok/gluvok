@@ -52,11 +52,7 @@ npm install @base-ui/react
 ## Usage
 
 ```tsx
-import {
-  ButtonGroup,
-  ButtonGroupSeparator,
-  ButtonGroupText,
-} from "@/components/ui/button-group"
+import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from "@/components/ui/button-group";
 ```
 
 ```tsx
@@ -227,8 +223,8 @@ Use this component to display text within a button group.
 Use the `render` prop to render a custom component as the text, for example a label.
 
 ```tsx showLineNumbers
-import { ButtonGroupText } from "@/components/ui/button-group"
-import { Label } from "@/components/ui/label"
+import { ButtonGroupText } from "@/components/ui/button-group";
+import { Label } from "@/components/ui/label";
 
 export function ButtonGroupTextDemo() {
   return (
@@ -236,6 +232,6 @@ export function ButtonGroupTextDemo() {
       <ButtonGroupText render={<Label htmlFor="name" />}>Text</ButtonGroupText>
       <Input placeholder="Type something here..." id="name" />
     </ButtonGroup>
-  )
+  );
 }
 ```

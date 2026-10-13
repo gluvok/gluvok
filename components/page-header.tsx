@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { PageRefreshButton } from "@/components/page-refresh-button";
 import { cn } from "@/lib/utils";
 
@@ -8,11 +7,7 @@ export interface PageHeaderProps {
   className?: string;
 }
 
-export function PageHeader({
-  title,
-  description,
-  className,
-}: PageHeaderProps) {
+export function PageHeader({ title, description, className }: PageHeaderProps) {
   return (
     <div className={cn("flex items-center justify-between gap-4", className)}>
       <div className="flex min-w-0 flex-1 flex-col gap-1">

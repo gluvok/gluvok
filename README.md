@@ -44,7 +44,7 @@ The `/centers` route provides a full-featured data table built with **TanStack T
   - **Axios API Client**: Native `fetch` replaced with typed `axios.get()` requests.
   - **Modular Scalable Data Table Layer (`components/data-table/`)**: Extracted a fully reusable component layer designed to support any current or future entity data tables (`centers`, `factories`, `users`, `tickets`, etc.) while keeping `components/ui/` primitives completely untouched:
     - `DataTableSearchInput`: Search input with search icon, clear button, and micro-typography.
-    - `DataTableFacetedFilter`: Reusable single-select combobox filter powered by `kibo-ui/combobox` with matched option-to-input labels (`All Auto Approve`, `Enabled`, `Disabled`), leading option icons, common All category icon (`Layers01Icon`), and enclosed circular status icons (`CheckmarkCircle02Icon` for Enabled, `CancelCircleIcon` for Disabled), styled at a compact `sm:w-44` width with single-line option rendering (`whitespace-nowrap`).
+    - `DataTableFacetedFilter`: Reusable single-select combobox filter powered by `kibo-ui/combobox` with matched option-to-input labels (`All Auto Approve`, `Enabled`, `Disabled`), leading option icons (`ToggleOnIcon` matching Auto Approve, `CheckmarkCircle02Icon` for Enabled, `CancelCircleIcon` for Disabled), styled at a compact `sm:w-44` width with single-line option rendering (`whitespace-nowrap`).
     - `DataTableCriteriaBar`: Unified active criteria bar encapsulating `@dnd-kit` multi-column drag-and-drop sort priority reordering and custom filter badge slots.
     - `DataTableContent`: Reusable TanStack Table container with built-in scoped loading, error/retry, and empty states.
     - `DataTablePagination`: Responsive pagination with row selection count and Base UI rows-per-page selector.
@@ -61,6 +61,23 @@ The `/centers` route provides a full-featured data table built with **TanStack T
   - **Unified Multi-Table State Persistence**: Powered by Zustand (`stores/use-data-table-store.ts`) with `persist` middleware storing all entity tables (`centers`, `entries`, etc.) under a single `localStorage` key (`gluvok-tables-state`). Retains `search`, `filters`, `dateRange`, `sorting`, `pagination`, and `columnVisibility` across browser restarts and route transitions.
   - **Zero Layout Shift Hydration Guard**: Utilizes `useTableHydrated` hook to render a centered spinner card until `localStorage` rehydration completes, ensuring zero layout shift, zero flash of default state, and zero duplicate API requests.
   - **Column Visibility & Actions**: Columns dropdown toggle, indeterminate select-all checkbox, and row actions dropdown (`Copy Center ID`, `Copy Center Name`).
+
+## Settings Module & Factory Configuration
+
+The `/settings` route provides facility configuration controls powered by the unified `/api/factories` endpoint:
+
+- **Backend Endpoint**: `GET /api/factories` and `PATCH /api/factories`
+  - Current-tenant preview hardcoded to Factory ID `1` (architected for seamless migration to session-based authentication).
+  - Strict validation using **Zod** (`updateFactorySchema.strict()`): validates `name` (min 1 character), `check_center_on_merge` (boolean), and `receipt_images_per_row` (integer between 1 and 6). Strict rejection with HTTP 400 on unexpected or invalid keys.
+- **Schema Mapping**: Maps to `factories` table in `schema.sql` (`id`, `name`, `check_center_on_merge`, `receipt_images_per_row`, `created_at`, `updated_at`). `camera_crops` has been removed from the schema and recorded in `migration.sql`.
+- **Features & UX**:
+  - **Horizontally Centered Factory Card**: The configuration card is centered on `/settings` with responsive padding and spacing.
+  - **Clean Loading State**: Renders a centered `<Spinner />` with status message during initial data fetching, eliminating empty card shells.
+  - **Dedicated Iconography**: Factory card uses `Factory01Icon` (distinct from Center's `Building01Icon`), Receipt Images uses `Image01Icon` (distinct from combobox All icon), and registered in `lib/icons.ts`.
+  - **Input Controls**: `<Input>` for factory name, `<Checkbox>` for center merge validation, and Base UI `<Select>` (values 1–6) for receipt snapshot row layout.
+  - **Base UI Toast Feedback**: Integrated notification system powered by `@base-ui/react/toast` with `<Toaster />` in the root layout, delivering instant alerts on settings save and error events.
+  - **Client-Side Zod Validation**: Form validates against `updateFactorySchema` before dispatching updates.
+  - **Dirty State Tracking**: Save Changes and Reset buttons detect client form changes with disabled controls when pristine, `<Spinner>` indicators during requests, and inline timestamp tracking.
 
 ## Getting Started
 

@@ -7,6 +7,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { Separator } from "@/components/ui/separator";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppBreadcrumb } from "@/components/app-breadcrumb";
+import { Toaster } from "@/components/ui/toast";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -57,6 +58,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>
           </SidebarInset>
         </SidebarProvider>
+        <Toaster />
       </body>
     </html>
   );

@@ -33,7 +33,6 @@ import {
   CheckmarkCircle02Icon,
   Clock01Icon,
   HashtagIcon,
-  Layers01Icon,
   TextFontIcon,
   ToggleOnIcon,
 } from "@hugeicons/core-free-icons";
@@ -48,7 +47,7 @@ import {
 import { type Center } from "./types";
 
 const AUTO_APPROVE_OPTIONS: FacetedFilterOption[] = [
-  { label: "All Auto Approve", value: "all", icon: Layers01Icon },
+  { label: "All Auto Approve", value: "all", icon: ToggleOnIcon },
   { label: "Enabled", value: "true", icon: CheckmarkCircle02Icon },
   { label: "Disabled", value: "false", icon: CancelCircleIcon },
 ];

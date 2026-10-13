@@ -88,10 +88,6 @@ CREATE TABLE IF NOT EXISTS factories (
     name TEXT NOT NULL,
     check_center_on_merge BOOLEAN NOT NULL DEFAULT TRUE,
     receipt_images_per_row INT NOT NULL DEFAULT 3,
-    camera_crops JSONB NOT NULL DEFAULT '[
-      {"camera": 1, "top": 0, "bottom": 0, "left": 0, "right": 0},
-      {"camera": 2, "top": 0, "bottom": 0, "left": 0, "right": 0}
-    ]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ,

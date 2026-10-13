@@ -15,7 +15,6 @@ import {
 import { ChevronsUpDownIcon } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { appIcons } from "@/lib/icons";
-import { cn } from "@/lib/utils";
 
 export interface FacetedFilterOption {
   label: string;
@@ -28,9 +27,6 @@ export interface DataTableFacetedFilterProps {
   options: FacetedFilterOption[];
   value: string;
   onValueChange: (value: string) => void;
-  defaultValue?: string;
-  placeholder?: string;
-  className?: string;
 }
 
 export function DataTableFacetedFilter({
@@ -38,9 +34,6 @@ export function DataTableFacetedFilter({
   options,
   value,
   onValueChange,
-  defaultValue = "all",
-  placeholder,
-  className,
 }: DataTableFacetedFilterProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -48,29 +41,26 @@ export function DataTableFacetedFilter({
     return options.find((opt) => opt.value === value) ?? options[0];
   }, [options, value]);
 
-  const getOptionIcon = React.useCallback(
-    (opt?: FacetedFilterOption) => {
-      if (!opt) return undefined;
-      if (opt.icon) return opt.icon;
-      if (opt.value === defaultValue || opt.value === "all") {
-        return appIcons.allFilter;
-      }
-      return undefined;
-    },
-    [defaultValue],
-  );
+  const getOptionIcon = React.useCallback((opt?: FacetedFilterOption) => {
+    if (!opt) return undefined;
+    if (opt.icon) return opt.icon;
+    if (opt.value === "all") {
+      return appIcons.allFilter;
+    }
+    return undefined;
+  }, []);
 
   const selectedIcon = getOptionIcon(selectedOption);
 
   return (
-    <div className={cn("w-full sm:w-44", className)}>
+    <div className="w-full sm:w-44">
       <Combobox
         data={options}
         open={open}
         onOpenChange={setOpen}
         value={value}
         onValueChange={(val) => {
-          onValueChange(val || defaultValue);
+          onValueChange(val || "all");
         }}
         type={title.toLowerCase()}
       >
@@ -82,9 +72,7 @@ export function DataTableFacetedFilter({
                 className="size-3.5 shrink-0 text-muted-foreground"
               />
             )}
-            <span className="truncate">
-              {selectedOption?.label ?? placeholder ?? `Select ${title}...`}
-            </span>
+            <span className="truncate">{selectedOption?.label ?? `Select ${title}...`}</span>
           </span>
           <ChevronsUpDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
         </ComboboxTrigger>

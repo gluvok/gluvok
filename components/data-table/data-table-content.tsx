@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AlertCircleIcon } from "@hugeicons/core-free-icons";
 import { type DataTableFeatures } from "./data-table-features";
-import { cn } from "@/lib/utils";
 
 export interface DataTableContentProps<TData extends RowData> {
   table: ReactTable<DataTableFeatures, TData>;
@@ -23,7 +22,6 @@ export interface DataTableContentProps<TData extends RowData> {
   onRetry?: () => void;
   emptyMessage?: string;
   loadingMessage?: string;
-  className?: string;
 }
 
 export function DataTableContent<TData extends RowData>({
@@ -33,12 +31,11 @@ export function DataTableContent<TData extends RowData>({
   onRetry,
   emptyMessage = "No results found matching your filters.",
   loadingMessage = "Loading records...",
-  className,
 }: DataTableContentProps<TData>) {
   return (
-    <div className={cn("overflow-hidden rounded-md border border-border bg-card", className)}>
+    <div className="overflow-hidden rounded-md border border-border bg-card">
       {error ? (
-        <div className="flex h-72 items-center justify-center">
+        <div className="flex h-64 items-center justify-center">
           <div className="flex flex-col items-center justify-center gap-2 text-destructive">
             <HugeiconsIcon icon={AlertCircleIcon} className="size-5" />
             <span className="text-xs">{error}</span>
@@ -50,7 +47,7 @@ export function DataTableContent<TData extends RowData>({
           </div>
         </div>
       ) : loading ? (
-        <div className="flex h-72 items-center justify-center">
+        <div className="flex h-64 items-center justify-center">
           <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
             <Spinner className="size-6 text-muted-foreground" />
             <span className="text-xs">{loadingMessage}</span>
@@ -60,9 +57,9 @@ export function DataTableContent<TData extends RowData>({
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="h-9 hover:bg-transparent">
+              <TableRow key={headerGroup.id} className="h-8 hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="h-9 px-3 text-xs font-semibold">
+                  <TableHead key={header.id} className="h-8 px-3 text-xs font-semibold">
                     {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                   </TableHead>
                 ))}
@@ -75,10 +72,10 @@ export function DataTableContent<TData extends RowData>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="h-10 hover:bg-muted/40"
+                  className="h-9 hover:bg-muted/40"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-3 py-2 text-xs">
+                    <TableCell key={cell.id} className="px-3 py-1.5 text-xs">
                       <table.FlexRender cell={cell} />
                     </TableCell>
                   ))}
@@ -88,7 +85,7 @@ export function DataTableContent<TData extends RowData>({
               <TableRow>
                 <TableCell
                   colSpan={table.getVisibleLeafColumns().length}
-                  className="h-24 text-center text-xs text-muted-foreground"
+                  className="h-20 text-center text-xs text-muted-foreground"
                 >
                   {emptyMessage}
                 </TableCell>

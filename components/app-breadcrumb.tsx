@@ -1,18 +1,11 @@
 "use client";
 
-import type { ComponentProps } from "react";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-
 import { getRouteTitle } from "@/lib/navigation";
 
-export function AppBreadcrumb({ className, ...props }: ComponentProps<"span">) {
+export function AppBreadcrumb() {
   const pathname = usePathname();
   const title = getRouteTitle(pathname);
 
-  return (
-    <span className={cn("text-sm font-medium", className)} {...props}>
-      {title}
-    </span>
-  );
+  return <span className="text-sm font-medium">{title}</span>;
 }

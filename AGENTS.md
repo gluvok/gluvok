@@ -170,6 +170,15 @@ For any JavaScript / TypeScript / Node modifications:
    - `pnpm test` (all tests pass)
    - `pnpm run build` (clean exit 0)
 
+## 12. Strict Component Props Hygiene: Zero Uncalled Props
+
+**Keep only props that are actively called and consumed by parent components.**
+
+- **No Speculative or Pass-Through Props**: In custom and feature components (outside `components/ui/` and `components/kibo-ui/`), NEVER define or retain props, optional props (e.g. `className?: string`, `label?: string`), or catch-all spreads (`...props`, `extends ComponentProps<...>`) that are not passed by any parent component.
+- **Prune Unused Prop Definitions**: When writing or refactoring components, inspect all parent call sites. If a prop is not passed by any caller, remove it completely from both the component parameters and its TypeScript props interface/type definition.
+- **Zero Raw Spreads**: Do not add `...props` to internal custom components unless there is a concrete, actively used requirement across callers.
+- **Parent-Driven API Design**: Components must expose the minimum prop surface required by their current usage in the application. Do not anticipate future callers by adding unused props.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.

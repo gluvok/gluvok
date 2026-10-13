@@ -22,8 +22,6 @@ import {
 } from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
 import { SortableSortChip, SortChipOverlay } from "./sortable-sort-chip";
-import { cn } from "@/lib/utils";
-
 export interface DataTableCriteriaBarProps {
   hasActiveFilters?: boolean;
   hasActiveSorts?: boolean;
@@ -34,7 +32,6 @@ export interface DataTableCriteriaBarProps {
   columnLabels?: Record<string, string>;
   columnIcons?: Record<string, unknown>;
   onResetAll?: () => void;
-  className?: string;
 }
 
 export function DataTableCriteriaBar({
@@ -47,7 +44,6 @@ export function DataTableCriteriaBar({
   columnLabels = {},
   columnIcons = {},
   onResetAll,
-  className,
 }: DataTableCriteriaBarProps) {
   const [activeSortId, setActiveSortId] = React.useState<string | null>(null);
 
@@ -107,12 +103,7 @@ export function DataTableCriteriaBar({
   if (!showBar) return null;
 
   return (
-    <div
-      className={cn(
-        "flex items-center gap-1.5 overflow-x-auto rounded-md bg-muted/30 px-2 py-1 no-scrollbar whitespace-nowrap",
-        className,
-      )}
-    >
+    <div className="flex items-center gap-1.5 overflow-x-auto rounded-md bg-muted/30 px-2 py-1 no-scrollbar whitespace-nowrap">
       {/* Filters Section */}
       {hasActiveFilters && (
         <>

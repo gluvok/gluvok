@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { ComponentProps } from "react";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -14,16 +13,17 @@ import {
 } from "@/components/ui/sidebar";
 import { type NavItem } from "@/lib/navigation";
 
-export interface NavGroupProps extends ComponentProps<typeof SidebarGroup> {
+export interface NavGroupProps {
   label: string;
   items: NavItem[];
+  className?: string;
 }
 
-export function NavGroup({ label, items, className, ...props }: NavGroupProps) {
+export function NavGroup({ label, items, className }: NavGroupProps) {
   const pathname = usePathname();
 
   return (
-    <SidebarGroup className={className} {...props}>
+    <SidebarGroup className={className}>
       <SidebarGroupLabel>{label}</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>

@@ -1,6 +1,4 @@
-import type { HTMLAttributes } from "react";
 import type { Column, RowData } from "@tanstack/react-table";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,10 +18,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { type DataTableFeatures } from "./data-table-features";
 
-interface DataTableColumnHeaderProps<
-  TData extends RowData,
-  TValue = unknown,
-> extends HTMLAttributes<HTMLDivElement> {
+export interface DataTableColumnHeaderProps<TData extends RowData, TValue = unknown> {
   column: Column<DataTableFeatures, TData, TValue>;
   title: string;
   icon?: unknown;
@@ -33,13 +28,12 @@ export function DataTableColumnHeader<TData extends RowData, TValue = unknown>({
   column,
   title,
   icon: customIcon,
-  className,
 }: DataTableColumnHeaderProps<TData, TValue>) {
   const icon = customIcon ?? column.columnDef.meta?.icon;
 
   if (!column.getCanSort()) {
     return (
-      <div className={cn("flex items-center gap-1.5 text-xs font-medium", className)}>
+      <div className="flex items-center gap-1.5 text-xs font-medium">
         {icon ? (
           <HugeiconsIcon
             icon={icon as Parameters<typeof HugeiconsIcon>[0]["icon"]}
@@ -58,7 +52,7 @@ export function DataTableColumnHeader<TData extends RowData, TValue = unknown>({
   const hasMultipleSorts = sortingState.length > 1;
 
   return (
-    <div className={cn("flex items-center gap-1", className)}>
+    <div className="flex items-center gap-1">
       <DropdownMenu>
         <DropdownMenuTrigger
           render={

@@ -80,17 +80,13 @@ export interface DatePickerWithRangeProps {
   date?: DateRange | undefined;
   onDateChange?: (date: DateRange | undefined) => void;
   className?: string;
-  label?: string;
-  showLabel?: boolean;
 }
 
 export function DatePickerWithRange({
   date: controlledDate,
   onDateChange,
   className,
-  label = "Date Picker Range",
-  showLabel = false,
-}: DatePickerWithRangeProps = {}) {
+}: DatePickerWithRangeProps) {
   const [internalDate, setInternalDate] = React.useState<DateRange | undefined>({
     from: new Date(new Date().getFullYear(), 0, 20),
     to: addDays(new Date(new Date().getFullYear(), 0, 20), 20),
@@ -114,11 +110,8 @@ export function DatePickerWithRange({
 
   return (
     <Field className={cn("w-auto", className)}>
-      <FieldLabel
-        htmlFor="date-picker-range"
-        className={cn("text-xs font-medium text-muted-foreground", !showLabel && "sr-only")}
-      >
-        {label}
+      <FieldLabel htmlFor="date-picker-range" className="sr-only">
+        Date Picker Range
       </FieldLabel>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger

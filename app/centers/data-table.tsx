@@ -27,10 +27,15 @@ import { DataTableViewOptions } from "@/components/data-table/data-table-view-op
 import { DatePickerWithRange } from "@/components/data-table/date-range-picker";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  Calendar01Icon,
   Cancel01Icon,
   CancelCircleIcon,
   CheckmarkCircle02Icon,
+  Clock01Icon,
+  HashtagIcon,
   Layers01Icon,
+  TextFontIcon,
+  ToggleOnIcon,
 } from "@hugeicons/core-free-icons";
 import { columns } from "./columns";
 import { features } from "@/components/data-table/data-table-features";
@@ -64,6 +69,14 @@ const COLUMN_LABELS: Record<string, string> = {
   auto_approve: "Auto Approve",
   created_at: "Created At",
   updated_at: "Updated At",
+};
+
+const COLUMN_ICONS: Record<string, unknown> = {
+  id: HashtagIcon,
+  name: TextFontIcon,
+  auto_approve: ToggleOnIcon,
+  created_at: Calendar01Icon,
+  updated_at: Clock01Icon,
 };
 
 export function CentersDataTable() {
@@ -252,6 +265,7 @@ export function CentersDataTable() {
           setPagination((prev) => ({ ...prev, pageIndex: 0 }));
         }}
         columnLabels={COLUMN_LABELS}
+        columnIcons={COLUMN_ICONS}
         onResetAll={resetAllCriteria}
       >
         {/* Auto Approve Chip */}
@@ -260,7 +274,16 @@ export function CentersDataTable() {
             variant="secondary"
             className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
           >
+            <HugeiconsIcon
+              icon={ToggleOnIcon}
+              className="size-2.5 text-muted-foreground shrink-0"
+              data-icon="inline-start"
+            />
             <span className="text-muted-foreground">Auto Approve:</span>
+            <HugeiconsIcon
+              icon={autoApproveFilter === "true" ? CheckmarkCircle02Icon : CancelCircleIcon}
+              className="size-2.5 shrink-0"
+            />
             <span className="font-medium">
               {autoApproveFilter === "true" ? "Enabled" : "Disabled"}
             </span>
@@ -286,6 +309,11 @@ export function CentersDataTable() {
             variant="secondary"
             className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
           >
+            <HugeiconsIcon
+              icon={Calendar01Icon}
+              className="size-2.5 text-muted-foreground shrink-0"
+              data-icon="inline-start"
+            />
             <span className="text-muted-foreground">Created:</span>
             <span className="font-medium">
               {dateRange.to

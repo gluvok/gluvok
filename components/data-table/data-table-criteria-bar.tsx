@@ -32,6 +32,7 @@ export interface DataTableCriteriaBarProps {
   onSortingChange?: (updater: Updater<SortingState>) => void;
   onRemoveSort?: (columnId: string) => void;
   columnLabels?: Record<string, string>;
+  columnIcons?: Record<string, unknown>;
   onResetAll?: () => void;
   className?: string;
 }
@@ -44,6 +45,7 @@ export function DataTableCriteriaBar({
   onSortingChange,
   onRemoveSort,
   columnLabels = {},
+  columnIcons = {},
   onResetAll,
   className,
 }: DataTableCriteriaBarProps) {
@@ -140,12 +142,14 @@ export function DataTableCriteriaBar({
           >
             {sorting.map((sortRule, index) => {
               const colTitle = columnLabels[sortRule.id] ?? sortRule.id;
+              const colIcon = columnIcons[sortRule.id];
               return (
                 <SortableSortChip
                   key={sortRule.id}
                   sortRule={sortRule}
                   index={index}
                   colTitle={colTitle}
+                  colIcon={colIcon}
                   isDraggable={sorting.length > 1}
                   onRemove={(columnId) => {
                     onRemoveSort?.(columnId);
@@ -161,6 +165,7 @@ export function DataTableCriteriaBar({
                 sortRule={activeSortRule}
                 index={activeSortIndex}
                 colTitle={columnLabels[activeSortRule.id] ?? activeSortRule.id}
+                colIcon={columnIcons[activeSortRule.id]}
               />
             ) : null}
           </DragOverlay>

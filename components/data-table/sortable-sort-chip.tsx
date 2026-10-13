@@ -5,13 +5,19 @@ import { CSS } from "@dnd-kit/utilities";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Cancel01Icon, DragDropVerticalIcon } from "@hugeicons/core-free-icons";
+import {
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  Cancel01Icon,
+  DragDropVerticalIcon,
+} from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 
 interface SortableSortChipProps {
   sortRule: ColumnSort;
   index: number;
   colTitle: string;
+  colIcon?: unknown;
   isDraggable: boolean;
   onRemove: (columnId: string) => void;
 }
@@ -20,6 +26,7 @@ export function SortableSortChip({
   sortRule,
   index,
   colTitle,
+  colIcon,
   isDraggable,
   onRemove,
 }: SortableSortChipProps) {
@@ -52,7 +59,18 @@ export function SortableSortChip({
         />
       )}
       <span className="font-semibold text-primary">#{index + 1}</span>
+      {colIcon ? (
+        <HugeiconsIcon
+          icon={colIcon as Parameters<typeof HugeiconsIcon>[0]["icon"]}
+          className="size-2.5 text-muted-foreground shrink-0"
+          data-icon="inline-start"
+        />
+      ) : null}
       <span className="text-muted-foreground">{colTitle}:</span>
+      <HugeiconsIcon
+        icon={sortRule.desc ? ArrowDown01Icon : ArrowUp01Icon}
+        className="size-2.5 text-foreground shrink-0"
+      />
       <span className="font-medium">{sortRule.desc ? "Desc" : "Asc"}</span>
       <Button
         type="button"
@@ -75,10 +93,12 @@ export function SortChipOverlay({
   sortRule,
   index,
   colTitle,
+  colIcon,
 }: {
   sortRule: ColumnSort;
   index: number;
   colTitle: string;
+  colIcon?: unknown;
 }) {
   return (
     <Badge
@@ -90,7 +110,18 @@ export function SortChipOverlay({
         className="size-3 text-muted-foreground/80 shrink-0"
       />
       <span className="font-semibold text-primary">#{index + 1}</span>
+      {colIcon ? (
+        <HugeiconsIcon
+          icon={colIcon as Parameters<typeof HugeiconsIcon>[0]["icon"]}
+          className="size-2.5 text-muted-foreground shrink-0"
+          data-icon="inline-start"
+        />
+      ) : null}
       <span className="text-muted-foreground">{colTitle}:</span>
+      <HugeiconsIcon
+        icon={sortRule.desc ? ArrowDown01Icon : ArrowUp01Icon}
+        className="size-2.5 text-foreground shrink-0"
+      />
       <span className="font-medium">{sortRule.desc ? "Desc" : "Asc"}</span>
     </Badge>
   );

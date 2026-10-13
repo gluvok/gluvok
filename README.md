@@ -40,7 +40,7 @@ The `/centers` route provides a full-featured data table built with **TanStack T
   - **Unified Active Criteria Bar**: Filters and active sort badges render together in a single compact bar (`Filters: [⏻ Auto Approve: ✓ Enabled (x)] | Sorts: [#1 # ID: ↓ Desc (x)] [#2 📅 Created At: ↑ Asc (x)] Clear all`) with individual dismiss controls and full reset actions. Filter chips display column and option icons, and sort chips display column and directional sort icons (`ArrowUp01Icon`, `ArrowDown01Icon`).
   - **Scoped Datatable Loading**: Toolbar (search, combobox, datepicker), active criteria badges, and pagination remain permanently mounted; the loading spinner is scoped exclusively to the table card area, eliminating focus loss and toolbar flicker during searches or pagination.
   - **Compact Density & Zero-Scroll Fit**: Ultra-streamlined table rows (`h-8` rows with `py-1 px-3 text-xs` cell padding; `h-8 px-3` header; `px-2 py-1` criteria bar; `gap-4` and `gap-2.5` container spacing), ensuring all rows, active criteria badges, and pagination controls fit comfortably within standard viewports with zero vertical page scrolling.
-  - **Page Header Refresh Button**: Dedicated reload button (`CentersRefreshButton`) located on the complete right side of the "Centers" heading, invoking a full page reload (`window.location.reload()`).
+  - **Unified Page Header (`components/page-header.tsx`)**: Centralized reusable header component providing standard title, description, and right-aligned reload action (`PageRefreshButton`), delivering layout consistency across all entity pages (`/centers`, `/settings`, etc.).
   - **Axios API Client**: Native `fetch` replaced with typed `axios.get()` requests.
   - **Modular Scalable Data Table Layer (`components/data-table/`)**: Extracted a fully reusable component layer designed to support any current or future entity data tables (`centers`, `factories`, `users`, `tickets`, etc.) while keeping `components/ui/` primitives completely untouched:
     - `DataTableSearchInput`: Search input with search icon, clear button, and micro-typography.
@@ -71,7 +71,8 @@ The `/settings` route provides facility configuration controls powered by the un
   - Strict validation using **Zod** (`updateFactorySchema.strict()`): validates `name` (min 1 character), `check_center_on_merge` (boolean), and `receipt_images_per_row` (integer between 1 and 6). Strict rejection with HTTP 400 on unexpected or invalid keys.
 - **Schema Mapping**: Maps to `factories` table in `schema.sql` (`id`, `name`, `check_center_on_merge`, `receipt_images_per_row`, `created_at`, `updated_at`). `camera_crops` has been removed from the schema and recorded in `migration.sql`.
 - **Features & UX**:
-  - **Horizontally Centered Factory Card**: The configuration card is centered on `/settings` with responsive padding and spacing.
+  - **Unified Page Header & Reload**: Standard `<PageHeader>` with "Settings" title, descriptive subtitle, and integrated `PageRefreshButton`.
+  - **Full-Width Factory Card**: The configuration card spans full width (`w-full`), matching the datatable layout on `/centers`.
   - **Clean Loading State**: Renders a centered `<Spinner />` with status message during initial data fetching, eliminating empty card shells.
   - **Dedicated Iconography**: Factory card uses `Factory01Icon` (distinct from Center's `Building01Icon`), Receipt Images uses `Image01Icon` (distinct from combobox All icon), and registered in `lib/icons.ts`.
   - **Input Controls**: `<Input>` for factory name, `<Checkbox>` for center merge validation, and Base UI `<Select>` (values 1–6) for receipt snapshot row layout.

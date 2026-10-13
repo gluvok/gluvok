@@ -164,7 +164,7 @@ export function FactoryCard() {
 
   if (loading) {
     return (
-      <div className="flex h-72 w-full max-w-2xl items-center justify-center">
+      <div className="flex h-72 w-full items-center justify-center">
         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
           <Spinner className="size-6 text-muted-foreground" />
           <span className="text-xs">Loading factory preferences...</span>
@@ -175,7 +175,7 @@ export function FactoryCard() {
 
   if (error || !factory) {
     return (
-      <Card className="w-full max-w-2xl border-destructive/30">
+      <Card className="w-full border-destructive/30">
         <CardHeader>
           <div className="flex items-center gap-2 text-destructive">
             <HugeiconsIcon icon={AlertCircleIcon} className="size-5" />
@@ -200,7 +200,7 @@ export function FactoryCard() {
   }
 
   return (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full">
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">

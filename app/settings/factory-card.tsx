@@ -21,7 +21,7 @@ import {
   FloppyDiskIcon,
   RefreshIcon,
 } from "@hugeicons/core-free-icons";
-import { cn } from "@/lib/utils";
+import { FormDirtyIndicator } from "@/components/form-dirty-indicator";
 import { type Factory, type FactoryApiResponse, updateFactorySchema } from "./types";
 import { FactoryForm } from "./factory-form";
 
@@ -185,15 +185,7 @@ export function FactoryCard() {
       <Separator />
 
       <CardFooter className="flex items-center justify-between gap-3 pt-4">
-        <div className="flex items-center gap-2 text-2xs text-muted-foreground">
-          <span
-            className={cn(
-              "size-2 rounded-full shrink-0",
-              isDirty ? "bg-amber-500 animate-pulse" : "bg-emerald-500",
-            )}
-          />
-          <span>{isDirty ? "You have unsaved changes." : "All changes saved."}</span>
-        </div>
+        <FormDirtyIndicator isDirty={isDirty} />
         <div className="flex items-center gap-2">
           <Button
             type="button"

@@ -1,4 +1,5 @@
 import argon2 from "argon2";
+import { StatusCodes } from "http-status-codes";
 import { supabase } from "@/lib/supabase";
 import {
   parsePagination,
@@ -10,9 +11,12 @@ import {
 import {
   USER_ROLES,
   type User,
+  type UserRole,
   type CreateUserInput,
   type UpdateUserInput,
 } from "@/app/users/types";
+
+const isCustomerRole = (role: UserRole): boolean => role === "customer";
 
 export const ALLOWED_SORT_COLUMNS = [
   "id",
@@ -90,13 +94,13 @@ export async function createUserAccount(data: CreateUserInput) {
       .maybeSingle();
 
     if (checkError) {
-      throw new ServiceError(checkError.message, 500);
+      throw new ServiceError(checkError.message, StatusCodes.INTERNAL_SERVER_ERROR);
     }
 
     if (existing) {
       throw new ServiceError(
         `Username "${cleanUsername}" is already taken by an active account.`,
-        409,
+        StatusCodes.CONFLICT,
       );
     }
   }
@@ -116,7 +120,7 @@ export async function createUserAccount(data: CreateUserInput) {
     .single();
 
   if (insertError) {
-    throw new ServiceError(insertError.message, 500);
+    throw new ServiceError(insertError.message, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
   return created;
@@ -136,7 +140,7 @@ export async function updateUserAccount(data: UpdateUserInput) {
     .maybeSingle();
 
   if (fetchErr) {
-    throw new ServiceError(fetchErr.message, 500);
+    throw new ServiceError(fetchErr.message, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
   if (!existingUser) {
@@ -180,11 +184,11 @@ export async function updateUserAccount(data: UpdateUserInput) {
   }
 
   if (role && role !== existingUser.role) {
-    if (existingUser.role === "customer" && role !== "customer") {
-      throw new ServiceError("Customer accounts cannot be converted to staff accounts.", 403);
-    }
-    if (existingUser.role !== "customer" && role === "customer") {
-      throw new ServiceError("Staff accounts cannot be converted to customer accounts.", 403);
+    if (isCustomerRole(existingUser.role) !== isCustomerRole(role)) {
+      throw new ServiceError(
+        "Account role cannot be changed between staff and customer tiers.",
+        StatusCodes.FORBIDDEN,
+      );
     }
     updates.role = role;
   }
@@ -201,7 +205,7 @@ export async function updateUserAccount(data: UpdateUserInput) {
     .single();
 
   if (updateError) {
-    throw new ServiceError(updateError.message, 500);
+    throw new ServiceError(updateError.message, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
   return updated;
@@ -218,15 +222,18 @@ export async function deleteUserAccounts(targetIds: number[]) {
     .is("deleted_at", null);
 
   if (fetchErr) {
-    throw new ServiceError(fetchErr.message, 500);
+    throw new ServiceError(fetchErr.message, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
   if (!targetUsers || targetUsers.length === 0) {
-    throw new ServiceError("No active users found matching the specified ID(s).", 404);
+    throw new ServiceError(
+      "No active users found matching the specified ID(s).",
+      StatusCodes.NOT_FOUND,
+    );
   }
 
-  const staffIds = targetUsers.filter((u) => u.role !== "customer").map((u) => u.id);
-  const customerIds = targetUsers.filter((u) => u.role === "customer").map((u) => u.id);
+  const staffIds = targetUsers.filter((u) => !isCustomerRole(u.role)).map((u) => u.id);
+  const customerIds = targetUsers.filter((u) => isCustomerRole(u.role)).map((u) => u.id);
 
   // Constant O(1) batched pre-flight queries
   const [entriesCreatedRes, ticketsRes, customerEntriesRes] = await Promise.all([
@@ -271,7 +278,7 @@ export async function deleteUserAccounts(targetIds: number[]) {
   for (const u of targetUsers) {
     const reasons: string[] = [];
 
-    if (u.role === "customer") {
+    if (isCustomerRole(u.role)) {
       const custEntries = customerEntriesCounts[u.id] || 0;
       if (custEntries > 0) reasons.push(`${custEntries} linked entry(s)`);
     } else {
@@ -292,7 +299,7 @@ export async function deleteUserAccounts(targetIds: number[]) {
       .join("; ");
     throw new ServiceError(
       `Cannot delete account(s): ${details}. Historical operational records must be preserved.`,
-      409,
+      StatusCodes.CONFLICT,
       blockedUsers,
     );
   }
@@ -304,7 +311,7 @@ export async function deleteUserAccounts(targetIds: number[]) {
     .in("id", targetIds);
 
   if (deleteErr) {
-    throw new ServiceError(deleteErr.message, 500);
+    throw new ServiceError(deleteErr.message, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
   return { deletedCount: targetIds.length };

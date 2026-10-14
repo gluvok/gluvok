@@ -10,7 +10,7 @@ import {
   SystemRoleSelect,
   UserDialogShell,
 } from "./user-dialog-primitives";
-import { createUserSchema, updateUserSchema, type User, type UserRole } from "./types";
+import { createStaffUserSchema, updateStaffUserSchema, type StaffRole, type User } from "./types";
 
 interface StaffUserDialogProps {
   open: boolean;
@@ -23,7 +23,7 @@ export function StaffUserDialog({ open, onOpenChange, user, onSuccess }: StaffUs
   const isEdit = Boolean(user);
 
   const [name, setName] = useState<string>("");
-  const [role, setRole] = useState<UserRole>("operator");
+  const [role, setRole] = useState<StaffRole>("operator");
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -32,7 +32,7 @@ export function StaffUserDialog({ open, onOpenChange, user, onSuccess }: StaffUs
   // Baseline values snapshot for pristine/dirty check
   const [initialValues, setInitialValues] = useState<{
     name: string;
-    role: UserRole;
+    role: StaffRole;
     username: string;
   }>({
     name: "",
@@ -44,13 +44,14 @@ export function StaffUserDialog({ open, onOpenChange, user, onSuccess }: StaffUs
     if (open) {
       setFormError(null);
       if (user) {
+        const staffRole = (user.role as StaffRole) || "operator";
         setName(user.name);
-        setRole(user.role);
+        setRole(staffRole);
         setUsername(user.username ?? "");
         setPassword("");
         setInitialValues({
           name: user.name,
-          role: user.role,
+          role: staffRole,
           username: user.username ?? "",
         });
       } else {
@@ -94,8 +95,8 @@ export function StaffUserDialog({ open, onOpenChange, user, onSuccess }: StaffUs
         };
 
     const validation = isEdit
-      ? updateUserSchema.safeParse(payload)
-      : createUserSchema.safeParse(payload);
+      ? updateStaffUserSchema.safeParse(payload)
+      : createStaffUserSchema.safeParse(payload);
 
     if (!validation.success) {
       const firstIssue = validation.error.issues[0]?.message || "Invalid input";

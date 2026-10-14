@@ -10,7 +10,7 @@ import {
   FullNameField,
   UserDialogShell,
 } from "./user-dialog-primitives";
-import { createUserSchema, updateUserSchema, type User } from "./types";
+import { createCustomerUserSchema, updateCustomerUserSchema, type User } from "./types";
 
 interface CustomerUserDialogProps {
   open: boolean;
@@ -103,8 +103,8 @@ export function CustomerUserDialog({
         };
 
     const validation = isEdit
-      ? updateUserSchema.safeParse(payload)
-      : createUserSchema.safeParse(payload);
+      ? updateCustomerUserSchema.safeParse(payload)
+      : createCustomerUserSchema.safeParse(payload);
 
     if (!validation.success) {
       const firstIssue = validation.error.issues[0]?.message || "Invalid input";

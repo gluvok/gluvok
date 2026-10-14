@@ -23,6 +23,7 @@ interface UserDeleteDialogProps {
   users: User[];
   onSuccess: () => void;
   entityLabel?: string;
+  entityLabelPlural?: string;
 }
 
 export function UserDeleteDialog({
@@ -31,14 +32,14 @@ export function UserDeleteDialog({
   users,
   onSuccess,
   entityLabel = "User",
+  entityLabelPlural = "Users",
 }: UserDeleteDialogProps) {
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const isBatch = users.length > 1;
-  const isCustomer = entityLabel.toLowerCase() === "customer";
-  const singularLabel = isCustomer ? "Customer" : "User";
-  const pluralLabel = isCustomer ? "Customers" : "Users";
+  const singularLabel = entityLabel;
+  const pluralLabel = entityLabelPlural;
 
   useEffect(() => {
     if (open) {

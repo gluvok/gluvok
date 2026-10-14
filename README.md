@@ -105,19 +105,28 @@ Administrative users (`/users`) and agricultural customers (`/customers`) are po
     - Root primary accent uses authentic **Rikyū-cha** roasted matcha / tea moss green (`#66684F` / `rgb(102, 104, 79)`) with pure white text (`#FFFFFF`) and dark hover state (`#52543D`).
     - Dark mode dynamically switches to luminous tea moss (`#8A8D6E`) with charcoal foreground (`#1A1C14`) ensuring optimal readability and contrast across all card and modal surfaces.
     - Synchronized across buttons, sidebar active navigation pills, focus rings, and action highlights.
-  - **Zero-Branching Component Architecture (Strict DRY Compliance)**:
+  - **Shared Form Dirty State Indicator (`components/form-dirty-indicator.tsx`)**:
+    - Extracted a reusable, zero-prop-bloat indicator component encapsulating the pulsing status dot (`bg-amber-500 animate-pulse` when dirty vs `bg-emerald-500` when clean) and status label (`"You have unsaved changes."` vs `"All changes saved."`).
+    - Standardized across `app/settings/factory-card.tsx` and `app/users/user-dialog-primitives.tsx` (`UserDialogShell`).
+  - **Zero-Branching Component & Type Architecture (Strict DRY Compliance)**:
     - **Atomic Form Primitives (`app/users/user-dialog-primitives.tsx`)**: Extracted `UserDialogShell`, `FullNameField`, `CredentialsFields`, `CustomerPortalSwitch`, and `SystemRoleSelect`.
-    - **Dedicated Dialogs**: Replaced sprawling inline `isCustomer ? ... : ...` ternaries with dedicated, typed dialogs:
-      - `StaffUserDialog`: Renders Full Name & System Role side-by-side, plus Username & Password side-by-side (`sm:grid-cols-2`).
-      - `CustomerUserDialog`: Renders Full Name full-width, Customer Portal Access toggle, and credentials conditionally.
-    - **Configuration-Driven Data Table (`ENTITY_CONFIG`)**: `UsersDataTable` consumes a centralized typed configuration dictionary mapping table IDs, search placeholders, add labels, role filter flags, and dialog constructors, eliminating all inline conditionals from the table render tree.
+    - **Dedicated Dialogs**: Eliminated the redundant `user-form-dialog.tsx` wrapper; callers consume dedicated dialogs directly via `ENTITY_CONFIG`:
+      - `StaffUserDialog`: Renders Full Name & System Role side-by-side, plus Username & Password side-by-side (`sm:grid-cols-2`), validated by `createStaffUserSchema` / `updateStaffUserSchema`.
+      - `CustomerUserDialog`: Renders Full Name full-width, Customer Portal Access toggle, and credentials conditionally, validated by `createCustomerUserSchema` / `updateCustomerUserSchema`.
+    - **Zod Discriminated Unions (`app/users/types.ts`)**:
+      - Separated schemas into `createStaffUserSchema` (strictly requires username and password) and `createCustomerUserSchema` (handles customer portal access rules).
+      - Combined via `createUserSchema = z.discriminatedUnion("role", [...])` and `updateUserSchema = z.discriminatedUnion("role", [...])`, completely eliminating runtime `if (isCustomer)` checks in schema validation.
+    - **Declarative API Routing & Domain Services**:
+      - `app/api/users/route.ts`: Replaced ternary message checks with a typed lookup dictionary (`ROLE_ENTITY_LABELS`).
+      - `app/api/users/service.ts`: Enforces domain tier conversions with domain predicate comparisons and standardized `StatusCodes` from `http-status-codes`.
+    - **Configuration-Driven Data Table (`ENTITY_CONFIG`)**: `UsersDataTable` consumes a centralized typed configuration dictionary mapping table IDs, singular/plural labels, search placeholders, add labels, role filter flags, and dialog constructors, eliminating all inline conditionals from the table render tree.
   - **Universal Comboboxes & Subtle Role Iconography**:
     - System Role dropdown utilizes `kibo-ui/combobox` with search and leading role icons (`Admin`: `CrownIcon`, `Manager`: `Briefcase01Icon`, `Operator`: `HeadsetIcon`, `Base User`: `UserIcon`).
     - Subtly tinted badges in the data table: Admin uses refined Slate/Neutral (violet/purple removed), and Manager, Operator, Base User use gentle 5% background tints and soft muted borders.
     - Hardware accounts are completely hidden from filter dropdowns and strictly rejected/ignored in backend filtering.
   - **Modal Ergonomics & Responsive Multi-Column Form**:
     - **Responsive Side-by-Side Layout (`sm:grid-cols-2`)**: Full Name + System Role side-by-side, and Username + Password side-by-side on desktop/tablet, stacking naturally on mobile (`sm:max-w-lg` container).
-    - Far-left pinned dirty state badge (`"You have unsaved changes."` / `"All changes saved."`) in modal footers.
+    - Far-left pinned dirty state badge using `<FormDirtyIndicator>` in modal footers.
     - Error banner renders leading `AlertCircleIcon` with accessible alert styling.
     - `Cancel01Icon` leading icon on all modal Cancel buttons.
     - Compact, single-line field descriptions designed for clear scanning without wrapping.

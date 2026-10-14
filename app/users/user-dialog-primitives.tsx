@@ -39,8 +39,8 @@ import {
   UserIcon,
 } from "@hugeicons/core-free-icons";
 import { ChevronsUpDownIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { type UserRole } from "./types";
+import { FormDirtyIndicator } from "@/components/form-dirty-indicator";
+import { type StaffRole } from "./types";
 
 export const ROLE_OPTIONS = [
   { value: "admin", label: "Admin", icon: CrownIcon },
@@ -109,15 +109,7 @@ export function UserDialogShell({
         </div>
 
         <DialogFooter className="flex flex-row items-center justify-between sm:justify-between w-full gap-2 pt-2">
-          <div className="mr-auto flex items-center gap-2 text-2xs text-muted-foreground">
-            <span
-              className={cn(
-                "size-2 rounded-full shrink-0",
-                isDirty ? "bg-amber-500 animate-pulse" : "bg-emerald-500",
-              )}
-            />
-            <span>{isDirty ? "You have unsaved changes." : "All changes saved."}</span>
-          </div>
+          <FormDirtyIndicator isDirty={isDirty} className="mr-auto" />
 
           <div className="flex items-center gap-2">
             <Button
@@ -285,8 +277,8 @@ export function CustomerPortalSwitch({ checked, onCheckedChange }: CustomerPorta
 /* -------------------------------------------------------------------------- */
 
 interface SystemRoleSelectProps {
-  value: UserRole;
-  onChange: (role: UserRole) => void;
+  value: StaffRole;
+  onChange: (role: StaffRole) => void;
 }
 
 export function SystemRoleSelect({ value, onChange }: SystemRoleSelectProps) {
@@ -304,7 +296,7 @@ export function SystemRoleSelect({ value, onChange }: SystemRoleSelectProps) {
         type="role"
         value={value}
         onValueChange={(val) => {
-          if (val) onChange(val as UserRole);
+          if (val) onChange(val as StaffRole);
         }}
       >
         <ComboboxTrigger

@@ -66,6 +66,7 @@ const COLUMN_ICONS: Record<string, unknown> = {
 interface EntityConfig {
   tableId: string;
   entityLabel: string;
+  entityLabelPlural: string;
   searchPlaceholder: string;
   addButtonLabel: string;
   emptyMessage: string;
@@ -85,6 +86,7 @@ const ENTITY_CONFIG: Record<"staff" | "customer", EntityConfig> = {
   staff: {
     tableId: "users",
     entityLabel: "User",
+    entityLabelPlural: "Users",
     searchPlaceholder: "Search staff accounts...",
     addButtonLabel: "Add Staff User",
     emptyMessage: "No staff accounts found matching the specified filters.",
@@ -97,6 +99,7 @@ const ENTITY_CONFIG: Record<"staff" | "customer", EntityConfig> = {
   customer: {
     tableId: "customers",
     entityLabel: "Customer",
+    entityLabelPlural: "Customers",
     searchPlaceholder: "Search customers...",
     addButtonLabel: "Add Customer",
     emptyMessage: "No customers found matching the specified filters.",
@@ -368,7 +371,8 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
         onOpenChange={setDeleteDialogOpen}
         users={usersToDelete}
         onSuccess={handleMutationSuccess}
-        entityLabel={config.entityLabel.toLowerCase()}
+        entityLabel={config.entityLabel}
+        entityLabelPlural={config.entityLabelPlural}
       />
     </div>
   );

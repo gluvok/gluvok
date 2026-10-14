@@ -40,91 +40,100 @@ export const nameSchema = z
 
 export const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 
-export const createUserSchema = z
+/* -------------------------------------------------------------------------- */
+/* Creation Schemas                                                           */
+/* -------------------------------------------------------------------------- */
+
+export const createStaffUserSchema = z.object({
+  name: nameSchema,
+  role: staffRoleEnum,
+  username: usernameSchema,
+  password: passwordSchema,
+});
+
+export const createCustomerUserSchema = z
   .object({
-    username: usernameSchema.optional().or(z.literal("")),
     name: nameSchema,
-    role: assignableRoleEnum,
+    role: z.literal("customer"),
+    username: usernameSchema.optional().or(z.literal("")),
     password: passwordSchema.optional().or(z.literal("")),
   })
   .superRefine((data, ctx) => {
-    const isCustomer = data.role === "customer";
     const hasUsername = Boolean(data.username && data.username.trim().length > 0);
     const hasPassword = Boolean(data.password && data.password.trim().length > 0);
 
-    if (isCustomer) {
-      if (hasUsername && !hasPassword) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Password is required when a portal username is set.",
-          path: ["password"],
-        });
-      }
-      if (hasPassword && !hasUsername) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Username is required when setting a portal password.",
-          path: ["username"],
-        });
-      }
-    } else {
-      // Staff roles require both username and password
-      if (!hasUsername) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Username is required for staff accounts.",
-          path: ["username"],
-        });
-      }
-      if (!hasPassword) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Password is required for staff accounts.",
-          path: ["password"],
-        });
-      }
+    if (hasUsername && !hasPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Password is required when a portal username is set.",
+        path: ["password"],
+      });
+    }
+    if (hasPassword && !hasUsername) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Username is required when setting a portal password.",
+        path: ["username"],
+      });
     }
   });
 
-export const updateUserSchema = z
+export const createUserSchema = z.discriminatedUnion("role", [
+  createStaffUserSchema,
+  createCustomerUserSchema,
+]);
+
+/* -------------------------------------------------------------------------- */
+/* Update Schemas                                                             */
+/* -------------------------------------------------------------------------- */
+
+export const updateStaffUserSchema = z.object({
+  id: z.number().int().positive("Invalid user ID"),
+  name: nameSchema,
+  role: staffRoleEnum,
+  username: usernameSchema,
+  password: passwordSchema.optional().or(z.literal("")),
+});
+
+export const updateCustomerUserSchema = z
   .object({
     id: z.number().int().positive("Invalid user ID"),
-    username: usernameSchema.optional().or(z.literal("")),
     name: nameSchema,
-    role: assignableRoleEnum.optional(),
+    role: z.literal("customer"),
+    username: usernameSchema.optional().or(z.literal("")),
     password: passwordSchema.optional().or(z.literal("")),
   })
   .superRefine((data, ctx) => {
-    const isCustomer = data.role === "customer";
     const hasUsername = Boolean(data.username && data.username.trim().length > 0);
     const hasPassword = Boolean(data.password && data.password.trim().length > 0);
 
-    if (isCustomer) {
-      if (hasPassword && !hasUsername) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Username is required when setting a portal password.",
-          path: ["username"],
-        });
-      }
-    } else if (data.role) {
-      if (!hasUsername) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Username is required for staff accounts.",
-          path: ["username"],
-        });
-      }
+    if (hasPassword && !hasUsername) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Username is required when setting a portal password.",
+        path: ["username"],
+      });
     }
   });
+
+export const updateUserSchema = z.discriminatedUnion("role", [
+  updateStaffUserSchema,
+  updateCustomerUserSchema,
+]);
 
 export const deleteUserSchema = z.union([
   z.object({ id: z.number().int().positive() }),
   z.object({ ids: z.array(z.number().int().positive()).min(1, "At least one ID required") }),
 ]);
 
+export type CreateStaffUserInput = z.infer<typeof createStaffUserSchema>;
+export type CreateCustomerUserInput = z.infer<typeof createCustomerUserSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
+
+export type UpdateStaffUserInput = z.infer<typeof updateStaffUserSchema>;
+export type UpdateCustomerUserInput = z.infer<typeof updateCustomerUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+
 export type DeleteUserInput = z.infer<typeof deleteUserSchema>;
 
 export interface UsersApiResponse {

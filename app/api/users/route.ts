@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
-import { createUserSchema, updateUserSchema, deleteUserSchema } from "@/app/users/types";
+import {
+  createUserSchema,
+  updateUserSchema,
+  deleteUserSchema,
+  type UserRole,
+} from "@/app/users/types";
 import {
   fetchUsersList,
   createUserAccount,
@@ -9,6 +14,15 @@ import {
   deleteUserAccounts,
   ServiceError,
 } from "./service";
+
+const ROLE_ENTITY_LABELS: Record<UserRole, string> = {
+  admin: "Staff user",
+  manager: "Staff user",
+  operator: "Staff user",
+  base: "Staff user",
+  customer: "Customer",
+  hardware: "Hardware account",
+};
 
 export async function GET(request: Request) {
   try {
@@ -40,12 +54,12 @@ export async function POST(request: Request) {
     }
 
     const created = await createUserAccount(validation.data);
-    const isCustomer = validation.data.role === "customer";
+    const label = ROLE_ENTITY_LABELS[validation.data.role] ?? "Account";
 
     return NextResponse.json(
       {
         data: created,
-        message: isCustomer ? "Customer created successfully." : "User created successfully.",
+        message: `${label} created successfully.`,
       },
       { status: StatusCodes.CREATED },
     );

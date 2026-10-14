@@ -5,6 +5,7 @@ import axios from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/toast";
+import { getErrorMessage } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AlertCircleIcon, UserAdd01Icon, UserEdit01Icon } from "@hugeicons/core-free-icons";
 import {
@@ -20,6 +21,16 @@ interface CustomerUserDialogProps {
   onOpenChange: (open: boolean) => void;
   user?: User | null;
   onSuccess: () => void;
+}
+
+function getCustomerInitialValues(user?: User | null): CustomerFormInput {
+  return {
+    id: user?.id,
+    portalAccessEnabled: Boolean(user?.username),
+    name: user?.name ?? "",
+    username: user?.username ?? "",
+    password: "",
+  };
 }
 
 export function CustomerUserDialog({
@@ -45,13 +56,7 @@ export function CustomerUserDialog({
   } = useForm<CustomerFormInput>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
-    defaultValues: {
-      id: user?.id,
-      portalAccessEnabled: Boolean(user?.username),
-      name: user?.name ?? "",
-      username: user?.username ?? "",
-      password: "",
-    },
+    defaultValues: getCustomerInitialValues(user),
   });
 
   const name = watch("name");
@@ -62,13 +67,7 @@ export function CustomerUserDialog({
   useEffect(() => {
     if (open) {
       setFormError(null);
-      reset({
-        id: user?.id,
-        portalAccessEnabled: Boolean(user?.username),
-        name: user?.name ?? "",
-        username: user?.username ?? "",
-        password: "",
-      });
+      reset(getCustomerInitialValues(user));
     }
   }, [open, user, reset]);
 
@@ -88,34 +87,22 @@ export function CustomerUserDialog({
     try {
       if (isEdit) {
         await axios.patch("/api/users", payload);
-        toast.add({
-          type: "success",
-          title: "Customer updated",
-          description: payload.username
-            ? `Account "${payload.username}" has been successfully updated.`
-            : `Customer "${payload.name}" has been successfully updated.`,
-        });
       } else {
         await axios.post("/api/users", payload);
-        toast.add({
-          type: "success",
-          title: "Customer created",
-          description: payload.username
-            ? `Account "${payload.username}" has been created successfully.`
-            : `Customer "${payload.name}" has been created successfully.`,
-        });
       }
+
+      toast.add({
+        type: "success",
+        title: isEdit ? "Customer updated" : "Customer created",
+        description: payload.username
+          ? `Account "${payload.username}" has been ${isEdit ? "successfully updated" : "created successfully"}.`
+          : `Customer "${payload.name}" has been ${isEdit ? "successfully updated" : "created successfully"}.`,
+      });
 
       onSuccess();
       onOpenChange(false);
     } catch (err: unknown) {
-      const msg =
-        axios.isAxiosError(err) && err.response?.data?.error
-          ? err.response.data.error
-          : err instanceof Error
-            ? err.message
-            : "An unexpected error occurred.";
-
+      const msg = getErrorMessage(err, "An unexpected error occurred.");
       setFormError(msg);
       toast.add({
         type: "error",

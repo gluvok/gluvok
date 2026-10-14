@@ -5,6 +5,7 @@ import axios from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/toast";
+import { getErrorMessage } from "@/lib/utils";
 import { UserAdd01Icon, UserEdit01Icon } from "@hugeicons/core-free-icons";
 import {
   CredentialsFields,
@@ -28,6 +29,16 @@ interface StaffUserDialogProps {
   onSuccess: () => void;
 }
 
+function getStaffInitialValues(user?: User | null): StaffFormInput {
+  return {
+    id: user?.id,
+    name: user?.name ?? "",
+    role: (user?.role as StaffRole) || "operator",
+    username: user?.username ?? "",
+    password: "",
+  };
+}
+
 export function StaffUserDialog({ open, onOpenChange, user, onSuccess }: StaffUserDialogProps) {
   const isEdit = Boolean(user);
   const [formError, setFormError] = useState<string | null>(null);
@@ -43,13 +54,7 @@ export function StaffUserDialog({ open, onOpenChange, user, onSuccess }: StaffUs
   } = useForm<StaffFormInput>({
     resolver: zodResolver(schema),
     mode: "onChange",
-    defaultValues: {
-      id: user?.id,
-      name: user?.name ?? "",
-      role: (user?.role as StaffRole) || "operator",
-      username: user?.username ?? "",
-      password: "",
-    },
+    defaultValues: getStaffInitialValues(user),
   });
 
   const name = watch("name");
@@ -60,62 +65,38 @@ export function StaffUserDialog({ open, onOpenChange, user, onSuccess }: StaffUs
   useEffect(() => {
     if (open) {
       setFormError(null);
-      reset({
-        id: user?.id,
-        name: user?.name ?? "",
-        role: (user?.role as StaffRole) || "operator",
-        username: user?.username ?? "",
-        password: "",
-      });
+      reset(getStaffInitialValues(user));
     }
   }, [open, user, reset]);
 
   const onSubmit = async (values: StaffFormInput) => {
     setFormError(null);
 
-    const payload =
-      isEdit && user
-        ? ({
-            id: user.id,
-            name: values.name.trim(),
-            role: values.role,
-            username: values.username.toLowerCase().trim(),
-            password: values.password?.trim() ?? "",
-          } satisfies UpdateStaffUserInput)
-        : ({
-            name: values.name.trim(),
-            role: values.role,
-            username: values.username.toLowerCase().trim(),
-            password: values.password?.trim() ?? "",
-          } satisfies CreateStaffUserInput);
+    const payload = {
+      ...(isEdit && user ? { id: user.id } : {}),
+      name: values.name.trim(),
+      role: values.role,
+      username: values.username.toLowerCase().trim(),
+      password: values.password?.trim() ?? "",
+    } satisfies UpdateStaffUserInput | CreateStaffUserInput;
 
     try {
       if (isEdit) {
         await axios.patch("/api/users", payload);
-        toast.add({
-          type: "success",
-          title: "User updated",
-          description: `Account "${payload.username}" has been successfully updated.`,
-        });
       } else {
         await axios.post("/api/users", payload);
-        toast.add({
-          type: "success",
-          title: "User created",
-          description: `Account "${payload.username}" has been created successfully.`,
-        });
       }
+
+      toast.add({
+        type: "success",
+        title: isEdit ? "User updated" : "User created",
+        description: `Account "${payload.username}" has been ${isEdit ? "successfully updated" : "created successfully"}.`,
+      });
 
       onSuccess();
       onOpenChange(false);
     } catch (err: unknown) {
-      const msg =
-        axios.isAxiosError(err) && err.response?.data?.error
-          ? err.response.data.error
-          : err instanceof Error
-            ? err.message
-            : "An unexpected error occurred.";
-
+      const msg = getErrorMessage(err, "An unexpected error occurred.");
       setFormError(msg);
       toast.add({
         type: "error",

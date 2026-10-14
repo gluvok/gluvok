@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { formatDateTime } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Briefcase01Icon,
@@ -185,16 +186,11 @@ export function getColumns(options?: { showRole?: boolean; entityLabel?: string 
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Created At" icon={Calendar01Icon} />
       ),
-      cell: ({ row }) => {
-        const dateVal = row.getValue("created_at") as string;
-        const formatted = dateVal
-          ? new Intl.DateTimeFormat("en-US", {
-              dateStyle: "medium",
-              timeStyle: "short",
-            }).format(new Date(dateVal))
-          : "—";
-        return <span className="text-xs text-muted-foreground">{formatted}</span>;
-      },
+      cell: ({ row }) => (
+        <span className="text-xs text-muted-foreground">
+          {formatDateTime(row.getValue("created_at"))}
+        </span>
+      ),
       meta: {
         title: "Created At",
         icon: Calendar01Icon,
@@ -204,16 +200,11 @@ export function getColumns(options?: { showRole?: boolean; entityLabel?: string 
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Updated At" icon={Clock01Icon} />
       ),
-      cell: ({ row }) => {
-        const dateVal = row.getValue("updated_at") as string;
-        const formatted = dateVal
-          ? new Intl.DateTimeFormat("en-US", {
-              dateStyle: "medium",
-              timeStyle: "short",
-            }).format(new Date(dateVal))
-          : "—";
-        return <span className="text-xs text-muted-foreground">{formatted}</span>;
-      },
+      cell: ({ row }) => (
+        <span className="text-xs text-muted-foreground">
+          {formatDateTime(row.getValue("updated_at"))}
+        </span>
+      ),
       meta: {
         title: "Updated At",
         icon: Clock01Icon,

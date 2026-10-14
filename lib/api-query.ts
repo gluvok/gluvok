@@ -26,8 +26,8 @@ export interface PaginatedResult<T> {
 }
 
 export const paginationQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(10),
+  page: z.coerce.number().int().min(1).catch(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).catch(10).default(10),
 });
 
 const dateQuerySchema = z
@@ -39,32 +39,15 @@ const dateQuerySchema = z
 
 /**
  * Parses and validates pagination parameters from URL search params using Zod.
- * Clamps page to >= 1 and pageSize to [1, maxPageSize] (defaults to 10 and max 100).
+ * Automatically coerces and clamps page (>= 1) and pageSize ([1, 100]), falling back to defaults.
  */
-export function parsePagination(
-  searchParams: URLSearchParams,
-  defaults?: { defaultPage?: number; defaultPageSize?: number; maxPageSize?: number },
-): PaginationParams {
-  const defaultPage = defaults?.defaultPage ?? 1;
-  const defaultPageSize = defaults?.defaultPageSize ?? 10;
-  const maxPageSize = defaults?.maxPageSize ?? 100;
-
-  const rawPage = searchParams.get("page");
-  const rawPageSize = searchParams.get("pageSize");
-
-  const parsed = paginationQuerySchema.safeParse({
-    page: rawPage || defaultPage,
-    pageSize: rawPageSize || defaultPageSize,
+export function parsePagination(searchParams: URLSearchParams): PaginationParams {
+  const { page, pageSize } = paginationQuerySchema.parse({
+    page: searchParams.get("page") ?? undefined,
+    pageSize: searchParams.get("pageSize") ?? undefined,
   });
 
-  const page = parsed.success ? Math.max(1, parsed.data.page) : defaultPage;
-  const pageSize = parsed.success
-    ? Math.max(1, Math.min(maxPageSize, parsed.data.pageSize))
-    : defaultPageSize;
-
-  const offset = (page - 1) * pageSize;
-
-  return { page, pageSize, offset };
+  return { page, pageSize, offset: (page - 1) * pageSize };
 }
 
 /**

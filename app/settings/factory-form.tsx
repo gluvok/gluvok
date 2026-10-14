@@ -26,6 +26,7 @@ import {
   TextFontIcon,
 } from "@hugeicons/core-free-icons";
 import { ChevronsUpDownIcon } from "lucide-react";
+import { formatDateTime } from "@/lib/utils";
 import { type Factory } from "./types";
 
 const RECEIPT_IMAGE_OPTIONS = [
@@ -36,17 +37,6 @@ const RECEIPT_IMAGE_OPTIONS = [
   { value: "5", label: "5 per row", icon: Layout05Icon },
   { value: "6", label: "6 per row", icon: Grid3x2Icon },
 ];
-
-function formatDate(isoString: string): string {
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(isoString));
-  } catch {
-    return isoString;
-  }
-}
 
 interface FactoryFormProps {
   factory: Factory;
@@ -171,7 +161,9 @@ export function FactoryForm({
           </div>
           <div className="flex flex-col">
             <span className="text-2xs text-muted-foreground">Created On</span>
-            <span className="font-medium text-foreground">{formatDate(factory.created_at)}</span>
+            <span className="font-medium text-foreground">
+              {formatDateTime(factory.created_at)}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-2.5">
@@ -180,7 +172,9 @@ export function FactoryForm({
           </div>
           <div className="flex flex-col">
             <span className="text-2xs text-muted-foreground">Last Modified</span>
-            <span className="font-medium text-foreground">{formatDate(factory.updated_at)}</span>
+            <span className="font-medium text-foreground">
+              {formatDateTime(factory.updated_at)}
+            </span>
           </div>
         </div>
       </div>

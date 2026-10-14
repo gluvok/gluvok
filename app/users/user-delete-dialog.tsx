@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
+import { getErrorMessage } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AlertCircleIcon, Cancel01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { type User } from "./types";
@@ -38,8 +39,6 @@ export function UserDeleteDialog({
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const isBatch = users.length > 1;
-  const singularLabel = entityLabel;
-  const pluralLabel = entityLabelPlural;
 
   useEffect(() => {
     if (open) {
@@ -60,7 +59,7 @@ export function UserDeleteDialog({
 
       toast.add({
         type: "success",
-        title: isBatch ? `${pluralLabel} deleted` : `${singularLabel} deleted`,
+        title: isBatch ? `${entityLabelPlural} deleted` : `${entityLabel} deleted`,
         description: isBatch
           ? `Successfully deleted ${users.length} accounts.`
           : `Account "${users[0].username}" has been removed.`,
@@ -69,12 +68,7 @@ export function UserDeleteDialog({
       onSuccess();
       onOpenChange(false);
     } catch (err: unknown) {
-      const msg =
-        axios.isAxiosError(err) && err.response?.data?.error
-          ? err.response.data.error
-          : err instanceof Error
-            ? err.message
-            : `Failed to delete ${singularLabel.toLowerCase()}.`;
+      const msg = getErrorMessage(err, `Failed to delete ${entityLabel.toLowerCase()}.`);
 
       setDeleteError(msg);
       toast.add({
@@ -96,15 +90,15 @@ export function UserDeleteDialog({
               <HugeiconsIcon icon={Delete02Icon} className="size-4" />
             </div>
             <DialogTitle>
-              {isBatch ? `Delete ${users.length} ${pluralLabel}` : `Delete ${singularLabel}`}
+              {isBatch ? `Delete ${users.length} ${entityLabelPlural}` : `Delete ${entityLabel}`}
             </DialogTitle>
           </div>
           <DialogDescription>
             {isBatch
-              ? `Are you sure you want to delete these ${users.length} ${pluralLabel.toLowerCase()}? Accounts with linked operational history cannot be deleted.`
+              ? `Are you sure you want to delete these ${users.length} ${entityLabelPlural.toLowerCase()}? Accounts with linked operational history cannot be deleted.`
               : users[0]
                 ? `Are you sure you want to delete "${users[0].name}" (@${users[0].username})? Accounts with linked operational history cannot be deleted.`
-                : `Confirm ${singularLabel.toLowerCase()} deletion.`}
+                : `Confirm ${entityLabel.toLowerCase()} deletion.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -166,7 +160,7 @@ export function UserDeleteDialog({
             ) : (
               <HugeiconsIcon icon={Delete02Icon} className="size-3.5" data-icon="inline-start" />
             )}
-            {isBatch ? `Delete ${users.length} ${pluralLabel}` : `Delete ${singularLabel}`}
+            {isBatch ? `Delete ${users.length} ${entityLabelPlural}` : `Delete ${entityLabel}`}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -130,15 +130,19 @@ export const deleteUserSchema = z.union([
 /* Dialog Form Schemas (React Hook Form + Zod Resolvers)                      */
 /* -------------------------------------------------------------------------- */
 
+function getFormIdSchema(isEdit: boolean) {
+  return isEdit
+    ? z.number().int().positive("Invalid user ID")
+    : z.number().int().positive("Invalid user ID").optional();
+}
+
 export function getStaffFormSchema(options: { isEdit: boolean }) {
   return z.object({
     name: nameSchema,
     role: staffRoleEnum,
     username: usernameSchema,
     password: options.isEdit ? passwordSchema.optional().or(z.literal("")) : passwordSchema,
-    id: options.isEdit
-      ? z.number().int().positive("Invalid user ID")
-      : z.number().int().positive("Invalid user ID").optional(),
+    id: getFormIdSchema(options.isEdit),
   });
 }
 
@@ -149,15 +153,14 @@ export function getCustomerFormSchema(options: {
   hasExistingCredentials?: boolean;
 }) {
   const isPasswordRequired = !options.isEdit || !options.hasExistingCredentials;
+  const id = getFormIdSchema(options.isEdit);
 
   const disabledBranch = z.object({
     portalAccessEnabled: z.literal(false),
     name: nameSchema,
     username: z.string().optional(),
     password: z.string().optional(),
-    id: options.isEdit
-      ? z.number().int().positive("Invalid user ID")
-      : z.number().int().positive("Invalid user ID").optional(),
+    id,
   });
 
   const enabledBranch = z.object({
@@ -165,9 +168,7 @@ export function getCustomerFormSchema(options: {
     name: nameSchema,
     username: usernameSchema,
     password: isPasswordRequired ? passwordSchema : passwordSchema.optional().or(z.literal("")),
-    id: options.isEdit
-      ? z.number().int().positive("Invalid user ID")
-      : z.number().int().positive("Invalid user ID").optional(),
+    id,
   });
 
   return z.discriminatedUnion("portalAccessEnabled", [disabledBranch, enabledBranch]);

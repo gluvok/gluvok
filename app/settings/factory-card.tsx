@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/toast";
+import { getErrorMessage } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   AlertCircleIcon,
@@ -32,6 +33,13 @@ import {
   type FactoryFormInput,
 } from "./types";
 import { FactoryForm } from "./factory-form";
+
+function getFactoryFormValues(f: Factory): FactoryFormInput {
+  return {
+    name: f.name,
+    receipt_images_per_row: f.receipt_images_per_row,
+  };
+}
 
 export function FactoryCard() {
   const [factory, setFactory] = useState<Factory | null>(null);
@@ -63,17 +71,9 @@ export function FactoryCard() {
       const response = await axios.get<FactoryApiResponse>("/api/factories");
       const data = response.data.data;
       setFactory(data);
-      reset({
-        name: data.name,
-        receipt_images_per_row: data.receipt_images_per_row,
-      });
+      reset(getFactoryFormValues(data));
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err)
-        ? err.response?.data?.error || err.message
-        : err instanceof Error
-          ? err.message
-          : "Failed to load factory";
-      setError(msg);
+      setError(getErrorMessage(err, "Failed to load factory."));
     } finally {
       setLoading(false);
     }
@@ -92,10 +92,7 @@ export function FactoryCard() {
       const response = await axios.patch<FactoryApiResponse>("/api/factories", values);
       const updated = response.data.data;
       setFactory(updated);
-      reset({
-        name: updated.name,
-        receipt_images_per_row: updated.receipt_images_per_row,
-      });
+      reset(getFactoryFormValues(updated));
 
       toast.add({
         type: "success",
@@ -103,16 +100,10 @@ export function FactoryCard() {
         description: "Factory configuration has been updated successfully.",
       });
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err)
-        ? err.response?.data?.error || err.message
-        : err instanceof Error
-          ? err.message
-          : "Failed to update factory";
-
       toast.add({
         type: "error",
         title: "Save failed",
-        description: msg,
+        description: getErrorMessage(err, "Failed to update factory."),
       });
     }
   };

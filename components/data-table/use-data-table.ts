@@ -16,6 +16,7 @@ import {
 import type { DateRange } from "react-day-picker";
 import { features, type DataTableFeatures } from "./data-table-features";
 import { useDebounce } from "@/hooks/use-debounce";
+import { getErrorMessage } from "@/lib/utils";
 import {
   DEFAULT_TABLE_ITEM_STATE,
   useDataTableStore,
@@ -124,8 +125,8 @@ export function useDataTable<TData extends RowData>({
       ...(debouncedSearch && { search: debouncedSearch }),
       ...(dateRange?.from && { from: dateRange.from.toISOString() }),
       ...(dateRange?.to && { to: dateRange.to.toISOString() }),
-      ...(tableState.filters ? JSON.parse(filtersKey) : {}),
-      ...(extraParams ? JSON.parse(extraParamsKey) : {}),
+      ...tableState.filters,
+      ...extraParams,
     };
 
     try {
@@ -141,13 +142,7 @@ export function useDataTable<TData extends RowData>({
         setTotalCount(res.data.totalCount ?? 0);
       }
     } catch (err) {
-      const msg =
-        axios.isAxiosError(err) && err.response?.data?.error
-          ? err.response.data.error
-          : err instanceof Error
-            ? err.message
-            : "An unexpected error occurred";
-      setError(msg);
+      setError(getErrorMessage(err, "An unexpected error occurred."));
     } finally {
       setLoading(false);
     }

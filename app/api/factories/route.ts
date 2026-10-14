@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { StatusCodes } from "http-status-codes";
 import { supabase } from "@/lib/supabase";
 import { updateFactorySchema } from "@/app/settings/types";
 
@@ -18,13 +19,16 @@ export async function GET() {
       .single();
 
     if (error || !data) {
-      return NextResponse.json({ error: error?.message || "Factory not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: error?.message || "Factory not found" },
+        { status: StatusCodes.NOT_FOUND },
+      );
     }
 
     return NextResponse.json({ data });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal Server Error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: StatusCodes.INTERNAL_SERVER_ERROR });
   }
 }
 
@@ -36,7 +40,7 @@ export async function PATCH(request: Request) {
     if (!parseResult.success) {
       return NextResponse.json(
         { error: parseResult.error.issues[0]?.message || "Invalid payload" },
-        { status: 400 },
+        { status: StatusCodes.BAD_REQUEST },
       );
     }
 
@@ -56,13 +60,13 @@ export async function PATCH(request: Request) {
     if (error || !data) {
       return NextResponse.json(
         { error: error?.message || "Failed to update factory" },
-        { status: 500 },
+        { status: StatusCodes.INTERNAL_SERVER_ERROR },
       );
     }
 
     return NextResponse.json({ data });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal Server Error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: StatusCodes.INTERNAL_SERVER_ERROR });
   }
 }

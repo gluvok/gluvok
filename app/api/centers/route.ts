@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { StatusCodes } from "http-status-codes";
 import { supabase } from "@/lib/supabase";
 import {
   parsePagination,
@@ -33,12 +34,15 @@ export async function GET(request: Request) {
     const { data, count, error } = await query;
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json(
+        { error: error.message },
+        { status: StatusCodes.INTERNAL_SERVER_ERROR },
+      );
     }
 
     return NextResponse.json(formatPaginatedResponse(data, count, pagination));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: StatusCodes.INTERNAL_SERVER_ERROR });
   }
 }

@@ -148,6 +148,8 @@ For any JavaScript / TypeScript / Node modifications:
 - **Consolidate Identical Components**: If two or more components share identical or near-identical JSX structure (such as menu lists, buttons, or filters), generalize them into a single reusable component (e.g. `components/nav-group.tsx`, `components/page-refresh-button.tsx`) parameterized by props.
 - **Eliminate Redundant Wrapper Files**: Do not keep pass-through wrapper components or legacy file aliases that only re-export or delegate to a generalized component. Delete redundant files directly and update imports at callers.
 - **Audit for Duplication Before Coding**: Before implementing a feature or entity table, check if reusable abstractions already exist in `components/data-table/` or `components/`. Never copy-paste whole table files or sensor setups.
+- **Centralized Backend API Query Utilities (`lib/api-query.ts`)**: Never duplicate API pagination, multi-column sorting, date filtering, or response formatting across route handlers (`app/api/**/route.ts`). All paginated entity endpoints MUST consume `lib/api-query.ts` (`parsePagination`, `parseSorting`, `applyDateRange`, `applySortingAndPagination`, `formatPaginatedResponse`). Entity routes must strictly contain only entity-specific projections, sort column whitelists, and custom filters. Zero inline duplication of pagination math or sort regexes.
+- **Strict Prohibition of Raw Magic HTTP Status Codes (`http-status-codes`)**: Always import and use `StatusCodes` from `http-status-codes` across all API route handlers and responses (e.g. `StatusCodes.OK`, `StatusCodes.CREATED`, `StatusCodes.BAD_REQUEST`, `StatusCodes.NOT_FOUND`, `StatusCodes.CONFLICT`, `StatusCodes.INTERNAL_SERVER_ERROR`). NEVER write raw numeric status literals like `200`, `201`, `400`, `404`, `409`, or `500` in `NextResponse.json(...)`.
 
 ## 11. Mandatory Pre-Completion Code Audit Gates
 
@@ -187,23 +189,6 @@ For any JavaScript / TypeScript / Node modifications:
 - **Constant O(1) Batch Queries**: When checking, fetching, or mutating records for multiple identifiers or foreign keys, aggregate target IDs into an array and execute a single batch query (e.g. `.in("id", targetIds)`, `.in("user_id", targetIds)`, SQL `IN (...)`).
 - **In-Memory Aggregation**: Aggregate counts, maps, lookups, or conflicts in application memory after fetching the batched result set rather than querying row-by-row.
 - **Bulk Mutations**: Use bulk updates/deletions (`.in("id", targetIds).delete()` or `.in("id", targetIds).update(...)`) instead of individual per-record operations.
-
-## 14. Strict Backend API DRY & Query Parameter Standardization
-
-**Never duplicate API pagination, multi-column sorting, date filtering, or response formatting across route handlers.**
-
-- **Centralized API Query Utilities (`lib/api-query.ts`)**: All route handlers implementing paginated entity queries (`GET /api/*`) MUST use the centralized query utilities in `lib/api-query.ts`:
-  - `parsePagination(searchParams)`: Standardized extraction of `page`, `pageSize` (capped at 100), and `offset`.
-  - `parseSorting(searchParams, ALLOWED_SORT_COLUMNS, defaultSort)`: Standardized multi-column sorting parser supporting `col.asc,col2.desc` with column whitelisting.
-  - `applyDateRange(query, searchParams, column)`: Standardized date range filtering (`from`, `to` with 23:59:59.999 end-of-day normalization).
-  - `applySortingAndPagination(query, sortRules, pagination)`: Standardized sequential `.order()` and `.range()` chaining.
-  - `formatPaginatedResponse(data, count, pagination)`: Standardized response envelope (`data`, `totalCount`, `page`, `pageSize`, `totalPages`).
-- **Entity Route Responsibilities**: Entity routes (`app/api/**/route.ts`) must only define entity-specific logic:
-  - Allowed sort columns whitelist (`ALLOWED_SORT_COLUMNS`).
-  - Table name and select column projections (`.from(...).select(...)`).
-  - Entity-specific filters (e.g. text search, role filter, foreign key filters).
-  - Calling the centralized query helpers and returning the JSON response.
-- **Zero Inline Duplication**: Never copy-paste pagination math, sort string parsing regexes, date validation blocks, or response structure across API routes.
 
 ---
 

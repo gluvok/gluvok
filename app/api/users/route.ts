@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { StatusCodes } from "http-status-codes";
 import argon2 from "argon2";
 import { supabase } from "@/lib/supabase";
 import {
@@ -52,13 +53,16 @@ export async function GET(request: Request) {
     const { data, count, error } = await query;
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json(
+        { error: error.message },
+        { status: StatusCodes.INTERNAL_SERVER_ERROR },
+      );
     }
 
     return NextResponse.json(formatPaginatedResponse(data, count, pagination));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal Server Error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: StatusCodes.INTERNAL_SERVER_ERROR });
   }
 }
 
@@ -73,7 +77,7 @@ export async function POST(request: Request) {
           error: "Validation error",
           details: validation.error.flatten(),
         },
-        { status: 400 },
+        { status: StatusCodes.BAD_REQUEST },
       );
     }
 
@@ -88,13 +92,16 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (checkError) {
-      return NextResponse.json({ error: checkError.message }, { status: 500 });
+      return NextResponse.json(
+        { error: checkError.message },
+        { status: StatusCodes.INTERNAL_SERVER_ERROR },
+      );
     }
 
     if (existing) {
       return NextResponse.json(
         { error: `Username "${username}" is already taken by an active account.` },
-        { status: 409 },
+        { status: StatusCodes.CONFLICT },
       );
     }
 
@@ -115,7 +122,10 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+      return NextResponse.json(
+        { error: insertError.message },
+        { status: StatusCodes.INTERNAL_SERVER_ERROR },
+      );
     }
 
     return NextResponse.json(
@@ -123,11 +133,11 @@ export async function POST(request: Request) {
         data: created,
         message: "User created successfully.",
       },
-      { status: 201 },
+      { status: StatusCodes.CREATED },
     );
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal Server Error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: StatusCodes.INTERNAL_SERVER_ERROR });
   }
 }
 
@@ -142,7 +152,7 @@ export async function PATCH(request: Request) {
           error: "Validation error",
           details: validation.error.flatten(),
         },
-        { status: 400 },
+        { status: StatusCodes.BAD_REQUEST },
       );
     }
 
@@ -157,13 +167,16 @@ export async function PATCH(request: Request) {
       .maybeSingle();
 
     if (fetchError) {
-      return NextResponse.json({ error: fetchError.message }, { status: 500 });
+      return NextResponse.json(
+        { error: fetchError.message },
+        { status: StatusCodes.INTERNAL_SERVER_ERROR },
+      );
     }
 
     if (!existingUser) {
       return NextResponse.json(
         { error: "User not found or has already been deleted." },
-        { status: 404 },
+        { status: StatusCodes.NOT_FOUND },
       );
     }
 
@@ -178,13 +191,16 @@ export async function PATCH(request: Request) {
         .maybeSingle();
 
       if (conflictErr) {
-        return NextResponse.json({ error: conflictErr.message }, { status: 500 });
+        return NextResponse.json(
+          { error: conflictErr.message },
+          { status: StatusCodes.INTERNAL_SERVER_ERROR },
+        );
       }
 
       if (conflict) {
         return NextResponse.json(
           { error: `Username "${username}" is already in use by another active account.` },
-          { status: 409 },
+          { status: StatusCodes.CONFLICT },
         );
       }
     }
@@ -208,7 +224,10 @@ export async function PATCH(request: Request) {
       .single();
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      return NextResponse.json(
+        { error: updateError.message },
+        { status: StatusCodes.INTERNAL_SERVER_ERROR },
+      );
     }
 
     return NextResponse.json({
@@ -217,7 +236,7 @@ export async function PATCH(request: Request) {
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal Server Error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: StatusCodes.INTERNAL_SERVER_ERROR });
   }
 }
 
@@ -232,7 +251,7 @@ export async function DELETE(request: Request) {
           error: "Validation error",
           details: validation.error.flatten(),
         },
-        { status: 400 },
+        { status: StatusCodes.BAD_REQUEST },
       );
     }
 
@@ -246,13 +265,16 @@ export async function DELETE(request: Request) {
       .is("deleted_at", null);
 
     if (fetchErr) {
-      return NextResponse.json({ error: fetchErr.message }, { status: 500 });
+      return NextResponse.json(
+        { error: fetchErr.message },
+        { status: StatusCodes.INTERNAL_SERVER_ERROR },
+      );
     }
 
     if (!targetUsers || targetUsers.length === 0) {
       return NextResponse.json(
         { error: "No active users found matching the specified ID(s)." },
-        { status: 404 },
+        { status: StatusCodes.NOT_FOUND },
       );
     }
 
@@ -309,7 +331,7 @@ export async function DELETE(request: Request) {
           error: `Cannot delete user(s): ${details}. Historical operational records must be preserved.`,
           blockedUsers,
         },
-        { status: 409 },
+        { status: StatusCodes.CONFLICT },
       );
     }
 
@@ -321,7 +343,10 @@ export async function DELETE(request: Request) {
       .in("id", targetIds);
 
     if (deleteErr) {
-      return NextResponse.json({ error: deleteErr.message }, { status: 500 });
+      return NextResponse.json(
+        { error: deleteErr.message },
+        { status: StatusCodes.INTERNAL_SERVER_ERROR },
+      );
     }
 
     return NextResponse.json({
@@ -330,6 +355,6 @@ export async function DELETE(request: Request) {
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal Server Error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: StatusCodes.INTERNAL_SERVER_ERROR });
   }
 }

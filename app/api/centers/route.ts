@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
-const ALLOWED_SORT_COLUMNS = ["id", "name", "auto_approve", "created_at", "updated_at"] as const;
+const ALLOWED_SORT_COLUMNS = ["id", "name", "created_at", "updated_at"] as const;
 
 export async function GET(request: Request) {
   try {
@@ -42,18 +42,13 @@ export async function GET(request: Request) {
     // 3. Build Supabase query with exact total count
     let query = supabase
       .from("centers")
-      .select("id, name, auto_approve, created_at, updated_at", { count: "exact" })
+      .select("id, name, created_at, updated_at", { count: "exact" })
       .is("deleted_at", null);
 
     // Apply active server-side filters dynamically in a loop
     const filterHandlers: Record<string, (val: string) => void> = {
       search: (val) => {
         query = query.ilike("name", `%${val}%`);
-      },
-      auto_approve: (val) => {
-        if (val === "true" || val === "false") {
-          query = query.eq("auto_approve", val === "true");
-        }
       },
       from: (val) => {
         const fromDate = new Date(val);

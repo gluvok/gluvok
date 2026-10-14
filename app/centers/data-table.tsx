@@ -16,10 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { DataTableSearchInput } from "@/components/data-table/data-table-search-input";
-import {
-  DataTableFacetedFilter,
-  type FacetedFilterOption,
-} from "@/components/data-table/data-table-faceted-filter";
 import { DataTableCriteriaBar } from "@/components/data-table/data-table-criteria-bar";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
@@ -29,12 +25,9 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Calendar01Icon,
   Cancel01Icon,
-  CancelCircleIcon,
-  CheckmarkCircle02Icon,
   Clock01Icon,
   HashtagIcon,
   TextFontIcon,
-  ToggleOnIcon,
 } from "@hugeicons/core-free-icons";
 import { columns } from "./columns";
 import { features } from "@/components/data-table/data-table-features";
@@ -45,12 +38,6 @@ import {
   useTableHydrated,
 } from "@/stores/use-data-table-store";
 import { type Center } from "./types";
-
-const AUTO_APPROVE_OPTIONS: FacetedFilterOption[] = [
-  { label: "All Auto Approve", value: "all", icon: ToggleOnIcon },
-  { label: "Enabled", value: "true", icon: CheckmarkCircle02Icon },
-  { label: "Disabled", value: "false", icon: CancelCircleIcon },
-];
 
 interface CentersApiResponse {
   data: Center[];
@@ -65,7 +52,6 @@ const TABLE_ID = "centers";
 const COLUMN_LABELS: Record<string, string> = {
   id: "ID",
   name: "Name",
-  auto_approve: "Auto Approve",
   created_at: "Created At",
   updated_at: "Updated At",
 };
@@ -73,7 +59,6 @@ const COLUMN_LABELS: Record<string, string> = {
 const COLUMN_ICONS: Record<string, unknown> = {
   id: HashtagIcon,
   name: TextFontIcon,
-  auto_approve: ToggleOnIcon,
   created_at: Calendar01Icon,
   updated_at: Clock01Icon,
 };
@@ -90,7 +75,6 @@ export function CentersDataTable() {
 
   // Read persisted state for 'centers' table from store
   const search = tableState.search;
-  const autoApproveFilter = tableState.filters["auto_approve"] ?? "all";
   const dateRange = useMemo<DateRange | undefined>(() => {
     if (!tableState.dateRange?.from) return undefined;
     return {
@@ -98,6 +82,7 @@ export function CentersDataTable() {
       to: tableState.dateRange.to ? new Date(tableState.dateRange.to) : undefined,
     };
   }, [tableState.dateRange]);
+
   const sorting = tableState.sorting;
   const pagination = tableState.pagination;
   const columnVisibility = tableState.columnVisibility;
@@ -107,7 +92,6 @@ export function CentersDataTable() {
 
   // Actions updating persisted store
   const setSearch = (val: string) => store.setTableSearch(TABLE_ID, val);
-  const setAutoApproveFilter = (val: string) => store.setTableFilter(TABLE_ID, "auto_approve", val);
   const setDateRange = (range: DateRange | undefined) =>
     store.setTableDateRange(
       TABLE_ID,
@@ -140,7 +124,6 @@ export function CentersDataTable() {
             sort: sorting.map((s) => `${s.id}.${s.desc ? "desc" : "asc"}`).join(","),
           }),
           ...(debouncedSearch && { search: debouncedSearch }),
-          ...(autoApproveFilter !== "all" && { auto_approve: autoApproveFilter }),
           ...(dateRange?.from && { from: dateRange.from.toISOString() }),
           ...(dateRange?.to && { to: dateRange.to.toISOString() }),
         },
@@ -159,14 +142,7 @@ export function CentersDataTable() {
     } finally {
       setLoading(false);
     }
-  }, [
-    pagination.pageIndex,
-    pagination.pageSize,
-    sorting,
-    debouncedSearch,
-    autoApproveFilter,
-    dateRange,
-  ]);
+  }, [pagination.pageIndex, pagination.pageSize, sorting, debouncedSearch, dateRange]);
 
   useEffect(() => {
     if (!hasHydrated) return;
@@ -196,7 +172,7 @@ export function CentersDataTable() {
 
   const isDefaultSort = sorting.length === 1 && sorting[0].id === "id" && sorting[0].desc === true;
   const hasActiveSorts = !isDefaultSort && sorting.length > 0;
-  const hasActiveFilters = Boolean(autoApproveFilter !== "all" || dateRange?.from);
+  const hasActiveFilters = Boolean(dateRange?.from);
 
   // Hydration guard: show clean centered spinner until localStorage is hydrated
   if (!hasHydrated) {
@@ -221,17 +197,6 @@ export function CentersDataTable() {
             placeholder="Search centers by name..."
             value={search}
             onChange={setSearch}
-          />
-
-          {/* Auto Approve Filter Combobox */}
-          <DataTableFacetedFilter
-            title="Auto Approve"
-            options={AUTO_APPROVE_OPTIONS}
-            value={autoApproveFilter}
-            onValueChange={(val) => {
-              setAutoApproveFilter(val);
-              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-            }}
           />
         </div>
 
@@ -267,41 +232,6 @@ export function CentersDataTable() {
         columnIcons={COLUMN_ICONS}
         onResetAll={resetAllCriteria}
       >
-        {/* Auto Approve Chip */}
-        {autoApproveFilter !== "all" && (
-          <Badge
-            variant="secondary"
-            className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
-          >
-            <HugeiconsIcon
-              icon={ToggleOnIcon}
-              className="size-2.5 text-muted-foreground shrink-0"
-              data-icon="inline-start"
-            />
-            <span className="text-muted-foreground">Auto Approve:</span>
-            <HugeiconsIcon
-              icon={autoApproveFilter === "true" ? CheckmarkCircle02Icon : CancelCircleIcon}
-              className="size-2.5 shrink-0"
-            />
-            <span className="font-medium">
-              {autoApproveFilter === "true" ? "Enabled" : "Disabled"}
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              onClick={() => {
-                setAutoApproveFilter("all");
-                setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-              }}
-              className="size-4 rounded-full p-0 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
-              aria-label="Remove auto approve filter"
-            >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
-            </Button>
-          </Badge>
-        )}
-
         {/* Date Range Chip */}
         {dateRange?.from && (
           <Badge

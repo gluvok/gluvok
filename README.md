@@ -29,15 +29,14 @@ The `/centers` route provides a full-featured data table built with **TanStack T
 - **Backend Endpoint**: `GET /api/centers`
   - Slicing and exact counting: `?page=<N>&pageSize=<N>` (`.range()` + `{ count: "exact" }`)
   - Server-side text search: `?search=<text>` (`.ilike("name", ...)`)
-  - Server-side auto-approve filter: `?auto_approve=true|false|all` (`.eq("auto_approve", ...)`)
   - Server-side created date range: `?from=<ISO>&to=<ISO>` (`.gte("created_at", ...)`, `.lte("created_at", ...)`)
   - Server-side multi-column sorting: `?sort=col1.asc,col2.desc` (defaults to `id.desc`, sequentially executed via `.order()`)
-- **Schema Mapping**: Maps directly to `centers` table in `schema.sql` (`id`, `name`, `auto_approve`, `created_at`, `updated_at`).
+- **Schema Mapping**: Maps directly to `centers` table in `schema.sql` (`id`, `name`, `created_at`, `updated_at`).
 - **Features**:
-  - **Server-Side Multi-Column Sorting**: Support for sorting across multiple columns simultaneously with defined precedence (e.g., `Auto Approve` -> `Created At` -> `Name`).
+  - **Server-Side Multi-Column Sorting**: Support for sorting across multiple columns simultaneously with defined precedence (e.g., `Name` -> `Created At` -> `ID`).
   - **Draggable Sort Priority Reordering (`@dnd-kit`)**: When 2 or more sorts are active, sorting chips in the Unified Criteria Bar display drag handles and can be reordered via drag-and-drop powered by `@dnd-kit/core`, `@dnd-kit/sortable`, and `@dnd-kit/utilities`. Dropping a chip immediately reorders sort priority indices (`#1`, `#2`, `#3`), re-queries the backend with the updated precedence (`?sort=...`), and persists to `localStorage`. Fully touch-ready for mobile/tablet with press-and-hold activation constraints (`TouchSensor`: 250ms hold, 5px tolerance) so swiping to scroll horizontally remains smooth, and desktop pointer distance thresholds (`PointerSensor`: 5px).
   - **Default Backend Ordering**: The backend endpoint defaults to ordering by `id` descending (newest ID first) when no explicit sorting criteria is provided. The frontend initializes with an empty sort state (displaying no default sort chips or header badges) to eliminate user confusion; sort badges and criteria chips appear only when columns are actively sorted.
-  - **Unified Active Criteria Bar**: Filters and active sort badges render together in a single compact bar (`Filters: [⏻ Auto Approve: ✓ Enabled (x)] | Sorts: [#1 # ID: ↓ Desc (x)] [#2 📅 Created At: ↑ Asc (x)] Clear all`) with individual dismiss controls and full reset actions. Filter chips display column and option icons, and sort chips display column and directional sort icons (`ArrowUp01Icon`, `ArrowDown01Icon`).
+  - **Unified Active Criteria Bar**: Filters and active sort badges render together in a single compact bar (`Filters: [📅 Date Range (x)] | Sorts: [#1 # ID: ↓ Desc (x)] [#2 📅 Created At: ↑ Asc (x)] Clear all`) with individual dismiss controls and full reset actions. Filter chips display column and option icons, and sort chips display column and directional sort icons (`ArrowUp01Icon`, `ArrowDown01Icon`).
   - **Scoped Datatable Loading**: Toolbar (search, combobox, datepicker), active criteria badges, and pagination remain permanently mounted; the loading spinner is scoped exclusively to the table card area, eliminating focus loss and toolbar flicker during searches or pagination.
   - **Comfortable Density & Clean Layout**: Streamlined table rows (`h-9` rows with `py-1.5 px-3 text-xs` cell padding; `h-8 px-3` header; `px-2 py-1` criteria bar; `gap-4` and `gap-2.5` container spacing), providing comfortable breathing room and legibility while maintaining a compact vertical footprint.
   - **Unified Page Header (`components/page-header.tsx`)**: Centralized reusable header component providing standard title, description, and right-aligned reload action (`PageRefreshButton`), delivering layout consistency across all entity pages (`/centers`, `/settings`, etc.).
@@ -88,7 +87,7 @@ The `/users` route provides administrative user management powered by the `/api/
   - **`GET /api/users`**: Multi-column sorting (`id`, `username`, `name`, `role`, `created_at`, `updated_at`), search (across `name` and `username`), role filter, date range filter, and server-side pagination with exact total counts. Excludes `password_hash` from the response.
   - **`POST /api/users`**: Strict Zod validation (`username`, `name`, `role`, `password`), enforces username uniqueness across active accounts (`deleted_at IS NULL`), hashes passwords with Argon2id, and provisions the user for Factory ID 1.
   - **`PATCH /api/users`**: Validates input, verifies username uniqueness if updated, optionally resets and re-hashes passwords with Argon2id when provided, and updates user profile and role.
-  - **`DELETE /api/users`**: Supports single (`id`) and bulk (`ids`) deletion. Performs a pre-flight integrity check across `entries` (`created_by`, `approved_by`), `tickets` (`user_id`), and `customers` (`user_id`). Blocks deletion with HTTP 409 Conflict if linked historical records exist. Soft-deletes (`deleted_at: NOW()`) when safe.
+  - **`DELETE /api/users`**: Supports single (`id`) and bulk (`ids`) deletion. Performs a constant O(1) batched pre-flight integrity check across `entries` (`created_by`), `tickets` (`user_id`), and `customers` (`user_id`). Blocks deletion with HTTP 409 Conflict if linked historical records exist. Soft-deletes (`deleted_at: NOW()`) when safe.
 - **Features & UX**:
   - **Add User Modal**: Streamlined form to provision new users with role selection (`Admin`, `Manager`, `Operator`, `Base`).
   - **Edit User Modal**: In-place profile and role editing with optional password update field.
@@ -133,10 +132,10 @@ Running `pnpm run seed:test` or `pnpm run seed:test:clean` provisions high-volum
 
 - **Factories**: 2 (`Default Factory`, `Apex Agro Logistics`)
 - **Users**: 28 across all 5 roles (`admin`, `manager`, `operator`, `base`, `hardware`)
-- **Centers**: 50 (35 in Factory 1, 15 in Factory 2) with varied `auto_approve` flags and staggered `created_at` dates (ideal for testing 10, 20, 30, 40, and 50 page sizes)
+- **Centers**: 50 (35 in Factory 1, 15 in Factory 2) with staggered `created_at` dates (ideal for testing 10, 20, 30, 40, and 50 page sizes)
 - **Commodities**: 20 bulk agricultural commodities
 - **Customers**: 50 customer profiles
-- **Entries**: 100 entries (60 paired for weighment cycles + 40 standalone with `pending`, `approved`, and `rejected` statuses)
+- **Entries**: 100 entries (60 paired for weighment cycles + 40 standalone entries)
 - **Weighments**: 30 linked inbound/outbound cycles
 - **Tickets**: 40 support tickets (20 linked to entries, 20 linked to weighments)
 

@@ -221,7 +221,6 @@ async function main() {
       .from("centers")
       .insert({
         name: centerName,
-        auto_approve: false,
         factory_id: createdFactory.id,
       })
       .select("id, name")

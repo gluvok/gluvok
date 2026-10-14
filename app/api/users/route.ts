@@ -314,41 +314,42 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Pre-flight check: verify none of the target users have linked records
+    // Pre-flight check: verify none of the target users have linked records (O(1) batch queries)
+    const [entriesCreatedRes, ticketsRes, customersRes] = await Promise.all([
+      supabase
+        .from("entries")
+        .select("created_by")
+        .in("created_by", targetIds)
+        .is("deleted_at", null),
+      supabase.from("tickets").select("user_id").in("user_id", targetIds).is("deleted_at", null),
+      supabase.from("customers").select("user_id").in("user_id", targetIds).is("deleted_at", null),
+    ]);
+
+    // Aggregate counts in memory
+    const entriesCounts: Record<number, number> = {};
+    for (const r of entriesCreatedRes.data ?? []) {
+      entriesCounts[r.created_by] = (entriesCounts[r.created_by] || 0) + 1;
+    }
+
+    const ticketsCounts: Record<number, number> = {};
+    for (const r of ticketsRes.data ?? []) {
+      ticketsCounts[r.user_id] = (ticketsCounts[r.user_id] || 0) + 1;
+    }
+
+    const customersCounts: Record<number, number> = {};
+    for (const r of customersRes.data ?? []) {
+      customersCounts[r.user_id] = (customersCounts[r.user_id] || 0) + 1;
+    }
+
     const blockedUsers: { id: number; username: string; reasons: string[] }[] = [];
 
     for (const u of targetUsers) {
-      const [entriesCreated, entriesApproved, tickets, customers] = await Promise.all([
-        supabase
-          .from("entries")
-          .select("id", { count: "exact", head: true })
-          .eq("created_by", u.id)
-          .is("deleted_at", null),
-        supabase
-          .from("entries")
-          .select("id", { count: "exact", head: true })
-          .eq("approved_by", u.id)
-          .is("deleted_at", null),
-        supabase
-          .from("tickets")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", u.id)
-          .is("deleted_at", null),
-        supabase
-          .from("customers")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", u.id)
-          .is("deleted_at", null),
-      ]);
-
       const reasons: string[] = [];
-      const ec = entriesCreated.count || 0;
-      const ea = entriesApproved.count || 0;
-      const tc = tickets.count || 0;
-      const cc = customers.count || 0;
+      const ec = entriesCounts[u.id] || 0;
+      const tc = ticketsCounts[u.id] || 0;
+      const cc = customersCounts[u.id] || 0;
 
       if (ec > 0) reasons.push(`${ec} entry(s) created`);
-      if (ea > 0) reasons.push(`${ea} entry(s) approved`);
       if (tc > 0) reasons.push(`${tc} ticket(s)`);
       if (cc > 0) reasons.push(`${cc} customer profile(s)`);
 

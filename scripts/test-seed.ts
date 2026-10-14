@@ -10,7 +10,6 @@ import argon2 from "argon2";
 import { supabase } from "./supabase.ts";
 
 type Role = "admin" | "manager" | "operator" | "base" | "hardware";
-type EntryStatus = "pending" | "approved" | "rejected";
 type Unit = "kg" | "q" | "gal";
 type WeighmentType = "unassigned" | "in" | "out";
 type TicketStatus = "pending" | "approved" | "rejected";
@@ -425,7 +424,6 @@ async function main() {
 
   interface CenterInsertData {
     name: string;
-    auto_approve: boolean;
     factory_id: number;
     created_at: string;
   }
@@ -435,8 +433,6 @@ async function main() {
   factory1CenterNames.forEach((name, idx) => {
     centersToInsert.push({
       name,
-      // Approximately 35% auto_approve enabled for visual variation
-      auto_approve: idx % 3 === 1,
       factory_id: primaryFactoryId,
       created_at: daysAgo(50 - idx, idx * 12),
     });
@@ -445,7 +441,6 @@ async function main() {
   factory2CenterNames.forEach((name, idx) => {
     centersToInsert.push({
       name,
-      auto_approve: idx % 4 === 0,
       factory_id: secondaryFactoryId,
       created_at: daysAgo(30 - idx, idx * 18),
     });
@@ -929,7 +924,6 @@ async function main() {
   const pi1Id = userMap.get("pi1")!;
 
   const operator2Id = userMap.get("operator2")!;
-  const manager2Id = userMap.get("manager2")!;
   const pi2Id = userMap.get("pi2")!;
 
   // 6. PAIRED ENTRIES & WEIGHMENTS (30 Pairs = 60 Entries & 30 Weighments)
@@ -987,13 +981,10 @@ async function main() {
     vehicle_number: string;
     detected_vehicle_number: string;
     weight: number;
-    status: EntryStatus;
-    auto_approved: boolean;
     center_id: number;
     customer_id: number;
     factory_id: number;
     created_by: number;
-    approved_by: number;
     images: string[];
     created_at: string;
   }
@@ -1006,13 +997,10 @@ async function main() {
       vehicle_number: pv.vehicle,
       detected_vehicle_number: pv.vehicle,
       weight: pv.grossWeight,
-      status: "approved",
-      auto_approved: false,
       center_id: pv.centerId,
       customer_id: pv.customerId,
       factory_id: pv.factoryId,
       created_by: pv.operatorId,
-      approved_by: pv.operatorId,
       images: [],
       created_at: daysAgo(pv.daysOffset, 120),
     });
@@ -1021,13 +1009,10 @@ async function main() {
       vehicle_number: pv.vehicle,
       detected_vehicle_number: pv.vehicle,
       weight: pv.tareWeight,
-      status: "approved",
-      auto_approved: false,
       center_id: pv.centerId,
       customer_id: pv.customerId,
       factory_id: pv.factoryId,
       created_by: pv.operatorId,
-      approved_by: pv.operatorId,
       images: [],
       created_at: daysAgo(pv.daysOffset, 0),
     });
@@ -1093,20 +1078,17 @@ async function main() {
     vehicle_number: string;
     detected_vehicle_number: string;
     weight: number;
-    status: EntryStatus;
-    auto_approved: boolean;
     center_id: number;
     customer_id: number | null;
     factory_id: number;
     created_by: number;
-    approved_by: number | null;
     images: string[];
     created_at: string;
   }
 
   const standaloneEntriesToInsert: StandaloneEntryData[] = [];
 
-  // 20 Pending Entries
+  // 20 Inbound Standalone Entries
   for (let i = 1; i <= 20; i++) {
     const plate = `DL01XY${3000 + i}`;
     const factoryId = i <= 14 ? primaryFactoryId : secondaryFactoryId;
@@ -1119,19 +1101,16 @@ async function main() {
       vehicle_number: plate,
       detected_vehicle_number: plate,
       weight: 18000 + ((i * 1150) % 25000),
-      status: "pending",
-      auto_approved: false,
       center_id: centerId,
       customer_id: customerId,
       factory_id: factoryId,
       created_by: operatorId,
-      approved_by: null,
       images: [],
       created_at: daysAgo(Math.floor(i / 4), (i * 37) % 60),
     });
   }
 
-  // 10 Auto-Approved Entries (Hardware Scales)
+  // 10 Hardware Scale Standalone Entries
   for (let i = 1; i <= 10; i++) {
     const plate = `KA04CD${4000 + i}`;
     const factoryId = i <= 6 ? primaryFactoryId : secondaryFactoryId;
@@ -1143,38 +1122,31 @@ async function main() {
       vehicle_number: plate,
       detected_vehicle_number: plate,
       weight: 20000 + ((i * 1250) % 18000),
-      status: "approved",
-      auto_approved: true,
       center_id: centerId,
       customer_id: customerIdsArray[(i * 3) % customerIdsArray.length],
       factory_id: factoryId,
       created_by: piId,
-      approved_by: piId,
       images: [],
       created_at: daysAgo(5 + i, (i * 45) % 60),
     });
   }
 
-  // 10 Rejected Entries
+  // 10 Outbound Standalone Entries
   for (let i = 1; i <= 10; i++) {
     const plate = `GJ03EF${5000 + i}`;
     const factoryId = i <= 7 ? primaryFactoryId : secondaryFactoryId;
     const centerList = factoryId === primaryFactoryId ? factory1CenterIds : factory2CenterIds;
     const centerId = centerList[i % centerList.length];
     const operatorId = factoryId === primaryFactoryId ? operator1Id : operator2Id;
-    const managerId = factoryId === primaryFactoryId ? manager1Id : manager2Id;
 
     standaloneEntriesToInsert.push({
       vehicle_number: plate,
       detected_vehicle_number: plate,
       weight: 14000 + ((i * 2100) % 36000),
-      status: "rejected",
-      auto_approved: false,
       center_id: centerId,
       customer_id: null,
       factory_id: factoryId,
       created_by: operatorId,
-      approved_by: managerId,
       images: [],
       created_at: daysAgo(8 + i, (i * 50) % 60),
     });

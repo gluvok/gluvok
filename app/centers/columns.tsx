@@ -1,7 +1,6 @@
 "use client";
 
 import { createColumnHelper } from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -16,14 +15,11 @@ import { DataTableColumnHeader } from "@/components/data-table/data-table-column
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Calendar01Icon,
-  CancelCircleIcon,
-  CheckmarkCircle02Icon,
   Clock01Icon,
   Copy01Icon,
   HashtagIcon,
   MoreHorizontalIcon,
   TextFontIcon,
-  ToggleOnIcon,
 } from "@hugeicons/core-free-icons";
 import { type DataTableFeatures } from "@/components/data-table/data-table-features";
 import { type Center } from "./types";
@@ -73,31 +69,6 @@ export const columns = columnHelper.columns([
     meta: {
       title: "Name",
       icon: TextFontIcon,
-    },
-  }),
-  columnHelper.accessor("auto_approve", {
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Auto Approve" icon={ToggleOnIcon} />
-    ),
-    cell: ({ row }) => {
-      const autoApprove = row.getValue("auto_approve") as boolean;
-      return (
-        <Badge
-          variant={autoApprove ? "default" : "secondary"}
-          className="gap-1 px-1.5 py-0.5 text-2xs font-normal"
-        >
-          <HugeiconsIcon
-            icon={autoApprove ? CheckmarkCircle02Icon : CancelCircleIcon}
-            className="size-2.5"
-            data-icon="inline-start"
-          />
-          <span>{autoApprove ? "Enabled" : "Disabled"}</span>
-        </Badge>
-      );
-    },
-    meta: {
-      title: "Auto Approve",
-      icon: ToggleOnIcon,
     },
   }),
   columnHelper.accessor("created_at", {

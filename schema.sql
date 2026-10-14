@@ -39,7 +39,6 @@ DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS factories CASCADE;
 
 DROP TYPE IF EXISTS ticket_status CASCADE;
-DROP TYPE IF EXISTS entry_status CASCADE;
 DROP TYPE IF EXISTS weighment_type CASCADE;
 DROP TYPE IF EXISTS field_requirement_mode CASCADE;
 DROP TYPE IF EXISTS unit_enum CASCADE;
@@ -71,9 +70,6 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'weighment_type') THEN
         CREATE TYPE weighment_type AS ENUM ('unassigned', 'in', 'out');
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'entry_status') THEN
-        CREATE TYPE entry_status AS ENUM ('pending', 'approved', 'rejected');
-    END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ticket_status') THEN
         CREATE TYPE ticket_status AS ENUM ('pending', 'approved', 'rejected');
     END IF;
@@ -96,7 +92,6 @@ CREATE TABLE IF NOT EXISTS factories (
 CREATE TABLE IF NOT EXISTS centers (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    auto_approve BOOLEAN NOT NULL DEFAULT FALSE,
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -165,13 +160,10 @@ CREATE TABLE IF NOT EXISTS entries (
     detected_vehicle_number TEXT,
     vehicle_number TEXT NOT NULL,
     weight NUMERIC(10, 2) NOT NULL,
-    status entry_status NOT NULL DEFAULT 'pending',
-    auto_approved BOOLEAN NOT NULL DEFAULT FALSE,
     center_id INT NOT NULL REFERENCES centers(id) ON DELETE RESTRICT,
     customer_id INT REFERENCES customers(id) ON DELETE RESTRICT,
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_by INT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    approved_by INT REFERENCES users(id) ON DELETE RESTRICT DEFAULT NULL,
     images TEXT[] DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -180,7 +172,7 @@ CREATE TABLE IF NOT EXISTS entries (
 );
 
 CREATE INDEX IF NOT EXISTS idx_entries_factory_vehicle 
-ON entries (factory_id, vehicle_number, status, created_at DESC)
+ON entries (factory_id, vehicle_number, created_at DESC)
 WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_entries_factory_center_created
@@ -195,20 +187,12 @@ CREATE INDEX IF NOT EXISTS idx_entries_created_by
 ON entries (factory_id, created_by)
 WHERE deleted_at IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_entries_approved_by
-ON entries (factory_id, approved_by)
-WHERE deleted_at IS NULL;
-
 CREATE INDEX IF NOT EXISTS idx_entries_center
 ON entries (factory_id, center_id)
 WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_entries_customer
 ON entries (factory_id, customer_id)
-WHERE deleted_at IS NULL;
-
-CREATE INDEX IF NOT EXISTS idx_entries_fifo_approval
-ON entries (factory_id, center_id, vehicle_number, status, created_at ASC)
 WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_entries_vehicle_trgm

@@ -179,6 +179,15 @@ For any JavaScript / TypeScript / Node modifications:
 - **Zero Raw Spreads**: Do not add `...props` to internal custom components unless there is a concrete, actively used requirement across callers.
 - **Parent-Driven API Design**: Components must expose the minimum prop surface required by their current usage in the application. Do not anticipate future callers by adding unused props.
 
+## 13. Strict Prohibition of N+1 Queries & Batch Operations
+
+**Strictly eliminate N+1 queries. Never execute queries or API calls inside iterative loops.**
+
+- **Zero DB/API Calls in Loops**: NEVER run database queries (e.g. Supabase `.from(...)`, SQL `SELECT`/`UPDATE`/`DELETE`), HTTP requests, or asynchronous fetches inside `for`, `for...of`, `while`, `.map()`, or `.forEach()` loops.
+- **Constant O(1) Batch Queries**: When checking, fetching, or mutating records for multiple identifiers or foreign keys, aggregate target IDs into an array and execute a single batch query (e.g. `.in("id", targetIds)`, `.in("user_id", targetIds)`, SQL `IN (...)`).
+- **In-Memory Aggregation**: Aggregate counts, maps, lookups, or conflicts in application memory after fetching the batched result set rather than querying row-by-row.
+- **Bulk Mutations**: Use bulk updates/deletions (`.in("id", targetIds).delete()` or `.in("id", targetIds).update(...)`) instead of individual per-record operations.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.

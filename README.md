@@ -80,6 +80,23 @@ The `/settings` route provides facility configuration controls powered by the un
   - **Client-Side Zod Validation**: Form validates against `updateFactorySchema` before dispatching updates.
   - **Dirty State Tracking**: Save Changes and Reset buttons detect client form changes with disabled controls when pristine, `<Spinner>` indicators during requests, and inline timestamp tracking.
 
+## Users Module & Administration
+
+The `/users` route provides administrative user management powered by the `/api/users` endpoint:
+
+- **Backend Endpoints**: `GET`, `POST`, `PATCH`, `DELETE /api/users`
+  - **`GET /api/users`**: Multi-column sorting (`id`, `username`, `name`, `role`, `created_at`, `updated_at`), search (across `name` and `username`), role filter, date range filter, and server-side pagination with exact total counts. Excludes `password_hash` from the response.
+  - **`POST /api/users`**: Strict Zod validation (`username`, `name`, `role`, `password`), enforces username uniqueness across active accounts (`deleted_at IS NULL`), hashes passwords with Argon2id, and provisions the user for Factory ID 1.
+  - **`PATCH /api/users`**: Validates input, verifies username uniqueness if updated, optionally resets and re-hashes passwords with Argon2id when provided, and updates user profile and role.
+  - **`DELETE /api/users`**: Supports single (`id`) and bulk (`ids`) deletion. Performs a pre-flight integrity check across `entries` (`created_by`, `approved_by`), `tickets` (`user_id`), and `customers` (`user_id`). Blocks deletion with HTTP 409 Conflict if linked historical records exist. Soft-deletes (`deleted_at: NOW()`) when safe.
+- **Features & UX**:
+  - **Add User Modal**: Streamlined form to provision new users with role selection (`Admin`, `Manager`, `Operator`, `Base`).
+  - **Edit User Modal**: In-place profile and role editing with optional password update field.
+  - **Protected Deletion Modal**: Confirmation dialog with automated warning banner displaying the exact linked record conflict details if deletion is blocked.
+  - **Batch Operations**: Multi-row selection with bulk deletion action and account counter.
+  - **Role Badges & Faceted Filter**: Color-coded badges for all 5 roles (`Admin`, `Manager`, `Operator`, `Base`, `Hardware`) with quick role filter in the toolbar.
+  - **State Persistence**: Zustand-powered persistence (`TABLE_ID = "users"`) retaining search queries, filters, date ranges, multi-sort orders, column visibility, and pagination in `localStorage`.
+
 ## Getting Started
 
 First, run the development server:

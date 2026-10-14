@@ -157,7 +157,7 @@ export function CustomerUserDialog({
           <HugeiconsIcon icon={AlertCircleIcon} className="mt-0.5 size-4 shrink-0" />
           <span>
             Disabling portal access will revoke this customer&apos;s login credentials and prevent
-            them from viewing tickets online.
+            them from viewing weighments online.
           </span>
         </div>
       )}

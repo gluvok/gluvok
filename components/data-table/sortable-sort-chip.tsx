@@ -44,10 +44,10 @@ export function SortableSortChip({
     <Badge
       ref={setNodeRef}
       style={style}
-      variant="secondary"
+      variant="outline"
       {...(isDraggable ? { ...attributes, ...listeners } : {})}
       className={cn(
-        "shrink-0 gap-1 py-0.5 pl-1.5 pr-1 text-2xs font-normal select-none transition-transform duration-200 ease-out",
+        "shrink-0 gap-1 py-0.5 pl-1.5 pr-1 text-2xs font-normal select-none transition-transform duration-200 ease-out border-primary/25 bg-primary/5 hover:bg-primary/10 text-foreground",
         isDraggable && "cursor-grab active:cursor-grabbing touch-none",
         isDragging && "opacity-30 border-dashed border-primary/40",
       )}
@@ -79,7 +79,7 @@ export function SortableSortChip({
         onPointerDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onClick={() => onRemove(sortRule.id)}
-        className="size-4 rounded-full p-0 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
+        className="size-4 rounded-full p-0 text-muted-foreground hover:bg-primary/20 hover:text-primary"
         aria-label={`Remove ${colTitle} sort`}
       >
         <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />

@@ -22,6 +22,25 @@ Navigation routes, metadata, and icons are centrally defined in [`lib/navigation
 
 The layout integrates `SidebarProvider` and `SidebarInset` with a collapsible sidebar trigger and a dynamic header page title (`AppBreadcrumb`) that reflects the current route without breadcrumb arrows. The sidebar's collapsed/expanded state is persisted across route navigations and page reloads via server-read cookies (`sidebar_state`).
 
+## Design System & Theme Standards
+
+The platform adopts a unified **Rikyū-cha (利休茶)** Japanese roasted matcha / tea-moss green color scheme with subtle Wabi-Sabi warm undertones:
+
+- **Primary Accent (`#66684F`)**: Authoritative Rikyū matcha moss green with pure white text (`#FFFFFF`) and `#52543D` hover states in light mode; softer elevated matcha (`#8A8D6E`) with dark charcoal text (`#14160F`) in dark mode.
+- **Ambient Wabi-Sabi Surfaces (`app/globals.css`)**:
+  - **Light Mode**: Warm rice-paper/alabaster background (`oklch(0.992 0.005 105)`), subtle tea-wash borders (`oklch(0.915 0.012 105)`), soft muted backgrounds, and crisp card surfaces.
+  - **Dark Mode**: Deep forest tea-charcoal background (`oklch(0.155 0.010 105)`), dark matcha card surfaces (`oklch(0.205 0.014 105)`), and soft sage borders.
+- **Active Navigation Styling (`components/nav-group.tsx`)**: Active sidebar items receive a soft tea-moss wash (`bg-primary/10`), crisp bold matcha text (`text-primary font-semibold`), and highlighted primary icons.
+- **Botanical & Earthy Role Badges (`app/users/columns.tsx`)**:
+  - **Customer**: Warm olive/sage with `UserCheck01Icon` (`text-emerald-800 border-emerald-200/80 bg-emerald-500/10 dark:text-emerald-300`).
+  - **Operator**: Rikyū-cha tea-moss with `HeadsetIcon` (`text-primary border-primary/30 bg-primary/10`).
+  - **Manager**: Slate-indigo with `Briefcase01Icon` (`text-indigo-800 border-indigo-200/80 bg-indigo-500/10`).
+  - **Admin**: Charcoal slate with `CrownIcon` (`text-zinc-800 border-zinc-300/80 bg-zinc-500/10`).
+  - **Hardware**: Warm bronze/amber with `SecurityCheckIcon` (`text-amber-800 border-amber-300/80 bg-amber-500/10`).
+  - **Base**: Muted stone (`text-stone-700 border-stone-200/80 bg-stone-500/10`).
+- **Interactive Criteria Chips (`components/data-table/`)**: Active date range filters (`DataTableDateRangeChip`) and multi-column sort chips (`SortableSortChip`) feature subtle matcha-tinted borders and backgrounds (`border-primary/25 bg-primary/10 text-primary`) for clear hierarchy and instant visual scanning.
+- **Toast Feedback**: Top-right anchored (`top-4 right-4`) with `font-heading` titles and semantic status colors.
+
 ## Centers Module & Data Table
 
 The `/centers` route provides a full-featured data table built with **TanStack Table v9** powered by server-side execution directly against Supabase:

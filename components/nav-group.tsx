@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { cn } from "@/lib/utils";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -35,6 +36,10 @@ export function NavGroup({ label, items, className }: NavGroupProps) {
                   render={<Link href={item.url} />}
                   isActive={isActive}
                   tooltip={item.title}
+                  className={cn(
+                    isActive &&
+                      "bg-primary/10 text-primary font-semibold hover:bg-primary/15 hover:text-primary dark:bg-primary/15 dark:text-primary-foreground [&>svg]:text-primary",
+                  )}
                 >
                   <HugeiconsIcon icon={item.icon} />
                   <span>{item.title}</span>

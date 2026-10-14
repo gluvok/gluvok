@@ -16,14 +16,17 @@ export function DataTableDateRangeChip({ dateRange, onRemove }: DataTableDateRan
   if (!dateRange?.from) return null;
 
   return (
-    <Badge variant="secondary" className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal">
+    <Badge
+      variant="outline"
+      className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
+    >
       <HugeiconsIcon
         icon={Calendar01Icon}
-        className="size-2.5 text-muted-foreground shrink-0"
+        className="size-2.5 text-primary shrink-0"
         data-icon="inline-start"
       />
-      <span className="text-muted-foreground">Created:</span>
-      <span className="font-medium">
+      <span className="text-primary/80">Created:</span>
+      <span className="font-medium text-primary">
         {dateRange.to
           ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
           : format(dateRange.from, "LLL dd, y")}
@@ -33,7 +36,7 @@ export function DataTableDateRangeChip({ dateRange, onRemove }: DataTableDateRan
         variant="ghost"
         size="icon-xs"
         onClick={onRemove}
-        className="size-4 rounded-full p-0 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
+        className="size-4 rounded-full p-0 text-primary/70 hover:bg-primary/20 hover:text-primary"
         aria-label="Remove date range filter"
       >
         <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />

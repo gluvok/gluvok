@@ -156,7 +156,7 @@ export function FactoryForm({
       {/* 2-Column Metadata Stat Strip (Created On & Last Modified) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg bg-muted/30 p-3.5 text-xs border border-border/60">
         <div className="flex items-center gap-2.5">
-          <div className="flex size-7 items-center justify-center rounded-md bg-background border text-muted-foreground">
+          <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 border border-primary/20 text-primary">
             <HugeiconsIcon icon={Calendar01Icon} className="size-3.5" />
           </div>
           <div className="flex flex-col">
@@ -167,7 +167,7 @@ export function FactoryForm({
           </div>
         </div>
         <div className="flex items-center gap-2.5">
-          <div className="flex size-7 items-center justify-center rounded-md bg-background border text-muted-foreground">
+          <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 border border-primary/20 text-primary">
             <HugeiconsIcon icon={Clock01Icon} className="size-3.5" />
           </div>
           <div className="flex flex-col">

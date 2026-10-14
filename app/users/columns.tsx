@@ -29,6 +29,7 @@ import {
   MoreHorizontalIcon,
   SecurityCheckIcon,
   TextFontIcon,
+  UserCheck01Icon,
   UserIcon,
 } from "@hugeicons/core-free-icons";
 import { type DataTableFeatures } from "@/components/data-table/data-table-features";
@@ -47,7 +48,7 @@ function getRoleBadge(role: UserRole) {
       return (
         <Badge
           variant="outline"
-          className="gap-1 text-2xs font-normal text-slate-800 border-slate-300/80 bg-slate-500/5 dark:text-slate-200 dark:border-slate-700/80 dark:bg-slate-500/10"
+          className="gap-1 text-2xs font-normal text-zinc-800 border-zinc-300/80 bg-zinc-500/10 dark:text-zinc-200 dark:border-zinc-700/80 dark:bg-zinc-500/15"
         >
           <HugeiconsIcon icon={CrownIcon} className="size-3" />
           Admin
@@ -57,7 +58,7 @@ function getRoleBadge(role: UserRole) {
       return (
         <Badge
           variant="outline"
-          className="gap-1 text-2xs font-normal text-blue-700 border-blue-200/80 bg-blue-500/5 dark:text-blue-300 dark:border-blue-900/40 dark:bg-blue-950/20"
+          className="gap-1 text-2xs font-normal text-indigo-800 border-indigo-200/80 bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-900/40 dark:bg-indigo-950/30"
         >
           <HugeiconsIcon icon={Briefcase01Icon} className="size-3" />
           Manager
@@ -67,7 +68,7 @@ function getRoleBadge(role: UserRole) {
       return (
         <Badge
           variant="outline"
-          className="gap-1 text-2xs font-normal text-emerald-700 border-emerald-200/80 bg-emerald-500/5 dark:text-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+          className="gap-1 text-2xs font-normal text-primary border-primary/30 bg-primary/10 dark:text-primary dark:border-primary/40 dark:bg-primary/15"
         >
           <HugeiconsIcon icon={HeadsetIcon} className="size-3" />
           Operator
@@ -77,18 +78,29 @@ function getRoleBadge(role: UserRole) {
       return (
         <Badge
           variant="outline"
-          className="gap-1 text-2xs font-normal text-zinc-600 border-zinc-200/80 bg-zinc-500/5 dark:text-zinc-400 dark:border-zinc-800/80 dark:bg-zinc-900/20"
+          className="gap-1 text-2xs font-normal text-stone-700 border-stone-200/80 bg-stone-500/10 dark:text-stone-300 dark:border-stone-800/80 dark:bg-stone-900/30"
         >
           <HugeiconsIcon icon={UserIcon} className="size-3" />
           Base User
+        </Badge>
+      );
+    case "customer":
+      return (
+        <Badge
+          variant="outline"
+          className="gap-1 text-2xs font-normal text-emerald-800 border-emerald-200/80 bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/30"
+        >
+          <HugeiconsIcon icon={UserCheck01Icon} className="size-3" />
+          Customer
         </Badge>
       );
     case "hardware":
       return (
         <Badge
           variant="outline"
-          className="gap-1 text-2xs font-normal text-amber-700 border-amber-200/80 bg-amber-500/5 dark:text-amber-300 dark:border-amber-900/40 dark:bg-amber-950/20"
+          className="gap-1 text-2xs font-normal text-amber-800 border-amber-300/80 bg-amber-500/10 dark:text-amber-300 dark:border-amber-900/40 dark:bg-amber-950/30"
         >
+          <HugeiconsIcon icon={SecurityCheckIcon} className="size-3" />
           Hardware
         </Badge>
       );

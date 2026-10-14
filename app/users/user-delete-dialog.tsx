@@ -88,7 +88,7 @@ export function UserDeleteDialog({ open, onOpenChange, users, onSuccess }: UserD
           </div>
           <DialogDescription>
             {isBatch
-              ? `Are you sure you want to delete these ${users.length} accounts? Accounts with linked entries, tickets, or customers cannot be deleted.`
+              ? `Are you sure you want to delete these ${users.length} accounts? Accounts with linked entries or tickets cannot be deleted.`
               : users[0]
                 ? `Are you sure you want to delete "${users[0].name}" (@${users[0].username})? Accounts with linked operational history cannot be deleted.`
                 : "Confirm account deletion."}

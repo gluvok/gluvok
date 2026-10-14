@@ -214,10 +214,11 @@ export const useDataTableStore = create<DataTableStoreState>()(
 );
 
 export function useTableHydrated() {
+  const storeHydrated = useDataTableStore((state) => state._hasHydrated);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    if (useDataTableStore.persist.hasHydrated()) {
+    if (useDataTableStore.persist.hasHydrated() || useDataTableStore.getState()._hasHydrated) {
       setHydrated(true);
       return;
     }
@@ -226,10 +227,12 @@ export function useTableHydrated() {
       setHydrated(true);
     });
 
+    setHydrated(true);
+
     return () => {
       unsub();
     };
   }, []);
 
-  return hydrated;
+  return storeHydrated || hydrated;
 }

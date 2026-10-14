@@ -1,15 +1,19 @@
 import { z } from "zod";
 
-export const USER_ROLES = ["admin", "manager", "operator", "base", "hardware"] as const;
+export const USER_ROLES = ["admin", "manager", "operator", "base", "hardware", "customer"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
-export const HUMAN_ROLES = ["admin", "manager", "operator", "base"] as const;
-export type HumanRole = (typeof HUMAN_ROLES)[number];
+export const STAFF_ROLES = ["admin", "manager", "operator", "base"] as const;
+export type StaffRole = (typeof STAFF_ROLES)[number];
+
+export const HUMAN_ROLES = STAFF_ROLES;
+export type HumanRole = StaffRole;
 
 export interface User {
   id: number;
   username: string;
   name: string;
+  father_name?: string | null;
   role: UserRole;
   factory_id: number;
   created_at: string;
@@ -18,7 +22,9 @@ export interface User {
 }
 
 export const userRoleEnum = z.enum(USER_ROLES);
-export const humanRoleEnum = z.enum(HUMAN_ROLES);
+export const staffRoleEnum = z.enum(STAFF_ROLES);
+export const humanRoleEnum = staffRoleEnum;
+export const assignableRoleEnum = z.enum(["admin", "manager", "operator", "base", "customer"]);
 
 export const createUserSchema = z.object({
   username: z
@@ -35,7 +41,8 @@ export const createUserSchema = z.object({
     .trim()
     .min(1, "Name is required")
     .max(100, "Name must not exceed 100 characters"),
-  role: humanRoleEnum,
+  father_name: z.string().trim().max(100).optional().or(z.literal("")),
+  role: assignableRoleEnum,
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
@@ -55,7 +62,8 @@ export const updateUserSchema = z.object({
     .trim()
     .min(1, "Name is required")
     .max(100, "Name must not exceed 100 characters"),
-  role: humanRoleEnum,
+  father_name: z.string().trim().max(100).optional().or(z.literal("")),
+  role: assignableRoleEnum.optional(),
   password: z
     .string()
     .min(6, "Password must be at least 6 characters")

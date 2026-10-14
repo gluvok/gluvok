@@ -81,20 +81,36 @@ The `/settings` route provides facility configuration controls powered by the un
 
 ## Users Module & Administration
 
-The `/users` route provides administrative user management powered by the `/api/users` endpoint:
+The `/users` route provides administrative user management powered by the unified `/api/users` endpoint:
 
 - **Backend Endpoints**: `GET`, `POST`, `PATCH`, `DELETE /api/users`
-  - **`GET /api/users`**: Multi-column sorting (`id`, `username`, `name`, `role`, `created_at`, `updated_at`), search (across `name` and `username`), role filter, date range filter, and server-side pagination with exact total counts. Excludes `password_hash` from the response.
-  - **`POST /api/users`**: Strict Zod validation (`username`, `name`, `role`, `password`), enforces username uniqueness across active accounts (`deleted_at IS NULL`), hashes passwords with Argon2id, and provisions the user for Factory ID 1.
-  - **`PATCH /api/users`**: Validates input, verifies username uniqueness if updated, optionally resets and re-hashes passwords with Argon2id when provided, and updates user profile and role.
-  - **`DELETE /api/users`**: Supports single (`id`) and bulk (`ids`) deletion. Performs a constant O(1) batched pre-flight integrity check across `entries` (`created_by`), `tickets` (`user_id`), and `customers` (`user_id`). Blocks deletion with HTTP 409 Conflict if linked historical records exist. Soft-deletes (`deleted_at: NOW()`) when safe.
+  - **`GET /api/users`**: Multi-column sorting (`id`, `username`, `name`, `father_name`, `role`, `created_at`, `updated_at`), search (across `name`, `username`, and `father_name`), role filter, date range filter, and server-side pagination with exact total counts. Defaults to factory staff accounts (`role NOT IN ('customer', 'hardware')`) unless a specific role filter like `?role=customer` is requested. Excludes `password_hash` from the response.
+  - **`POST /api/users`**: Strict Zod validation (`username`, `name`, `father_name`, `role`, `password`), enforces username uniqueness across active accounts (`deleted_at IS NULL`), hashes passwords with Argon2id, and provisions the user for Factory ID 1. Supports creating staff as well as customer accounts.
+  - **`PATCH /api/users`**: Validates input, verifies username uniqueness if updated, optionally resets and re-hashes passwords with Argon2id when provided, and updates user profile and role with strict role safety (customer accounts cannot be upgraded to staff roles, and staff accounts cannot become customer accounts).
+  - **`DELETE /api/users`**: Supports single (`id`) and bulk (`ids`) deletion. Performs constant O(1) batched pre-flight integrity checks partitioned by role:
+    - **Staff Users**: verified against `entries.created_by` and `tickets.user_id`.
+    - **Customer Users**: verified against `entries.customer_id`.
+      Blocks deletion with HTTP 409 Conflict if linked historical records exist. Soft-deletes (`deleted_at: NOW()`) when safe.
 - **Features & UX**:
   - **Add User Modal**: Streamlined form to provision new users with role selection (`Admin`, `Manager`, `Operator`, `Base`).
   - **Edit User Modal**: In-place profile and role editing with optional password update field.
   - **Protected Deletion Modal**: Confirmation dialog with automated warning banner displaying the exact linked record conflict details if deletion is blocked.
   - **Batch Operations**: Multi-row selection with bulk deletion action and account counter.
-  - **Role Badges & Faceted Filter**: Color-coded badges for all 5 roles (`Admin`, `Manager`, `Operator`, `Base`, `Hardware`) with quick role filter in the toolbar.
+  - **Role Badges & Faceted Filter**: Color-coded badges for all roles (`Admin`, `Manager`, `Operator`, `Base`, `Hardware`) with quick role filter in the toolbar.
   - **State Persistence**: Zustand-powered persistence (`TABLE_ID = "users"`) retaining search queries, filters, date ranges, multi-sort orders, column visibility, and pagination in `localStorage`.
+
+## Customers Module
+
+The `/customers` route provides agricultural customer and client account management utilizing the unified `/api/users?role=customer` backend:
+
+- **Unified Identity Storage**: All customer accounts live directly in the `users` table with `role = 'customer'` and optional `father_name` column for rural agricultural identity matching.
+- **Data Table Features**:
+  - **Search**: Debounced real-time search across `name`, `username`, and `father_name`.
+  - **Creation Date Range**: Date filter with quick range selection.
+  - **Add Customer Modal**: Purpose-built modal for onboarding customers with full name, father's name, username handle, and initial portal password (no role dropdown).
+  - **Edit Customer Modal**: Edit customer details, update father's name, or reset portal password without role exposure.
+  - **Deletion Safeguards**: Single and batch deletion dialog with conflict safeguard banner blocking deletion if the customer has linked entries.
+  - **State Persistence**: Zustand-powered persistence (`TABLE_ID = "customers"`) for independent pagination, sorting, search, and visibility state in `localStorage`.
 
 ## Getting Started
 
@@ -131,10 +147,10 @@ pnpm run seed:test:clean
 Running `pnpm run seed:test` or `pnpm run seed:test:clean` provisions high-volume fixtures specifically tailored for testing TanStack Table pagination, column sorting, and filtering:
 
 - **Factories**: 2 (`Default Factory`, `Apex Agro Logistics`)
-- **Users**: 28 across all 5 roles (`admin`, `manager`, `operator`, `base`, `hardware`)
+- **Users**: Staff, hardware, and customer accounts in users table
 - **Centers**: 50 (35 in Factory 1, 15 in Factory 2) with staggered `created_at` dates (ideal for testing 10, 20, 30, 40, and 50 page sizes)
 - **Commodities**: 20 bulk agricultural commodities
-- **Customers**: 50 customer profiles
+- **Customers**: 50 customer accounts (`role: customer` in `users` table)
 - **Entries**: 100 entries (60 paired for weighment cycles + 40 standalone entries)
 - **Weighments**: 30 linked inbound/outbound cycles
 - **Tickets**: 40 support tickets (20 linked to entries, 20 linked to weighments)
@@ -146,7 +162,7 @@ Running `pnpm run seed:test` or `pnpm run seed:test:clean` provisions high-volum
 - **Admin**: `admin1` / `admin123`
 - **Manager**: `manager1` / `manager123`
 - **Operator**: `operator1`, `operator3`, `operator4`, `operator5` / `operator123`
-- **Customer (Base)**: `customer1`, `customer2`, `customer3`, `customer4`, `customer5` / `user123`
+- **Customer**: `customer1`, `customer2`, `customer3`, `customer4`, `customer5` / `user123`
 - **Hardware (Edge Scale)**: `pi1`, `pi3`, `pi4`, `pi5`, `pi6` / `hardware123`
 
 **Factory 2 (`Apex Agro Logistics`)**:
@@ -154,7 +170,7 @@ Running `pnpm run seed:test` or `pnpm run seed:test:clean` provisions high-volum
 - **Admin**: `admin2` / `admin123`
 - **Manager**: `manager2` / `manager123`
 - **Operator**: `operator2`, `operator6` / `operator123`
-- **Customer (Base)**: `customer6`, `customer7`, `customer8`, `customer9`, `customer10` / `user123`
+- **Customer**: `customer6`, `customer7`, `customer8`, `customer9`, `customer10` / `user123`
 - **Hardware (Edge Scale)**: `pi2`, `pi7`, `pi8` / `hardware123`
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

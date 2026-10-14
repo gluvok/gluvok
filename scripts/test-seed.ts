@@ -9,7 +9,7 @@
 import argon2 from "argon2";
 import { supabase } from "./supabase.ts";
 
-type Role = "admin" | "manager" | "operator" | "base" | "hardware";
+type Role = "admin" | "manager" | "operator" | "base" | "hardware" | "customer";
 type Unit = "kg" | "q" | "gal";
 type WeighmentType = "unassigned" | "in" | "out";
 type TicketStatus = "pending" | "approved" | "rejected";
@@ -19,7 +19,6 @@ const TABLES_IN_CLEAR_ORDER = [
   "weighments",
   "entries",
   "sessions",
-  "customers",
   "commodities",
   "centers",
   "users",
@@ -178,41 +177,6 @@ async function main() {
       factoryId: primaryFactoryId,
     },
     {
-      username: "customer1",
-      name: "Ramesh Kumar (Account)",
-      role: "base",
-      passwordHash: userHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "customer2",
-      name: "Anita Sharma (Account)",
-      role: "base",
-      passwordHash: userHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "customer3",
-      name: "Suresh Patel (Account)",
-      role: "base",
-      passwordHash: userHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "customer4",
-      name: "Rajendra Singh (Account)",
-      role: "base",
-      passwordHash: userHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "customer5",
-      name: "Vikram Rathore (Account)",
-      role: "base",
-      passwordHash: userHash,
-      factoryId: primaryFactoryId,
-    },
-    {
       username: "pi1",
       name: "Hardware Scale - Main Weighbridge",
       role: "hardware",
@@ -275,41 +239,6 @@ async function main() {
       name: "Apex Terminal Operator 2",
       role: "operator",
       passwordHash: operatorHash,
-      factoryId: secondaryFactoryId,
-    },
-    {
-      username: "customer6",
-      name: "Apex Agritech Rep (Account)",
-      role: "base",
-      passwordHash: userHash,
-      factoryId: secondaryFactoryId,
-    },
-    {
-      username: "customer7",
-      name: "Kalyan Krishi Kendra (Account)",
-      role: "base",
-      passwordHash: userHash,
-      factoryId: secondaryFactoryId,
-    },
-    {
-      username: "customer8",
-      name: "Vidarbha Agro Farms (Account)",
-      role: "base",
-      passwordHash: userHash,
-      factoryId: secondaryFactoryId,
-    },
-    {
-      username: "customer9",
-      name: "Marathwada Bio Fuels (Account)",
-      role: "base",
-      passwordHash: userHash,
-      factoryId: secondaryFactoryId,
-    },
-    {
-      username: "customer10",
-      name: "Deccan Grain Carriers (Account)",
-      role: "base",
-      passwordHash: userHash,
       factoryId: secondaryFactoryId,
     },
     {
@@ -884,34 +813,37 @@ async function main() {
 
   const customerMap = new Map<string, number>();
 
-  for (const cust of customerRawConfigs) {
-    const userId = cust.username ? (userMap.get(cust.username) ?? null) : null;
+  for (let i = 0; i < customerRawConfigs.length; i++) {
+    const cust = customerRawConfigs[i];
+    const username = cust.username ?? `customer${i + 1}`;
     const { data: existing } = await supabase
-      .from("customers")
+      .from("users")
       .select("id")
-      .eq("name", cust.name)
-      .eq("factory_id", cust.factoryId)
+      .eq("username", username)
       .maybeSingle();
 
     if (existing) {
       customerMap.set(cust.name, existing.id);
     } else {
       const { data: created, error } = await supabase
-        .from("customers")
+        .from("users")
         .insert({
+          username,
           name: cust.name,
           father_name: cust.fatherName,
-          user_id: userId,
+          role: "customer",
+          password_hash: userHash,
           factory_id: cust.factoryId,
           created_at: daysAgo(cust.daysOffset, 25),
         })
         .select("id")
         .single();
-      if (error || !created) throw error || new Error(`Failed to create customer ${cust.name}`);
+      if (error || !created)
+        throw error || new Error(`Failed to create customer user ${cust.name}`);
       customerMap.set(cust.name, created.id);
     }
   }
-  console.log(`  ✓ Seeded ${customerMap.size} customers.`);
+  console.log(`  ✓ Seeded ${customerMap.size} customer accounts in users table.`);
 
   // Helpers to get arrays of IDs for relationships
   const factory1CenterIds = factory1CenterNames.map((n) => centerMap.get(n)!);

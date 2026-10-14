@@ -14,12 +14,14 @@ import {
   updateUserSchema,
   deleteUserSchema,
   USER_ROLES,
+  type User,
 } from "@/app/users/types";
 
 const ALLOWED_SORT_COLUMNS = [
   "id",
   "username",
   "name",
+  "father_name",
   "role",
   "created_at",
   "updated_at",
@@ -32,34 +34,74 @@ export async function GET(request: Request) {
     const pagination = parsePagination(searchParams);
     const sortRules = parseSorting(searchParams, ALLOWED_SORT_COLUMNS);
 
-    let query = supabase
-      .from("users")
-      .select("id, username, name, role, factory_id, created_at, updated_at", { count: "exact" })
-      .is("deleted_at", null);
+    const executeQuery = async () => {
+      let q = supabase
+        .from("users")
+        .select("id, username, name, father_name, role, factory_id, created_at, updated_at", {
+          count: "exact",
+        })
+        .is("deleted_at", null);
 
-    const search = searchParams.get("search")?.trim();
-    if (search) {
-      query = query.or(`name.ilike.%${search}%,username.ilike.%${search}%`);
-    }
+      const search = searchParams.get("search")?.trim();
+      if (search) {
+        q = q.or(`name.ilike.%${search}%,username.ilike.%${search}%,father_name.ilike.%${search}%`);
+      }
 
-    const role = searchParams.get("role")?.trim();
-    if (role && USER_ROLES.includes(role as (typeof USER_ROLES)[number])) {
-      query = query.eq("role", role);
-    }
+      const role = searchParams.get("role")?.trim();
+      if (role && USER_ROLES.includes(role as (typeof USER_ROLES)[number])) {
+        q = q.eq("role", role);
+      } else {
+        q = q.not("role", "in", '("customer","hardware")');
+      }
 
-    query = applyDateRange(query, searchParams);
-    query = applySortingAndPagination(query, sortRules, pagination);
+      q = applyDateRange(q, searchParams);
+      q = applySortingAndPagination(q, sortRules, pagination);
 
-    const { data, count, error } = await query;
+      const res = await q;
+      if (!res.error) {
+        return res;
+      }
 
-    if (error) {
+      // If father_name or role_enum customer is not yet migrated, fall back gracefully
+      if (res.error.message.includes("father_name") || res.error.message.includes("role_enum")) {
+        if (role === "customer") {
+          return { data: [] as User[], count: 0, error: null };
+        }
+        let fallbackQ = supabase
+          .from("users")
+          .select("id, username, name, role, factory_id, created_at, updated_at", {
+            count: "exact",
+          })
+          .is("deleted_at", null);
+
+        if (search) {
+          fallbackQ = fallbackQ.or(`name.ilike.%${search}%,username.ilike.%${search}%`);
+        }
+        if (role && USER_ROLES.includes(role as (typeof USER_ROLES)[number])) {
+          fallbackQ = fallbackQ.eq("role", role);
+        } else {
+          fallbackQ = fallbackQ.neq("role", "hardware");
+        }
+        fallbackQ = applyDateRange(fallbackQ, searchParams);
+        fallbackQ = applySortingAndPagination(fallbackQ, sortRules, pagination);
+        return await fallbackQ;
+      }
+
+      return res;
+    };
+
+    const result = await executeQuery();
+
+    if (result.error) {
       return NextResponse.json(
-        { error: error.message },
+        { error: result.error.message },
         { status: StatusCodes.INTERNAL_SERVER_ERROR },
       );
     }
 
-    return NextResponse.json(formatPaginatedResponse(data, count, pagination));
+    return NextResponse.json(
+      formatPaginatedResponse<User>(result.data as User[] | null, result.count, pagination),
+    );
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal Server Error";
     return NextResponse.json({ error: message }, { status: StatusCodes.INTERNAL_SERVER_ERROR });
@@ -81,7 +123,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { username, name, role, password } = validation.data;
+    const { username, name, father_name, role, password } = validation.data;
 
     // Check username uniqueness among active users
     const { data: existing, error: checkError } = await supabase
@@ -114,11 +156,12 @@ export async function POST(request: Request) {
       .insert({
         username,
         name,
+        father_name: father_name?.trim() || null,
         role,
         password_hash: passwordHash,
         factory_id: 1,
       })
-      .select("id, username, name, role, factory_id, created_at, updated_at")
+      .select("id, username, name, father_name, role, factory_id, created_at, updated_at")
       .single();
 
     if (insertError) {
@@ -131,7 +174,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         data: created,
-        message: "User created successfully.",
+        message:
+          role === "customer" ? "Customer created successfully." : "User created successfully.",
       },
       { status: StatusCodes.CREATED },
     );
@@ -156,12 +200,12 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const { id, username, name, role, password } = validation.data;
+    const { id, username, name, father_name, role, password } = validation.data;
 
     // Verify user exists and is active
     const { data: existingUser, error: fetchError } = await supabase
       .from("users")
-      .select("id, username")
+      .select("id, username, role")
       .eq("id", id)
       .is("deleted_at", null)
       .maybeSingle();
@@ -177,6 +221,28 @@ export async function PATCH(request: Request) {
       return NextResponse.json(
         { error: "User not found or has already been deleted." },
         { status: StatusCodes.NOT_FOUND },
+      );
+    }
+
+    // Role safety enforcement
+    if (existingUser.role === "hardware") {
+      return NextResponse.json(
+        { error: "Hardware accounts cannot be modified via API." },
+        { status: StatusCodes.FORBIDDEN },
+      );
+    }
+
+    if (existingUser.role === "customer" && role && role !== "customer") {
+      return NextResponse.json(
+        { error: "Customer accounts cannot be upgraded to staff roles." },
+        { status: StatusCodes.BAD_REQUEST },
+      );
+    }
+
+    if (existingUser.role !== "customer" && role === "customer") {
+      return NextResponse.json(
+        { error: "Staff accounts cannot be converted to customer accounts." },
+        { status: StatusCodes.BAD_REQUEST },
       );
     }
 
@@ -208,9 +274,16 @@ export async function PATCH(request: Request) {
     const updates: Record<string, unknown> = {
       username,
       name,
-      role,
       updated_at: new Date().toISOString(),
     };
+
+    if (father_name !== undefined) {
+      updates.father_name = father_name.trim() || null;
+    }
+
+    if (role && role !== existingUser.role) {
+      updates.role = role;
+    }
 
     if (password && password.trim().length >= 6) {
       updates.password_hash = await argon2.hash(password);
@@ -220,7 +293,7 @@ export async function PATCH(request: Request) {
       .from("users")
       .update(updates)
       .eq("id", id)
-      .select("id, username, name, role, factory_id, created_at, updated_at")
+      .select("id, username, name, father_name, role, factory_id, created_at, updated_at")
       .single();
 
     if (updateError) {
@@ -232,7 +305,7 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({
       data: updated,
-      message: "User updated successfully.",
+      message: "Account updated successfully.",
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal Server Error";
@@ -257,10 +330,10 @@ export async function DELETE(request: Request) {
 
     const targetIds = "ids" in validation.data ? validation.data.ids : [validation.data.id];
 
-    // Retrieve active target users to get their usernames
+    // Retrieve active target users with role
     const { data: targetUsers, error: fetchErr } = await supabase
       .from("users")
-      .select("id, username")
+      .select("id, username, role")
       .in("id", targetIds)
       .is("deleted_at", null);
 
@@ -278,21 +351,35 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Pre-flight check: verify none of the target users have linked records (O(1) batch queries)
-    const [entriesCreatedRes, ticketsRes, customersRes] = await Promise.all([
-      supabase
-        .from("entries")
-        .select("created_by")
-        .in("created_by", targetIds)
-        .is("deleted_at", null),
-      supabase.from("tickets").select("user_id").in("user_id", targetIds).is("deleted_at", null),
-      supabase.from("customers").select("user_id").in("user_id", targetIds).is("deleted_at", null),
+    // Partition target IDs into staff and customers
+    const staffIds = targetUsers.filter((u) => u.role !== "customer").map((u) => u.id);
+    const customerIds = targetUsers.filter((u) => u.role === "customer").map((u) => u.id);
+
+    // Pre-flight checks: batch queries per domain
+    const [entriesCreatedRes, ticketsRes, customerEntriesRes] = await Promise.all([
+      staffIds.length > 0
+        ? supabase
+            .from("entries")
+            .select("created_by")
+            .in("created_by", staffIds)
+            .is("deleted_at", null)
+        : Promise.resolve({ data: [] }),
+      staffIds.length > 0
+        ? supabase.from("tickets").select("user_id").in("user_id", staffIds).is("deleted_at", null)
+        : Promise.resolve({ data: [] }),
+      customerIds.length > 0
+        ? supabase
+            .from("entries")
+            .select("customer_id")
+            .in("customer_id", customerIds)
+            .is("deleted_at", null)
+        : Promise.resolve({ data: [] }),
     ]);
 
     // Aggregate counts in memory
-    const entriesCounts: Record<number, number> = {};
+    const entriesCreatedCounts: Record<number, number> = {};
     for (const r of entriesCreatedRes.data ?? []) {
-      entriesCounts[r.created_by] = (entriesCounts[r.created_by] || 0) + 1;
+      entriesCreatedCounts[r.created_by] = (entriesCreatedCounts[r.created_by] || 0) + 1;
     }
 
     const ticketsCounts: Record<number, number> = {};
@@ -300,22 +387,27 @@ export async function DELETE(request: Request) {
       ticketsCounts[r.user_id] = (ticketsCounts[r.user_id] || 0) + 1;
     }
 
-    const customersCounts: Record<number, number> = {};
-    for (const r of customersRes.data ?? []) {
-      customersCounts[r.user_id] = (customersCounts[r.user_id] || 0) + 1;
+    const customerEntriesCounts: Record<number, number> = {};
+    for (const r of customerEntriesRes.data ?? []) {
+      if (r.customer_id) {
+        customerEntriesCounts[r.customer_id] = (customerEntriesCounts[r.customer_id] || 0) + 1;
+      }
     }
 
     const blockedUsers: { id: number; username: string; reasons: string[] }[] = [];
 
     for (const u of targetUsers) {
       const reasons: string[] = [];
-      const ec = entriesCounts[u.id] || 0;
-      const tc = ticketsCounts[u.id] || 0;
-      const cc = customersCounts[u.id] || 0;
 
-      if (ec > 0) reasons.push(`${ec} entry(s) created`);
-      if (tc > 0) reasons.push(`${tc} ticket(s)`);
-      if (cc > 0) reasons.push(`${cc} customer profile(s)`);
+      if (u.role === "customer") {
+        const custEntries = customerEntriesCounts[u.id] || 0;
+        if (custEntries > 0) reasons.push(`${custEntries} linked entry(s)`);
+      } else {
+        const createdCount = entriesCreatedCounts[u.id] || 0;
+        const tickCount = ticketsCounts[u.id] || 0;
+        if (createdCount > 0) reasons.push(`${createdCount} entry(s) created`);
+        if (tickCount > 0) reasons.push(`${tickCount} ticket(s)`);
+      }
 
       if (reasons.length > 0) {
         blockedUsers.push({ id: u.id, username: u.username, reasons });
@@ -328,7 +420,7 @@ export async function DELETE(request: Request) {
         .join("; ");
       return NextResponse.json(
         {
-          error: `Cannot delete user(s): ${details}. Historical operational records must be preserved.`,
+          error: `Cannot delete account(s): ${details}. Historical operational records must be preserved.`,
           blockedUsers,
         },
         { status: StatusCodes.CONFLICT },
@@ -351,7 +443,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Successfully deleted ${targetIds.length} user${targetIds.length > 1 ? "s" : ""}.`,
+      message: `Successfully deleted ${targetIds.length} account${targetIds.length > 1 ? "s" : ""}.`,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal Server Error";

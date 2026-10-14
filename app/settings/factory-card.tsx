@@ -22,6 +22,7 @@ import {
   RefreshIcon,
 } from "@hugeicons/core-free-icons";
 import { FormDirtyIndicator } from "@/components/form-dirty-indicator";
+import { LoadingState } from "@/components/loading-state";
 import { type Factory, type FactoryApiResponse, updateFactorySchema } from "./types";
 import { FactoryForm } from "./factory-form";
 
@@ -118,14 +119,7 @@ export function FactoryCard() {
   }, [name, receiptImagesPerRow]);
 
   if (loading) {
-    return (
-      <div className="flex h-72 w-full items-center justify-center">
-        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-          <Spinner className="size-6 text-muted-foreground" />
-          <span className="text-xs">Loading factory preferences...</span>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading factory preferences..." className="h-72 w-full" />;
   }
 
   if (error || !factory) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Spinner } from "@/components/ui/spinner";
+import { LoadingState } from "@/components/loading-state";
 
 interface DataTableHydrationCardProps {
   message?: string;
@@ -9,12 +9,5 @@ interface DataTableHydrationCardProps {
 export function DataTableHydrationCard({
   message = "Loading table preferences...",
 }: DataTableHydrationCardProps) {
-  return (
-    <div className="flex h-64 items-center justify-center rounded-md border border-border bg-card">
-      <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-        <Spinner className="size-6 text-muted-foreground" />
-        <span className="text-xs">{message}</span>
-      </div>
-    </div>
-  );
+  return <LoadingState message={message} className="rounded-md border border-border bg-card" />;
 }

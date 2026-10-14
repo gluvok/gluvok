@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Spinner } from "@/components/ui/spinner";
+import { LoadingState } from "@/components/loading-state";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AlertCircleIcon } from "@hugeicons/core-free-icons";
@@ -47,12 +47,7 @@ export function DataTableContent<TData extends RowData>({
           </div>
         </div>
       ) : loading ? (
-        <div className="flex h-64 items-center justify-center">
-          <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-            <Spinner className="size-6 text-muted-foreground" />
-            <span className="text-xs">{loadingMessage}</span>
-          </div>
-        </div>
+        <LoadingState message={loadingMessage} />
       ) : (
         <Table>
           <TableHeader>

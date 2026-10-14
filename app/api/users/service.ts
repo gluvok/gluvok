@@ -27,6 +27,46 @@ export const ALLOWED_SORT_COLUMNS = [
   "updated_at",
 ] as const;
 
+export const USER_SELECT_PROJECTION =
+  "id, username, name, role, factory_id, created_at, updated_at" as const;
+
+async function assertUsernameAvailable(username: string, excludeId?: number): Promise<void> {
+  let query = supabase.from("users").select("id").eq("username", username).is("deleted_at", null);
+
+  if (excludeId !== undefined) {
+    query = query.neq("id", excludeId);
+  }
+
+  const { data, error } = await query.maybeSingle();
+
+  if (error) {
+    throw new ServiceError(error.message, StatusCodes.INTERNAL_SERVER_ERROR);
+  }
+
+  if (data) {
+    throw new ServiceError(
+      `Username "${username}" is already taken by an active account.`,
+      StatusCodes.CONFLICT,
+    );
+  }
+}
+
+function countOccurrences(
+  items: unknown[] | null | undefined,
+  key: string,
+): Record<number, number> {
+  const counts: Record<number, number> = {};
+  for (const item of items ?? []) {
+    if (item && typeof item === "object" && key in item) {
+      const val = (item as Record<string, unknown>)[key];
+      if (typeof val === "number") {
+        counts[val] = (counts[val] || 0) + 1;
+      }
+    }
+  }
+  return counts;
+}
+
 export class ServiceError extends Error {
   constructor(
     message: string,
@@ -48,7 +88,7 @@ export async function fetchUsersList(searchParams: URLSearchParams) {
 
   let q = supabase
     .from("users")
-    .select("id, username, name, role, factory_id, created_at, updated_at", {
+    .select(USER_SELECT_PROJECTION, {
       count: "exact",
     })
     .is("deleted_at", null);
@@ -71,7 +111,7 @@ export async function fetchUsersList(searchParams: URLSearchParams) {
 
   const result = await q;
   if (result.error) {
-    throw new ServiceError(result.error.message, 500);
+    throw new ServiceError(result.error.message, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
   return formatPaginatedResponse<User>(result.data as User[] | null, result.count, pagination);
@@ -86,23 +126,7 @@ export async function createUserAccount(data: CreateUserInput) {
   const cleanPassword = password?.trim() || null;
 
   if (cleanUsername) {
-    const { data: existing, error: checkError } = await supabase
-      .from("users")
-      .select("id")
-      .eq("username", cleanUsername)
-      .is("deleted_at", null)
-      .maybeSingle();
-
-    if (checkError) {
-      throw new ServiceError(checkError.message, StatusCodes.INTERNAL_SERVER_ERROR);
-    }
-
-    if (existing) {
-      throw new ServiceError(
-        `Username "${cleanUsername}" is already taken by an active account.`,
-        StatusCodes.CONFLICT,
-      );
-    }
+    await assertUsernameAvailable(cleanUsername);
   }
 
   const passwordHash = cleanPassword ? await argon2.hash(cleanPassword) : null;
@@ -116,7 +140,7 @@ export async function createUserAccount(data: CreateUserInput) {
       password_hash: passwordHash,
       factory_id: 1,
     })
-    .select("id, username, name, role, factory_id, created_at, updated_at")
+    .select(USER_SELECT_PROJECTION)
     .single();
 
   if (insertError) {
@@ -144,7 +168,7 @@ export async function updateUserAccount(data: UpdateUserInput) {
   }
 
   if (!existingUser) {
-    throw new ServiceError("User not found or has been deleted.", 404);
+    throw new ServiceError("User not found or has been deleted.", StatusCodes.NOT_FOUND);
   }
 
   const cleanUsername = username !== undefined ? username?.trim().toLowerCase() || null : undefined;
@@ -154,24 +178,7 @@ export async function updateUserAccount(data: UpdateUserInput) {
     cleanUsername !== existingUser.username &&
     cleanUsername !== null
   ) {
-    const { data: conflict, error: conflictErr } = await supabase
-      .from("users")
-      .select("id")
-      .eq("username", cleanUsername)
-      .neq("id", id)
-      .is("deleted_at", null)
-      .maybeSingle();
-
-    if (conflictErr) {
-      throw new ServiceError(conflictErr.message, 500);
-    }
-
-    if (conflict) {
-      throw new ServiceError(
-        `Username "${cleanUsername}" is already in use by another active account.`,
-        409,
-      );
-    }
+    await assertUsernameAvailable(cleanUsername, id);
   }
 
   const updates: Record<string, unknown> = {
@@ -201,7 +208,7 @@ export async function updateUserAccount(data: UpdateUserInput) {
     .from("users")
     .update(updates)
     .eq("id", id)
-    .select("id, username, name, role, factory_id, created_at, updated_at")
+    .select(USER_SELECT_PROJECTION)
     .single();
 
   if (updateError) {
@@ -256,22 +263,9 @@ export async function deleteUserAccounts(targetIds: number[]) {
       : Promise.resolve({ data: [] }),
   ]);
 
-  const entriesCreatedCounts: Record<number, number> = {};
-  for (const r of entriesCreatedRes.data ?? []) {
-    entriesCreatedCounts[r.created_by] = (entriesCreatedCounts[r.created_by] || 0) + 1;
-  }
-
-  const ticketsCounts: Record<number, number> = {};
-  for (const r of ticketsRes.data ?? []) {
-    ticketsCounts[r.user_id] = (ticketsCounts[r.user_id] || 0) + 1;
-  }
-
-  const customerEntriesCounts: Record<number, number> = {};
-  for (const r of customerEntriesRes.data ?? []) {
-    if (r.customer_id) {
-      customerEntriesCounts[r.customer_id] = (customerEntriesCounts[r.customer_id] || 0) + 1;
-    }
-  }
+  const entriesCreatedCounts = countOccurrences(entriesCreatedRes.data, "created_by");
+  const ticketsCounts = countOccurrences(ticketsRes.data, "user_id");
+  const customerEntriesCounts = countOccurrences(customerEntriesRes.data, "customer_id");
 
   const blockedUsers: { id: number; username: string | null; reasons: string[] }[] = [];
 

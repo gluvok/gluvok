@@ -108,6 +108,14 @@ Administrative users (`/users`) and agricultural customers (`/customers`) are po
   - **Shared Form Dirty State Indicator (`components/form-dirty-indicator.tsx`)**:
     - Extracted a reusable, zero-prop-bloat indicator component encapsulating the pulsing status dot (`bg-amber-500 animate-pulse` when dirty vs `bg-emerald-500` when clean) and status label (`"You have unsaved changes."` vs `"All changes saved."`).
     - Standardized across `app/settings/factory-card.tsx` and `app/users/user-dialog-primitives.tsx` (`UserDialogShell`).
+  - **Standardized Centered Loading State (`components/loading-state.tsx`)**:
+    - Extracted a reusable loading pane (`<LoadingState message="..." className="..." />`) encapsulating the centered `Spinner` (`size-6 text-muted-foreground`) and text caption (`text-xs text-muted-foreground`).
+    - Consistently used across `components/data-table/data-table-content.tsx`, `components/data-table/data-table-hydration-card.tsx`, and `app/settings/factory-card.tsx`.
+  - **Service Layer Deduplication (`app/api/users/service.ts`)**:
+    - Single-source column projection constant (`USER_SELECT_PROJECTION = "id, username, name, role, factory_id, created_at, updated_at"`).
+    - Unified username availability assertion helper (`assertUsernameAvailable(username, excludeId)`), eliminating ~35 lines of duplicated query logic and error-handling boilerplate.
+    - Generalized relational frequency counting helper (`countOccurrences(items, key)`), eliminating 3 repetitive counting loops in `deleteUserAccounts`.
+    - Enforced `StatusCodes` from `http-status-codes` across all error paths, eliminating raw numeric status literals.
   - **Zero-Branching Component & Type Architecture (Strict DRY Compliance)**:
     - **Atomic Form Primitives (`app/users/user-dialog-primitives.tsx`)**: Extracted `UserDialogShell`, `FullNameField`, `CredentialsFields`, `CustomerPortalSwitch`, and `SystemRoleSelect`.
     - **Dedicated Dialogs**: Eliminated the redundant `user-form-dialog.tsx` wrapper; callers consume dedicated dialogs directly via `ENTITY_CONFIG`:

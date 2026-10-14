@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/toast";
 import { UserAdd01Icon, UserEdit01Icon } from "@hugeicons/core-free-icons";
 import {
@@ -10,7 +12,14 @@ import {
   SystemRoleSelect,
   UserDialogShell,
 } from "./user-dialog-primitives";
-import { createStaffUserSchema, updateStaffUserSchema, type StaffRole, type User } from "./types";
+import {
+  getStaffFormSchema,
+  type CreateStaffUserInput,
+  type StaffFormInput,
+  type StaffRole,
+  type UpdateStaffUserInput,
+  type User,
+} from "./types";
 
 interface StaffUserDialogProps {
   open: boolean;
@@ -21,102 +30,66 @@ interface StaffUserDialogProps {
 
 export function StaffUserDialog({ open, onOpenChange, user, onSuccess }: StaffUserDialogProps) {
   const isEdit = Boolean(user);
-
-  const [name, setName] = useState<string>("");
-  const [role, setRole] = useState<StaffRole>("operator");
-  const [username, setUsername] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Baseline values snapshot for pristine/dirty check
-  const [initialValues, setInitialValues] = useState<{
-    name: string;
-    role: StaffRole;
-    username: string;
-  }>({
-    name: "",
-    role: "operator",
-    username: "",
+  const schema = useMemo(() => getStaffFormSchema({ isEdit }), [isEdit]);
+
+  const {
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { isDirty, isValid, isSubmitting, errors },
+  } = useForm<StaffFormInput>({
+    resolver: zodResolver(schema),
+    mode: "onChange",
+    defaultValues: {
+      id: user?.id,
+      name: user?.name ?? "",
+      role: (user?.role as StaffRole) || "operator",
+      username: user?.username ?? "",
+      password: "",
+    },
   });
+
+  const name = watch("name");
+  const role = watch("role");
+  const username = watch("username");
+  const password = watch("password");
 
   useEffect(() => {
     if (open) {
       setFormError(null);
-      if (user) {
-        const staffRole = (user.role as StaffRole) || "operator";
-        setName(user.name);
-        setRole(staffRole);
-        setUsername(user.username ?? "");
-        setPassword("");
-        setInitialValues({
-          name: user.name,
-          role: staffRole,
-          username: user.username ?? "",
-        });
-      } else {
-        setName("");
-        setRole("operator");
-        setUsername("");
-        setPassword("");
-        setInitialValues({
-          name: "",
-          role: "operator",
-          username: "",
-        });
-      }
+      reset({
+        id: user?.id,
+        name: user?.name ?? "",
+        role: (user?.role as StaffRole) || "operator",
+        username: user?.username ?? "",
+        password: "",
+      });
     }
-  }, [open, user]);
+  }, [open, user, reset]);
 
-  const isDirty = useMemo(() => {
-    if (password.length > 0) return true;
-    if (name.trim() !== initialValues.name) return true;
-    if (role !== initialValues.role) return true;
-    if (username.trim().toLowerCase() !== initialValues.username) return true;
-    return false;
-  }, [password, name, role, username, initialValues]);
-
-  const payload = useMemo(
-    () =>
-      isEdit && user
-        ? {
-            id: user.id,
-            username: username.toLowerCase().trim(),
-            name: name.trim(),
-            role,
-            password: password.trim(),
-          }
-        : {
-            username: username.toLowerCase().trim(),
-            name: name.trim(),
-            role,
-            password: password.trim(),
-          },
-    [isEdit, user, username, name, role, password],
-  );
-
-  const isValid = useMemo(() => {
-    return isEdit
-      ? updateStaffUserSchema.safeParse(payload).success
-      : createStaffUserSchema.safeParse(payload).success;
-  }, [isEdit, payload]);
-
-  const handleSubmit = async () => {
+  const onSubmit = async (values: StaffFormInput) => {
     setFormError(null);
 
-    const validation = isEdit
-      ? updateStaffUserSchema.safeParse(payload)
-      : createStaffUserSchema.safeParse(payload);
-
-    if (!validation.success) {
-      const firstIssue = validation.error.issues[0]?.message || "Invalid input";
-      setFormError(firstIssue);
-      return;
-    }
+    const payload =
+      isEdit && user
+        ? ({
+            id: user.id,
+            name: values.name.trim(),
+            role: values.role,
+            username: values.username.toLowerCase().trim(),
+            password: values.password?.trim() ?? "",
+          } satisfies UpdateStaffUserInput)
+        : ({
+            name: values.name.trim(),
+            role: values.role,
+            username: values.username.toLowerCase().trim(),
+            password: values.password?.trim() ?? "",
+          } satisfies CreateStaffUserInput);
 
     try {
-      setIsSubmitting(true);
-
       if (isEdit) {
         await axios.patch("/api/users", payload);
         toast.add({
@@ -149,8 +122,6 @@ export function StaffUserDialog({ open, onOpenChange, user, onSuccess }: StaffUs
         title: isEdit ? "Failed to update user" : "Failed to create user",
         description: msg,
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -169,25 +140,36 @@ export function StaffUserDialog({ open, onOpenChange, user, onSuccess }: StaffUs
       isDirty={isDirty}
       isValid={isValid}
       isSubmitting={isSubmitting}
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onSubmit)}
     >
       {/* Row 1: Full Name and System Role side-by-side */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FullNameField
           value={name}
-          onChange={setName}
+          onChange={(val) => setValue("name", val, { shouldValidate: true, shouldDirty: true })}
           placeholder="e.g. Alex Morgan"
           description="Operator name displayed in audit trails."
+          error={errors.name?.message}
         />
-        <SystemRoleSelect value={role} onChange={setRole} />
+        <SystemRoleSelect
+          value={role}
+          onChange={(val) => setValue("role", val, { shouldValidate: true, shouldDirty: true })}
+          error={errors.role?.message}
+        />
       </div>
 
       {/* Row 2: Username and Password side-by-side */}
       <CredentialsFields
         username={username}
-        setUsername={setUsername}
-        password={password}
-        setPassword={setPassword}
+        setUsername={(val) =>
+          setValue("username", val, { shouldValidate: true, shouldDirty: true })
+        }
+        usernameError={errors.username?.message}
+        password={password ?? ""}
+        setPassword={(val) =>
+          setValue("password", val, { shouldValidate: true, shouldDirty: true })
+        }
+        passwordError={errors.password?.message}
         isEdit={isEdit}
         usernamePlaceholder="e.g. alex_operator"
         usernameDescription="Unique lowercase login handle."

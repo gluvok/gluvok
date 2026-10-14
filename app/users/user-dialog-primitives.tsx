@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Switch } from "@/components/ui/switch";
 import { Spinner } from "@/components/ui/spinner";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import {
   Combobox,
   ComboboxContent,
@@ -166,6 +166,7 @@ interface FullNameFieldProps {
   onChange: (val: string) => void;
   placeholder?: string;
   description?: string;
+  error?: string;
 }
 
 export function FullNameField({
@@ -173,9 +174,10 @@ export function FullNameField({
   onChange,
   placeholder = "e.g. Alex Morgan",
   description = "Account holder or enterprise name.",
+  error,
 }: FullNameFieldProps) {
   return (
-    <Field>
+    <Field data-invalid={Boolean(error)}>
       <FieldLabel htmlFor="user-name">
         <HugeiconsIcon icon={UserIcon} className="size-3.5 text-muted-foreground" />
         <span>Full Name</span>
@@ -188,8 +190,10 @@ export function FullNameField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        aria-invalid={Boolean(error)}
         className="h-8 text-xs"
       />
+      {error && <FieldError errors={[{ message: error }]} />}
       <FieldDescription>{description}</FieldDescription>
     </Field>
   );
@@ -202,8 +206,10 @@ export function FullNameField({
 interface CredentialsFieldsProps {
   username: string;
   setUsername: (val: string) => void;
+  usernameError?: string;
   password: string;
   setPassword: (val: string) => void;
+  passwordError?: string;
   isEdit: boolean;
   isPasswordRequired?: boolean;
   usernamePlaceholder?: string;
@@ -213,8 +219,10 @@ interface CredentialsFieldsProps {
 export function CredentialsFields({
   username,
   setUsername,
+  usernameError,
   password,
   setPassword,
+  passwordError,
   isEdit,
   isPasswordRequired = !isEdit,
   usernamePlaceholder = "e.g. alex_operator",
@@ -222,7 +230,7 @@ export function CredentialsFields({
 }: CredentialsFieldsProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Field>
+      <Field data-invalid={Boolean(usernameError)}>
         <FieldLabel htmlFor="user-username">
           <HugeiconsIcon icon={TextFontIcon} className="size-3.5 text-muted-foreground" />
           <span>Username</span>
@@ -235,13 +243,15 @@ export function CredentialsFields({
           value={username}
           onChange={(e) => setUsername(e.target.value.toLowerCase())}
           placeholder={usernamePlaceholder}
+          aria-invalid={Boolean(usernameError)}
           className="h-8 text-xs font-mono"
           autoComplete="off"
         />
+        {usernameError && <FieldError errors={[{ message: usernameError }]} />}
         <FieldDescription>{usernameDescription}</FieldDescription>
       </Field>
 
-      <Field>
+      <Field data-invalid={Boolean(passwordError)}>
         <FieldLabel htmlFor="user-password">
           <HugeiconsIcon icon={Key01Icon} className="size-3.5 text-muted-foreground" />
           {isPasswordRequired ? (
@@ -260,9 +270,11 @@ export function CredentialsFields({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder={isPasswordRequired ? "At least 6 characters" : "Leave blank to keep current"}
+          aria-invalid={Boolean(passwordError)}
           className="h-8 text-xs"
           autoComplete="new-password"
         />
+        {passwordError && <FieldError errors={[{ message: passwordError }]} />}
         <FieldDescription>
           {isPasswordRequired ? "Minimum 6 characters." : "Leave blank to keep current password."}
         </FieldDescription>
@@ -301,14 +313,15 @@ export function CustomerPortalSwitch({ checked, onCheckedChange }: CustomerPorta
 interface SystemRoleSelectProps {
   value: StaffRole;
   onChange: (role: StaffRole) => void;
+  error?: string;
 }
 
-export function SystemRoleSelect({ value, onChange }: SystemRoleSelectProps) {
+export function SystemRoleSelect({ value, onChange, error }: SystemRoleSelectProps) {
   const selectedOpt = ROLE_OPTIONS.find((o) => o.value === value);
   const IconComponent = selectedOpt?.icon ?? SecurityCheckIcon;
 
   return (
-    <Field>
+    <Field data-invalid={Boolean(error)}>
       <FieldLabel htmlFor="user-role">
         <HugeiconsIcon icon={SecurityCheckIcon} className="size-3.5 text-muted-foreground" />
         <span>System Role</span>
@@ -363,6 +376,7 @@ export function SystemRoleSelect({ value, onChange }: SystemRoleSelectProps) {
           </ComboboxList>
         </ComboboxContent>
       </Combobox>
+      {error && <FieldError errors={[{ message: error }]} />}
       <FieldDescription>Permission tier for system access.</FieldDescription>
     </Field>
   );

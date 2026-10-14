@@ -127,8 +127,22 @@ export const deleteUserSchema = z.union([
 ]);
 
 /* -------------------------------------------------------------------------- */
-/* Customer Form Schema (UI with Portal Access Switch)                        */
+/* Dialog Form Schemas (React Hook Form + Zod Resolvers)                      */
 /* -------------------------------------------------------------------------- */
+
+export function getStaffFormSchema(options: { isEdit: boolean }) {
+  return z.object({
+    name: nameSchema,
+    role: staffRoleEnum,
+    username: usernameSchema,
+    password: options.isEdit ? passwordSchema.optional().or(z.literal("")) : passwordSchema,
+    id: options.isEdit
+      ? z.number().int().positive("Invalid user ID")
+      : z.number().int().positive("Invalid user ID").optional(),
+  });
+}
+
+export type StaffFormInput = z.infer<ReturnType<typeof getStaffFormSchema>>;
 
 export function getCustomerFormSchema(options: {
   isEdit: boolean;
@@ -139,7 +153,11 @@ export function getCustomerFormSchema(options: {
   const disabledBranch = z.object({
     portalAccessEnabled: z.literal(false),
     name: nameSchema,
-    ...(options.isEdit ? { id: z.number().int().positive("Invalid user ID") } : {}),
+    username: z.string().optional(),
+    password: z.string().optional(),
+    id: options.isEdit
+      ? z.number().int().positive("Invalid user ID")
+      : z.number().int().positive("Invalid user ID").optional(),
   });
 
   const enabledBranch = z.object({
@@ -147,7 +165,9 @@ export function getCustomerFormSchema(options: {
     name: nameSchema,
     username: usernameSchema,
     password: isPasswordRequired ? passwordSchema : passwordSchema.optional().or(z.literal("")),
-    ...(options.isEdit ? { id: z.number().int().positive("Invalid user ID") } : {}),
+    id: options.isEdit
+      ? z.number().int().positive("Invalid user ID")
+      : z.number().int().positive("Invalid user ID").optional(),
   });
 
   return z.discriminatedUnion("portalAccessEnabled", [disabledBranch, enabledBranch]);

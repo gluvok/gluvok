@@ -11,7 +11,7 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/kibo-ui/combobox";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Calendar01Icon,
@@ -52,16 +52,20 @@ interface FactoryFormProps {
   factory: Factory;
   name: string;
   onNameChange: (name: string) => void;
+  nameError?: string;
   receiptImagesPerRow: number;
   onReceiptImagesPerRowChange: (val: number) => void;
+  receiptImagesError?: string;
 }
 
 export function FactoryForm({
   factory,
   name,
   onNameChange,
+  nameError,
   receiptImagesPerRow,
   onReceiptImagesPerRowChange,
+  receiptImagesError,
 }: FactoryFormProps) {
   const selectedOption = RECEIPT_IMAGE_OPTIONS.find(
     (opt) => opt.value === String(receiptImagesPerRow),
@@ -74,26 +78,38 @@ export function FactoryForm({
       {/* 2-Column Responsive Form Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Column 1: Factory Name */}
-        <Field>
+        <Field data-invalid={Boolean(nameError)}>
           <FieldLabel htmlFor="factory-name">
             <HugeiconsIcon icon={TextFontIcon} className="size-3.5 text-muted-foreground" />
-            Factory Name
+            <span>
+              Factory Name{" "}
+              <span className="text-destructive font-semibold" aria-hidden="true">
+                *
+              </span>
+            </span>
           </FieldLabel>
           <Input
             id="factory-name"
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
             placeholder="Enter factory name..."
+            aria-invalid={Boolean(nameError)}
             className="h-8 w-full text-xs"
           />
+          {nameError && <FieldError errors={[{ message: nameError }]} />}
           <FieldDescription>Primary processing facility title.</FieldDescription>
         </Field>
 
         {/* Column 2: Receipt Images Per Row */}
-        <Field>
+        <Field data-invalid={Boolean(receiptImagesError)}>
           <FieldLabel htmlFor="receipt-images">
             <HugeiconsIcon icon={ImagesIcon} className="size-3.5 text-muted-foreground" />
-            Receipt Images per Row
+            <span>
+              Receipt Images per Row{" "}
+              <span className="text-destructive font-semibold" aria-hidden="true">
+                *
+              </span>
+            </span>
           </FieldLabel>
           <Combobox
             data={RECEIPT_IMAGE_OPTIONS}
@@ -142,6 +158,7 @@ export function FactoryForm({
               </ComboboxList>
             </ComboboxContent>
           </Combobox>
+          {receiptImagesError && <FieldError errors={[{ message: receiptImagesError }]} />}
           <FieldDescription>Snapshot photos embedded per row on printed tickets.</FieldDescription>
         </Field>
       </div>

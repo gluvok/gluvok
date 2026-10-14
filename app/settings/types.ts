@@ -25,8 +25,20 @@ export const updateFactorySchema = z
     message: "At least one field must be provided to update",
   });
 
+export const factoryFormSchema = z
+  .object({
+    name: z.string().trim().min(1, "Factory name cannot be empty"),
+    receipt_images_per_row: z
+      .number()
+      .int("Must be an integer")
+      .min(1, "Must be at least 1")
+      .max(6, "Cannot exceed 6"),
+  })
+  .strict();
+
 export type Factory = z.infer<typeof factorySchema>;
 export type UpdateFactoryInput = z.infer<typeof updateFactorySchema>;
+export type FactoryFormInput = z.infer<typeof factoryFormSchema>;
 
 export interface FactoryApiResponse {
   data: Factory;

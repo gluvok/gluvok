@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Card,
   CardContent,
@@ -23,7 +25,12 @@ import {
 } from "@hugeicons/core-free-icons";
 import { FormDirtyIndicator } from "@/components/form-dirty-indicator";
 import { LoadingState } from "@/components/loading-state";
-import { type Factory, type FactoryApiResponse, updateFactorySchema } from "./types";
+import {
+  type Factory,
+  type FactoryApiResponse,
+  factoryFormSchema,
+  type FactoryFormInput,
+} from "./types";
 import { FactoryForm } from "./factory-form";
 
 export function FactoryCard() {
@@ -31,10 +38,23 @@ export function FactoryCard() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Form states
-  const [name, setName] = useState<string>("");
-  const [receiptImagesPerRow, setReceiptImagesPerRow] = useState<number>(3);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const {
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { isDirty, isValid, isSubmitting, errors },
+  } = useForm<FactoryFormInput>({
+    resolver: zodResolver(factoryFormSchema),
+    mode: "onChange",
+    defaultValues: {
+      name: "",
+      receipt_images_per_row: 3,
+    },
+  });
+
+  const name = watch("name");
+  const receiptImagesPerRow = watch("receipt_images_per_row");
 
   const fetchFactory = useCallback(async () => {
     try {
@@ -43,8 +63,10 @@ export function FactoryCard() {
       const response = await axios.get<FactoryApiResponse>("/api/factories");
       const data = response.data.data;
       setFactory(data);
-      setName(data.name);
-      setReceiptImagesPerRow(data.receipt_images_per_row);
+      reset({
+        name: data.name,
+        receipt_images_per_row: data.receipt_images_per_row,
+      });
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err)
         ? err.response?.data?.error || err.message
@@ -55,46 +77,25 @@ export function FactoryCard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [reset]);
 
   useEffect(() => {
     fetchFactory();
   }, [fetchFactory]);
 
-  const isDirty = useMemo(() => {
-    if (!factory) return false;
-    return name !== factory.name || receiptImagesPerRow !== factory.receipt_images_per_row;
-  }, [factory, name, receiptImagesPerRow]);
-
   const handleReset = useCallback(() => {
-    if (!factory) return;
-    setName(factory.name);
-    setReceiptImagesPerRow(factory.receipt_images_per_row);
-  }, [factory]);
+    reset();
+  }, [reset]);
 
-  const handleSave = useCallback(async () => {
-    const payload = {
-      name: name.trim(),
-      receipt_images_per_row: receiptImagesPerRow,
-    };
-
-    const validation = updateFactorySchema.safeParse(payload);
-    if (!validation.success) {
-      toast.add({
-        type: "error",
-        title: "Validation error",
-        description: validation.error.issues[0]?.message || "Invalid input",
-      });
-      return;
-    }
-
+  const onSubmit = async (values: FactoryFormInput) => {
     try {
-      setIsSaving(true);
-      const response = await axios.patch<FactoryApiResponse>("/api/factories", payload);
+      const response = await axios.patch<FactoryApiResponse>("/api/factories", values);
       const updated = response.data.data;
       setFactory(updated);
-      setName(updated.name);
-      setReceiptImagesPerRow(updated.receipt_images_per_row);
+      reset({
+        name: updated.name,
+        receipt_images_per_row: updated.receipt_images_per_row,
+      });
 
       toast.add({
         type: "success",
@@ -113,10 +114,8 @@ export function FactoryCard() {
         title: "Save failed",
         description: msg,
       });
-    } finally {
-      setIsSaving(false);
     }
-  }, [name, receiptImagesPerRow]);
+  };
 
   if (loading) {
     return <LoadingState message="Loading factory preferences..." className="h-72 w-full" />;
@@ -170,9 +169,13 @@ export function FactoryCard() {
         <FactoryForm
           factory={factory}
           name={name}
-          onNameChange={setName}
+          onNameChange={(val) => setValue("name", val, { shouldValidate: true, shouldDirty: true })}
+          nameError={errors.name?.message}
           receiptImagesPerRow={receiptImagesPerRow}
-          onReceiptImagesPerRowChange={setReceiptImagesPerRow}
+          onReceiptImagesPerRowChange={(val) =>
+            setValue("receipt_images_per_row", val, { shouldValidate: true, shouldDirty: true })
+          }
+          receiptImagesError={errors.receipt_images_per_row?.message}
         />
       </CardContent>
 
@@ -185,7 +188,7 @@ export function FactoryCard() {
             type="button"
             variant="outline"
             size="sm"
-            disabled={!isDirty || isSaving}
+            disabled={!isDirty || isSubmitting}
             onClick={handleReset}
             className="h-8 gap-1.5 text-xs"
           >
@@ -195,11 +198,11 @@ export function FactoryCard() {
           <Button
             type="button"
             size="sm"
-            disabled={!isDirty || isSaving || !name.trim()}
-            onClick={handleSave}
+            disabled={!isDirty || isSubmitting || !isValid}
+            onClick={handleSubmit(onSubmit)}
             className="h-8 gap-1.5 text-xs"
           >
-            {isSaving ? (
+            {isSubmitting ? (
               <Spinner className="size-3.5" data-icon="inline-start" />
             ) : (
               <HugeiconsIcon icon={FloppyDiskIcon} className="size-3.5" data-icon="inline-start" />

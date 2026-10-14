@@ -4,6 +4,8 @@
  * date range filtering, and standardized paginated response envelopes across route handlers.
  */
 
+import { z } from "zod";
+
 export interface PaginationParams {
   page: number;
   pageSize: number;
@@ -23,8 +25,20 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
+export const paginationQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(10),
+});
+
+const dateQuerySchema = z
+  .string()
+  .trim()
+  .refine((val) => !isNaN(new Date(val).getTime()), {
+    message: "Invalid date format",
+  });
+
 /**
- * Parses and validates pagination parameters from URL search params.
+ * Parses and validates pagination parameters from URL search params using Zod.
  * Clamps page to >= 1 and pageSize to [1, maxPageSize] (defaults to 10 and max 100).
  */
 export function parsePagination(
@@ -35,14 +49,18 @@ export function parsePagination(
   const defaultPageSize = defaults?.defaultPageSize ?? 10;
   const maxPageSize = defaults?.maxPageSize ?? 100;
 
-  const rawPage = parseInt(searchParams.get("page") || "", 10);
-  const page = Math.max(1, isNaN(rawPage) ? defaultPage : rawPage);
+  const rawPage = searchParams.get("page");
+  const rawPageSize = searchParams.get("pageSize");
 
-  const rawPageSize = parseInt(searchParams.get("pageSize") || "", 10);
-  const pageSize = Math.max(
-    1,
-    Math.min(maxPageSize, isNaN(rawPageSize) ? defaultPageSize : rawPageSize),
-  );
+  const parsed = paginationQuerySchema.safeParse({
+    page: rawPage || defaultPage,
+    pageSize: rawPageSize || defaultPageSize,
+  });
+
+  const page = parsed.success ? Math.max(1, parsed.data.page) : defaultPage;
+  const pageSize = parsed.success
+    ? Math.max(1, Math.min(maxPageSize, parsed.data.pageSize))
+    : defaultPageSize;
 
   const offset = (page - 1) * pageSize;
 
@@ -84,7 +102,7 @@ export function parseSorting<T extends string>(
 }
 
 /**
- * Applies optional 'from' and 'to' date range filters to a Supabase query.
+ * Applies optional 'from' and 'to' date range filters to a Supabase query with Zod validation.
  * 'to' date is normalized to end-of-day (23:59:59.999) for inclusive date matching.
  */
 export function applyDateRange<
@@ -94,18 +112,20 @@ export function applyDateRange<
   },
 >(query: TQuery, searchParams: URLSearchParams, column = "created_at"): TQuery {
   let updated = query;
-  const from = searchParams.get("from")?.trim();
-  if (from) {
-    const fromDate = new Date(from);
-    if (!isNaN(fromDate.getTime())) {
+  const rawFrom = searchParams.get("from");
+  if (rawFrom) {
+    const parsed = dateQuerySchema.safeParse(rawFrom);
+    if (parsed.success) {
+      const fromDate = new Date(parsed.data);
       updated = updated.gte(column, fromDate.toISOString());
     }
   }
 
-  const to = searchParams.get("to")?.trim();
-  if (to) {
-    const toDate = new Date(to);
-    if (!isNaN(toDate.getTime())) {
+  const rawTo = searchParams.get("to");
+  if (rawTo) {
+    const parsed = dateQuerySchema.safeParse(rawTo);
+    if (parsed.success) {
+      const toDate = new Date(parsed.data);
       toDate.setHours(23, 59, 59, 999);
       updated = updated.lte(column, toDate.toISOString());
     }

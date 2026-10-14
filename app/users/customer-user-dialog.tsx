@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/toast";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AlertCircleIcon, UserAdd01Icon, UserEdit01Icon } from "@hugeicons/core-free-icons";
@@ -11,7 +13,7 @@ import {
   FullNameField,
   UserDialogShell,
 } from "./user-dialog-primitives";
-import { getCustomerFormSchema, type User } from "./types";
+import { getCustomerFormSchema, type CustomerFormInput, type User } from "./types";
 
 interface CustomerUserDialogProps {
   open: boolean;
@@ -27,107 +29,63 @@ export function CustomerUserDialog({
   onSuccess,
 }: CustomerUserDialogProps) {
   const isEdit = Boolean(user);
-
-  const [name, setName] = useState<string>("");
-  const [portalAccessEnabled, setPortalAccessEnabled] = useState<boolean>(false);
-  const [username, setUsername] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [formError, setFormError] = useState<string | null>(null);
-
-  // Baseline snapshot for dirty checking
-  const [initialValues, setInitialValues] = useState<{
-    name: string;
-    username: string;
-    portalAccessEnabled: boolean;
-  }>({
-    name: "",
-    username: "",
-    portalAccessEnabled: false,
-  });
-
-  useEffect(() => {
-    if (open) {
-      setFormError(null);
-      if (user) {
-        const hasPortal = Boolean(user.username);
-        setName(user.name);
-        setPortalAccessEnabled(hasPortal);
-        setUsername(user.username ?? "");
-        setPassword("");
-        setInitialValues({
-          name: user.name,
-          username: user.username ?? "",
-          portalAccessEnabled: hasPortal,
-        });
-      } else {
-        setName("");
-        setPortalAccessEnabled(false);
-        setUsername("");
-        setPassword("");
-        setInitialValues({
-          name: "",
-          username: "",
-          portalAccessEnabled: false,
-        });
-      }
-    }
-  }, [open, user]);
-
-  const isDirty = useMemo(() => {
-    if (password.length > 0) return true;
-    if (name.trim() !== initialValues.name) return true;
-    if (portalAccessEnabled !== initialValues.portalAccessEnabled) return true;
-    if (username.trim().toLowerCase() !== initialValues.username) return true;
-    return false;
-  }, [password, name, portalAccessEnabled, username, initialValues]);
 
   const formSchema = useMemo(
     () => getCustomerFormSchema({ isEdit, hasExistingCredentials: Boolean(user?.username) }),
     [isEdit, user?.username],
   );
 
-  const formPayload = useMemo(
-    () => ({
-      ...(isEdit && user ? { id: user.id } : {}),
-      name: name.trim(),
-      portalAccessEnabled,
-      username: username.toLowerCase().trim(),
-      password: password.trim(),
-    }),
-    [isEdit, user, name, portalAccessEnabled, username, password],
-  );
+  const {
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { isDirty, isValid, isSubmitting, errors },
+  } = useForm<CustomerFormInput>({
+    resolver: zodResolver(formSchema),
+    mode: "onChange",
+    defaultValues: {
+      id: user?.id,
+      portalAccessEnabled: Boolean(user?.username),
+      name: user?.name ?? "",
+      username: user?.username ?? "",
+      password: "",
+    },
+  });
 
-  const isValid = useMemo(() => {
-    return formSchema.safeParse(formPayload).success;
-  }, [formSchema, formPayload]);
+  const name = watch("name");
+  const portalAccessEnabled = watch("portalAccessEnabled");
+  const username = watch("username");
+  const password = watch("password");
+
+  useEffect(() => {
+    if (open) {
+      setFormError(null);
+      reset({
+        id: user?.id,
+        portalAccessEnabled: Boolean(user?.username),
+        name: user?.name ?? "",
+        username: user?.username ?? "",
+        password: "",
+      });
+    }
+  }, [open, user, reset]);
 
   const isPasswordRequired = portalAccessEnabled && (!isEdit || !user?.username);
 
-  const handleSubmit = async () => {
+  const onSubmit = async (values: CustomerFormInput) => {
     setFormError(null);
-
-    const validation = formSchema.safeParse(formPayload);
-    if (!validation.success) {
-      const firstIssue = validation.error.issues[0]?.message || "Invalid input";
-      setFormError(firstIssue);
-      return;
-    }
 
     const payload = {
       ...(isEdit && user ? { id: user.id } : {}),
-      name: validation.data.name,
+      name: values.name.trim(),
       role: "customer" as const,
-      username: validation.data.portalAccessEnabled ? validation.data.username : "",
-      password:
-        validation.data.portalAccessEnabled && "password" in validation.data
-          ? validation.data.password || ""
-          : "",
+      username: values.portalAccessEnabled ? (values.username?.toLowerCase().trim() ?? "") : "",
+      password: values.portalAccessEnabled ? (values.password?.trim() ?? "") : "",
     };
 
     try {
-      setIsSubmitting(true);
-
       if (isEdit) {
         await axios.patch("/api/users", payload);
         toast.add({
@@ -164,8 +122,6 @@ export function CustomerUserDialog({
         title: isEdit ? "Failed to update customer" : "Failed to create customer",
         description: msg,
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -184,25 +140,26 @@ export function CustomerUserDialog({
       isDirty={isDirty}
       isValid={isValid}
       isSubmitting={isSubmitting}
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onSubmit)}
       submitLabel={isEdit ? "Save Changes" : "Create Customer"}
     >
       {/* Row 1: Full Name (full-width) */}
       <FullNameField
         value={name}
-        onChange={setName}
+        onChange={(val) => setValue("name", val, { shouldValidate: true, shouldDirty: true })}
         placeholder="e.g. Ramesh Kumar"
         description="Customer or enterprise name on delivery tickets."
+        error={errors.name?.message}
       />
 
       {/* Row 2: Customer Portal Access Toggle */}
       <CustomerPortalSwitch
         checked={portalAccessEnabled}
         onCheckedChange={(checked) => {
-          setPortalAccessEnabled(checked);
+          setValue("portalAccessEnabled", checked, { shouldValidate: true, shouldDirty: true });
           if (!checked) {
-            setUsername("");
-            setPassword("");
+            setValue("username", "", { shouldValidate: true, shouldDirty: true });
+            setValue("password", "", { shouldValidate: true, shouldDirty: true });
           }
         }}
       />
@@ -221,10 +178,16 @@ export function CustomerUserDialog({
       {/* Row 3: Credentials (only rendered when portal access is enabled) */}
       {portalAccessEnabled && (
         <CredentialsFields
-          username={username}
-          setUsername={setUsername}
-          password={password}
-          setPassword={setPassword}
+          username={username ?? ""}
+          setUsername={(val) =>
+            setValue("username", val, { shouldValidate: true, shouldDirty: true })
+          }
+          usernameError={errors.username?.message}
+          password={password ?? ""}
+          setPassword={(val) =>
+            setValue("password", val, { shouldValidate: true, shouldDirty: true })
+          }
+          passwordError={errors.password?.message}
           isEdit={isEdit}
           isPasswordRequired={isPasswordRequired}
           usernamePlaceholder="e.g. kisan_ramesh"

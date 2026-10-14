@@ -132,14 +132,17 @@ Administrative users (`/users`) and agricultural customers (`/customers`) are po
     - System Role dropdown utilizes `kibo-ui/combobox` with search and leading role icons (`Admin`: `CrownIcon`, `Manager`: `Briefcase01Icon`, `Operator`: `HeadsetIcon`, `Base User`: `UserIcon`).
     - Subtly tinted badges in the data table: Admin uses refined Slate/Neutral (violet/purple removed), and Manager, Operator, Base User use gentle 5% background tints and soft muted borders.
     - Hardware accounts are completely hidden from filter dropdowns and strictly rejected/ignored in backend filtering.
-  - **Modal Ergonomics, Form Validation & Credential Revocation Safeguards**:
-    - **Visual Mandatory Asterisks (`*`) & Notice**: Required fields display `<span className="text-destructive font-semibold">*</span>`, accompanied by `"Fields marked with * are required."` in the dialog header.
-    - **Direct Zod-Driven Button State (`isValid`)**: The Save Changes button remains visible in modal footers to prevent jarring layout shifts, but is strictly disabled (`disabled={!isDirty || !isValid || isSubmitting}`) until `schema.safeParse(payload).success` evaluates to true.
+  - **Universal React Hook Form & Zod Architecture**:
+    - **Form State Delegation (`react-hook-form` + `@hookform/resolvers/zod`)**: All user modals (`StaffUserDialog`, `CustomerUserDialog`) and settings forms (`FactoryCard`) manage state and submission via `useForm` paired with `zodResolver`, eliminating ad-hoc dirty tracking and manual validation branches.
+    - **Inline Field Validation (`<FieldError>`)**: Inputs, comboboxes, and password fields render contextual inline `<FieldError>` messages dynamically as users type or change values.
+    - **API Search Parameter Delegation (`lib/api-query.ts`)**: Pagination (`page`, `pageSize`) and date range filters are validated and coerced via centralized Zod schemas (`paginationQuerySchema`), eliminating raw fallback arithmetic.
+    - **Visual Mandatory Asterisks (`*`) & Notice**: Required fields display `<span className="text-destructive font-semibold">*</span>`, accompanied by `"Fields marked with * are required."` in dialog and card headers.
+    - **Direct Zod-Driven Button State (`isValid`)**: The Save Changes button remains visible in modal footers to prevent jarring layout shifts, but is strictly disabled (`disabled={!isDirty || !isValid || isSubmitting}`) until form state evaluates to valid.
     - **Customer Portal Revocation Safeguards**:
       - Toggling OFF portal access on an existing active portal user displays an amber warning banner informing the user that login credentials will be revoked.
       - In `app/api/users/service.ts`, clearing a customer's `username` (`null`) automatically clears `password_hash` (`null`), preventing orphan password hashes from persisting.
     - **Responsive Side-by-Side Layout (`sm:grid-cols-2`)**: Full Name + System Role side-by-side, and Username + Password side-by-side on desktop/tablet, stacking naturally on mobile (`sm:max-w-lg` container).
-    - Far-left pinned dirty state badge using `<FormDirtyIndicator>` in modal footers.
+    - Far-left pinned dirty state badge using `<FormDirtyIndicator>` in modal and card footers.
     - Error banner renders leading `AlertCircleIcon` with accessible alert styling.
     - `Cancel01Icon` leading icon on all modal Cancel buttons.
     - Compact, single-line field descriptions designed for clear scanning without wrapping.

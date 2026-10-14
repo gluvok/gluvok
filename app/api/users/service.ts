@@ -203,7 +203,7 @@ export async function updateUserAccount(data: UpdateUserInput) {
     updates.role = role;
   }
 
-  if (password && password.trim().length >= 6) {
+  if (password && password.trim()) {
     updates.password_hash = await argon2.hash(password.trim());
   }
 

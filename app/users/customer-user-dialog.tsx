@@ -11,7 +11,7 @@ import {
   FullNameField,
   UserDialogShell,
 } from "./user-dialog-primitives";
-import { createCustomerUserSchema, updateCustomerUserSchema, type User } from "./types";
+import { getCustomerFormSchema, type User } from "./types";
 
 interface CustomerUserDialogProps {
   open: boolean;
@@ -82,67 +82,48 @@ export function CustomerUserDialog({
     return false;
   }, [password, name, portalAccessEnabled, username, initialValues]);
 
-  const isPasswordRequired = useMemo(() => {
-    if (!portalAccessEnabled) return false;
-    if (!isEdit) return true;
-    return !user?.username;
-  }, [portalAccessEnabled, isEdit, user]);
+  const formSchema = useMemo(
+    () => getCustomerFormSchema({ isEdit, hasExistingCredentials: Boolean(user?.username) }),
+    [isEdit, user?.username],
+  );
 
-  const effectiveUsername = portalAccessEnabled ? username.toLowerCase().trim() : "";
-  const effectivePassword = portalAccessEnabled ? password.trim() : "";
-
-  const payload = useMemo(
-    () =>
-      isEdit && user
-        ? {
-            id: user.id,
-            username: effectiveUsername,
-            name: name.trim(),
-            role: "customer" as const,
-            password: effectivePassword,
-          }
-        : {
-            username: effectiveUsername,
-            name: name.trim(),
-            role: "customer" as const,
-            password: effectivePassword,
-          },
-    [isEdit, user, effectiveUsername, name, effectivePassword],
+  const formPayload = useMemo(
+    () => ({
+      ...(isEdit && user ? { id: user.id } : {}),
+      name: name.trim(),
+      portalAccessEnabled,
+      username: username.toLowerCase().trim(),
+      password: password.trim(),
+    }),
+    [isEdit, user, name, portalAccessEnabled, username, password],
   );
 
   const isValid = useMemo(() => {
-    if (isPasswordRequired) {
-      return createCustomerUserSchema.safeParse({
-        name: name.trim(),
-        role: "customer",
-        username: effectiveUsername,
-        password: effectivePassword,
-      }).success;
-    }
-    return isEdit
-      ? updateCustomerUserSchema.safeParse(payload).success
-      : createCustomerUserSchema.safeParse(payload).success;
-  }, [isPasswordRequired, name, effectiveUsername, effectivePassword, isEdit, payload]);
+    return formSchema.safeParse(formPayload).success;
+  }, [formSchema, formPayload]);
+
+  const isPasswordRequired = portalAccessEnabled && (!isEdit || !user?.username);
 
   const handleSubmit = async () => {
     setFormError(null);
 
-    const validation = isPasswordRequired
-      ? createCustomerUserSchema.safeParse({
-          name: name.trim(),
-          role: "customer",
-          username: effectiveUsername,
-          password: effectivePassword,
-        })
-      : isEdit
-        ? updateCustomerUserSchema.safeParse(payload)
-        : createCustomerUserSchema.safeParse(payload);
-
+    const validation = formSchema.safeParse(formPayload);
     if (!validation.success) {
       const firstIssue = validation.error.issues[0]?.message || "Invalid input";
       setFormError(firstIssue);
       return;
     }
+
+    const payload = {
+      ...(isEdit && user ? { id: user.id } : {}),
+      name: validation.data.name,
+      role: "customer" as const,
+      username: validation.data.portalAccessEnabled ? validation.data.username : "",
+      password:
+        validation.data.portalAccessEnabled && "password" in validation.data
+          ? validation.data.password || ""
+          : "",
+    };
 
     try {
       setIsSubmitting(true);

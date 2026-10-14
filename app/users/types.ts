@@ -126,6 +126,35 @@ export const deleteUserSchema = z.union([
   z.object({ ids: z.array(z.number().int().positive()).min(1, "At least one ID required") }),
 ]);
 
+/* -------------------------------------------------------------------------- */
+/* Customer Form Schema (UI with Portal Access Switch)                        */
+/* -------------------------------------------------------------------------- */
+
+export function getCustomerFormSchema(options: {
+  isEdit: boolean;
+  hasExistingCredentials?: boolean;
+}) {
+  const isPasswordRequired = !options.isEdit || !options.hasExistingCredentials;
+
+  const disabledBranch = z.object({
+    portalAccessEnabled: z.literal(false),
+    name: nameSchema,
+    ...(options.isEdit ? { id: z.number().int().positive("Invalid user ID") } : {}),
+  });
+
+  const enabledBranch = z.object({
+    portalAccessEnabled: z.literal(true),
+    name: nameSchema,
+    username: usernameSchema,
+    password: isPasswordRequired ? passwordSchema : passwordSchema.optional().or(z.literal("")),
+    ...(options.isEdit ? { id: z.number().int().positive("Invalid user ID") } : {}),
+  });
+
+  return z.discriminatedUnion("portalAccessEnabled", [disabledBranch, enabledBranch]);
+}
+
+export type CustomerFormInput = z.infer<ReturnType<typeof getCustomerFormSchema>>;
+
 export type CreateStaffUserInput = z.infer<typeof createStaffUserSchema>;
 export type CreateCustomerUserInput = z.infer<typeof createCustomerUserSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;

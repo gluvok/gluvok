@@ -120,9 +120,9 @@ Administrative users (`/users`) and agricultural customers (`/customers`) are po
     - **Atomic Form Primitives (`app/users/user-dialog-primitives.tsx`)**: Extracted `UserDialogShell`, `FullNameField`, `CredentialsFields`, `CustomerPortalSwitch`, and `SystemRoleSelect`.
     - **Dedicated Dialogs**: Eliminated the redundant `user-form-dialog.tsx` wrapper; callers consume dedicated dialogs directly via `ENTITY_CONFIG`:
       - `StaffUserDialog`: Renders Full Name & System Role side-by-side, plus Username & Password side-by-side (`sm:grid-cols-2`), validated by `createStaffUserSchema` / `updateStaffUserSchema`.
-      - `CustomerUserDialog`: Renders Full Name full-width, Customer Portal Access toggle, and credentials conditionally, validated by `createCustomerUserSchema` / `updateCustomerUserSchema`.
+      - `CustomerUserDialog`: Renders Full Name full-width, Customer Portal Access toggle, and credentials conditionally, validated declaratively by `getCustomerFormSchema` using a discriminated union on `portalAccessEnabled`.
     - **Zod Discriminated Unions (`app/users/types.ts`)**:
-      - Separated schemas into `createStaffUserSchema` (strictly requires username and password) and `createCustomerUserSchema` (handles customer portal access rules).
+      - Separated schemas into `createStaffUserSchema` (strictly requires username and password), `createCustomerUserSchema` (handles customer portal access rules), and `getCustomerFormSchema` (discriminated union on `portalAccessEnabled` for forms).
       - Combined via `createUserSchema = z.discriminatedUnion("role", [...])` and `updateUserSchema = z.discriminatedUnion("role", [...])`, completely eliminating runtime `if (isCustomer)` checks in schema validation.
     - **Declarative API Routing & Domain Services**:
       - `app/api/users/route.ts`: Replaced ternary message checks with a typed lookup dictionary (`ROLE_ENTITY_LABELS`).

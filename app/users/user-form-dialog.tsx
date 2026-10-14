@@ -224,7 +224,7 @@ export function UserFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -255,25 +255,111 @@ export function UserFormDialog({
             </div>
           )}
 
-          {/* Full Name */}
-          <Field>
-            <FieldLabel htmlFor="user-name">
-              <HugeiconsIcon icon={UserIcon} className="size-3.5 text-muted-foreground" />
-              Full Name
-            </FieldLabel>
-            <Input
-              id="user-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={isCustomer ? "e.g. Ramesh Kumar" : "e.g. Alex Morgan"}
-              className="h-8 text-xs"
-            />
-            <FieldDescription>
-              {isCustomer
-                ? "Customer or enterprise name on delivery tickets."
-                : "Operator name displayed in audit trails."}
-            </FieldDescription>
-          </Field>
+          {/* Row 1: Full Name and System Role side-by-side on desktop, or Full Name full-width if role is fixed */}
+          {!fixedRole ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Full Name */}
+              <Field>
+                <FieldLabel htmlFor="user-name">
+                  <HugeiconsIcon icon={UserIcon} className="size-3.5 text-muted-foreground" />
+                  Full Name
+                </FieldLabel>
+                <Input
+                  id="user-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Alex Morgan"
+                  className="h-8 text-xs"
+                />
+                <FieldDescription>Operator name displayed in audit trails.</FieldDescription>
+              </Field>
+
+              {/* System Role */}
+              <Field>
+                <FieldLabel htmlFor="user-role">
+                  <HugeiconsIcon
+                    icon={SecurityCheckIcon}
+                    className="size-3.5 text-muted-foreground"
+                  />
+                  System Role
+                </FieldLabel>
+                <Combobox
+                  data={ROLE_OPTIONS}
+                  type="role"
+                  value={role}
+                  onValueChange={(val) => {
+                    if (val) setRole(val as UserRole);
+                  }}
+                >
+                  <ComboboxTrigger
+                    id="user-role"
+                    className="h-8 w-full justify-between border-input bg-input/20 px-2.5 text-xs font-normal hover:bg-accent/50 dark:bg-input/30"
+                  >
+                    <span className="flex items-center gap-1.5 truncate">
+                      {(() => {
+                        const selectedOpt = ROLE_OPTIONS.find((o) => o.value === role);
+                        const IconComponent = selectedOpt?.icon ?? SecurityCheckIcon;
+                        return (
+                          <>
+                            <HugeiconsIcon
+                              icon={IconComponent}
+                              className="size-3.5 shrink-0 text-muted-foreground"
+                            />
+                            <span className="truncate">
+                              {selectedOpt?.label ?? "Select role..."}
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </span>
+                    <ChevronsUpDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                  </ComboboxTrigger>
+                  <ComboboxContent
+                    className="min-w-56"
+                    popoverOptions={{
+                      align: "start",
+                      sideOffset: 4,
+                    }}
+                  >
+                    <ComboboxInput placeholder="Search role..." className="h-8 text-xs" />
+                    <ComboboxEmpty className="py-2 text-center text-xs text-muted-foreground">
+                      No role found.
+                    </ComboboxEmpty>
+                    <ComboboxList>
+                      <ComboboxGroup>
+                        {ROLE_OPTIONS.map((opt) => (
+                          <ComboboxItem key={opt.value} value={opt.value} className="text-xs">
+                            <HugeiconsIcon
+                              icon={opt.icon}
+                              className="mr-1.5 size-3.5 text-muted-foreground"
+                            />
+                            <span>{opt.label}</span>
+                          </ComboboxItem>
+                        ))}
+                      </ComboboxGroup>
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+                <FieldDescription>Permission tier for system access.</FieldDescription>
+              </Field>
+            </div>
+          ) : (
+            /* Full Name (full width for fixed role e.g. customer) */
+            <Field>
+              <FieldLabel htmlFor="user-name">
+                <HugeiconsIcon icon={UserIcon} className="size-3.5 text-muted-foreground" />
+                Full Name
+              </FieldLabel>
+              <Input
+                id="user-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Ramesh Kumar"
+                className="h-8 text-xs"
+              />
+              <FieldDescription>Customer or enterprise name on delivery tickets.</FieldDescription>
+            </Field>
+          )}
 
           {/* Enable Customer Portal Access Switch */}
           {isCustomer && (
@@ -298,9 +384,9 @@ export function UserFormDialog({
             </div>
           )}
 
-          {/* Credentials section: shown if staff, or if customer with portal access enabled */}
+          {/* Credentials section: Username and Password side-by-side on desktop, stacked on mobile */}
           {(!isCustomer || portalAccessEnabled) && (
-            <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Username */}
               <Field>
                 <FieldLabel htmlFor="user-username">
@@ -330,86 +416,15 @@ export function UserFormDialog({
                   id="user-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={
-                    isEdit ? "Leave blank to keep current password" : "At least 6 characters"
-                  }
+                  placeholder={isEdit ? "Leave blank to keep current" : "At least 6 characters"}
                   className="h-8 text-xs"
                   autoComplete="new-password"
                 />
                 <FieldDescription>
-                  {isEdit ? "Leave blank to keep current password." : "Minimum 6 characters."}
+                  {isEdit ? "Leave blank to keep current." : "Minimum 6 characters."}
                 </FieldDescription>
               </Field>
             </div>
-          )}
-
-          {/* Role (hidden when role is fixed e.g. customer) */}
-          {!fixedRole && (
-            <Field>
-              <FieldLabel htmlFor="user-role">
-                <HugeiconsIcon
-                  icon={SecurityCheckIcon}
-                  className="size-3.5 text-muted-foreground"
-                />
-                System Role
-              </FieldLabel>
-              <Combobox
-                data={ROLE_OPTIONS}
-                type="role"
-                value={role}
-                onValueChange={(val) => {
-                  if (val) setRole(val as UserRole);
-                }}
-              >
-                <ComboboxTrigger
-                  id="user-role"
-                  className="h-8 w-full justify-between border-input bg-input/20 px-2.5 text-xs font-normal hover:bg-accent/50 dark:bg-input/30"
-                >
-                  <span className="flex items-center gap-1.5 truncate">
-                    {(() => {
-                      const selectedOpt = ROLE_OPTIONS.find((o) => o.value === role);
-                      const IconComponent = selectedOpt?.icon ?? SecurityCheckIcon;
-                      return (
-                        <>
-                          <HugeiconsIcon
-                            icon={IconComponent}
-                            className="size-3.5 shrink-0 text-muted-foreground"
-                          />
-                          <span className="truncate">{selectedOpt?.label ?? "Select role..."}</span>
-                        </>
-                      );
-                    })()}
-                  </span>
-                  <ChevronsUpDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
-                </ComboboxTrigger>
-                <ComboboxContent
-                  className="min-w-56"
-                  popoverOptions={{
-                    align: "start",
-                    sideOffset: 4,
-                  }}
-                >
-                  <ComboboxInput placeholder="Search role..." className="h-8 text-xs" />
-                  <ComboboxEmpty className="py-2 text-center text-xs text-muted-foreground">
-                    No role found.
-                  </ComboboxEmpty>
-                  <ComboboxList>
-                    <ComboboxGroup>
-                      {ROLE_OPTIONS.map((opt) => (
-                        <ComboboxItem key={opt.value} value={opt.value} className="text-xs">
-                          <HugeiconsIcon
-                            icon={opt.icon}
-                            className="mr-1.5 size-3.5 text-muted-foreground"
-                          />
-                          <span>{opt.label}</span>
-                        </ComboboxItem>
-                      ))}
-                    </ComboboxGroup>
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              <FieldDescription>Permission tier for system access.</FieldDescription>
-            </Field>
           )}
         </div>
 

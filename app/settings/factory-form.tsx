@@ -19,6 +19,7 @@ import {
   Grid2x2Icon,
   Grid3x2Icon,
   Image01Icon,
+  ImagesIcon,
   Layout05Icon,
   LayoutThreeColumnIcon,
   LayoutTwoColumnIcon,
@@ -91,7 +92,7 @@ export function FactoryForm({
         {/* Column 2: Receipt Images Per Row */}
         <Field>
           <FieldLabel htmlFor="receipt-images">
-            <HugeiconsIcon icon={Image01Icon} className="size-3.5 text-muted-foreground" />
+            <HugeiconsIcon icon={ImagesIcon} className="size-3.5 text-muted-foreground" />
             Receipt Images per Row
           </FieldLabel>
           <Combobox

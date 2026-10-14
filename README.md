@@ -75,7 +75,7 @@ The `/settings` route provides facility configuration controls powered by the un
   - **Cohesive Constrained Layout (`max-w-3xl`)**: Constrained layout width prevents overly stretched form fields on wide displays and aligns `<PageRefreshButton>` directly with the top right of `<FactoryCard>`.
   - **Unified Page Header & Reload**: Standard `<PageHeader>` with "Settings" title, descriptive subtitle, and integrated `PageRefreshButton`.
   - **Clean Loading State**: Renders a centered `<Spinner />` with status message during initial data fetching, eliminating empty card shells.
-  - **Dedicated Iconography**: Factory card uses `Factory01Icon` (distinct from Center's `Building01Icon`), Receipt Images uses `Image01Icon` in the field label, and each receipt image row option (1–6) renders specialized layout/grid icons (`Image01Icon`, `LayoutTwoColumnIcon`, `LayoutThreeColumnIcon`, `Grid2x2Icon`, `Layout05Icon`, `Grid3x2Icon`) with dynamic trigger synchronization.
+  - **Dedicated Iconography**: Factory card uses `Factory01Icon` (distinct from Center's `Building01Icon`), Receipt Images uses `ImagesIcon` in the field label (distinct from the 1 per row option `Image01Icon`), and each receipt image row option (1–6) renders specialized layout/grid icons (`Image01Icon`, `LayoutTwoColumnIcon`, `LayoutThreeColumnIcon`, `Grid2x2Icon`, `Layout05Icon`, `Grid3x2Icon`) with dynamic trigger synchronization.
   - **Input Controls**: `<Input>` for factory name and searchable `kibo-ui/combobox` (values 1–6) for receipt snapshot row layout.
   - **Base UI Toast Feedback**: Integrated notification system powered by `@base-ui/react/toast` with `<Toaster />` anchored at the **top-right** (`top-4 right-4`), featuring fluid downward stack animations, upward swipe dismiss, custom typography (`font-heading` for titles and `font-sans` for descriptions), and semantic status colors (Emerald for success, Amber for warning, Destructive red for error, and Sky blue for info).
   - **Client-Side Zod Validation**: Form validates against `updateFactorySchema` before dispatching updates.
@@ -101,10 +101,12 @@ Administrative users (`/users`) and agricultural customers (`/customers`) are po
   - **Modular Architecture & Service Extraction**: Decomposed large files into single-responsibility modules:
     - `app/api/users/service.ts`: Centralizes database queries, Argon2id hashing, and constant O(1) batched conflict checks, keeping `app/api/users/route.ts` as a sleek HTTP routing controller.
     - `app/settings/factory-form.tsx`: Encapsulates the 2-column configuration grid and a clean 2-column metadata strip (Created On, Last Modified).
-  - **Universal Comboboxes & Role Iconography**:
+  - **Universal Comboboxes & Subtle Role Iconography**:
     - System Role dropdown utilizes `kibo-ui/combobox` with search and leading role icons (`Admin`: `CrownIcon`, `Manager`: `Briefcase01Icon`, `Operator`: `HeadsetIcon`, `Base User`: `UserIcon`).
+    - Subtly tinted badges in the data table: Admin uses refined Slate/Neutral (violet/purple removed), and Manager, Operator, Base User use gentle 5% background tints and soft muted borders.
     - Hardware accounts are completely hidden from filter dropdowns and strictly rejected/ignored in backend filtering.
-  - **Modal Ergonomics & Polish**:
+  - **Modal Ergonomics & Responsive Multi-Column Form**:
+    - **Responsive Side-by-Side Layout (`sm:grid-cols-2`)**: Full Name + System Role side-by-side, and Username + Password side-by-side on desktop/tablet, stacking naturally on mobile (`sm:max-w-lg` container).
     - Far-left pinned dirty state badge (`"You have unsaved changes."` / `"All changes saved."`) in modal footers.
     - Error banner renders leading `AlertCircleIcon` with accessible alert styling.
     - `Cancel01Icon` leading icon on all modal Cancel buttons.

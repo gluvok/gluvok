@@ -4,7 +4,7 @@ import {
   ClipboardListIcon,
   CustomerSupportIcon,
   Factory01Icon,
-  Image01Icon,
+  ImagesIcon,
   Layers01Icon,
   Settings01Icon,
   Ticket01Icon,
@@ -16,7 +16,7 @@ import {
 export const appIcons = {
   centers: Building01Icon,
   factory: Factory01Icon,
-  receiptImages: Image01Icon,
+  receiptImages: ImagesIcon,
   entries: ClipboardListIcon,
   weighments: WeightScale01Icon,
   customers: UserGroupIcon,

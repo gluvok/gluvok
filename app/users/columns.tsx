@@ -46,7 +46,7 @@ function getRoleBadge(role: UserRole) {
       return (
         <Badge
           variant="outline"
-          className="gap-1 text-2xs font-normal text-purple-600 border-purple-200 bg-purple-500/10 dark:text-purple-400 dark:border-purple-900/60 dark:bg-purple-950/30"
+          className="gap-1 text-2xs font-normal text-slate-800 border-slate-300/80 bg-slate-500/5 dark:text-slate-200 dark:border-slate-700/80 dark:bg-slate-500/10"
         >
           <HugeiconsIcon icon={CrownIcon} className="size-3" />
           Admin
@@ -56,7 +56,7 @@ function getRoleBadge(role: UserRole) {
       return (
         <Badge
           variant="outline"
-          className="gap-1 text-2xs font-normal text-blue-600 border-blue-200 bg-blue-500/10 dark:text-blue-400 dark:border-blue-900/60 dark:bg-blue-950/30"
+          className="gap-1 text-2xs font-normal text-blue-700 border-blue-200/80 bg-blue-500/5 dark:text-blue-300 dark:border-blue-900/40 dark:bg-blue-950/20"
         >
           <HugeiconsIcon icon={Briefcase01Icon} className="size-3" />
           Manager
@@ -66,7 +66,7 @@ function getRoleBadge(role: UserRole) {
       return (
         <Badge
           variant="outline"
-          className="gap-1 text-2xs font-normal text-emerald-600 border-emerald-200 bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/60 dark:bg-emerald-950/30"
+          className="gap-1 text-2xs font-normal text-emerald-700 border-emerald-200/80 bg-emerald-500/5 dark:text-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/20"
         >
           <HugeiconsIcon icon={HeadsetIcon} className="size-3" />
           Operator
@@ -76,7 +76,7 @@ function getRoleBadge(role: UserRole) {
       return (
         <Badge
           variant="outline"
-          className="gap-1 text-2xs font-normal text-slate-600 border-slate-200 bg-slate-500/10 dark:text-slate-400 dark:border-slate-800 dark:bg-slate-900/30"
+          className="gap-1 text-2xs font-normal text-zinc-600 border-zinc-200/80 bg-zinc-500/5 dark:text-zinc-400 dark:border-zinc-800/80 dark:bg-zinc-900/20"
         >
           <HugeiconsIcon icon={UserIcon} className="size-3" />
           Base User
@@ -86,7 +86,7 @@ function getRoleBadge(role: UserRole) {
       return (
         <Badge
           variant="outline"
-          className="gap-1 text-2xs font-normal text-amber-600 border-amber-200 bg-amber-500/10 dark:text-amber-400 dark:border-amber-900/60 dark:bg-amber-950/30"
+          className="gap-1 text-2xs font-normal text-amber-700 border-amber-200/80 bg-amber-500/5 dark:text-amber-300 dark:border-amber-900/40 dark:bg-amber-950/20"
         >
           Hardware
         </Badge>

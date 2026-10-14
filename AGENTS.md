@@ -149,6 +149,11 @@ For any JavaScript / TypeScript / Node modifications:
 - **Eliminate Redundant Wrapper Files**: Do not keep pass-through wrapper components or legacy file aliases that only re-export or delegate to a generalized component. Delete redundant files directly and update imports at callers.
 - **Audit for Duplication Before Coding**: Before implementing a feature or entity table, check if reusable abstractions already exist in `components/data-table/` or `components/`. Never copy-paste whole table files or sensor setups.
 - **Centralized Backend API Query Utilities (`lib/api-query.ts`)**: Never duplicate API pagination, multi-column sorting, date filtering, or response formatting across route handlers (`app/api/**/route.ts`). All paginated entity endpoints MUST consume `lib/api-query.ts` (`parsePagination`, `parseSorting`, `applyDateRange`, `applySortingAndPagination`, `formatPaginatedResponse`). Entity routes must strictly contain only entity-specific projections, sort column whitelists, and custom filters. Zero inline duplication of pagination math or sort regexes.
+- **Centralized Error Parsing (`lib/utils.ts`)**: NEVER write inline Axios/Error extraction ternaries (`axios.isAxiosError(err) ? err.response?.data?.error ...`). Always import and use `getErrorMessage(err, fallback)` from `@/lib/utils`.
+- **Centralized Date Formatting (`lib/utils.ts`)**: NEVER instantiate `new Intl.DateTimeFormat(...)` ad-hoc across tables, cards, or components. Always import and use `formatDateTime(isoString)` from `@/lib/utils`.
+- **Deduplicate Form Initial Values**: In forms utilizing `useForm` and `useEffect({ reset(...) })`, extract a single `getInitialValues(entity)` helper function rather than duplicating default value objects.
+- **Payload Construction & Unified Toasts**: Avoid duplicating entire payload structures or toast invocations across `isEdit` branches; use object spreads (`...(isEdit && user ? { id: user.id } : {})`) and parameterized strings for toasts.
+- **Prohibition of Redundant Variable Aliases**: NEVER declare alias variables (e.g. `const singularLabel = entityLabel; const pluralLabel = entityLabelPlural;`) that merely re-assign existing props or variables without transformation.
 - **Strict Prohibition of Raw Magic HTTP Status Codes (`http-status-codes`)**: Always import and use `StatusCodes` from `http-status-codes` across all API route handlers and responses (e.g. `StatusCodes.OK`, `StatusCodes.CREATED`, `StatusCodes.BAD_REQUEST`, `StatusCodes.NOT_FOUND`, `StatusCodes.CONFLICT`, `StatusCodes.INTERNAL_SERVER_ERROR`). NEVER write raw numeric status literals like `200`, `201`, `400`, `404`, `409`, or `500` in `NextResponse.json(...)`.
 - **Strict Prohibition of Parallel Entity Directories for Shared Tables**: When multiple domain concepts or user roles share the same underlying database table (e.g. `users` storing both staff and customers), NEVER create parallel feature directories with duplicated tables, dialogs, types, or schemas (e.g. `app/customers/` duplicating `app/users/`). Parameterize the single authoritative entity components (e.g. `UsersDataTable roleScope="staff" | "customer"`, `UserFormDialog fixedRole="customer"`) and render them directly in the respective page routes (`app/customers/page.tsx`).
 
@@ -166,7 +171,12 @@ For any JavaScript / TypeScript / Node modifications:
    git diff --name-only | grep -E '\.(tsx|jsx)$' | xargs grep -E '(w|h|max-w|min-w|p|m|text)-\[[^\]]+\]'
    # Must yield 0 lines.
    ```
-3. **Mandatory Quality Gates**:
+3. **Audit for Inline Axios Error Parsing**:
+   ```bash
+   git diff --name-only | grep -E '\.(tsx|ts)$' | grep -v 'lib/utils.ts' | xargs grep -E 'err\.response' || true
+   # Must yield 0 lines.
+   ```
+4. **Mandatory Quality Gates**:
    - `pnpm run lint` (0 errors, 0 warnings)
    - `pnpm run fmt` (0 formatting issues)
    - `pnpm run type-check` (0 errors, 0 warnings)
@@ -190,6 +200,36 @@ For any JavaScript / TypeScript / Node modifications:
 - **Constant O(1) Batch Queries**: When checking, fetching, or mutating records for multiple identifiers or foreign keys, aggregate target IDs into an array and execute a single batch query (e.g. `.in("id", targetIds)`, `.in("user_id", targetIds)`, SQL `IN (...)`).
 - **In-Memory Aggregation**: Aggregate counts, maps, lookups, or conflicts in application memory after fetching the batched result set rather than querying row-by-row.
 - **Bulk Mutations**: Use bulk updates/deletions (`.in("id", targetIds).delete()` or `.in("id", targetIds).update(...)`) instead of individual per-record operations.
+
+## 14. Form State & Zod Validation Delegation
+
+**Standardize on `react-hook-form` + `zodResolver`. Delegate all boundary and conditional logic to Zod.**
+
+- **Form State Management**: Use `react-hook-form` with `@hookform/resolvers/zod` (`useForm({ resolver: zodResolver(schema), mode: "onChange" })`) for all interactive forms. Never manage multiple input states via scattered `useState` or ad-hoc dirty checking.
+- **Zod Schema Boundary Delegation**:
+  - Delegate field requirements, optionality, dependent logic (e.g. credentials required only when portal access is toggled on via discriminated unions), and regexes strictly to Zod schemas.
+  - Never duplicate validation checks in UI components if Zod already enforces them.
+- **Zero Fallback Math for Schemas with Defaults**:
+  - When a Zod schema defines defaults or fallbacks (`.default(...)`, `.catch(...)`), never write manual fallback arithmetic or nullish coalescing checks (`defaults?.page ?? 1`, `Math.max(1, ...)`). Rely directly on Zod's parse guarantees.
+- **Inline Error Feedback**: Display inline `<FieldError>` messages dynamically beneath fields bound to `errors.<field>?.message`. Indicate mandatory fields with visual asterisks (`*`) in field labels.
+
+## 15. Design System Tokens & Toast Standards
+
+**Use Rikyū-cha accent palette, top-right anchored toasts, and distinct semantic iconography.**
+
+- **Authoritative Accent Color**: Use **Rikyū-cha (利休茶)** matcha/moss green accent:
+  - Hex: `#66684F`
+  - RGB: `rgb(102, 104, 79)`
+  - HSL: `hsl(65, 14%, 36%)`
+  - Text Color: Pure White (`#FFFFFF`)
+  - Hover State: `#52543D` (`rgb(82, 84, 61)`)
+  - Keep role and badge colors subtle and muted (avoid harsh/saturated violets or neon tones).
+- **Toast Anchoring & Typography**:
+  - `<Toaster />` anchored at `top-right` (`top-4 right-4`).
+  - Typography: `font-heading` for toast titles and `font-sans` for toast descriptions.
+  - Semantic status colors: Emerald for success, Amber for warning, Destructive red for error, and Sky blue for info.
+- **Icon Distinctiveness**:
+  - Differentiate icons representing distinct options or layout variations (e.g. receipt image layout options 1–6 must use distinct layout/grid icons, distinct from the category label icon).
 
 ---
 

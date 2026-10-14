@@ -13,17 +13,27 @@ import {
 } from "@/components/kibo-ui/combobox";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Calendar01Icon, Clock01Icon, Image01Icon, TextFontIcon } from "@hugeicons/core-free-icons";
+import {
+  Calendar01Icon,
+  Clock01Icon,
+  Grid2x2Icon,
+  Grid3x2Icon,
+  Image01Icon,
+  Layout05Icon,
+  LayoutThreeColumnIcon,
+  LayoutTwoColumnIcon,
+  TextFontIcon,
+} from "@hugeicons/core-free-icons";
 import { ChevronsUpDownIcon } from "lucide-react";
 import { type Factory } from "./types";
 
 const RECEIPT_IMAGE_OPTIONS = [
-  { value: "1", label: "1 per row" },
-  { value: "2", label: "2 per row" },
-  { value: "3", label: "3 per row (Default)" },
-  { value: "4", label: "4 per row" },
-  { value: "5", label: "5 per row" },
-  { value: "6", label: "6 per row" },
+  { value: "1", label: "1 per row", icon: Image01Icon },
+  { value: "2", label: "2 per row", icon: LayoutTwoColumnIcon },
+  { value: "3", label: "3 per row (Default)", icon: LayoutThreeColumnIcon },
+  { value: "4", label: "4 per row", icon: Grid2x2Icon },
+  { value: "5", label: "5 per row", icon: Layout05Icon },
+  { value: "6", label: "6 per row", icon: Grid3x2Icon },
 ];
 
 function formatDate(isoString: string): string {
@@ -52,9 +62,11 @@ export function FactoryForm({
   receiptImagesPerRow,
   onReceiptImagesPerRowChange,
 }: FactoryFormProps) {
-  const selectedLabel =
-    RECEIPT_IMAGE_OPTIONS.find((opt) => opt.value === String(receiptImagesPerRow))?.label ??
-    `${receiptImagesPerRow} per row`;
+  const selectedOption = RECEIPT_IMAGE_OPTIONS.find(
+    (opt) => opt.value === String(receiptImagesPerRow),
+  );
+  const selectedLabel = selectedOption?.label ?? `${receiptImagesPerRow} per row`;
+  const SelectedIcon = selectedOption?.icon ?? Image01Icon;
 
   return (
     <div className="flex flex-col gap-6">
@@ -96,7 +108,7 @@ export function FactoryForm({
             >
               <span className="flex items-center gap-1.5 truncate">
                 <HugeiconsIcon
-                  icon={Image01Icon}
+                  icon={SelectedIcon}
                   className="size-3.5 shrink-0 text-muted-foreground"
                 />
                 <span className="truncate">{selectedLabel}</span>
@@ -119,7 +131,7 @@ export function FactoryForm({
                   {RECEIPT_IMAGE_OPTIONS.map((opt) => (
                     <ComboboxItem key={opt.value} value={opt.value} className="text-xs">
                       <HugeiconsIcon
-                        icon={Image01Icon}
+                        icon={opt.icon}
                         className="mr-1.5 size-3.5 text-muted-foreground"
                       />
                       <span>{opt.label}</span>

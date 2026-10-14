@@ -75,9 +75,9 @@ The `/settings` route provides facility configuration controls powered by the un
   - **Cohesive Constrained Layout (`max-w-3xl`)**: Constrained layout width prevents overly stretched form fields on wide displays and aligns `<PageRefreshButton>` directly with the top right of `<FactoryCard>`.
   - **Unified Page Header & Reload**: Standard `<PageHeader>` with "Settings" title, descriptive subtitle, and integrated `PageRefreshButton`.
   - **Clean Loading State**: Renders a centered `<Spinner />` with status message during initial data fetching, eliminating empty card shells.
-  - **Dedicated Iconography**: Factory card uses `Factory01Icon` (distinct from Center's `Building01Icon`), Receipt Images uses `Image01Icon` (distinct from combobox All icon), and registered in `lib/icons.ts`.
+  - **Dedicated Iconography**: Factory card uses `Factory01Icon` (distinct from Center's `Building01Icon`), Receipt Images uses `Image01Icon` in the field label, and each receipt image row option (1–6) renders specialized layout/grid icons (`Image01Icon`, `LayoutTwoColumnIcon`, `LayoutThreeColumnIcon`, `Grid2x2Icon`, `Layout05Icon`, `Grid3x2Icon`) with dynamic trigger synchronization.
   - **Input Controls**: `<Input>` for factory name and searchable `kibo-ui/combobox` (values 1–6) for receipt snapshot row layout.
-  - **Base UI Toast Feedback**: Integrated notification system powered by `@base-ui/react/toast` with `<Toaster />` in the root layout, delivering instant alerts on settings save and error events.
+  - **Base UI Toast Feedback**: Integrated notification system powered by `@base-ui/react/toast` with `<Toaster />` anchored at the **top-right** (`top-4 right-4`), featuring fluid downward stack animations, upward swipe dismiss, custom typography (`font-heading` for titles and `font-sans` for descriptions), and semantic status colors (Emerald for success, Amber for warning, Destructive red for error, and Sky blue for info).
   - **Client-Side Zod Validation**: Form validates against `updateFactorySchema` before dispatching updates.
   - **Dirty State Tracking**: Save Changes and Reset buttons detect client form changes with disabled controls when pristine, `<Spinner>` indicators during requests, and inline timestamp tracking.
 

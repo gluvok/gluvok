@@ -188,6 +188,9 @@ export async function updateUserAccount(data: UpdateUserInput) {
 
   if (cleanUsername !== undefined) {
     updates.username = cleanUsername;
+    if (cleanUsername === null) {
+      updates.password_hash = null;
+    }
   }
 
   if (role && role !== existingUser.role) {

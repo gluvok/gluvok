@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { toast } from "@/components/ui/toast";
-import { UserAdd01Icon, UserEdit01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { AlertCircleIcon, UserAdd01Icon, UserEdit01Icon } from "@hugeicons/core-free-icons";
 import {
   CredentialsFields,
   CustomerPortalSwitch,
@@ -81,30 +82,61 @@ export function CustomerUserDialog({
     return false;
   }, [password, name, portalAccessEnabled, username, initialValues]);
 
+  const isPasswordRequired = useMemo(() => {
+    if (!portalAccessEnabled) return false;
+    if (!isEdit) return true;
+    return !user?.username;
+  }, [portalAccessEnabled, isEdit, user]);
+
+  const effectiveUsername = portalAccessEnabled ? username.toLowerCase().trim() : "";
+  const effectivePassword = portalAccessEnabled ? password.trim() : "";
+
+  const payload = useMemo(
+    () =>
+      isEdit && user
+        ? {
+            id: user.id,
+            username: effectiveUsername,
+            name: name.trim(),
+            role: "customer" as const,
+            password: effectivePassword,
+          }
+        : {
+            username: effectiveUsername,
+            name: name.trim(),
+            role: "customer" as const,
+            password: effectivePassword,
+          },
+    [isEdit, user, effectiveUsername, name, effectivePassword],
+  );
+
+  const isValid = useMemo(() => {
+    if (isPasswordRequired) {
+      return createCustomerUserSchema.safeParse({
+        name: name.trim(),
+        role: "customer",
+        username: effectiveUsername,
+        password: effectivePassword,
+      }).success;
+    }
+    return isEdit
+      ? updateCustomerUserSchema.safeParse(payload).success
+      : createCustomerUserSchema.safeParse(payload).success;
+  }, [isPasswordRequired, name, effectiveUsername, effectivePassword, isEdit, payload]);
+
   const handleSubmit = async () => {
     setFormError(null);
 
-    const effectiveUsername = portalAccessEnabled ? username.toLowerCase().trim() : "";
-    const effectivePassword = portalAccessEnabled ? password.trim() : "";
-
-    const payload = isEdit
-      ? {
-          id: user!.id,
-          username: effectiveUsername,
+    const validation = isPasswordRequired
+      ? createCustomerUserSchema.safeParse({
           name: name.trim(),
-          role: "customer" as const,
-          password: effectivePassword,
-        }
-      : {
+          role: "customer",
           username: effectiveUsername,
-          name: name.trim(),
-          role: "customer" as const,
           password: effectivePassword,
-        };
-
-    const validation = isEdit
-      ? updateCustomerUserSchema.safeParse(payload)
-      : createCustomerUserSchema.safeParse(payload);
+        })
+      : isEdit
+        ? updateCustomerUserSchema.safeParse(payload)
+        : createCustomerUserSchema.safeParse(payload);
 
     if (!validation.success) {
       const firstIssue = validation.error.issues[0]?.message || "Invalid input";
@@ -169,8 +201,10 @@ export function CustomerUserDialog({
       headerIcon={isEdit ? UserEdit01Icon : UserAdd01Icon}
       formError={formError}
       isDirty={isDirty}
+      isValid={isValid}
       isSubmitting={isSubmitting}
       onSubmit={handleSubmit}
+      submitLabel={isEdit ? "Save Changes" : "Create Customer"}
     >
       {/* Row 1: Full Name (full-width) */}
       <FullNameField
@@ -192,6 +226,17 @@ export function CustomerUserDialog({
         }}
       />
 
+      {/* Warning banner when disabling portal access on an existing active portal user */}
+      {isEdit && Boolean(user?.username) && !portalAccessEnabled && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-800 dark:text-amber-300">
+          <HugeiconsIcon icon={AlertCircleIcon} className="mt-0.5 size-4 shrink-0" />
+          <span>
+            Disabling portal access will revoke this customer&apos;s login credentials and prevent
+            them from viewing tickets online.
+          </span>
+        </div>
+      )}
+
       {/* Row 3: Credentials (only rendered when portal access is enabled) */}
       {portalAccessEnabled && (
         <CredentialsFields
@@ -200,6 +245,7 @@ export function CustomerUserDialog({
           password={password}
           setPassword={setPassword}
           isEdit={isEdit}
+          isPasswordRequired={isPasswordRequired}
           usernamePlaceholder="e.g. kisan_ramesh"
           usernameDescription="Lowercase portal login handle."
         />

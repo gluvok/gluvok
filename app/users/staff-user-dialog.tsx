@@ -76,23 +76,33 @@ export function StaffUserDialog({ open, onOpenChange, user, onSuccess }: StaffUs
     return false;
   }, [password, name, role, username, initialValues]);
 
+  const payload = useMemo(
+    () =>
+      isEdit && user
+        ? {
+            id: user.id,
+            username: username.toLowerCase().trim(),
+            name: name.trim(),
+            role,
+            password: password.trim(),
+          }
+        : {
+            username: username.toLowerCase().trim(),
+            name: name.trim(),
+            role,
+            password: password.trim(),
+          },
+    [isEdit, user, username, name, role, password],
+  );
+
+  const isValid = useMemo(() => {
+    return isEdit
+      ? updateStaffUserSchema.safeParse(payload).success
+      : createStaffUserSchema.safeParse(payload).success;
+  }, [isEdit, payload]);
+
   const handleSubmit = async () => {
     setFormError(null);
-
-    const payload = isEdit
-      ? {
-          id: user!.id,
-          username: username.toLowerCase().trim(),
-          name: name.trim(),
-          role,
-          password: password.trim(),
-        }
-      : {
-          username: username.toLowerCase().trim(),
-          name: name.trim(),
-          role,
-          password: password.trim(),
-        };
 
     const validation = isEdit
       ? updateStaffUserSchema.safeParse(payload)
@@ -157,6 +167,7 @@ export function StaffUserDialog({ open, onOpenChange, user, onSuccess }: StaffUs
       headerIcon={isEdit ? UserEdit01Icon : UserAdd01Icon}
       formError={formError}
       isDirty={isDirty}
+      isValid={isValid}
       isSubmitting={isSubmitting}
       onSubmit={handleSubmit}
     >

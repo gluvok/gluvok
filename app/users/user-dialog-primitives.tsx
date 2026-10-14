@@ -61,6 +61,7 @@ interface UserDialogShellProps {
   headerIcon: typeof UserIcon;
   formError: string | null;
   isDirty: boolean;
+  isValid?: boolean;
   isSubmitting: boolean;
   onSubmit: () => void;
   submitLabel?: string;
@@ -75,6 +76,7 @@ export function UserDialogShell({
   headerIcon,
   formError,
   isDirty,
+  isValid = true,
   isSubmitting,
   onSubmit,
   submitLabel = "Save Changes",
@@ -90,7 +92,10 @@ export function UserDialogShell({
             </div>
             <DialogTitle>{title}</DialogTitle>
           </div>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogDescription>
+            {description} Fields marked with{" "}
+            <span className="text-destructive font-semibold">*</span> are required.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 py-2">
@@ -130,7 +135,7 @@ export function UserDialogShell({
               type="button"
               size="sm"
               onClick={onSubmit}
-              disabled={isSubmitting || !isDirty}
+              disabled={isSubmitting || !isDirty || !isValid}
               className="min-w-28"
             >
               {isSubmitting ? (
@@ -173,7 +178,10 @@ export function FullNameField({
     <Field>
       <FieldLabel htmlFor="user-name">
         <HugeiconsIcon icon={UserIcon} className="size-3.5 text-muted-foreground" />
-        Full Name
+        <span>Full Name</span>
+        <span className="text-destructive font-semibold" aria-hidden="true">
+          *
+        </span>
       </FieldLabel>
       <Input
         id="user-name"
@@ -197,6 +205,7 @@ interface CredentialsFieldsProps {
   password: string;
   setPassword: (val: string) => void;
   isEdit: boolean;
+  isPasswordRequired?: boolean;
   usernamePlaceholder?: string;
   usernameDescription?: string;
 }
@@ -207,6 +216,7 @@ export function CredentialsFields({
   password,
   setPassword,
   isEdit,
+  isPasswordRequired = !isEdit,
   usernamePlaceholder = "e.g. alex_operator",
   usernameDescription = "Unique lowercase login handle.",
 }: CredentialsFieldsProps) {
@@ -215,7 +225,10 @@ export function CredentialsFields({
       <Field>
         <FieldLabel htmlFor="user-username">
           <HugeiconsIcon icon={TextFontIcon} className="size-3.5 text-muted-foreground" />
-          Username
+          <span>Username</span>
+          <span className="text-destructive font-semibold" aria-hidden="true">
+            *
+          </span>
         </FieldLabel>
         <Input
           id="user-username"
@@ -231,18 +244,27 @@ export function CredentialsFields({
       <Field>
         <FieldLabel htmlFor="user-password">
           <HugeiconsIcon icon={Key01Icon} className="size-3.5 text-muted-foreground" />
-          {isEdit ? "New Password (Optional)" : "Password"}
+          {isPasswordRequired ? (
+            <>
+              <span>Password</span>
+              <span className="text-destructive font-semibold" aria-hidden="true">
+                *
+              </span>
+            </>
+          ) : (
+            <span>New Password (Optional)</span>
+          )}
         </FieldLabel>
         <PasswordInput
           id="user-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder={isEdit ? "Leave blank to keep current" : "At least 6 characters"}
+          placeholder={isPasswordRequired ? "At least 6 characters" : "Leave blank to keep current"}
           className="h-8 text-xs"
           autoComplete="new-password"
         />
         <FieldDescription>
-          {isEdit ? "Leave blank to keep current." : "Minimum 6 characters."}
+          {isPasswordRequired ? "Minimum 6 characters." : "Leave blank to keep current password."}
         </FieldDescription>
       </Field>
     </div>
@@ -289,7 +311,10 @@ export function SystemRoleSelect({ value, onChange }: SystemRoleSelectProps) {
     <Field>
       <FieldLabel htmlFor="user-role">
         <HugeiconsIcon icon={SecurityCheckIcon} className="size-3.5 text-muted-foreground" />
-        System Role
+        <span>System Role</span>
+        <span className="text-destructive font-semibold" aria-hidden="true">
+          *
+        </span>
       </FieldLabel>
       <Combobox
         data={ROLE_OPTIONS}

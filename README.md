@@ -49,7 +49,7 @@ The `/centers` route provides a full-featured data table built with **TanStack T
     - `DataTableFacetedFilter`: Reusable single-select combobox filter powered by `kibo-ui/combobox` with matched option-to-input labels, leading option icons, styled at a compact `sm:w-44` width with single-line option rendering (`whitespace-nowrap`).
     - `DataTableCriteriaBar`: Unified active criteria bar encapsulating `@dnd-kit` multi-column drag-and-drop sort priority reordering and custom filter badge slots.
     - `DataTableContent`: Reusable TanStack Table container with built-in scoped loading, error/retry, and empty states.
-    - `DataTablePagination`: Responsive pagination with row selection count, Base UI rows-per-page selector, and connected `ButtonGroup` Previous/Next navigation controls.
+    - `DataTablePagination`: Responsive pagination with row selection count, searchable `kibo-ui/combobox` rows-per-page selector, and connected `ButtonGroup` Previous/Next navigation controls.
     - `DataTableViewOptions`: Column visibility dropdown menu.
   - **Clear Typography, Icons & Legibility**: Toolbar controls maintain clean compact sizing, while `kibo-ui` combobox popover options and trigger render leading circular status icons (`size-3.5`) alongside `text-xs` option labels for effortless scanning and selection.
   - **Strict shadcn `<Button>` Compliance**: All interactive buttons—including search clear crosses, date range dismiss buttons, sortable chip remove triggers, and `ButtonGroup` navigation items—strictly utilize shadcn `<Button>` primitives (`variant="ghost" size="icon-xs"` or `variant="outline" size="sm"`) with zero raw `<button>` HTML elements.
@@ -57,7 +57,7 @@ The `/centers` route provides a full-featured data table built with **TanStack T
   - **Date Range Picker with Responsive Dual-Calendar & Presets**: Pure Tailwind CSS adaptive popover layout with zero JS hooks: on mobile screens (`< sm`), displays a single-month calendar (`numberOfMonths={1}`) with top horizontal scrollable preset chips; on tablet/desktop (`sm+`), displays a dual-month calendar (`numberOfMonths={2}`) with left vertical preset sidebar. Eliminates horizontal popover clipping and layout shifts during hydration.
   - **Horizontally Scrollable Criteria Bar**: Active filter and multi-sort criteria chips scroll horizontally in a single sleek line (`overflow-x-auto no-scrollbar whitespace-nowrap`) on mobile with `shrink-0` chips and pin-right "Clear all", preventing multi-row badge stacking and keeping the table visible above the fold.
   - **Fluid Responsive Pagination with ButtonGroup**: Clean 2-row layout on mobile viewports: selection summary on row 1 and spaced rows-per-page, page count, and icon-only previous/next controls connected in a unified `ButtonGroup` on row 2, smoothly transitioning to single-line on desktop.
-  - **Server-Side Pagination**: TanStack Table `manualPagination` with Base UI `Select` rows-per-page selector (`10, 20, 30, 40, 50`) and connected Previous/Next buttons via `ButtonGroup`.
+  - **Server-Side Pagination**: TanStack Table `manualPagination` with `kibo-ui/combobox` rows-per-page selector (`10, 20, 30, 40, 50`) and connected Previous/Next buttons via `ButtonGroup`.
   - **Accurate Selection Counter**: Selection count displays `{selectedCount} of {currentRowsCount} row(s) selected.` representing the number of rows currently in the datatable on this page.
   - **Unified Multi-Table State Persistence**: Powered by Zustand (`stores/use-data-table-store.ts`) with `persist` middleware storing all entity tables (`centers`, `entries`, etc.) under a single `localStorage` key (`gluvok-tables-state`). Retains `search`, `filters`, `dateRange`, `sorting`, `pagination`, and `columnVisibility` across browser restarts and route transitions.
   - **Zero Layout Shift Hydration Guard**: Utilizes `useTableHydrated` hook to render a centered spinner card until `localStorage` rehydration completes, ensuring zero layout shift, zero flash of default state, and zero duplicate API requests.
@@ -72,11 +72,11 @@ The `/settings` route provides facility configuration controls powered by the un
   - Strict validation using **Zod** (`updateFactorySchema.strict()`): validates `name` (min 1 character) and `receipt_images_per_row` (integer between 1 and 6). Strict rejection with HTTP 400 on unexpected or invalid keys.
 - **Schema Mapping**: Maps to `factories` table in `schema.sql` (`id`, `name`, `receipt_images_per_row`, `created_at`, `updated_at`). `camera_crops` and `check_center_on_merge` have been removed from the schema and recorded in `migration.sql`.
 - **Features & UX**:
+  - **Cohesive Constrained Layout (`max-w-3xl`)**: Constrained layout width prevents overly stretched form fields on wide displays and aligns `<PageRefreshButton>` directly with the top right of `<FactoryCard>`.
   - **Unified Page Header & Reload**: Standard `<PageHeader>` with "Settings" title, descriptive subtitle, and integrated `PageRefreshButton`.
-  - **Unified Full-Width Card**: Spans full width (`w-full`) matching datatable page breadths, featuring a balanced 2-column responsive form grid on desktop viewports (`grid-cols-1 md:grid-cols-2`) and a 3-column facility metadata stat strip (`grid-cols-1 sm:grid-cols-3`).
   - **Clean Loading State**: Renders a centered `<Spinner />` with status message during initial data fetching, eliminating empty card shells.
   - **Dedicated Iconography**: Factory card uses `Factory01Icon` (distinct from Center's `Building01Icon`), Receipt Images uses `Image01Icon` (distinct from combobox All icon), and registered in `lib/icons.ts`.
-  - **Input Controls**: `<Input>` for factory name and Base UI `<Select>` (values 1–6) for receipt snapshot row layout.
+  - **Input Controls**: `<Input>` for factory name and searchable `kibo-ui/combobox` (values 1–6) for receipt snapshot row layout.
   - **Base UI Toast Feedback**: Integrated notification system powered by `@base-ui/react/toast` with `<Toaster />` in the root layout, delivering instant alerts on settings save and error events.
   - **Client-Side Zod Validation**: Form validates against `updateFactorySchema` before dispatching updates.
   - **Dirty State Tracking**: Save Changes and Reset buttons detect client form changes with disabled controls when pristine, `<Spinner>` indicators during requests, and inline timestamp tracking.
@@ -95,22 +95,20 @@ Administrative users (`/users`) and agricultural customers (`/customers`) are po
       Blocks deletion with HTTP 409 Conflict if linked historical records exist. Soft-deletes (`deleted_at: NOW()`) when safe.
   - **Unified Page Layout (`components/page-layout.tsx`)**: Consolidated repeated page container wrappers (`<div className="flex flex-col gap-4">`) across all datatable and settings pages (`/users`, `/customers`, `/centers`, `/settings`) with standardized header and metadata presentation.
   - **Optional & Co-Dependent Customer Credentials**: Customers (`role = 'customer'`) can be registered with or without portal login credentials:
+    - **Direct Portal Access Switch**: Defaults cleanly to an "Enable Customer Portal Access" switch, displaying username and password fields only when enabled.
     - **Flexible Co-Dependent Validation**: If a portal username is set, a password is mandatory; if a password is set, a username is mandatory; if neither is provided, only the customer's full name is required for delivery ticket tracking. Staff accounts retain strictly mandatory credentials.
     - **Database Integrity**: Backed by `chk_staff_credentials` check constraint (`role = 'customer' OR (username IS NOT NULL AND password_hash IS NOT NULL)`) and partial unique index `idx_users_username_active` on non-null usernames.
   - **Modular Architecture & Service Extraction**: Decomposed large files into single-responsibility modules:
     - `app/api/users/service.ts`: Centralizes database queries, Argon2id hashing, and constant O(1) batched conflict checks, keeping `app/api/users/route.ts` as a sleek HTTP routing controller.
     - `app/settings/factory-form.tsx`: Encapsulates the 2-column configuration grid and a clean 2-column metadata strip (Created On, Last Modified).
-  - **Role Iconography & Custom Color Badges**:
-    - **Admin**: `CrownIcon` in Purple/Violet.
-    - **Manager**: `Briefcase01Icon` in Blue.
-    - **Operator**: `HeadsetIcon` in Emerald.
-    - **Base User**: `UserIcon` in Slate.
-    - **Hardware Exclusion**: Hardware accounts are completely hidden from filter dropdowns and strictly rejected/ignored in backend filtering.
-  - **Simplified Search Placeholders**: Consistent, concise placeholders across all entity datatables (`Search centers...`, `Search users...`, `Search customers...`).
+  - **Universal Comboboxes & Role Iconography**:
+    - System Role dropdown utilizes `kibo-ui/combobox` with search and leading role icons (`Admin`: `CrownIcon`, `Manager`: `Briefcase01Icon`, `Operator`: `HeadsetIcon`, `Base User`: `UserIcon`).
+    - Hardware accounts are completely hidden from filter dropdowns and strictly rejected/ignored in backend filtering.
   - **Modal Ergonomics & Polish**:
+    - Far-left pinned dirty state badge (`"You have unsaved changes."` / `"All changes saved."`) in modal footers.
+    - Error banner renders leading `AlertCircleIcon` with accessible alert styling.
     - `Cancel01Icon` leading icon on all modal Cancel buttons.
     - Compact, single-line field descriptions designed for clear scanning without wrapping.
-    - Removed technical jargon (`", hashed via Argon2id"`).
 
 ## Getting Started
 

@@ -9,11 +9,13 @@ export const metadata: Metadata = {
 
 export default function SettingsPage() {
   return (
-    <PageLayout
-      title="Settings"
-      description="Platform preferences, system defaults, and factory configurations."
-    >
-      <FactoryCard />
-    </PageLayout>
+    <div className="max-w-3xl">
+      <PageLayout
+        title="Settings"
+        description="Platform preferences, system defaults, and factory configurations."
+      >
+        <FactoryCard />
+      </PageLayout>
+    </div>
   );
 }

@@ -2,25 +2,28 @@
 
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxGroup,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from "@/components/kibo-ui/combobox";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon, Clock01Icon, Image01Icon, TextFontIcon } from "@hugeicons/core-free-icons";
+import { ChevronsUpDownIcon } from "lucide-react";
 import { type Factory } from "./types";
 
 const RECEIPT_IMAGE_OPTIONS = [
-  { value: 1, label: "1 per row" },
-  { value: 2, label: "2 per row" },
-  { value: 3, label: "3 per row (Default)" },
-  { value: 4, label: "4 per row" },
-  { value: 5, label: "5 per row" },
-  { value: 6, label: "6 per row" },
+  { value: "1", label: "1 per row" },
+  { value: "2", label: "2 per row" },
+  { value: "3", label: "3 per row (Default)" },
+  { value: "4", label: "4 per row" },
+  { value: "5", label: "5 per row" },
+  { value: "6", label: "6 per row" },
 ];
 
 function formatDate(isoString: string): string {
@@ -49,6 +52,10 @@ export function FactoryForm({
   receiptImagesPerRow,
   onReceiptImagesPerRowChange,
 }: FactoryFormProps) {
+  const selectedLabel =
+    RECEIPT_IMAGE_OPTIONS.find((opt) => opt.value === String(receiptImagesPerRow))?.label ??
+    `${receiptImagesPerRow} per row`;
+
   return (
     <div className="flex flex-col gap-6">
       {/* 2-Column Responsive Form Grid */}
@@ -75,26 +82,53 @@ export function FactoryForm({
             <HugeiconsIcon icon={Image01Icon} className="size-3.5 text-muted-foreground" />
             Receipt Images per Row
           </FieldLabel>
-          <Select
-            items={RECEIPT_IMAGE_OPTIONS}
-            value={receiptImagesPerRow}
+          <Combobox
+            data={RECEIPT_IMAGE_OPTIONS}
+            type="receipt images"
+            value={String(receiptImagesPerRow)}
             onValueChange={(val) => {
               if (val) onReceiptImagesPerRowChange(Number(val));
             }}
           >
-            <SelectTrigger id="receipt-images" className="h-8 w-full text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="start">
-              <SelectGroup>
-                {RECEIPT_IMAGE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+            <ComboboxTrigger
+              id="receipt-images"
+              className="h-8 w-full justify-between border-input bg-input/20 px-2.5 text-xs font-normal hover:bg-accent/50 dark:bg-input/30"
+            >
+              <span className="flex items-center gap-1.5 truncate">
+                <HugeiconsIcon
+                  icon={Image01Icon}
+                  className="size-3.5 shrink-0 text-muted-foreground"
+                />
+                <span className="truncate">{selectedLabel}</span>
+              </span>
+              <ChevronsUpDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
+            </ComboboxTrigger>
+            <ComboboxContent
+              className="min-w-56"
+              popoverOptions={{
+                align: "start",
+                sideOffset: 4,
+              }}
+            >
+              <ComboboxInput placeholder="Search options..." className="h-8 text-xs" />
+              <ComboboxEmpty className="py-2 text-center text-xs text-muted-foreground">
+                No option found.
+              </ComboboxEmpty>
+              <ComboboxList>
+                <ComboboxGroup>
+                  {RECEIPT_IMAGE_OPTIONS.map((opt) => (
+                    <ComboboxItem key={opt.value} value={opt.value} className="text-xs">
+                      <HugeiconsIcon
+                        icon={Image01Icon}
+                        className="mr-1.5 size-3.5 text-muted-foreground"
+                      />
+                      <span>{opt.label}</span>
+                    </ComboboxItem>
+                  ))}
+                </ComboboxGroup>
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
           <FieldDescription>Snapshot photos embedded per row on printed tickets.</FieldDescription>
         </Field>
       </div>

@@ -11,24 +11,26 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Switch } from "@/components/ui/switch";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxGroup,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from "@/components/kibo-ui/combobox";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import { cn } from "cn";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  AlertCircleIcon,
   Briefcase01Icon,
   Cancel01Icon,
   CrownIcon,
@@ -41,6 +43,7 @@ import {
   UserEdit01Icon,
   UserIcon,
 } from "@hugeicons/core-free-icons";
+import { ChevronsUpDownIcon } from "lucide-react";
 import { createUserSchema, updateUserSchema, type User, type UserRole } from "./types";
 
 const ROLE_OPTIONS = [
@@ -73,7 +76,6 @@ export function UserFormDialog({
   const [name, setName] = useState<string>("");
   const [role, setRole] = useState<UserRole>(fixedRole ?? "operator");
   const [password, setPassword] = useState<string>("");
-  const [portalViewMode, setPortalViewMode] = useState<"switch" | "inline">("switch");
   const [portalAccessEnabled, setPortalAccessEnabled] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -113,9 +115,10 @@ export function UserFormDialog({
     if (password.trim() !== "") return true;
     if (name.trim() !== initialValues.name.trim()) return true;
     if (username.trim().toLowerCase() !== initialValues.username.trim().toLowerCase()) return true;
+    if (isCustomer && portalAccessEnabled !== Boolean(initialValues.username)) return true;
     if (!fixedRole && role !== initialValues.role) return true;
     return false;
-  }, [password, name, username, role, initialValues, fixedRole]);
+  }, [password, name, username, isCustomer, portalAccessEnabled, role, initialValues, fixedRole]);
 
   // Form validity check for enabling/disabling submit button
   const isValid = useMemo(() => {
@@ -123,27 +126,14 @@ export function UserFormDialog({
     if (trimmedName.length < 1) return false;
 
     if (isCustomer) {
-      if (portalViewMode === "switch") {
-        if (!portalAccessEnabled) return true;
-        const trimmedUser = username.trim();
-        const trimmedPass = password.trim();
-        if (trimmedUser.length < 3) return false;
-        if (!isEdit && trimmedPass.length < 6) return false;
-        if (isEdit && !user?.username && trimmedPass.length < 6) return false;
-        if (trimmedPass.length > 0 && trimmedPass.length < 6) return false;
-        return true;
-      } else {
-        const trimmedUser = username.trim();
-        const trimmedPass = password.trim();
-        if (trimmedUser.length === 0 && trimmedPass.length === 0) return true;
-        if (trimmedUser.length > 0 && trimmedUser.length < 3) return false;
-        if (trimmedPass.length > 0 && trimmedPass.length < 6) return false;
-        if (trimmedUser.length > 0 && !isEdit && trimmedPass.length < 6) return false;
-        if (trimmedUser.length > 0 && isEdit && !user?.username && trimmedPass.length < 6)
-          return false;
-        if (trimmedPass.length >= 6 && trimmedUser.length === 0) return false;
-        return true;
-      }
+      if (!portalAccessEnabled) return true;
+      const trimmedUser = username.trim();
+      const trimmedPass = password.trim();
+      if (trimmedUser.length < 3) return false;
+      if (!isEdit && trimmedPass.length < 6) return false;
+      if (isEdit && !user?.username && trimmedPass.length < 6) return false;
+      if (trimmedPass.length > 0 && trimmedPass.length < 6) return false;
+      return true;
     }
 
     const trimmedUser = username.trim();
@@ -152,24 +142,14 @@ export function UserFormDialog({
     if (!isEdit && trimmedPass.length < 6) return false;
     if (trimmedPass.length > 0 && trimmedPass.length < 6) return false;
     return true;
-  }, [name, isCustomer, portalViewMode, portalAccessEnabled, username, password, isEdit, user]);
-
-  const handlePortalViewModeChange = (mode: "switch" | "inline") => {
-    setPortalViewMode(mode);
-    if (mode === "switch") {
-      setPortalAccessEnabled(Boolean(username.trim()));
-    }
-  };
+  }, [name, isCustomer, portalAccessEnabled, username, password, isEdit, user]);
 
   const handleSubmit = async () => {
     setFormError(null);
 
     const effectiveUsername =
-      isCustomer && portalViewMode === "switch" && !portalAccessEnabled
-        ? ""
-        : username.toLowerCase().trim();
-    const effectivePassword =
-      isCustomer && portalViewMode === "switch" && !portalAccessEnabled ? "" : password.trim();
+      isCustomer && !portalAccessEnabled ? "" : username.toLowerCase().trim();
+    const effectivePassword = isCustomer && !portalAccessEnabled ? "" : password.trim();
 
     const payload = isEdit
       ? {
@@ -265,8 +245,13 @@ export function UserFormDialog({
 
         <div className="flex flex-col gap-4 py-2">
           {formError && (
-            <div className="rounded-md bg-destructive/10 p-2.5 text-xs text-destructive">
-              {formError}
+            <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-2.5 text-xs text-destructive">
+              <HugeiconsIcon
+                icon={AlertCircleIcon}
+                className="size-4 shrink-0"
+                data-icon="inline-start"
+              />
+              <span>{formError}</span>
             </div>
           )}
 
@@ -290,40 +275,8 @@ export function UserFormDialog({
             </FieldDescription>
           </Field>
 
-          {/* Customer Portal Access Toggle Mode */}
+          {/* Enable Customer Portal Access Switch */}
           {isCustomer && (
-            <div className="flex items-center justify-between rounded-lg border bg-muted/40 p-2.5">
-              <div className="flex flex-col">
-                <span className="text-xs font-medium">Portal Access Layout</span>
-                <span className="text-2xs text-muted-foreground">
-                  Choose how to configure credentials.
-                </span>
-              </div>
-              <ButtonGroup>
-                <Button
-                  type="button"
-                  variant={portalViewMode === "switch" ? "default" : "outline"}
-                  size="xs"
-                  className="h-7 text-2xs"
-                  onClick={() => handlePortalViewModeChange("switch")}
-                >
-                  Switch View
-                </Button>
-                <Button
-                  type="button"
-                  variant={portalViewMode === "inline" ? "default" : "outline"}
-                  size="xs"
-                  className="h-7 text-2xs"
-                  onClick={() => handlePortalViewModeChange("inline")}
-                >
-                  Inline View
-                </Button>
-              </ButtonGroup>
-            </div>
-          )}
-
-          {/* Switch View: Enable Portal Access Switch */}
-          {isCustomer && portalViewMode === "switch" && (
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div className="flex flex-col gap-0.5">
                 <span className="text-xs font-medium">Enable Customer Portal Access</span>
@@ -345,14 +298,14 @@ export function UserFormDialog({
             </div>
           )}
 
-          {/* Credentials section: shown if staff, or inline customer, or switch customer with portal enabled */}
-          {(!isCustomer || portalViewMode === "inline" || portalAccessEnabled) && (
+          {/* Credentials section: shown if staff, or if customer with portal access enabled */}
+          {(!isCustomer || portalAccessEnabled) && (
             <div className="flex flex-col gap-4">
               {/* Username */}
               <Field>
                 <FieldLabel htmlFor="user-username">
                   <HugeiconsIcon icon={TextFontIcon} className="size-3.5 text-muted-foreground" />
-                  Username {isCustomer && <span className="text-muted-foreground">(Optional)</span>}
+                  Username
                 </FieldLabel>
                 <Input
                   id="user-username"
@@ -363,9 +316,7 @@ export function UserFormDialog({
                   autoComplete="off"
                 />
                 <FieldDescription>
-                  {isCustomer
-                    ? "Optional lowercase portal handle."
-                    : "Unique lowercase login handle."}
+                  {isCustomer ? "Lowercase portal login handle." : "Unique lowercase login handle."}
                 </FieldDescription>
               </Field>
 
@@ -373,32 +324,20 @@ export function UserFormDialog({
               <Field>
                 <FieldLabel htmlFor="user-password">
                   <HugeiconsIcon icon={Key01Icon} className="size-3.5 text-muted-foreground" />
-                  {isEdit
-                    ? "New Password (Optional)"
-                    : isCustomer
-                      ? "Password (Required if username set)"
-                      : "Password"}
+                  {isEdit ? "New Password (Optional)" : "Password"}
                 </FieldLabel>
                 <PasswordInput
                   id="user-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={
-                    isEdit
-                      ? "Leave blank to keep current password"
-                      : isCustomer
-                        ? "At least 6 characters if portal access enabled"
-                        : "At least 6 characters"
+                    isEdit ? "Leave blank to keep current password" : "At least 6 characters"
                   }
                   className="h-8 text-xs"
                   autoComplete="new-password"
                 />
                 <FieldDescription>
-                  {isEdit
-                    ? "Leave blank to keep current password."
-                    : isCustomer
-                      ? "Minimum 6 characters for portal access."
-                      : "Minimum 6 characters."}
+                  {isEdit ? "Leave blank to keep current password." : "Minimum 6 characters."}
                 </FieldDescription>
               </Field>
             </div>
@@ -414,39 +353,68 @@ export function UserFormDialog({
                 />
                 System Role
               </FieldLabel>
-              <Select
-                items={ROLE_OPTIONS}
+              <Combobox
+                data={ROLE_OPTIONS}
+                type="role"
                 value={role}
                 onValueChange={(val) => {
                   if (val) setRole(val as UserRole);
                 }}
               >
-                <SelectTrigger id="user-role" className="h-8 w-full text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent align="start">
-                  <SelectGroup>
-                    {ROLE_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        <div className="flex items-center gap-2">
+                <ComboboxTrigger
+                  id="user-role"
+                  className="h-8 w-full justify-between border-input bg-input/20 px-2.5 text-xs font-normal hover:bg-accent/50 dark:bg-input/30"
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    {(() => {
+                      const selectedOpt = ROLE_OPTIONS.find((o) => o.value === role);
+                      const IconComponent = selectedOpt?.icon ?? SecurityCheckIcon;
+                      return (
+                        <>
+                          <HugeiconsIcon
+                            icon={IconComponent}
+                            className="size-3.5 shrink-0 text-muted-foreground"
+                          />
+                          <span className="truncate">{selectedOpt?.label ?? "Select role..."}</span>
+                        </>
+                      );
+                    })()}
+                  </span>
+                  <ChevronsUpDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                </ComboboxTrigger>
+                <ComboboxContent
+                  className="min-w-56"
+                  popoverOptions={{
+                    align: "start",
+                    sideOffset: 4,
+                  }}
+                >
+                  <ComboboxInput placeholder="Search role..." className="h-8 text-xs" />
+                  <ComboboxEmpty className="py-2 text-center text-xs text-muted-foreground">
+                    No role found.
+                  </ComboboxEmpty>
+                  <ComboboxList>
+                    <ComboboxGroup>
+                      {ROLE_OPTIONS.map((opt) => (
+                        <ComboboxItem key={opt.value} value={opt.value} className="text-xs">
                           <HugeiconsIcon
                             icon={opt.icon}
-                            className="size-3.5 text-muted-foreground"
+                            className="mr-1.5 size-3.5 text-muted-foreground"
                           />
                           <span>{opt.label}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                        </ComboboxItem>
+                      ))}
+                    </ComboboxGroup>
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
               <FieldDescription>Permission tier for system access.</FieldDescription>
             </Field>
           )}
         </div>
 
-        <DialogFooter className="flex flex-row items-center justify-between w-full gap-2 pt-2">
-          <div className="flex items-center gap-2 text-2xs text-muted-foreground">
+        <DialogFooter className="flex flex-row items-center justify-between sm:justify-between w-full gap-2 pt-2">
+          <div className="mr-auto flex items-center gap-2 text-2xs text-muted-foreground">
             <span
               className={cn(
                 "size-2 rounded-full shrink-0",

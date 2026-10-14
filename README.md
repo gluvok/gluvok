@@ -43,6 +43,8 @@ The `/centers` route provides a full-featured data table built with **TanStack T
   - **Axios API Client**: Native `fetch` replaced with typed `axios.get()` requests.
   - **Centralized API Query Engine (`lib/api-query.ts`) & `http-status-codes`**: Standardized server-side pagination, multi-column sorting (`parseSorting`), date range filtering with inclusive end-of-day normalization (`applyDateRange`), and response formatting (`formatPaginatedResponse`) across all datatable endpoints, along with strict HTTP status code enums (`StatusCodes` from `http-status-codes`) eliminating magic numbers and duplicate routines.
   - **Modular Scalable Data Table Layer (`components/data-table/`)**: Extracted a fully reusable component layer designed to support any current or future entity data tables (`centers`, `factories`, `users`, `tickets`, etc.) while keeping `components/ui/` primitives completely untouched:
+    - `useDataTable`: Generic, strongly-typed custom hook managing Zustand store persistence, date range conversion, debounced search (300ms), API query serialization, error handling, auto-fetching, and TanStack Table (`useTable`) instantiation. Eliminates hundreds of lines of duplicate data table setup across pages.
+    - `DataTableHydrationCard`: Centered spinner fallback component displayed while `localStorage` state rehydrates.
     - `DataTableSearchInput`: Search input with search icon, clear button, and micro-typography.
     - `DataTableFacetedFilter`: Reusable single-select combobox filter powered by `kibo-ui/combobox` with matched option-to-input labels, leading option icons, styled at a compact `sm:w-44` width with single-line option rendering (`whitespace-nowrap`).
     - `DataTableCriteriaBar`: Unified active criteria bar encapsulating `@dnd-kit` multi-column drag-and-drop sort priority reordering and custom filter badge slots.
@@ -144,6 +146,7 @@ pnpm run seed:test:clean
 
 Running `pnpm run seed:test` or `pnpm run seed:test:clean` provisions high-volume fixtures specifically tailored for testing TanStack Table pagination, column sorting, and filtering:
 
+- **Zero N+1 Batch Architecture**: All database seeding routines strictly enforce constant O(1) batched lookups (`.in(...)`) and bulk insertions (`.insert([...])`) across factories, users, centers, commodities, customers, entries, weighments, and tickets.
 - **Factories**: 2 (`Default Factory`, `Apex Agro Logistics`)
 - **Users**: Staff, hardware, and customer accounts in users table
 - **Centers**: 50 (35 in Factory 1, 15 in Factory 2) with staggered `created_at` dates (ideal for testing 10, 20, 30, 40, and 50 page sizes)

@@ -1,20 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import axios from "axios";
-import {
-  useTable,
-  type ColumnVisibilityState,
-  type PaginationState,
-  type RowSelectionState,
-  type SortingState,
-  type Updater,
-} from "@tanstack/react-table";
-import type { DateRange } from "react-day-picker";
+import { useCallback, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import { DataTableSearchInput } from "@/components/data-table/data-table-search-input";
 import {
   DataTableFacetedFilter,
@@ -25,6 +14,8 @@ import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { DatePickerWithRange } from "@/components/data-table/date-range-picker";
+import { DataTableHydrationCard } from "@/components/data-table/data-table-hydration-card";
+import { useDataTable } from "@/components/data-table/use-data-table";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Briefcase01Icon,
@@ -41,14 +32,7 @@ import {
   UserIcon,
 } from "@hugeicons/core-free-icons";
 import { getColumns, type UsersTableMeta } from "./columns";
-import { features } from "@/components/data-table/data-table-features";
-import { useDebounce } from "@/hooks/use-debounce";
-import {
-  DEFAULT_TABLE_ITEM_STATE,
-  useDataTableStore,
-  useTableHydrated,
-} from "@/stores/use-data-table-store";
-import { type User, type UsersApiResponse } from "./types";
+import { type User } from "./types";
 import { UserFormDialog } from "./user-form-dialog";
 import { UserDeleteDialog } from "./user-delete-dialog";
 
@@ -87,112 +71,11 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
   const tableId = isCustomer ? "customers" : "users";
   const entityLabel = isCustomer ? "Customer" : "User";
 
-  const hasHydrated = useTableHydrated();
-  const store = useDataTableStore();
-  const tableState = store.tables[tableId] ?? DEFAULT_TABLE_ITEM_STATE;
-
-  const [data, setData] = useState<User[]>([]);
-  const [totalCount, setTotalCount] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
   // Dialog states
   const [formDialogOpen, setFormDialogOpen] = useState<boolean>(false);
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<User | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [usersToDelete, setUsersToDelete] = useState<User[]>([]);
-
-  // Read persisted state from store
-  const search = tableState.search;
-  const roleFilter = tableState.filters["role"] ?? "all";
-  const dateRange = useMemo<DateRange | undefined>(() => {
-    if (!tableState.dateRange?.from) return undefined;
-    return {
-      from: new Date(tableState.dateRange.from),
-      to: tableState.dateRange.to ? new Date(tableState.dateRange.to) : undefined,
-    };
-  }, [tableState.dateRange]);
-
-  const sorting = tableState.sorting;
-  const pagination = tableState.pagination;
-  const columnVisibility = tableState.columnVisibility;
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-
-  const debouncedSearch = useDebounce(search, 300);
-
-  // Actions updating persisted store
-  const setSearch = (val: string) => store.setTableSearch(tableId, val);
-  const setRoleFilter = (val: string) => store.setTableFilter(tableId, "role", val);
-  const setDateRange = (range: DateRange | undefined) =>
-    store.setTableDateRange(
-      tableId,
-      range ? { from: range.from?.toISOString(), to: range.to?.toISOString() } : undefined,
-    );
-  const setSorting = (updater: Updater<SortingState>) => store.setTableSorting(tableId, updater);
-  const removeSort = (columnId: string) => store.removeTableSort(tableId, columnId);
-  const resetSorting = () => store.resetTableSorting(tableId);
-  const setPagination = (updater: Updater<PaginationState>) =>
-    store.setTablePagination(tableId, updater);
-  const setColumnVisibility = (updater: Updater<ColumnVisibilityState>) =>
-    store.setTableColumnVisibility(tableId, updater);
-  const resetAllFilters = () => store.resetTableFilters(tableId);
-  const resetAllCriteria = () => {
-    resetAllFilters();
-    resetSorting();
-  };
-
-  const columns = useMemo(
-    () => getColumns({ showRole: !isCustomer, entityLabel }),
-    [isCustomer, entityLabel],
-  );
-
-  // Fetch users via axios with multi-column sorting and filtering
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.get<UsersApiResponse>("/api/users", {
-        params: {
-          page: pagination.pageIndex + 1,
-          pageSize: pagination.pageSize,
-          ...(sorting.length > 0 && {
-            sort: sorting.map((s) => `${s.id}.${s.desc ? "desc" : "asc"}`).join(","),
-          }),
-          ...(debouncedSearch && { search: debouncedSearch }),
-          ...(isCustomer ? { role: "customer" } : roleFilter !== "all" ? { role: roleFilter } : {}),
-          ...(dateRange?.from && { from: dateRange.from.toISOString() }),
-          ...(dateRange?.to && { to: dateRange.to.toISOString() }),
-        },
-      });
-
-      setData(response.data.data ?? []);
-      setTotalCount(response.data.totalCount ?? 0);
-    } catch (err) {
-      const msg =
-        axios.isAxiosError(err) && err.response?.data?.error
-          ? err.response.data.error
-          : err instanceof Error
-            ? err.message
-            : "An unexpected error occurred";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    pagination.pageIndex,
-    pagination.pageSize,
-    sorting,
-    debouncedSearch,
-    isCustomer,
-    roleFilter,
-    dateRange,
-  ]);
-
-  useEffect(() => {
-    if (!hasHydrated) return;
-    fetchUsers();
-  }, [hasHydrated, fetchUsers]);
 
   // Handle edit user trigger from row action
   const handleEditUser = useCallback((user: User) => {
@@ -215,30 +98,44 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
     [handleEditUser, handleDeleteUser],
   );
 
-  const table = useTable({
-    features,
-    data,
+  const columns = useMemo(
+    () => getColumns({ showRole: !isCustomer, entityLabel }),
+    [isCustomer, entityLabel],
+  );
+
+  const extraParams = useMemo(() => (isCustomer ? { role: "customer" } : undefined), [isCustomer]);
+
+  const {
+    table,
+    loading,
+    error,
+    hasHydrated,
+    search,
+    setSearch,
+    dateRange,
+    setDateRange,
+    sorting,
+    setSorting,
+    removeSort,
+    setPagination,
+    setRowSelection,
+    selectedRows,
+    selectedCount,
+    hasActiveSorts,
+    hasActiveFilters,
+    resetAllCriteria,
+    setFilter,
+    refresh,
+    tableState,
+  } = useDataTable<User>({
+    tableId,
     columns,
-    manualPagination: true,
-    rowCount: totalCount,
-    manualSorting: true,
-    manualFiltering: true,
-    enableMultiSort: true,
-    onPaginationChange: setPagination,
-    onSortingChange: setSorting,
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
+    endpoint: "/api/users",
+    extraParams,
     meta: tableMeta,
-    state: {
-      pagination,
-      sorting,
-      columnVisibility,
-      rowSelection,
-    },
   });
 
-  const selectedRows = table.getSelectedRowModel().rows;
-  const selectedCount = selectedRows.length;
+  const roleFilter = isCustomer ? "customer" : (tableState.filters["role"] ?? "all");
 
   const handleAddUser = () => {
     setSelectedUserForEdit(null);
@@ -247,30 +144,17 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
 
   const handleBatchDelete = () => {
     if (selectedCount === 0) return;
-    const targets = selectedRows.map((r) => r.original);
-    setUsersToDelete(targets);
+    setUsersToDelete(selectedRows);
     setDeleteDialogOpen(true);
   };
 
   const handleMutationSuccess = () => {
     setRowSelection({});
-    fetchUsers();
+    refresh();
   };
 
-  const isDefaultSort = sorting.length === 1 && sorting[0].id === "id" && sorting[0].desc === true;
-  const hasActiveSorts = !isDefaultSort && sorting.length > 0;
-  const hasActiveFilters = Boolean((!isCustomer && roleFilter !== "all") || dateRange?.from);
-
-  // Hydration guard: show clean centered spinner until localStorage is hydrated
   if (!hasHydrated) {
-    return (
-      <div className="flex h-64 items-center justify-center rounded-md border border-border bg-card">
-        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-          <Spinner className="size-6 text-muted-foreground" />
-          <span className="text-xs">Loading table preferences...</span>
-        </div>
-      </div>
-    );
+    return <DataTableHydrationCard />;
   }
 
   return (
@@ -293,8 +177,7 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
               options={ROLE_OPTIONS}
               value={roleFilter}
               onValueChange={(val) => {
-                setRoleFilter(val);
-                setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+                setFilter("role", val);
               }}
             />
           )}
@@ -307,7 +190,6 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
             date={dateRange}
             onDateChange={(range) => {
               setDateRange(range);
-              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
             }}
             className="flex-1 sm:flex-initial"
           />
@@ -373,8 +255,7 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
               variant="ghost"
               size="icon-xs"
               onClick={() => {
-                setRoleFilter("all");
-                setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+                setFilter("role", "all");
               }}
               className="size-4 rounded-full p-0 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
               aria-label="Remove role filter"
@@ -407,7 +288,6 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
               size="icon-xs"
               onClick={() => {
                 setDateRange(undefined);
-                setPagination((prev) => ({ ...prev, pageIndex: 0 }));
               }}
               className="size-4 rounded-full p-0 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
               aria-label="Remove date range filter"
@@ -423,7 +303,7 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
         table={table}
         loading={loading}
         error={error}
-        onRetry={fetchUsers}
+        onRetry={refresh}
         emptyMessage={
           isCustomer
             ? "No customers found matching the specified filters."

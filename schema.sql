@@ -86,7 +86,6 @@ END $$;
 CREATE TABLE IF NOT EXISTS factories (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    check_center_on_merge BOOLEAN NOT NULL DEFAULT TRUE,
     receipt_images_per_row INT NOT NULL DEFAULT 3,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

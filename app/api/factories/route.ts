@@ -12,7 +12,7 @@ export async function GET() {
   try {
     const { data, error } = await supabase
       .from("factories")
-      .select("id, name, check_center_on_merge, receipt_images_per_row, created_at, updated_at")
+      .select("id, name, receipt_images_per_row, created_at, updated_at")
       .eq("id", HARDCODED_FACTORY_ID)
       .is("deleted_at", null)
       .single();
@@ -50,7 +50,7 @@ export async function PATCH(request: Request) {
       .update(updates)
       .eq("id", HARDCODED_FACTORY_ID)
       .is("deleted_at", null)
-      .select("id, name, check_center_on_merge, receipt_images_per_row, created_at, updated_at")
+      .select("id, name, receipt_images_per_row, created_at, updated_at")
       .single();
 
     if (error || !data) {

@@ -68,14 +68,14 @@ The `/settings` route provides facility configuration controls powered by the un
 
 - **Backend Endpoint**: `GET /api/factories` and `PATCH /api/factories`
   - Current-tenant preview hardcoded to Factory ID `1` (architected for seamless migration to session-based authentication).
-  - Strict validation using **Zod** (`updateFactorySchema.strict()`): validates `name` (min 1 character), `check_center_on_merge` (boolean), and `receipt_images_per_row` (integer between 1 and 6). Strict rejection with HTTP 400 on unexpected or invalid keys.
-- **Schema Mapping**: Maps to `factories` table in `schema.sql` (`id`, `name`, `check_center_on_merge`, `receipt_images_per_row`, `created_at`, `updated_at`). `camera_crops` has been removed from the schema and recorded in `migration.sql`.
+  - Strict validation using **Zod** (`updateFactorySchema.strict()`): validates `name` (min 1 character) and `receipt_images_per_row` (integer between 1 and 6). Strict rejection with HTTP 400 on unexpected or invalid keys.
+- **Schema Mapping**: Maps to `factories` table in `schema.sql` (`id`, `name`, `receipt_images_per_row`, `created_at`, `updated_at`). `camera_crops` and `check_center_on_merge` have been removed from the schema and recorded in `migration.sql`.
 - **Features & UX**:
   - **Unified Page Header & Reload**: Standard `<PageHeader>` with "Settings" title, descriptive subtitle, and integrated `PageRefreshButton`.
-  - **Full-Width Factory Card**: The configuration card spans full width (`w-full`), matching the datatable layout on `/centers`.
+  - **Unified Full-Width Card**: Spans full width (`w-full`) matching datatable page breadths, featuring a balanced 2-column responsive form grid on desktop viewports (`grid-cols-1 md:grid-cols-2`) and a 3-column facility metadata stat strip (`grid-cols-1 sm:grid-cols-3`).
   - **Clean Loading State**: Renders a centered `<Spinner />` with status message during initial data fetching, eliminating empty card shells.
   - **Dedicated Iconography**: Factory card uses `Factory01Icon` (distinct from Center's `Building01Icon`), Receipt Images uses `Image01Icon` (distinct from combobox All icon), and registered in `lib/icons.ts`.
-  - **Input Controls**: `<Input>` for factory name, `<Checkbox>` for center merge validation, and Base UI `<Select>` (values 1–6) for receipt snapshot row layout.
+  - **Input Controls**: `<Input>` for factory name and Base UI `<Select>` (values 1–6) for receipt snapshot row layout.
   - **Base UI Toast Feedback**: Integrated notification system powered by `@base-ui/react/toast` with `<Toaster />` in the root layout, delivering instant alerts on settings save and error events.
   - **Client-Side Zod Validation**: Form validates against `updateFactorySchema` before dispatching updates.
   - **Dirty State Tracking**: Save Changes and Reset buttons detect client form changes with disabled controls when pristine, `<Spinner>` indicators during requests, and inline timestamp tracking.

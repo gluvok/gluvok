@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function SettingsPage() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex w-full flex-col gap-4">
       <PageHeader
         title="Settings"
         description="Platform preferences, system defaults, and factory configurations."

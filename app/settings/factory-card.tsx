@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -24,7 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { Separator } from "@/components/ui/separator";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -37,8 +36,8 @@ import {
   Image01Icon,
   RefreshIcon,
   TextFontIcon,
-  ToggleOnIcon,
 } from "@hugeicons/core-free-icons";
+import { cn } from "@/lib/utils";
 import { type Factory, type FactoryApiResponse, updateFactorySchema } from "./types";
 
 const RECEIPT_IMAGE_OPTIONS = [
@@ -68,7 +67,6 @@ export function FactoryCard() {
 
   // Form states
   const [name, setName] = useState<string>("");
-  const [checkCenterOnMerge, setCheckCenterOnMerge] = useState<boolean>(true);
   const [receiptImagesPerRow, setReceiptImagesPerRow] = useState<number>(3);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
@@ -80,7 +78,6 @@ export function FactoryCard() {
       const data = response.data.data;
       setFactory(data);
       setName(data.name);
-      setCheckCenterOnMerge(data.check_center_on_merge);
       setReceiptImagesPerRow(data.receipt_images_per_row);
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err)
@@ -100,24 +97,18 @@ export function FactoryCard() {
 
   const isDirty = useMemo(() => {
     if (!factory) return false;
-    return (
-      name !== factory.name ||
-      checkCenterOnMerge !== factory.check_center_on_merge ||
-      receiptImagesPerRow !== factory.receipt_images_per_row
-    );
-  }, [factory, name, checkCenterOnMerge, receiptImagesPerRow]);
+    return name !== factory.name || receiptImagesPerRow !== factory.receipt_images_per_row;
+  }, [factory, name, receiptImagesPerRow]);
 
   const handleReset = useCallback(() => {
     if (!factory) return;
     setName(factory.name);
-    setCheckCenterOnMerge(factory.check_center_on_merge);
     setReceiptImagesPerRow(factory.receipt_images_per_row);
   }, [factory]);
 
   const handleSave = useCallback(async () => {
     const payload = {
       name: name.trim(),
-      check_center_on_merge: checkCenterOnMerge,
       receipt_images_per_row: receiptImagesPerRow,
     };
 
@@ -137,7 +128,6 @@ export function FactoryCard() {
       const updated = response.data.data;
       setFactory(updated);
       setName(updated.name);
-      setCheckCenterOnMerge(updated.check_center_on_merge);
       setReceiptImagesPerRow(updated.receipt_images_per_row);
 
       toast.add({
@@ -160,7 +150,7 @@ export function FactoryCard() {
     } finally {
       setIsSaving(false);
     }
-  }, [name, checkCenterOnMerge, receiptImagesPerRow]);
+  }, [name, receiptImagesPerRow]);
 
   if (loading) {
     return (
@@ -202,74 +192,63 @@ export function FactoryCard() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <HugeiconsIcon icon={Factory01Icon} className="size-5 text-primary" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <HugeiconsIcon icon={Factory01Icon} className="size-5" />
+            </div>
             <div>
               <CardTitle>Factory Configuration</CardTitle>
               <CardDescription>
-                Manage facility defaults, merging constraints, and receipt generation.
+                Manage facility identity, scale snapshot layout, and system preferences.
               </CardDescription>
             </div>
           </div>
-          <Badge variant="outline" className="shrink-0 gap-1 font-mono text-2xs">
-            <HugeiconsIcon icon={HashtagIcon} className="size-3 text-muted-foreground" />
-            ID: {factory.id}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="shrink-0 gap-1 font-mono text-2xs">
+              <HugeiconsIcon icon={HashtagIcon} className="size-3 text-muted-foreground" />
+              ID: {factory.id}
+            </Badge>
+            <Badge
+              variant="secondary"
+              className="shrink-0 text-2xs font-normal text-emerald-600 dark:text-emerald-400"
+            >
+              Active Facility
+            </Badge>
+          </div>
         </div>
       </CardHeader>
 
       <Separator />
 
       <CardContent className="pt-6">
-        <FieldGroup>
-          {/* Factory Name */}
-          <Field>
-            <FieldLabel htmlFor="factory-name">
-              <HugeiconsIcon icon={TextFontIcon} className="size-3.5 text-muted-foreground" />
-              Factory Name
-            </FieldLabel>
-            <Input
-              id="factory-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter factory name..."
-              className="h-8 max-w-md text-xs"
-            />
-            <FieldDescription>
-              The primary organizational name assigned to this processing facility.
-            </FieldDescription>
-          </Field>
-
-          {/* Check Center On Merge */}
-          <Field orientation="horizontal" className="items-start gap-3 rounded-lg border p-3">
-            <Checkbox
-              id="check-center-merge"
-              checked={checkCenterOnMerge}
-              onCheckedChange={(checked) => setCheckCenterOnMerge(Boolean(checked))}
-              className="mt-0.5"
-            />
-            <div className="flex flex-col gap-1">
-              <FieldLabel
-                htmlFor="check-center-merge"
-                className="cursor-pointer text-xs font-medium"
-              >
-                <HugeiconsIcon icon={ToggleOnIcon} className="size-3.5 text-muted-foreground" />
-                Check Center on Merge
+        <div className="flex flex-col gap-6">
+          {/* 2-Column Responsive Form Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Column 1: Factory Name */}
+            <Field>
+              <FieldLabel htmlFor="factory-name">
+                <HugeiconsIcon icon={TextFontIcon} className="size-3.5 text-muted-foreground" />
+                Factory Name
               </FieldLabel>
+              <Input
+                id="factory-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter factory name..."
+                className="h-8 w-full text-xs"
+              />
               <FieldDescription>
-                Enforce center matching when combining inbound and outbound weighment records.
+                The primary organizational name assigned to this processing facility.
               </FieldDescription>
-            </div>
-          </Field>
+            </Field>
 
-          {/* Receipt Images Per Row */}
-          <Field>
-            <FieldLabel htmlFor="receipt-images">
-              <HugeiconsIcon icon={Image01Icon} className="size-3.5 text-muted-foreground" />
-              Receipt Images per Row
-            </FieldLabel>
-            <div className="flex flex-wrap items-center gap-3">
+            {/* Column 2: Receipt Images Per Row */}
+            <Field>
+              <FieldLabel htmlFor="receipt-images">
+                <HugeiconsIcon icon={Image01Icon} className="size-3.5 text-muted-foreground" />
+                Receipt Images per Row
+              </FieldLabel>
               <Select
                 items={RECEIPT_IMAGE_OPTIONS}
                 value={receiptImagesPerRow}
@@ -277,10 +256,10 @@ export function FactoryCard() {
                   if (val) setReceiptImagesPerRow(Number(val));
                 }}
               >
-                <SelectTrigger id="receipt-images" className="h-8 w-44 text-xs">
+                <SelectTrigger id="receipt-images" className="h-8 w-full text-xs">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent align="start" className="min-w-44">
+                <SelectContent align="start">
                   <SelectGroup>
                     {RECEIPT_IMAGE_OPTIONS.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
@@ -290,35 +269,61 @@ export function FactoryCard() {
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <span className="text-2xs text-muted-foreground">
-                (Snapshots per row on printed weighment slips)
-              </span>
-            </div>
-          </Field>
+              <FieldDescription>
+                Number of vehicle snapshot photos embedded per row on printed scale tickets.
+              </FieldDescription>
+            </Field>
+          </div>
 
-          {/* Timestamps */}
-          <div className="flex flex-wrap items-center gap-4 pt-2 text-2xs text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <HugeiconsIcon icon={Calendar01Icon} className="size-3 text-muted-foreground" />
-              <span>Created:</span>
-              <span className="font-medium text-foreground">{formatDate(factory.created_at)}</span>
+          {/* Full-Width 3-Column Metadata Stat Strip */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-lg bg-muted/30 p-3.5 text-xs border border-border/60">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-7 items-center justify-center rounded-md bg-background border text-muted-foreground">
+                <HugeiconsIcon icon={HashtagIcon} className="size-3.5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xs text-muted-foreground">Facility Scope</span>
+                <span className="font-medium text-foreground">Factory #{factory.id} (Primary)</span>
+              </div>
             </div>
-            <span className="text-border">•</span>
-            <div className="flex items-center gap-1.5">
-              <HugeiconsIcon icon={Clock01Icon} className="size-3 text-muted-foreground" />
-              <span>Updated:</span>
-              <span className="font-medium text-foreground">{formatDate(factory.updated_at)}</span>
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-7 items-center justify-center rounded-md bg-background border text-muted-foreground">
+                <HugeiconsIcon icon={Calendar01Icon} className="size-3.5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xs text-muted-foreground">Created On</span>
+                <span className="font-medium text-foreground">
+                  {formatDate(factory.created_at)}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-7 items-center justify-center rounded-md bg-background border text-muted-foreground">
+                <HugeiconsIcon icon={Clock01Icon} className="size-3.5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xs text-muted-foreground">Last Modified</span>
+                <span className="font-medium text-foreground">
+                  {formatDate(factory.updated_at)}
+                </span>
+              </div>
             </div>
           </div>
-        </FieldGroup>
+        </div>
       </CardContent>
 
       <Separator />
 
       <CardFooter className="flex items-center justify-between gap-3 pt-4">
-        <p className="text-2xs text-muted-foreground">
-          {isDirty ? "You have unsaved changes." : "All changes saved."}
-        </p>
+        <div className="flex items-center gap-2 text-2xs text-muted-foreground">
+          <span
+            className={cn(
+              "size-2 rounded-full shrink-0",
+              isDirty ? "bg-amber-500 animate-pulse" : "bg-emerald-500",
+            )}
+          />
+          <span>{isDirty ? "You have unsaved changes." : "All changes saved."}</span>
+        </div>
         <div className="flex items-center gap-2">
           <Button
             type="button"
@@ -326,7 +331,7 @@ export function FactoryCard() {
             size="sm"
             disabled={!isDirty || isSaving}
             onClick={handleReset}
-            className="gap-1.5 text-xs"
+            className="h-8 gap-1.5 text-xs"
           >
             <HugeiconsIcon icon={RefreshIcon} className="size-3.5" data-icon="inline-start" />
             Reset
@@ -336,7 +341,7 @@ export function FactoryCard() {
             size="sm"
             disabled={!isDirty || isSaving || !name.trim()}
             onClick={handleSave}
-            className="gap-1.5 text-xs"
+            className="h-8 gap-1.5 text-xs"
           >
             {isSaving ? (
               <Spinner className="size-3.5" data-icon="inline-start" />

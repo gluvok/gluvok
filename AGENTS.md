@@ -188,6 +188,23 @@ For any JavaScript / TypeScript / Node modifications:
 - **In-Memory Aggregation**: Aggregate counts, maps, lookups, or conflicts in application memory after fetching the batched result set rather than querying row-by-row.
 - **Bulk Mutations**: Use bulk updates/deletions (`.in("id", targetIds).delete()` or `.in("id", targetIds).update(...)`) instead of individual per-record operations.
 
+## 14. Strict Backend API DRY & Query Parameter Standardization
+
+**Never duplicate API pagination, multi-column sorting, date filtering, or response formatting across route handlers.**
+
+- **Centralized API Query Utilities (`lib/api-query.ts`)**: All route handlers implementing paginated entity queries (`GET /api/*`) MUST use the centralized query utilities in `lib/api-query.ts`:
+  - `parsePagination(searchParams)`: Standardized extraction of `page`, `pageSize` (capped at 100), and `offset`.
+  - `parseSorting(searchParams, ALLOWED_SORT_COLUMNS, defaultSort)`: Standardized multi-column sorting parser supporting `col.asc,col2.desc` with column whitelisting.
+  - `applyDateRange(query, searchParams, column)`: Standardized date range filtering (`from`, `to` with 23:59:59.999 end-of-day normalization).
+  - `applySortingAndPagination(query, sortRules, pagination)`: Standardized sequential `.order()` and `.range()` chaining.
+  - `formatPaginatedResponse(data, count, pagination)`: Standardized response envelope (`data`, `totalCount`, `page`, `pageSize`, `totalPages`).
+- **Entity Route Responsibilities**: Entity routes (`app/api/**/route.ts`) must only define entity-specific logic:
+  - Allowed sort columns whitelist (`ALLOWED_SORT_COLUMNS`).
+  - Table name and select column projections (`.from(...).select(...)`).
+  - Entity-specific filters (e.g. text search, role filter, foreign key filters).
+  - Calling the centralized query helpers and returning the JSON response.
+- **Zero Inline Duplication**: Never copy-paste pagination math, sort string parsing regexes, date validation blocks, or response structure across API routes.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.

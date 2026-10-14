@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import argon2 from "argon2";
 import { supabase } from "@/lib/supabase";
 import {
+  parsePagination,
+  parseSorting,
+  applyDateRange,
+  applySortingAndPagination,
+  formatPaginatedResponse,
+} from "@/lib/api-query";
+import {
   createUserSchema,
   updateUserSchema,
   deleteUserSchema,
@@ -21,82 +28,26 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
 
-    // 1. Pagination parameters
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
-    const pageSize = Math.max(
-      1,
-      Math.min(100, parseInt(searchParams.get("pageSize") || "10", 10) || 10),
-    );
-    const offset = (page - 1) * pageSize;
+    const pagination = parsePagination(searchParams);
+    const sortRules = parseSorting(searchParams, ALLOWED_SORT_COLUMNS);
 
-    // 2. Multi-column sorting parameters (strict delimited format: "col1.asc,col2.desc")
-    const requestedSort = searchParams.get("sort")?.trim();
-    const sortRules: { col: (typeof ALLOWED_SORT_COLUMNS)[number]; ascending: boolean }[] = [];
-
-    if (requestedSort) {
-      const parts = requestedSort.split(",");
-      for (const part of parts) {
-        const [colName, dir] = part.split(/[.:]/);
-        const trimmedCol = colName?.trim();
-        if (ALLOWED_SORT_COLUMNS.includes(trimmedCol as (typeof ALLOWED_SORT_COLUMNS)[number])) {
-          const isAsc = dir?.trim().toLowerCase() !== "desc";
-          sortRules.push({
-            col: trimmedCol as (typeof ALLOWED_SORT_COLUMNS)[number],
-            ascending: isAsc,
-          });
-        }
-      }
-    }
-
-    // Default fallback: id descending
-    if (sortRules.length === 0) {
-      sortRules.push({ col: "id", ascending: false });
-    }
-
-    // 3. Build Supabase query with exact total count excluding password_hash
     let query = supabase
       .from("users")
       .select("id, username, name, role, factory_id, created_at, updated_at", { count: "exact" })
       .is("deleted_at", null);
 
-    // Apply active server-side filters dynamically
-    const filterHandlers: Record<string, (val: string) => void> = {
-      search: (val) => {
-        query = query.or(`name.ilike.%${val}%,username.ilike.%${val}%`);
-      },
-      role: (val) => {
-        if (USER_ROLES.includes(val as (typeof USER_ROLES)[number])) {
-          query = query.eq("role", val);
-        }
-      },
-      from: (val) => {
-        const fromDate = new Date(val);
-        if (!isNaN(fromDate.getTime())) {
-          query = query.gte("created_at", fromDate.toISOString());
-        }
-      },
-      to: (val) => {
-        const toDate = new Date(val);
-        if (!isNaN(toDate.getTime())) {
-          toDate.setHours(23, 59, 59, 999);
-          query = query.lte("created_at", toDate.toISOString());
-        }
-      },
-    };
-
-    for (const [key, rawValue] of searchParams.entries()) {
-      const val = rawValue.trim();
-      if (!val) continue;
-      filterHandlers[key]?.(val);
+    const search = searchParams.get("search")?.trim();
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,username.ilike.%${search}%`);
     }
 
-    // Apply multi-sorting rules sequentially
-    for (const rule of sortRules) {
-      query = query.order(rule.col, { ascending: rule.ascending });
+    const role = searchParams.get("role")?.trim();
+    if (role && USER_ROLES.includes(role as (typeof USER_ROLES)[number])) {
+      query = query.eq("role", role);
     }
 
-    // Apply pagination range slice
-    query = query.range(offset, offset + pageSize - 1);
+    query = applyDateRange(query, searchParams);
+    query = applySortingAndPagination(query, sortRules, pagination);
 
     const { data, count, error } = await query;
 
@@ -104,16 +55,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const totalCount = count ?? 0;
-    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-
-    return NextResponse.json({
-      data: data ?? [],
-      totalCount,
-      page,
-      pageSize,
-      totalPages,
-    });
+    return NextResponse.json(formatPaginatedResponse(data, count, pagination));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal Server Error";
     return NextResponse.json({ error: message }, { status: 500 });

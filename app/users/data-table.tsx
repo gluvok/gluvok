@@ -27,11 +27,14 @@ import { DataTableViewOptions } from "@/components/data-table/data-table-view-op
 import { DatePickerWithRange } from "@/components/data-table/date-range-picker";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  Briefcase01Icon,
   Calendar01Icon,
   Cancel01Icon,
   Clock01Icon,
+  CrownIcon,
   Delete02Icon,
   HashtagIcon,
+  HeadsetIcon,
   SecurityCheckIcon,
   TextFontIcon,
   UserAdd01Icon,
@@ -51,11 +54,10 @@ import { UserDeleteDialog } from "./user-delete-dialog";
 
 const ROLE_OPTIONS: FacetedFilterOption[] = [
   { label: "All Roles", value: "all", icon: SecurityCheckIcon },
-  { label: "Admin", value: "admin" },
-  { label: "Manager", value: "manager" },
-  { label: "Operator", value: "operator" },
-  { label: "Base User", value: "base" },
-  { label: "Hardware", value: "hardware" },
+  { label: "Admin", value: "admin", icon: CrownIcon },
+  { label: "Manager", value: "manager", icon: Briefcase01Icon },
+  { label: "Operator", value: "operator", icon: HeadsetIcon },
+  { label: "Base User", value: "base", icon: UserIcon },
 ];
 
 const COLUMN_LABELS: Record<string, string> = {
@@ -279,11 +281,7 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full sm:w-auto">
           {/* Search Input with Clear Button */}
           <DataTableSearchInput
-            placeholder={
-              isCustomer
-                ? "Search customers by name or username..."
-                : "Search users by name or username..."
-            }
+            placeholder={isCustomer ? "Search customers..." : "Search users..."}
             value={search}
             onChange={setSearch}
           />

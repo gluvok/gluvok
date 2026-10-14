@@ -194,7 +194,7 @@ export function CentersDataTable() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full sm:w-auto">
           {/* Search Input with Clear Button */}
           <DataTableSearchInput
-            placeholder="Search centers by name..."
+            placeholder="Search centers..."
             value={search}
             onChange={setSearch}
           />

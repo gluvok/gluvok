@@ -49,3 +49,12 @@ DROP SEQUENCE IF EXISTS customers_id_seq CASCADE;
 
 ALTER TABLE entries ADD CONSTRAINT entries_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE RESTRICT;
 
+-- Migration: Allow optional portal credentials for customers while enforcing for staff
+ALTER TABLE users ALTER COLUMN username DROP NOT NULL;
+ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+DROP INDEX IF EXISTS idx_users_username_active;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_active ON users (username) WHERE deleted_at IS NULL AND username IS NOT NULL;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_staff_credentials;
+ALTER TABLE users ADD CONSTRAINT chk_staff_credentials CHECK (role = 'customer' OR (username IS NOT NULL AND password_hash IS NOT NULL));
+
+

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageHeader } from "@/components/page-header";
+import { PageLayout } from "@/components/page-layout";
 import { FactoryCard } from "./factory-card";
 
 export const metadata: Metadata = {
@@ -9,13 +9,11 @@ export const metadata: Metadata = {
 
 export default function SettingsPage() {
   return (
-    <div className="flex w-full flex-col gap-4">
-      <PageHeader
-        title="Settings"
-        description="Platform preferences, system defaults, and factory configurations."
-      />
-
+    <PageLayout
+      title="Settings"
+      description="Platform preferences, system defaults, and factory configurations."
+    >
       <FactoryCard />
-    </div>
+    </PageLayout>
   );
 }

@@ -91,13 +91,24 @@ Administrative users (`/users`) and agricultural customers (`/customers`) are po
     - **Staff Users**: verified against `entries.created_by` and `tickets.user_id`.
     - **Customer Users**: verified against `entries.customer_id`.
       Blocks deletion with HTTP 409 Conflict if linked historical records exist. Soft-deletes (`deleted_at: NOW()`) when safe.
-- **Unified Component Architecture (Rule #10 Strict DRY)**:
-  - **Single Source of Truth**: `app/users/data-table.tsx` (`UsersDataTable`), `user-form-dialog.tsx`, and `user-delete-dialog.tsx` are parameterized by `roleScope="staff" | "customer"` and `fixedRole="customer"`, eliminating parallel directory and component duplication.
-  - **Add/Edit Modals**: Context-aware modal provisioning users or customers (automatically hiding role selection in customer mode).
-  - **Protected Deletion Modal**: Confirmation dialog with automated warning banner displaying the exact linked record conflict details if deletion is blocked.
-  - **Batch Operations**: Multi-row selection with bulk deletion action and account counter.
-  - **Role Badges & Faceted Filter**: Color-coded badges for all roles with role filter in staff view, cleanly omitted in customer view.
-  - **Independent State Persistence**: Zustand-powered persistence (`TABLE_ID = "users"` and `TABLE_ID = "customers"`) retaining search queries, filters, date ranges, multi-sort orders, column visibility, and pagination in `localStorage`.
+  - **Unified Page Layout (`components/page-layout.tsx`)**: Consolidated repeated page container wrappers (`<div className="flex flex-col gap-4">`) across all datatable and settings pages (`/users`, `/customers`, `/centers`, `/settings`) with standardized header and metadata presentation.
+  - **Optional & Co-Dependent Customer Credentials**: Customers (`role = 'customer'`) can be registered with or without portal login credentials:
+    - **Flexible Co-Dependent Validation**: If a portal username is set, a password is mandatory; if a password is set, a username is mandatory; if neither is provided, only the customer's full name is required for delivery ticket tracking. Staff accounts retain strictly mandatory credentials.
+    - **Database Integrity**: Backed by `chk_staff_credentials` check constraint (`role = 'customer' OR (username IS NOT NULL AND password_hash IS NOT NULL)`) and partial unique index `idx_users_username_active` on non-null usernames.
+  - **Modular Architecture & Service Extraction**: Decomposed large files into single-responsibility modules:
+    - `app/api/users/service.ts`: Centralizes database queries, Argon2id hashing, and constant O(1) batched conflict checks, keeping `app/api/users/route.ts` as a sleek HTTP routing controller.
+    - `app/settings/factory-form.tsx`: Encapsulates the 2-column configuration grid and a clean 2-column metadata strip (Created On, Last Modified).
+  - **Role Iconography & Custom Color Badges**:
+    - **Admin**: `CrownIcon` in Purple/Violet.
+    - **Manager**: `Briefcase01Icon` in Blue.
+    - **Operator**: `HeadsetIcon` in Emerald.
+    - **Base User**: `UserIcon` in Slate.
+    - **Hardware Exclusion**: Hardware accounts are completely hidden from filter dropdowns and strictly rejected/ignored in backend filtering.
+  - **Simplified Search Placeholders**: Consistent, concise placeholders across all entity datatables (`Search centers...`, `Search users...`, `Search customers...`).
+  - **Modal Ergonomics & Polish**:
+    - `Cancel01Icon` leading icon on all modal Cancel buttons.
+    - Compact, single-line field descriptions designed for clear scanning without wrapping.
+    - Removed technical jargon (`", hashed via Argon2id"`).
 
 ## Getting Started
 

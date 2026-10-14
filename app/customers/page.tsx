@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageHeader } from "@/components/page-header";
+import { PageLayout } from "@/components/page-layout";
 import { UsersDataTable } from "@/app/users/data-table";
 
 export const metadata: Metadata = {
@@ -9,13 +9,11 @@ export const metadata: Metadata = {
 
 export default function CustomersPage() {
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title="Customers"
-        description="Manage client profiles, agricultural suppliers, and portal credentials."
-      />
-
+    <PageLayout
+      title="Customers"
+      description="Manage client profiles, agricultural suppliers, and portal credentials."
+    >
       <UsersDataTable roleScope="customer" />
-    </div>
+    </PageLayout>
   );
 }

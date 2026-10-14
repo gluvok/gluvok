@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
   Dialog,
@@ -11,7 +11,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -23,9 +26,14 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
+import { cn } from "cn";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  Briefcase01Icon,
+  Cancel01Icon,
+  CrownIcon,
   FloppyDiskIcon,
+  HeadsetIcon,
   Key01Icon,
   SecurityCheckIcon,
   TextFontIcon,
@@ -36,10 +44,10 @@ import {
 import { createUserSchema, updateUserSchema, type User, type UserRole } from "./types";
 
 const ROLE_OPTIONS = [
-  { value: "admin", label: "Admin" },
-  { value: "manager", label: "Manager" },
-  { value: "operator", label: "Operator" },
-  { value: "base", label: "Base User" },
+  { value: "admin", label: "Admin", icon: CrownIcon },
+  { value: "manager", label: "Manager", icon: Briefcase01Icon },
+  { value: "operator", label: "Operator", icon: HeadsetIcon },
+  { value: "base", label: "Base User", icon: UserIcon },
 ];
 
 interface UserFormDialogProps {
@@ -65,6 +73,8 @@ export function UserFormDialog({
   const [name, setName] = useState<string>("");
   const [role, setRole] = useState<UserRole>(fixedRole ?? "operator");
   const [password, setPassword] = useState<string>("");
+  const [portalViewMode, setPortalViewMode] = useState<"switch" | "inline">("switch");
+  const [portalAccessEnabled, setPortalAccessEnabled] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -72,36 +82,108 @@ export function UserFormDialog({
   useEffect(() => {
     if (open) {
       if (user) {
-        setUsername(user.username);
+        const existingUsername = user.username ?? "";
+        setUsername(existingUsername);
         setName(user.name);
         setRole(user.role === "hardware" ? "operator" : user.role);
         setPassword("");
+        setPortalAccessEnabled(Boolean(existingUsername));
       } else {
         setUsername("");
         setName("");
         setRole(fixedRole ?? "operator");
         setPassword("");
+        setPortalAccessEnabled(false);
       }
       setFormError(null);
     }
   }, [open, user, fixedRole]);
 
+  // Memorized baseline values for dirty state tracking
+  const initialValues = useMemo(() => {
+    return {
+      username: user?.username ?? "",
+      name: user?.name ?? "",
+      role: user ? (user.role === "hardware" ? "operator" : user.role) : (fixedRole ?? "operator"),
+    };
+  }, [user, fixedRole]);
+
+  // Live dirty state calculation comparing current values against initial baseline
+  const isDirty = useMemo(() => {
+    if (password.trim() !== "") return true;
+    if (name.trim() !== initialValues.name.trim()) return true;
+    if (username.trim().toLowerCase() !== initialValues.username.trim().toLowerCase()) return true;
+    if (!fixedRole && role !== initialValues.role) return true;
+    return false;
+  }, [password, name, username, role, initialValues, fixedRole]);
+
+  // Form validity check for enabling/disabling submit button
+  const isValid = useMemo(() => {
+    const trimmedName = name.trim();
+    if (trimmedName.length < 1) return false;
+
+    if (isCustomer) {
+      if (portalViewMode === "switch") {
+        if (!portalAccessEnabled) return true;
+        const trimmedUser = username.trim();
+        const trimmedPass = password.trim();
+        if (trimmedUser.length < 3) return false;
+        if (!isEdit && trimmedPass.length < 6) return false;
+        if (isEdit && !user?.username && trimmedPass.length < 6) return false;
+        if (trimmedPass.length > 0 && trimmedPass.length < 6) return false;
+        return true;
+      } else {
+        const trimmedUser = username.trim();
+        const trimmedPass = password.trim();
+        if (trimmedUser.length === 0 && trimmedPass.length === 0) return true;
+        if (trimmedUser.length > 0 && trimmedUser.length < 3) return false;
+        if (trimmedPass.length > 0 && trimmedPass.length < 6) return false;
+        if (trimmedUser.length > 0 && !isEdit && trimmedPass.length < 6) return false;
+        if (trimmedUser.length > 0 && isEdit && !user?.username && trimmedPass.length < 6)
+          return false;
+        if (trimmedPass.length >= 6 && trimmedUser.length === 0) return false;
+        return true;
+      }
+    }
+
+    const trimmedUser = username.trim();
+    const trimmedPass = password.trim();
+    if (trimmedUser.length < 3) return false;
+    if (!isEdit && trimmedPass.length < 6) return false;
+    if (trimmedPass.length > 0 && trimmedPass.length < 6) return false;
+    return true;
+  }, [name, isCustomer, portalViewMode, portalAccessEnabled, username, password, isEdit, user]);
+
+  const handlePortalViewModeChange = (mode: "switch" | "inline") => {
+    setPortalViewMode(mode);
+    if (mode === "switch") {
+      setPortalAccessEnabled(Boolean(username.trim()));
+    }
+  };
+
   const handleSubmit = async () => {
     setFormError(null);
+
+    const effectiveUsername =
+      isCustomer && portalViewMode === "switch" && !portalAccessEnabled
+        ? ""
+        : username.toLowerCase().trim();
+    const effectivePassword =
+      isCustomer && portalViewMode === "switch" && !portalAccessEnabled ? "" : password.trim();
 
     const payload = isEdit
       ? {
           id: user!.id,
-          username: username.toLowerCase().trim(),
+          username: effectiveUsername,
           name: name.trim(),
           role,
-          password: password ? password.trim() : "",
+          password: effectivePassword,
         }
       : {
-          username: username.toLowerCase().trim(),
+          username: effectiveUsername,
           name: name.trim(),
           role,
-          password: password.trim(),
+          password: effectivePassword,
         };
 
     const validation = isEdit
@@ -122,14 +204,18 @@ export function UserFormDialog({
         toast.add({
           type: "success",
           title: `${entityLabel} updated`,
-          description: `Account "${payload.username}" has been successfully updated.`,
+          description: payload.username
+            ? `Account "${payload.username}" has been successfully updated.`
+            : `${entityLabel} "${payload.name}" has been successfully updated.`,
         });
       } else {
         await axios.post("/api/users", payload);
         toast.add({
           type: "success",
           title: `${entityLabel} created`,
-          description: `Account "${payload.username}" has been created successfully.`,
+          description: payload.username
+            ? `Account "${payload.username}" has been created successfully.`
+            : `${entityLabel} "${payload.name}" has been created successfully.`,
         });
       }
 
@@ -172,8 +258,8 @@ export function UserFormDialog({
                 ? "Modify portal credentials or update account information."
                 : "Register a new agricultural supplier or customer profile."
               : isEdit
-                ? "Modify system credentials, operational role, or assign a new password."
-                : "Provision a new system user profile assigned to the primary facility."}
+                ? "Modify account credentials and system role."
+                : "Provision a new system operator or staff account."}
           </DialogDescription>
         </DialogHeader>
 
@@ -183,25 +269,6 @@ export function UserFormDialog({
               {formError}
             </div>
           )}
-
-          {/* Username */}
-          <Field>
-            <FieldLabel htmlFor="user-username">
-              <HugeiconsIcon icon={TextFontIcon} className="size-3.5 text-muted-foreground" />
-              Username
-            </FieldLabel>
-            <Input
-              id="user-username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value.toLowerCase())}
-              placeholder={isCustomer ? "e.g. kisan_ramesh" : "e.g. alex_operator"}
-              className="h-8 text-xs font-mono"
-              autoComplete="off"
-            />
-            <FieldDescription>
-              Unique login handle (lowercase letters, numbers, hyphens, and underscores).
-            </FieldDescription>
-          </Field>
 
           {/* Full Name */}
           <Field>
@@ -218,10 +285,124 @@ export function UserFormDialog({
             />
             <FieldDescription>
               {isCustomer
-                ? "Official customer or enterprise name displayed on receipts and delivery entries."
-                : "Official person name displayed in ticket logs and weighment audit trails."}
+                ? "Customer or enterprise name on delivery tickets."
+                : "Operator name displayed in audit trails."}
             </FieldDescription>
           </Field>
+
+          {/* Customer Portal Access Toggle Mode */}
+          {isCustomer && (
+            <div className="flex items-center justify-between rounded-lg border bg-muted/40 p-2.5">
+              <div className="flex flex-col">
+                <span className="text-xs font-medium">Portal Access Layout</span>
+                <span className="text-2xs text-muted-foreground">
+                  Choose how to configure credentials.
+                </span>
+              </div>
+              <ButtonGroup>
+                <Button
+                  type="button"
+                  variant={portalViewMode === "switch" ? "default" : "outline"}
+                  size="xs"
+                  className="h-7 text-2xs"
+                  onClick={() => handlePortalViewModeChange("switch")}
+                >
+                  Switch View
+                </Button>
+                <Button
+                  type="button"
+                  variant={portalViewMode === "inline" ? "default" : "outline"}
+                  size="xs"
+                  className="h-7 text-2xs"
+                  onClick={() => handlePortalViewModeChange("inline")}
+                >
+                  Inline View
+                </Button>
+              </ButtonGroup>
+            </div>
+          )}
+
+          {/* Switch View: Enable Portal Access Switch */}
+          {isCustomer && portalViewMode === "switch" && (
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-medium">Enable Customer Portal Access</span>
+                <span className="text-2xs text-muted-foreground">
+                  Allow customer to view weighing tickets online.
+                </span>
+              </div>
+              <Switch
+                id="portal-access-switch"
+                checked={portalAccessEnabled}
+                onCheckedChange={(checked) => {
+                  setPortalAccessEnabled(checked);
+                  if (!checked) {
+                    setUsername("");
+                    setPassword("");
+                  }
+                }}
+              />
+            </div>
+          )}
+
+          {/* Credentials section: shown if staff, or inline customer, or switch customer with portal enabled */}
+          {(!isCustomer || portalViewMode === "inline" || portalAccessEnabled) && (
+            <div className="flex flex-col gap-4">
+              {/* Username */}
+              <Field>
+                <FieldLabel htmlFor="user-username">
+                  <HugeiconsIcon icon={TextFontIcon} className="size-3.5 text-muted-foreground" />
+                  Username {isCustomer && <span className="text-muted-foreground">(Optional)</span>}
+                </FieldLabel>
+                <Input
+                  id="user-username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                  placeholder={isCustomer ? "e.g. kisan_ramesh" : "e.g. alex_operator"}
+                  className="h-8 text-xs font-mono"
+                  autoComplete="off"
+                />
+                <FieldDescription>
+                  {isCustomer
+                    ? "Optional lowercase portal handle."
+                    : "Unique lowercase login handle."}
+                </FieldDescription>
+              </Field>
+
+              {/* Password */}
+              <Field>
+                <FieldLabel htmlFor="user-password">
+                  <HugeiconsIcon icon={Key01Icon} className="size-3.5 text-muted-foreground" />
+                  {isEdit
+                    ? "New Password (Optional)"
+                    : isCustomer
+                      ? "Password (Required if username set)"
+                      : "Password"}
+                </FieldLabel>
+                <PasswordInput
+                  id="user-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={
+                    isEdit
+                      ? "Leave blank to keep current password"
+                      : isCustomer
+                        ? "At least 6 characters if portal access enabled"
+                        : "At least 6 characters"
+                  }
+                  className="h-8 text-xs"
+                  autoComplete="new-password"
+                />
+                <FieldDescription>
+                  {isEdit
+                    ? "Leave blank to keep current password."
+                    : isCustomer
+                      ? "Minimum 6 characters for portal access."
+                      : "Minimum 6 characters."}
+                </FieldDescription>
+              </Field>
+            </div>
+          )}
 
           {/* Role (hidden when role is fixed e.g. customer) */}
           {!fixedRole && (
@@ -247,72 +428,65 @@ export function UserFormDialog({
                   <SelectGroup>
                     {ROLE_OPTIONS.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
+                        <div className="flex items-center gap-2">
+                          <HugeiconsIcon
+                            icon={opt.icon}
+                            className="size-3.5 text-muted-foreground"
+                          />
+                          <span>{opt.label}</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <FieldDescription>
-                Permission tier defining access to facility operations and system configurations.
-              </FieldDescription>
+              <FieldDescription>Permission tier for system access.</FieldDescription>
             </Field>
           )}
-
-          {/* Password */}
-          <Field>
-            <FieldLabel htmlFor="user-password">
-              <HugeiconsIcon icon={Key01Icon} className="size-3.5 text-muted-foreground" />
-              {isEdit ? "New Password (Optional)" : "Password"}
-            </FieldLabel>
-            <Input
-              id="user-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={
-                isEdit ? "Leave blank to keep current password" : "At least 6 characters"
-              }
-              className="h-8 text-xs"
-              autoComplete="new-password"
-            />
-            <FieldDescription>
-              {isEdit
-                ? "Enter at least 6 characters to reset and re-hash credentials, or leave blank."
-                : "Secure account access password (minimum 6 characters, hashed via Argon2id)."}
-            </FieldDescription>
-          </Field>
         </div>
 
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}
-            className="h-8 text-xs"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleSubmit}
-            disabled={isSubmitting || !username.trim() || !name.trim()}
-            className="h-8 gap-1.5 text-xs"
-          >
-            {isSubmitting ? (
-              <Spinner className="size-3.5" data-icon="inline-start" />
-            ) : (
-              <HugeiconsIcon
-                icon={isEdit ? FloppyDiskIcon : UserAdd01Icon}
-                className="size-3.5"
-                data-icon="inline-start"
-              />
-            )}
-            {isEdit ? "Save Changes" : `Create ${entityLabel}`}
-          </Button>
+        <DialogFooter className="flex flex-row items-center justify-between w-full gap-2 pt-2">
+          <div className="flex items-center gap-2 text-2xs text-muted-foreground">
+            <span
+              className={cn(
+                "size-2 rounded-full shrink-0",
+                isDirty ? "bg-amber-500 animate-pulse" : "bg-emerald-500",
+              )}
+            />
+            <span>{isDirty ? "You have unsaved changes." : "All changes saved."}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+              className="h-8 gap-1.5 text-xs"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" data-icon="inline-start" />
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSubmit}
+              disabled={isSubmitting || !isDirty || !isValid}
+              className="h-8 gap-1.5 text-xs"
+            >
+              {isSubmitting ? (
+                <Spinner className="size-3.5" data-icon="inline-start" />
+              ) : (
+                <HugeiconsIcon
+                  icon={isEdit ? FloppyDiskIcon : UserAdd01Icon}
+                  className="size-3.5"
+                  data-icon="inline-start"
+                />
+              )}
+              {isEdit ? "Save Changes" : `Create ${entityLabel}`}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -97,19 +97,22 @@ WHERE deleted_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    username TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
+    username TEXT,
+    password_hash TEXT,
     name TEXT NOT NULL,
     role role_enum NOT NULL DEFAULT 'base',
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ
+    deleted_at TIMESTAMPTZ,
+    CONSTRAINT chk_staff_credentials CHECK (
+        role = 'customer' OR (username IS NOT NULL AND password_hash IS NOT NULL)
+    )
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_active 
 ON users (username) 
-WHERE deleted_at IS NULL;
+WHERE deleted_at IS NULL AND username IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS sessions (
     id SERIAL PRIMARY KEY,

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { AlertCircleIcon, Delete02Icon } from "@hugeicons/core-free-icons";
+import { AlertCircleIcon, Cancel01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { type User } from "./types";
 
 interface UserDeleteDialogProps {
@@ -147,8 +147,9 @@ export function UserDeleteDialog({
             size="sm"
             onClick={() => onOpenChange(false)}
             disabled={isDeleting}
-            className="h-8 text-xs"
+            className="h-8 gap-1.5 text-xs"
           >
+            <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" data-icon="inline-start" />
             Cancel
           </Button>
           <Button

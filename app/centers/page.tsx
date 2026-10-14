@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageHeader } from "@/components/page-header";
+import { PageLayout } from "@/components/page-layout";
 import { CentersDataTable } from "./data-table";
 
 export const metadata: Metadata = {
@@ -9,13 +9,11 @@ export const metadata: Metadata = {
 
 export default function CentersPage() {
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title="Centers"
-        description="Manage processing facilities and operational locations."
-      />
-
+    <PageLayout
+      title="Centers"
+      description="Manage processing facilities and operational locations."
+    >
       <CentersDataTable />
-    </div>
+    </PageLayout>
   );
 }

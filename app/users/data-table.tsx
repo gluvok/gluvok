@@ -33,8 +33,9 @@ import {
 } from "@hugeicons/core-free-icons";
 import { getColumns, type UsersTableMeta } from "./columns";
 import { type User } from "./types";
-import { UserFormDialog } from "./user-form-dialog";
 import { UserDeleteDialog } from "./user-delete-dialog";
+import { StaffUserDialog } from "./staff-user-dialog";
+import { CustomerUserDialog } from "./customer-user-dialog";
 
 const ROLE_OPTIONS: FacetedFilterOption[] = [
   { label: "All Roles", value: "all", icon: SecurityCheckIcon },
@@ -62,14 +63,58 @@ const COLUMN_ICONS: Record<string, unknown> = {
   updated_at: Clock01Icon,
 };
 
+interface EntityConfig {
+  tableId: string;
+  entityLabel: string;
+  searchPlaceholder: string;
+  addButtonLabel: string;
+  emptyMessage: string;
+  loadingMessage: string;
+  hasRoleFilter: boolean;
+  extraParams?: Record<string, string>;
+  showRoleColumn: boolean;
+  FormDialog: React.ComponentType<{
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    user?: User | null;
+    onSuccess: () => void;
+  }>;
+}
+
+const ENTITY_CONFIG: Record<"staff" | "customer", EntityConfig> = {
+  staff: {
+    tableId: "users",
+    entityLabel: "User",
+    searchPlaceholder: "Search staff accounts...",
+    addButtonLabel: "Add Staff User",
+    emptyMessage: "No staff accounts found matching the specified filters.",
+    loadingMessage: "Loading staff accounts...",
+    hasRoleFilter: true,
+    extraParams: undefined,
+    showRoleColumn: true,
+    FormDialog: StaffUserDialog,
+  },
+  customer: {
+    tableId: "customers",
+    entityLabel: "Customer",
+    searchPlaceholder: "Search customers...",
+    addButtonLabel: "Add Customer",
+    emptyMessage: "No customers found matching the specified filters.",
+    loadingMessage: "Loading customers...",
+    hasRoleFilter: false,
+    extraParams: { role: "customer" },
+    showRoleColumn: false,
+    FormDialog: CustomerUserDialog,
+  },
+};
+
 interface UsersDataTableProps {
   roleScope: "staff" | "customer";
 }
 
 export function UsersDataTable({ roleScope }: UsersDataTableProps) {
-  const isCustomer = roleScope === "customer";
-  const tableId = isCustomer ? "customers" : "users";
-  const entityLabel = isCustomer ? "Customer" : "User";
+  const config = ENTITY_CONFIG[roleScope];
+  const { FormDialog } = config;
 
   // Dialog states
   const [formDialogOpen, setFormDialogOpen] = useState<boolean>(false);
@@ -99,11 +144,9 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
   );
 
   const columns = useMemo(
-    () => getColumns({ showRole: !isCustomer, entityLabel }),
-    [isCustomer, entityLabel],
+    () => getColumns({ showRole: config.showRoleColumn, entityLabel: config.entityLabel }),
+    [config.showRoleColumn, config.entityLabel],
   );
-
-  const extraParams = useMemo(() => (isCustomer ? { role: "customer" } : undefined), [isCustomer]);
 
   const {
     table,
@@ -128,14 +171,14 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
     refresh,
     tableState,
   } = useDataTable<User>({
-    tableId,
+    tableId: config.tableId,
     columns,
     endpoint: "/api/users",
-    extraParams,
+    extraParams: config.extraParams,
     meta: tableMeta,
   });
 
-  const roleFilter = isCustomer ? "customer" : (tableState.filters["role"] ?? "all");
+  const roleFilter = tableState.filters["role"] ?? "all";
 
   const handleAddUser = () => {
     setSelectedUserForEdit(null);
@@ -165,13 +208,13 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full sm:w-auto">
           {/* Search Input with Clear Button */}
           <DataTableSearchInput
-            placeholder={isCustomer ? "Search customers..." : "Search users..."}
+            placeholder={config.searchPlaceholder}
             value={search}
             onChange={setSearch}
           />
 
           {/* Faceted Role Filter (Staff view only) */}
-          {!isCustomer && (
+          {config.hasRoleFilter && (
             <DataTableFacetedFilter
               title="Role"
               options={ROLE_OPTIONS}
@@ -210,7 +253,7 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
           {/* Add User / Customer Button */}
           <Button size="sm" onClick={handleAddUser} className="h-8 gap-1.5 text-xs">
             <HugeiconsIcon icon={UserAdd01Icon} className="size-3.5" data-icon="inline-start" />
-            <span>{isCustomer ? "Add Customer" : "Add User"}</span>
+            <span>{config.addButtonLabel}</span>
           </Button>
 
           {/* Column Visibility Toggle */}
@@ -236,7 +279,7 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
         onResetAll={resetAllCriteria}
       >
         {/* Role Chip (Staff view only) */}
-        {!isCustomer && roleFilter !== "all" && (
+        {config.hasRoleFilter && roleFilter !== "all" && (
           <Badge
             variant="secondary"
             className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
@@ -304,24 +347,19 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
         loading={loading}
         error={error}
         onRetry={refresh}
-        emptyMessage={
-          isCustomer
-            ? "No customers found matching the specified filters."
-            : "No users found matching the specified filters."
-        }
-        loadingMessage={isCustomer ? "Loading customers..." : "Loading users..."}
+        emptyMessage={config.emptyMessage}
+        loadingMessage={config.loadingMessage}
       />
 
       {/* Pagination Controls */}
       <DataTablePagination table={table} />
 
-      {/* Add / Edit User Form Modal */}
-      <UserFormDialog
+      {/* Add / Edit User Form Modal (Dedicated Component) */}
+      <FormDialog
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         user={selectedUserForEdit}
         onSuccess={handleMutationSuccess}
-        fixedRole={isCustomer ? "customer" : undefined}
       />
 
       {/* Delete User Confirmation Modal */}
@@ -330,7 +368,7 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
         onOpenChange={setDeleteDialogOpen}
         users={usersToDelete}
         onSuccess={handleMutationSuccess}
-        entityLabel={isCustomer ? "customer" : "user"}
+        entityLabel={config.entityLabel.toLowerCase()}
       />
     </div>
   );

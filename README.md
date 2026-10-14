@@ -101,6 +101,16 @@ Administrative users (`/users`) and agricultural customers (`/customers`) are po
   - **Modular Architecture & Service Extraction**: Decomposed large files into single-responsibility modules:
     - `app/api/users/service.ts`: Centralizes database queries, Argon2id hashing, and constant O(1) batched conflict checks, keeping `app/api/users/route.ts` as a sleek HTTP routing controller.
     - `app/settings/factory-form.tsx`: Encapsulates the 2-column configuration grid and a clean 2-column metadata strip (Created On, Last Modified).
+  - **Design System & Japanese Aesthetic Theme (Rikyū-cha 利休茶)**:
+    - Root primary accent uses authentic **Rikyū-cha** roasted matcha / tea moss green (`#66684F` / `rgb(102, 104, 79)`) with pure white text (`#FFFFFF`) and dark hover state (`#52543D`).
+    - Dark mode dynamically switches to luminous tea moss (`#8A8D6E`) with charcoal foreground (`#1A1C14`) ensuring optimal readability and contrast across all card and modal surfaces.
+    - Synchronized across buttons, sidebar active navigation pills, focus rings, and action highlights.
+  - **Zero-Branching Component Architecture (Strict DRY Compliance)**:
+    - **Atomic Form Primitives (`app/users/user-dialog-primitives.tsx`)**: Extracted `UserDialogShell`, `FullNameField`, `CredentialsFields`, `CustomerPortalSwitch`, and `SystemRoleSelect`.
+    - **Dedicated Dialogs**: Replaced sprawling inline `isCustomer ? ... : ...` ternaries with dedicated, typed dialogs:
+      - `StaffUserDialog`: Renders Full Name & System Role side-by-side, plus Username & Password side-by-side (`sm:grid-cols-2`).
+      - `CustomerUserDialog`: Renders Full Name full-width, Customer Portal Access toggle, and credentials conditionally.
+    - **Configuration-Driven Data Table (`ENTITY_CONFIG`)**: `UsersDataTable` consumes a centralized typed configuration dictionary mapping table IDs, search placeholders, add labels, role filter flags, and dialog constructors, eliminating all inline conditionals from the table render tree.
   - **Universal Comboboxes & Subtle Role Iconography**:
     - System Role dropdown utilizes `kibo-ui/combobox` with search and leading role icons (`Admin`: `CrownIcon`, `Manager`: `Briefcase01Icon`, `Operator`: `HeadsetIcon`, `Base User`: `UserIcon`).
     - Subtly tinted badges in the data table: Admin uses refined Slate/Neutral (violet/purple removed), and Manager, Operator, Base User use gentle 5% background tints and soft muted borders.

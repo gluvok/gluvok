@@ -204,6 +204,47 @@ async function main() {
   console.log(`\n⚖️ Provisioning ${args.centersCount} center(s) and matching hardware devices...`);
   const hardwareHash = await argon2.hash(args.hardwarePassword);
 
+  const centersToInsert = Array.from({ length: args.centersCount }, (_, i) => {
+    const centerIndex = i + 1;
+    const centerName =
+      args.centerNames && args.centerNames[i] ? args.centerNames[i] : `Center ${centerIndex}`;
+    return {
+      name: centerName,
+      factory_id: createdFactory.id,
+    };
+  });
+
+  const { data: createdCenters, error: centersError } = await supabase
+    .from("centers")
+    .insert(centersToInsert)
+    .select("id, name");
+
+  if (centersError || !createdCenters) {
+    throw centersError || new Error("Failed to bulk create centers");
+  }
+
+  const hardwareToInsert = createdCenters.map((center, i) => {
+    const currentPiIndex = nextPiNum + i;
+    const piUsername = `pi${currentPiIndex}`;
+    const piDisplayName = `Hardware Scale ${center.name} - ${createdFactory.name}`;
+    return {
+      username: piUsername,
+      name: piDisplayName,
+      role: "hardware" as const,
+      password_hash: hardwareHash,
+      factory_id: createdFactory.id,
+    };
+  });
+
+  const { data: createdPis, error: pisError } = await supabase
+    .from("users")
+    .insert(hardwareToInsert)
+    .select("id, username");
+
+  if (pisError || !createdPis) {
+    throw pisError || new Error("Failed to bulk create hardware users");
+  }
+
   const createdPairs: Array<{
     centerId: number;
     centerName: string;
@@ -211,55 +252,18 @@ async function main() {
     piUsername: string;
   }> = [];
 
-  for (let i = 0; i < args.centersCount; i++) {
-    const centerIndex = i + 1;
-    const centerName =
-      args.centerNames && args.centerNames[i] ? args.centerNames[i] : `Center ${centerIndex}`;
-
-    // Create Center
-    const { data: createdCenter, error: centerError } = await supabase
-      .from("centers")
-      .insert({
-        name: centerName,
-        factory_id: createdFactory.id,
-      })
-      .select("id, name")
-      .single();
-
-    if (centerError || !createdCenter) {
-      throw centerError || new Error(`Failed to create center ${centerName}`);
-    }
-
-    // Create 1:1 matching Hardware User
-    const currentPiIndex = nextPiNum + i;
-    const piUsername = `pi${currentPiIndex}`;
-    const piDisplayName = `Hardware Scale ${createdCenter.name} - ${createdFactory.name}`;
-
-    const { data: createdPi, error: piError } = await supabase
-      .from("users")
-      .insert({
-        username: piUsername,
-        name: piDisplayName,
-        role: "hardware",
-        password_hash: hardwareHash,
-        factory_id: createdFactory.id,
-      })
-      .select("id, username")
-      .single();
-
-    if (piError || !createdPi) {
-      throw piError || new Error(`Failed to create hardware user ${piUsername}`);
-    }
-
+  for (let i = 0; i < createdCenters.length; i++) {
+    const center = createdCenters[i];
+    const pi = createdPis[i];
     createdPairs.push({
-      centerId: createdCenter.id,
-      centerName: createdCenter.name,
-      piId: createdPi.id,
-      piUsername: createdPi.username,
+      centerId: center.id,
+      centerName: center.name,
+      piId: pi.id,
+      piUsername: pi.username,
     });
 
     console.log(
-      `  ✓ Center '${createdCenter.name}' (ID: ${createdCenter.id}) ↔ Hardware '${createdPi.username}' (ID: ${createdPi.id})`,
+      `  ✓ Center '${center.name}' (ID: ${center.id}) ↔ Hardware '${pi.username}' (ID: ${pi.id})`,
     );
   }
 

@@ -88,25 +88,29 @@ async function main() {
   const factoryConfigs = [{ name: "Default Factory" }, { name: "Apex Agro Logistics" }];
   const factoryMap = new Map<string, number>();
 
-  for (const f of factoryConfigs) {
-    const { data: existing } = await supabase
-      .from("factories")
-      .select("id")
-      .eq("name", f.name)
-      .maybeSingle();
+  const factoryNames = factoryConfigs.map((f) => f.name);
+  const { data: existingFactories, error: factoryFetchErr } = await supabase
+    .from("factories")
+    .select("id, name")
+    .in("name", factoryNames);
 
-    if (existing) {
-      factoryMap.set(f.name, existing.id);
-      console.log(`  ✓ Found existing factory: '${f.name}' (id: ${existing.id})`);
-    } else {
-      const { data: created, error } = await supabase
-        .from("factories")
-        .insert({ name: f.name })
-        .select("id")
-        .single();
-      if (error || !created) throw error || new Error(`Failed to insert factory ${f.name}`);
-      factoryMap.set(f.name, created.id);
-      console.log(`  + Created factory: '${f.name}' (id: ${created.id})`);
+  if (factoryFetchErr) throw factoryFetchErr;
+  for (const f of existingFactories || []) {
+    factoryMap.set(f.name, f.id);
+    console.log(`  ✓ Found existing factory: '${f.name}' (id: ${f.id})`);
+  }
+
+  const missingFactories = factoryConfigs.filter((f) => !factoryMap.has(f.name));
+  if (missingFactories.length > 0) {
+    const { data: createdFactories, error: factoryCreateErr } = await supabase
+      .from("factories")
+      .insert(missingFactories)
+      .select("id, name");
+
+    if (factoryCreateErr || !createdFactories) throw factoryCreateErr;
+    for (const f of createdFactories) {
+      factoryMap.set(f.name, f.id);
+      console.log(`  + Created factory: '${f.name}' (id: ${f.id})`);
     }
   }
 
@@ -265,30 +269,36 @@ async function main() {
   ];
 
   const userMap = new Map<string, number>();
+  const usernames = userConfigs.map((u) => u.username);
 
-  for (const u of userConfigs) {
-    const { data: existing } = await supabase
+  const { data: existingUsers, error: usersFetchErr } = await supabase
+    .from("users")
+    .select("id, username")
+    .in("username", usernames);
+
+  if (usersFetchErr) throw usersFetchErr;
+  for (const u of existingUsers || []) {
+    if (u.username) userMap.set(u.username, u.id);
+  }
+
+  const missingUsers = userConfigs.filter((u) => !userMap.has(u.username));
+  if (missingUsers.length > 0) {
+    const { data: createdUsers, error: usersCreateErr } = await supabase
       .from("users")
-      .select("id")
-      .eq("username", u.username)
-      .maybeSingle();
-
-    if (existing) {
-      userMap.set(u.username, existing.id);
-    } else {
-      const { data: created, error } = await supabase
-        .from("users")
-        .insert({
+      .insert(
+        missingUsers.map((u) => ({
           username: u.username,
           name: u.name,
           role: u.role,
           password_hash: u.passwordHash,
           factory_id: u.factoryId,
-        })
-        .select("id")
-        .single();
-      if (error || !created) throw error || new Error(`Failed to create user ${u.username}`);
-      userMap.set(u.username, created.id);
+        })),
+      )
+      .select("id, username");
+
+    if (usersCreateErr || !createdUsers) throw usersCreateErr;
+    for (const u of createdUsers) {
+      if (u.username) userMap.set(u.username, u.id);
     }
   }
   console.log(`  ✓ Seeded ${userMap.size} users across all 5 roles.`);
@@ -377,24 +387,26 @@ async function main() {
 
   const centerMap = new Map<string, number>();
 
-  for (const c of centersToInsert) {
-    const { data: existing } = await supabase
-      .from("centers")
-      .select("id")
-      .eq("name", c.name)
-      .eq("factory_id", c.factory_id)
-      .maybeSingle();
+  const { data: existingCenters, error: centersFetchErr } = await supabase
+    .from("centers")
+    .select("id, name, factory_id")
+    .in("factory_id", [primaryFactoryId, secondaryFactoryId]);
 
-    if (existing) {
-      centerMap.set(c.name, existing.id);
-    } else {
-      const { data: created, error } = await supabase
-        .from("centers")
-        .insert(c)
-        .select("id")
-        .single();
-      if (error || !created) throw error || new Error(`Failed to create center ${c.name}`);
-      centerMap.set(c.name, created.id);
+  if (centersFetchErr) throw centersFetchErr;
+  for (const c of existingCenters || []) {
+    centerMap.set(c.name, c.id);
+  }
+
+  const missingCenters = centersToInsert.filter((c) => !centerMap.has(c.name));
+  if (missingCenters.length > 0) {
+    const { data: createdCenters, error: centersCreateErr } = await supabase
+      .from("centers")
+      .insert(missingCenters)
+      .select("id, name");
+
+    if (centersCreateErr || !createdCenters) throw centersCreateErr;
+    for (const c of createdCenters) {
+      centerMap.set(c.name, c.id);
     }
   }
   console.log(`  ✓ Seeded ${centerMap.size} centers (35 Default Factory, 15 Apex Agro Logistics).`);
@@ -426,23 +438,26 @@ async function main() {
 
   const commodityMap = new Map<string, number>();
 
-  for (const name of commodityNames) {
-    const { data: existing } = await supabase
-      .from("commodities")
-      .select("id")
-      .eq("name", name)
-      .maybeSingle();
+  const { data: existingCommodities, error: commFetchErr } = await supabase
+    .from("commodities")
+    .select("id, name")
+    .in("name", commodityNames);
 
-    if (existing) {
-      commodityMap.set(name, existing.id);
-    } else {
-      const { data: created, error } = await supabase
-        .from("commodities")
-        .insert({ name })
-        .select("id")
-        .single();
-      if (error || !created) throw error || new Error(`Failed to create commodity ${name}`);
-      commodityMap.set(name, created.id);
+  if (commFetchErr) throw commFetchErr;
+  for (const c of existingCommodities || []) {
+    commodityMap.set(c.name, c.id);
+  }
+
+  const missingCommodities = commodityNames.filter((name) => !commodityMap.has(name));
+  if (missingCommodities.length > 0) {
+    const { data: createdCommodities, error: commCreateErr } = await supabase
+      .from("commodities")
+      .insert(missingCommodities.map((name) => ({ name })))
+      .select("id, name");
+
+    if (commCreateErr || !createdCommodities) throw commCreateErr;
+    for (const c of createdCommodities) {
+      commodityMap.set(c.name, c.id);
     }
   }
   console.log(`  ✓ Seeded ${commodityMap.size} commodities.`);
@@ -761,34 +776,38 @@ async function main() {
   ];
 
   const customerMap = new Map<string, number>();
+  const customerNames = customerRawConfigs.map((c) => c.name);
 
-  for (let i = 0; i < customerRawConfigs.length; i++) {
-    const cust = customerRawConfigs[i];
-    const username = cust.username ?? `customer${i + 1}`;
-    const { data: existing } = await supabase
+  const { data: existingCustomers, error: custFetchErr } = await supabase
+    .from("users")
+    .select("id, name")
+    .in("name", customerNames)
+    .eq("role", "customer");
+
+  if (custFetchErr) throw custFetchErr;
+  for (const c of existingCustomers || []) {
+    customerMap.set(c.name, c.id);
+  }
+
+  const missingCustomers = customerRawConfigs.filter((c) => !customerMap.has(c.name));
+  if (missingCustomers.length > 0) {
+    const { data: createdCustomers, error: custCreateErr } = await supabase
       .from("users")
-      .select("id")
-      .eq("username", username)
-      .maybeSingle();
+      .insert(
+        missingCustomers.map((c) => ({
+          username: c.username,
+          name: c.name,
+          role: "customer" as const,
+          password_hash: c.username ? userHash : null,
+          factory_id: c.factoryId,
+          created_at: daysAgo(c.daysOffset, 25),
+        })),
+      )
+      .select("id, name");
 
-    if (existing) {
-      customerMap.set(cust.name, existing.id);
-    } else {
-      const { data: created, error } = await supabase
-        .from("users")
-        .insert({
-          username,
-          name: cust.name,
-          role: "customer",
-          password_hash: userHash,
-          factory_id: cust.factoryId,
-          created_at: daysAgo(cust.daysOffset, 25),
-        })
-        .select("id")
-        .single();
-      if (error || !created)
-        throw error || new Error(`Failed to create customer user ${cust.name}`);
-      customerMap.set(cust.name, created.id);
+    if (custCreateErr || !createdCustomers) throw custCreateErr;
+    for (const c of createdCustomers) {
+      customerMap.set(c.name, c.id);
     }
   }
   console.log(`  ✓ Seeded ${customerMap.size} customer accounts in users table.`);

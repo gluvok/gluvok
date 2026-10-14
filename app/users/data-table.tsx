@@ -37,7 +37,7 @@ import {
   UserAdd01Icon,
   UserIcon,
 } from "@hugeicons/core-free-icons";
-import { columns, type UsersTableMeta } from "./columns";
+import { getColumns, type UsersTableMeta } from "./columns";
 import { features } from "@/components/data-table/data-table-features";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -58,8 +58,6 @@ const ROLE_OPTIONS: FacetedFilterOption[] = [
   { label: "Hardware", value: "hardware" },
 ];
 
-const TABLE_ID = "users";
-
 const COLUMN_LABELS: Record<string, string> = {
   id: "ID",
   username: "Username",
@@ -78,10 +76,18 @@ const COLUMN_ICONS: Record<string, unknown> = {
   updated_at: Clock01Icon,
 };
 
-export function UsersDataTable() {
+interface UsersDataTableProps {
+  roleScope: "staff" | "customer";
+}
+
+export function UsersDataTable({ roleScope }: UsersDataTableProps) {
+  const isCustomer = roleScope === "customer";
+  const tableId = isCustomer ? "customers" : "users";
+  const entityLabel = isCustomer ? "Customer" : "User";
+
   const hasHydrated = useTableHydrated();
   const store = useDataTableStore();
-  const tableState = store.tables[TABLE_ID] ?? DEFAULT_TABLE_ITEM_STATE;
+  const tableState = store.tables[tableId] ?? DEFAULT_TABLE_ITEM_STATE;
 
   const [data, setData] = useState<User[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -94,7 +100,7 @@ export function UsersDataTable() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [usersToDelete, setUsersToDelete] = useState<User[]>([]);
 
-  // Read persisted state for 'users' table from store
+  // Read persisted state from store
   const search = tableState.search;
   const roleFilter = tableState.filters["role"] ?? "all";
   const dateRange = useMemo<DateRange | undefined>(() => {
@@ -113,25 +119,30 @@ export function UsersDataTable() {
   const debouncedSearch = useDebounce(search, 300);
 
   // Actions updating persisted store
-  const setSearch = (val: string) => store.setTableSearch(TABLE_ID, val);
-  const setRoleFilter = (val: string) => store.setTableFilter(TABLE_ID, "role", val);
+  const setSearch = (val: string) => store.setTableSearch(tableId, val);
+  const setRoleFilter = (val: string) => store.setTableFilter(tableId, "role", val);
   const setDateRange = (range: DateRange | undefined) =>
     store.setTableDateRange(
-      TABLE_ID,
+      tableId,
       range ? { from: range.from?.toISOString(), to: range.to?.toISOString() } : undefined,
     );
-  const setSorting = (updater: Updater<SortingState>) => store.setTableSorting(TABLE_ID, updater);
-  const removeSort = (columnId: string) => store.removeTableSort(TABLE_ID, columnId);
-  const resetSorting = () => store.resetTableSorting(TABLE_ID);
+  const setSorting = (updater: Updater<SortingState>) => store.setTableSorting(tableId, updater);
+  const removeSort = (columnId: string) => store.removeTableSort(tableId, columnId);
+  const resetSorting = () => store.resetTableSorting(tableId);
   const setPagination = (updater: Updater<PaginationState>) =>
-    store.setTablePagination(TABLE_ID, updater);
+    store.setTablePagination(tableId, updater);
   const setColumnVisibility = (updater: Updater<ColumnVisibilityState>) =>
-    store.setTableColumnVisibility(TABLE_ID, updater);
-  const resetAllFilters = () => store.resetTableFilters(TABLE_ID);
+    store.setTableColumnVisibility(tableId, updater);
+  const resetAllFilters = () => store.resetTableFilters(tableId);
   const resetAllCriteria = () => {
     resetAllFilters();
     resetSorting();
   };
+
+  const columns = useMemo(
+    () => getColumns({ showRole: !isCustomer, entityLabel }),
+    [isCustomer, entityLabel],
+  );
 
   // Fetch users via axios with multi-column sorting and filtering
   const fetchUsers = useCallback(async () => {
@@ -147,7 +158,7 @@ export function UsersDataTable() {
             sort: sorting.map((s) => `${s.id}.${s.desc ? "desc" : "asc"}`).join(","),
           }),
           ...(debouncedSearch && { search: debouncedSearch }),
-          ...(roleFilter !== "all" && { role: roleFilter }),
+          ...(isCustomer ? { role: "customer" } : roleFilter !== "all" ? { role: roleFilter } : {}),
           ...(dateRange?.from && { from: dateRange.from.toISOString() }),
           ...(dateRange?.to && { to: dateRange.to.toISOString() }),
         },
@@ -166,7 +177,15 @@ export function UsersDataTable() {
     } finally {
       setLoading(false);
     }
-  }, [pagination.pageIndex, pagination.pageSize, sorting, debouncedSearch, roleFilter, dateRange]);
+  }, [
+    pagination.pageIndex,
+    pagination.pageSize,
+    sorting,
+    debouncedSearch,
+    isCustomer,
+    roleFilter,
+    dateRange,
+  ]);
 
   useEffect(() => {
     if (!hasHydrated) return;
@@ -238,7 +257,7 @@ export function UsersDataTable() {
 
   const isDefaultSort = sorting.length === 1 && sorting[0].id === "id" && sorting[0].desc === true;
   const hasActiveSorts = !isDefaultSort && sorting.length > 0;
-  const hasActiveFilters = Boolean(roleFilter !== "all" || dateRange?.from);
+  const hasActiveFilters = Boolean((!isCustomer && roleFilter !== "all") || dateRange?.from);
 
   // Hydration guard: show clean centered spinner until localStorage is hydrated
   if (!hasHydrated) {
@@ -260,21 +279,27 @@ export function UsersDataTable() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full sm:w-auto">
           {/* Search Input with Clear Button */}
           <DataTableSearchInput
-            placeholder="Search by name or username..."
+            placeholder={
+              isCustomer
+                ? "Search customers by name or username..."
+                : "Search users by name or username..."
+            }
             value={search}
             onChange={setSearch}
           />
 
-          {/* Faceted Role Filter */}
-          <DataTableFacetedFilter
-            title="Role"
-            options={ROLE_OPTIONS}
-            value={roleFilter}
-            onValueChange={(val) => {
-              setRoleFilter(val);
-              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-            }}
-          />
+          {/* Faceted Role Filter (Staff view only) */}
+          {!isCustomer && (
+            <DataTableFacetedFilter
+              title="Role"
+              options={ROLE_OPTIONS}
+              value={roleFilter}
+              onValueChange={(val) => {
+                setRoleFilter(val);
+                setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+              }}
+            />
+          )}
         </div>
 
         {/* Action Controls Group (Right) */}
@@ -302,10 +327,10 @@ export function UsersDataTable() {
             </Button>
           )}
 
-          {/* Add User Button */}
+          {/* Add User / Customer Button */}
           <Button size="sm" onClick={handleAddUser} className="h-8 gap-1.5 text-xs">
             <HugeiconsIcon icon={UserAdd01Icon} className="size-3.5" data-icon="inline-start" />
-            <span>Add User</span>
+            <span>{isCustomer ? "Add Customer" : "Add User"}</span>
           </Button>
 
           {/* Column Visibility Toggle */}
@@ -330,8 +355,8 @@ export function UsersDataTable() {
         columnIcons={COLUMN_ICONS}
         onResetAll={resetAllCriteria}
       >
-        {/* Role Chip */}
-        {roleFilter !== "all" && (
+        {/* Role Chip (Staff view only) */}
+        {!isCustomer && roleFilter !== "all" && (
           <Badge
             variant="secondary"
             className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
@@ -401,8 +426,12 @@ export function UsersDataTable() {
         loading={loading}
         error={error}
         onRetry={fetchUsers}
-        emptyMessage="No users found matching the specified filters."
-        loadingMessage="Loading users..."
+        emptyMessage={
+          isCustomer
+            ? "No customers found matching the specified filters."
+            : "No users found matching the specified filters."
+        }
+        loadingMessage={isCustomer ? "Loading customers..." : "Loading users..."}
       />
 
       {/* Pagination Controls */}
@@ -414,6 +443,7 @@ export function UsersDataTable() {
         onOpenChange={setFormDialogOpen}
         user={selectedUserForEdit}
         onSuccess={handleMutationSuccess}
+        fixedRole={isCustomer ? "customer" : undefined}
       />
 
       {/* Delete User Confirmation Modal */}
@@ -422,6 +452,7 @@ export function UsersDataTable() {
         onOpenChange={setDeleteDialogOpen}
         users={usersToDelete}
         onSuccess={handleMutationSuccess}
+        entityLabel={isCustomer ? "customer" : "user"}
       />
     </div>
   );

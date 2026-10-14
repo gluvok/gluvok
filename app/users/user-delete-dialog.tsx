@@ -22,13 +22,23 @@ interface UserDeleteDialogProps {
   onOpenChange: (open: boolean) => void;
   users: User[];
   onSuccess: () => void;
+  entityLabel?: string;
 }
 
-export function UserDeleteDialog({ open, onOpenChange, users, onSuccess }: UserDeleteDialogProps) {
+export function UserDeleteDialog({
+  open,
+  onOpenChange,
+  users,
+  onSuccess,
+  entityLabel = "User",
+}: UserDeleteDialogProps) {
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const isBatch = users.length > 1;
+  const isCustomer = entityLabel.toLowerCase() === "customer";
+  const singularLabel = isCustomer ? "Customer" : "User";
+  const pluralLabel = isCustomer ? "Customers" : "Users";
 
   useEffect(() => {
     if (open) {
@@ -49,7 +59,7 @@ export function UserDeleteDialog({ open, onOpenChange, users, onSuccess }: UserD
 
       toast.add({
         type: "success",
-        title: isBatch ? "Users deleted" : "User deleted",
+        title: isBatch ? `${pluralLabel} deleted` : `${singularLabel} deleted`,
         description: isBatch
           ? `Successfully deleted ${users.length} accounts.`
           : `Account "${users[0].username}" has been removed.`,
@@ -63,7 +73,7 @@ export function UserDeleteDialog({ open, onOpenChange, users, onSuccess }: UserD
           ? err.response.data.error
           : err instanceof Error
             ? err.message
-            : "Failed to delete user.";
+            : `Failed to delete ${singularLabel.toLowerCase()}.`;
 
       setDeleteError(msg);
       toast.add({
@@ -84,14 +94,16 @@ export function UserDeleteDialog({ open, onOpenChange, users, onSuccess }: UserD
             <div className="flex size-7 items-center justify-center rounded-md bg-destructive/10 text-destructive">
               <HugeiconsIcon icon={Delete02Icon} className="size-4" />
             </div>
-            <DialogTitle>{isBatch ? `Delete ${users.length} Users` : "Delete User"}</DialogTitle>
+            <DialogTitle>
+              {isBatch ? `Delete ${users.length} ${pluralLabel}` : `Delete ${singularLabel}`}
+            </DialogTitle>
           </div>
           <DialogDescription>
             {isBatch
-              ? `Are you sure you want to delete these ${users.length} accounts? Accounts with linked entries or tickets cannot be deleted.`
+              ? `Are you sure you want to delete these ${users.length} ${pluralLabel.toLowerCase()}? Accounts with linked operational history cannot be deleted.`
               : users[0]
                 ? `Are you sure you want to delete "${users[0].name}" (@${users[0].username})? Accounts with linked operational history cannot be deleted.`
-                : "Confirm account deletion."}
+                : `Confirm ${singularLabel.toLowerCase()} deletion.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -152,7 +164,7 @@ export function UserDeleteDialog({ open, onOpenChange, users, onSuccess }: UserD
             ) : (
               <HugeiconsIcon icon={Delete02Icon} className="size-3.5" data-icon="inline-start" />
             )}
-            {isBatch ? `Delete ${users.length} Users` : "Delete User"}
+            {isBatch ? `Delete ${users.length} ${pluralLabel}` : `Delete ${singularLabel}`}
           </Button>
         </DialogFooter>
       </DialogContent>

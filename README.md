@@ -79,38 +79,25 @@ The `/settings` route provides facility configuration controls powered by the un
   - **Client-Side Zod Validation**: Form validates against `updateFactorySchema` before dispatching updates.
   - **Dirty State Tracking**: Save Changes and Reset buttons detect client form changes with disabled controls when pristine, `<Spinner>` indicators during requests, and inline timestamp tracking.
 
-## Users Module & Administration
+## Users & Customers Administration
 
-The `/users` route provides administrative user management powered by the unified `/api/users` endpoint:
+Administrative users (`/users`) and agricultural customers (`/customers`) are powered by the unified `/api/users` endpoint and single-source `UsersDataTable` architecture (`roleScope="staff" | "customer"`):
 
 - **Backend Endpoints**: `GET`, `POST`, `PATCH`, `DELETE /api/users`
-  - **`GET /api/users`**: Multi-column sorting (`id`, `username`, `name`, `father_name`, `role`, `created_at`, `updated_at`), search (across `name`, `username`, and `father_name`), role filter, date range filter, and server-side pagination with exact total counts. Defaults to factory staff accounts (`role NOT IN ('customer', 'hardware')`) unless a specific role filter like `?role=customer` is requested. Excludes `password_hash` from the response.
-  - **`POST /api/users`**: Strict Zod validation (`username`, `name`, `father_name`, `role`, `password`), enforces username uniqueness across active accounts (`deleted_at IS NULL`), hashes passwords with Argon2id, and provisions the user for Factory ID 1. Supports creating staff as well as customer accounts.
+  - **`GET /api/users`**: Multi-column sorting (`id`, `username`, `name`, `role`, `created_at`, `updated_at`), search (across `name` and `username`), role filter, date range filter, and server-side pagination with exact total counts. Defaults to factory staff accounts (`role NOT IN ('customer', 'hardware')`) unless a specific role filter like `?role=customer` is requested. Excludes `password_hash` from the response.
+  - **`POST /api/users`**: Strict Zod validation (`username`, `name`, `role`, `password`), enforces username uniqueness across active accounts (`deleted_at IS NULL`), hashes passwords with Argon2id, and provisions the user for Factory ID 1. Supports creating staff as well as customer accounts.
   - **`PATCH /api/users`**: Validates input, verifies username uniqueness if updated, optionally resets and re-hashes passwords with Argon2id when provided, and updates user profile and role with strict role safety (customer accounts cannot be upgraded to staff roles, and staff accounts cannot become customer accounts).
   - **`DELETE /api/users`**: Supports single (`id`) and bulk (`ids`) deletion. Performs constant O(1) batched pre-flight integrity checks partitioned by role:
     - **Staff Users**: verified against `entries.created_by` and `tickets.user_id`.
     - **Customer Users**: verified against `entries.customer_id`.
       Blocks deletion with HTTP 409 Conflict if linked historical records exist. Soft-deletes (`deleted_at: NOW()`) when safe.
-- **Features & UX**:
-  - **Add User Modal**: Streamlined form to provision new users with role selection (`Admin`, `Manager`, `Operator`, `Base`).
-  - **Edit User Modal**: In-place profile and role editing with optional password update field.
+- **Unified Component Architecture (Rule #10 Strict DRY)**:
+  - **Single Source of Truth**: `app/users/data-table.tsx` (`UsersDataTable`), `user-form-dialog.tsx`, and `user-delete-dialog.tsx` are parameterized by `roleScope="staff" | "customer"` and `fixedRole="customer"`, eliminating parallel directory and component duplication.
+  - **Add/Edit Modals**: Context-aware modal provisioning users or customers (automatically hiding role selection in customer mode).
   - **Protected Deletion Modal**: Confirmation dialog with automated warning banner displaying the exact linked record conflict details if deletion is blocked.
   - **Batch Operations**: Multi-row selection with bulk deletion action and account counter.
-  - **Role Badges & Faceted Filter**: Color-coded badges for all roles (`Admin`, `Manager`, `Operator`, `Base`, `Hardware`) with quick role filter in the toolbar.
-  - **State Persistence**: Zustand-powered persistence (`TABLE_ID = "users"`) retaining search queries, filters, date ranges, multi-sort orders, column visibility, and pagination in `localStorage`.
-
-## Customers Module
-
-The `/customers` route provides agricultural customer and client account management utilizing the unified `/api/users?role=customer` backend:
-
-- **Unified Identity Storage**: All customer accounts live directly in the `users` table with `role = 'customer'` and optional `father_name` column for rural agricultural identity matching.
-- **Data Table Features**:
-  - **Search**: Debounced real-time search across `name`, `username`, and `father_name`.
-  - **Creation Date Range**: Date filter with quick range selection.
-  - **Add Customer Modal**: Purpose-built modal for onboarding customers with full name, father's name, username handle, and initial portal password (no role dropdown).
-  - **Edit Customer Modal**: Edit customer details, update father's name, or reset portal password without role exposure.
-  - **Deletion Safeguards**: Single and batch deletion dialog with conflict safeguard banner blocking deletion if the customer has linked entries.
-  - **State Persistence**: Zustand-powered persistence (`TABLE_ID = "customers"`) for independent pagination, sorting, search, and visibility state in `localStorage`.
+  - **Role Badges & Faceted Filter**: Color-coded badges for all roles with role filter in staff view, cleanly omitted in customer view.
+  - **Independent State Persistence**: Zustand-powered persistence (`TABLE_ID = "users"` and `TABLE_ID = "customers"`) retaining search queries, filters, date ranges, multi-sort orders, column visibility, and pagination in `localStorage`.
 
 ## Getting Started
 

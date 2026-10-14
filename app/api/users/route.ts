@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { StatusCodes } from "http-status-codes";
 import argon2 from "argon2";
+import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import {
   parsePagination,
@@ -21,7 +22,6 @@ const ALLOWED_SORT_COLUMNS = [
   "id",
   "username",
   "name",
-  "father_name",
   "role",
   "created_at",
   "updated_at",
@@ -37,14 +37,14 @@ export async function GET(request: Request) {
     const executeQuery = async () => {
       let q = supabase
         .from("users")
-        .select("id, username, name, father_name, role, factory_id, created_at, updated_at", {
+        .select("id, username, name, role, factory_id, created_at, updated_at", {
           count: "exact",
         })
         .is("deleted_at", null);
 
       const search = searchParams.get("search")?.trim();
       if (search) {
-        q = q.or(`name.ilike.%${search}%,username.ilike.%${search}%,father_name.ilike.%${search}%`);
+        q = q.or(`name.ilike.%${search}%,username.ilike.%${search}%`);
       }
 
       const role = searchParams.get("role")?.trim();
@@ -62,8 +62,8 @@ export async function GET(request: Request) {
         return res;
       }
 
-      // If father_name or role_enum customer is not yet migrated, fall back gracefully
-      if (res.error.message.includes("father_name") || res.error.message.includes("role_enum")) {
+      // If role_enum customer is not yet migrated, fall back gracefully
+      if (res.error.message.includes("role_enum")) {
         if (role === "customer") {
           return { data: [] as User[], count: 0, error: null };
         }
@@ -117,13 +117,13 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "Validation error",
-          details: validation.error.flatten(),
+          details: z.treeifyError(validation.error),
         },
         { status: StatusCodes.BAD_REQUEST },
       );
     }
 
-    const { username, name, father_name, role, password } = validation.data;
+    const { username, name, role, password } = validation.data;
 
     // Check username uniqueness among active users
     const { data: existing, error: checkError } = await supabase
@@ -156,12 +156,11 @@ export async function POST(request: Request) {
       .insert({
         username,
         name,
-        father_name: father_name?.trim() || null,
         role,
         password_hash: passwordHash,
         factory_id: 1,
       })
-      .select("id, username, name, father_name, role, factory_id, created_at, updated_at")
+      .select("id, username, name, role, factory_id, created_at, updated_at")
       .single();
 
     if (insertError) {
@@ -194,13 +193,13 @@ export async function PATCH(request: Request) {
       return NextResponse.json(
         {
           error: "Validation error",
-          details: validation.error.flatten(),
+          details: z.treeifyError(validation.error),
         },
         { status: StatusCodes.BAD_REQUEST },
       );
     }
 
-    const { id, username, name, father_name, role, password } = validation.data;
+    const { id, username, name, role, password } = validation.data;
 
     // Verify user exists and is active
     const { data: existingUser, error: fetchError } = await supabase
@@ -277,10 +276,6 @@ export async function PATCH(request: Request) {
       updated_at: new Date().toISOString(),
     };
 
-    if (father_name !== undefined) {
-      updates.father_name = father_name.trim() || null;
-    }
-
     if (role && role !== existingUser.role) {
       updates.role = role;
     }
@@ -293,7 +288,7 @@ export async function PATCH(request: Request) {
       .from("users")
       .update(updates)
       .eq("id", id)
-      .select("id, username, name, father_name, role, factory_id, created_at, updated_at")
+      .select("id, username, name, role, factory_id, created_at, updated_at")
       .single();
 
     if (updateError) {
@@ -322,7 +317,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json(
         {
           error: "Validation error",
-          details: validation.error.flatten(),
+          details: z.treeifyError(validation.error),
         },
         { status: StatusCodes.BAD_REQUEST },
       );

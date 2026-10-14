@@ -100,7 +100,6 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     name TEXT NOT NULL,
-    father_name TEXT,
     role role_enum NOT NULL DEFAULT 'base',
     factory_id INT NOT NULL REFERENCES factories(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -236,7 +235,7 @@ ON tickets USING gin (concern gin_trgm_ops, reply gin_trgm_ops)
 WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_users_search_trgm
-ON users USING gin (name gin_trgm_ops, username gin_trgm_ops, father_name gin_trgm_ops)
+ON users USING gin (name gin_trgm_ops, username gin_trgm_ops)
 WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_centers_factory

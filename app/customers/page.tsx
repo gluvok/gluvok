@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
-import { CustomersDataTable } from "./data-table";
+import { UsersDataTable } from "@/app/users/data-table";
 
 export const metadata: Metadata = {
   title: "Customers | Gluvok",
@@ -15,7 +15,7 @@ export default function CustomersPage() {
         description="Manage client profiles, agricultural suppliers, and portal credentials."
       />
 
-      <CustomersDataTable />
+      <UsersDataTable roleScope="customer" />
     </div>
   );
 }

@@ -15,7 +15,7 @@ export default function UsersPage() {
         description="Configure system operators, roles, and access credentials."
       />
 
-      <UsersDataTable />
+      <UsersDataTable roleScope="staff" />
     </div>
   );
 }

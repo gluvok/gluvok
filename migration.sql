@@ -22,10 +22,10 @@ CREATE INDEX IF NOT EXISTS idx_entries_factory_vehicle
 ON entries (factory_id, vehicle_number, created_at DESC)
 WHERE deleted_at IS NULL;
 
--- Migration: Add customer role and father_name to users, drop customers table, and link entries.customer_id to users
+-- Migration: Add customer role to users, drop customers table, and link entries.customer_id to users
 ALTER TYPE role_enum ADD VALUE IF NOT EXISTS 'customer';
 
-ALTER TABLE users ADD COLUMN IF NOT EXISTS father_name TEXT;
+ALTER TABLE users DROP COLUMN IF EXISTS father_name;
 
 DO $$
 DECLARE

@@ -33,7 +33,7 @@ import {
   UserEdit01Icon,
   UserIcon,
 } from "@hugeicons/core-free-icons";
-import { createUserSchema, updateUserSchema, type HumanRole, type User } from "./types";
+import { createUserSchema, updateUserSchema, type User, type UserRole } from "./types";
 
 const ROLE_OPTIONS = [
   { value: "admin", label: "Admin" },
@@ -47,14 +47,23 @@ interface UserFormDialogProps {
   onOpenChange: (open: boolean) => void;
   user: User | null;
   onSuccess: () => void;
+  fixedRole?: UserRole;
 }
 
-export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserFormDialogProps) {
+export function UserFormDialog({
+  open,
+  onOpenChange,
+  user,
+  onSuccess,
+  fixedRole,
+}: UserFormDialogProps) {
   const isEdit = Boolean(user);
+  const isCustomer = fixedRole === "customer";
+  const entityLabel = isCustomer ? "Customer" : "User";
 
   const [username, setUsername] = useState<string>("");
   const [name, setName] = useState<string>("");
-  const [role, setRole] = useState<HumanRole>("operator");
+  const [role, setRole] = useState<UserRole>(fixedRole ?? "operator");
   const [password, setPassword] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -65,17 +74,17 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
       if (user) {
         setUsername(user.username);
         setName(user.name);
-        setRole(user.role === "hardware" ? "operator" : (user.role as HumanRole));
+        setRole(user.role === "hardware" ? "operator" : user.role);
         setPassword("");
       } else {
         setUsername("");
         setName("");
-        setRole("operator");
+        setRole(fixedRole ?? "operator");
         setPassword("");
       }
       setFormError(null);
     }
-  }, [open, user]);
+  }, [open, user, fixedRole]);
 
   const handleSubmit = async () => {
     setFormError(null);
@@ -112,14 +121,14 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
         await axios.patch("/api/users", payload);
         toast.add({
           type: "success",
-          title: "User updated",
+          title: `${entityLabel} updated`,
           description: `Account "${payload.username}" has been successfully updated.`,
         });
       } else {
         await axios.post("/api/users", payload);
         toast.add({
           type: "success",
-          title: "User created",
+          title: `${entityLabel} created`,
           description: `Account "${payload.username}" has been created successfully.`,
         });
       }
@@ -137,7 +146,9 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
       setFormError(msg);
       toast.add({
         type: "error",
-        title: isEdit ? "Failed to update user" : "Failed to create user",
+        title: isEdit
+          ? `Failed to update ${entityLabel.toLowerCase()}`
+          : `Failed to create ${entityLabel.toLowerCase()}`,
         description: msg,
       });
     } finally {
@@ -153,12 +164,16 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
             <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary">
               <HugeiconsIcon icon={isEdit ? UserEdit01Icon : UserAdd01Icon} className="size-4" />
             </div>
-            <DialogTitle>{isEdit ? "Edit User" : "Add New User"}</DialogTitle>
+            <DialogTitle>{isEdit ? `Edit ${entityLabel}` : `Add New ${entityLabel}`}</DialogTitle>
           </div>
           <DialogDescription>
-            {isEdit
-              ? "Modify system credentials, operational role, or assign a new password."
-              : "Provision a new system user profile assigned to the primary facility."}
+            {isCustomer
+              ? isEdit
+                ? "Modify portal credentials or update account information."
+                : "Register a new agricultural supplier or customer profile."
+              : isEdit
+                ? "Modify system credentials, operational role, or assign a new password."
+                : "Provision a new system user profile assigned to the primary facility."}
           </DialogDescription>
         </DialogHeader>
 
@@ -179,7 +194,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
               id="user-username"
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
-              placeholder="e.g. alex_operator"
+              placeholder={isCustomer ? "e.g. kisan_ramesh" : "e.g. alex_operator"}
               className="h-8 text-xs font-mono"
               autoComplete="off"
             />
@@ -198,44 +213,51 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
               id="user-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Alex Morgan"
+              placeholder={isCustomer ? "e.g. Ramesh Kumar" : "e.g. Alex Morgan"}
               className="h-8 text-xs"
             />
             <FieldDescription>
-              Official person name displayed in ticket logs and weighment audit trails.
+              {isCustomer
+                ? "Official customer or enterprise name displayed on receipts and delivery entries."
+                : "Official person name displayed in ticket logs and weighment audit trails."}
             </FieldDescription>
           </Field>
 
-          {/* Role */}
-          <Field>
-            <FieldLabel htmlFor="user-role">
-              <HugeiconsIcon icon={SecurityCheckIcon} className="size-3.5 text-muted-foreground" />
-              System Role
-            </FieldLabel>
-            <Select
-              items={ROLE_OPTIONS}
-              value={role}
-              onValueChange={(val) => {
-                if (val) setRole(val as HumanRole);
-              }}
-            >
-              <SelectTrigger id="user-role" className="h-8 w-full text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="start">
-                <SelectGroup>
-                  {ROLE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <FieldDescription>
-              Permission tier defining access to facility operations and system configurations.
-            </FieldDescription>
-          </Field>
+          {/* Role (hidden when role is fixed e.g. customer) */}
+          {!fixedRole && (
+            <Field>
+              <FieldLabel htmlFor="user-role">
+                <HugeiconsIcon
+                  icon={SecurityCheckIcon}
+                  className="size-3.5 text-muted-foreground"
+                />
+                System Role
+              </FieldLabel>
+              <Select
+                items={ROLE_OPTIONS}
+                value={role}
+                onValueChange={(val) => {
+                  if (val) setRole(val as UserRole);
+                }}
+              >
+                <SelectTrigger id="user-role" className="h-8 w-full text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="start">
+                  <SelectGroup>
+                    {ROLE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <FieldDescription>
+                Permission tier defining access to facility operations and system configurations.
+              </FieldDescription>
+            </Field>
+          )}
 
           {/* Password */}
           <Field>
@@ -289,7 +311,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
                 data-icon="inline-start"
               />
             )}
-            {isEdit ? "Save Changes" : "Create User"}
+            {isEdit ? "Save Changes" : `Create ${entityLabel}`}
           </Button>
         </DialogFooter>
       </DialogContent>

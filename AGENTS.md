@@ -213,24 +213,6 @@ For any JavaScript / TypeScript / Node modifications:
   - When a Zod schema defines defaults or fallbacks (`.default(...)`, `.catch(...)`), never write manual fallback arithmetic or nullish coalescing checks (`defaults?.page ?? 1`, `Math.max(1, ...)`). Rely directly on Zod's parse guarantees.
 - **Inline Error Feedback**: Display inline `<FieldError>` messages dynamically beneath fields bound to `errors.<field>?.message`. Indicate mandatory fields with visual asterisks (`*`) in field labels.
 
-## 15. Design System Tokens & Toast Standards
-
-**Use Rikyū-cha accent palette, top-right anchored toasts, and distinct semantic iconography.**
-
-- **Authoritative Accent Color**: Use **Rikyū-cha (利休茶)** matcha/moss green accent:
-  - Hex: `#66684F`
-  - RGB: `rgb(102, 104, 79)`
-  - HSL: `hsl(65, 14%, 36%)`
-  - Text Color: Pure White (`#FFFFFF`)
-  - Hover State: `#52543D` (`rgb(82, 84, 61)`)
-  - Keep role and badge colors subtle and muted (avoid harsh/saturated violets or neon tones).
-- **Toast Anchoring & Typography**:
-  - `<Toaster />` anchored at `top-right` (`top-4 right-4`).
-  - Typography: `font-heading` for toast titles and `font-sans` for toast descriptions.
-  - Semantic status colors: Emerald for success, Amber for warning, Destructive red for error, and Sky blue for info.
-- **Icon Distinctiveness**:
-  - Differentiate icons representing distinct options or layout variations (e.g. receipt image layout options 1–6 must use distinct layout/grid icons, distinct from the category label icon).
-
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.

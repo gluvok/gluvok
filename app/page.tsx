@@ -6,7 +6,7 @@ import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 
 export default function Home() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-1 min-h-0 flex-col gap-6 overflow-y-auto">
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold tracking-tight font-heading">Dashboard</h1>
         <p className="text-sm text-muted-foreground">

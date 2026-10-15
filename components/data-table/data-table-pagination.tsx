@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
+import { cn } from "@/lib/utils";
 import { type DataTableFeatures } from "./data-table-features";
 
 const PAGE_SIZE_OPTIONS = [
@@ -32,7 +33,7 @@ export function DataTablePagination<TData extends RowData>({
   loading = false,
   error = null,
 }: DataTablePaginationProps<TData>) {
-  if (loading || error) {
+  if (error) {
     return null;
   }
 
@@ -43,7 +44,12 @@ export function DataTablePagination<TData extends RowData>({
   const totalPages = Math.max(1, table.getPageCount());
 
   return (
-    <div className="flex flex-col items-center justify-between gap-2.5 px-2 py-2 sm:flex-row">
+    <div
+      className={cn(
+        "flex flex-col items-center justify-between gap-2.5 px-2 py-2 sm:flex-row transition-opacity duration-150",
+        loading && "opacity-40 pointer-events-none select-none",
+      )}
+    >
       <div className="w-full text-center text-xs text-muted-foreground sm:w-auto sm:text-left">
         {selectedCount} of {currentRowsCount} row(s) selected.
       </div>

@@ -60,9 +60,9 @@ export function CentersDataTable() {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-1 flex-col gap-2 min-w-0 min-h-0 h-full overflow-hidden">
       {/* Primary Toolbar */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 shrink-0 sm:flex-row sm:items-center sm:justify-between">
         {/* Filters Group (Left) */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full sm:w-auto">
           {/* Search Input with Clear Button */}
@@ -126,7 +126,9 @@ export function CentersDataTable() {
       />
 
       {/* Pagination Controls */}
-      <DataTablePagination table={table} loading={loading} error={error} />
+      <div className="shrink-0">
+        <DataTablePagination table={table} loading={loading} error={error} />
+      </div>
     </div>
   );
 }

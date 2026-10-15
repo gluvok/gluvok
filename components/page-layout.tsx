@@ -8,8 +8,10 @@ interface PageLayoutProps {
 
 export function PageLayout({ title, description, children }: PageLayoutProps) {
   return (
-    <div className="flex flex-col gap-2.5 min-w-0">
-      <PageHeader title={title} description={description} />
+    <div className="flex flex-1 flex-col gap-2.5 min-w-0 min-h-0 h-full overflow-hidden">
+      <div className="shrink-0">
+        <PageHeader title={title} description={description} />
+      </div>
       {children}
     </div>
   );

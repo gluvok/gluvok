@@ -214,9 +214,9 @@ export function EntriesDataTable() {
   }
 
   return (
-    <div className="flex flex-col gap-2 min-w-0">
+    <div className="flex flex-1 flex-col gap-2 min-w-0 min-h-0 h-full overflow-hidden">
       {/* Primary Toolbar - 2-Tier Layout */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 shrink-0">
         {/* Row 1: Search Box & Right-hand Action Controls */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <DataTableSearchInput
@@ -345,7 +345,9 @@ export function EntriesDataTable() {
       />
 
       {/* Pagination Controls */}
-      <DataTablePagination table={table} loading={loading} error={error} />
+      <div className="shrink-0">
+        <DataTablePagination table={table} loading={loading} error={error} />
+      </div>
 
       {/* Photo Viewer Carousel Dialog */}
       <EntryPhotosDialog

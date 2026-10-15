@@ -45,10 +45,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         "smooth-scroll",
       )}
     >
-      <body className="min-h-full flex flex-col">
-        <SidebarProvider defaultOpen={defaultOpen}>
+      <body className="h-svh max-h-svh overflow-hidden flex flex-col">
+        <SidebarProvider defaultOpen={defaultOpen} className="h-full">
           <AppSidebar />
-          <SidebarInset className="min-w-0 overflow-x-hidden">
+          <SidebarInset className="min-w-0 h-svh max-h-svh overflow-hidden flex flex-col">
             <header className="flex h-11 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-11">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
@@ -56,7 +56,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <AppBreadcrumb />
               </div>
             </header>
-            <div className="flex flex-1 flex-col gap-3 p-3 md:px-6 md:py-3.5 min-w-0">
+            <div className="flex flex-1 flex-col gap-3 p-3 md:px-6 md:py-3.5 min-w-0 min-h-0 overflow-hidden">
               {children}
             </div>
           </SidebarInset>

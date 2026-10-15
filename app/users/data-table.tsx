@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTableSearchInput } from "@/components/data-table/data-table-search-input";
 import {
@@ -9,6 +8,7 @@ import {
   type FacetedFilterOption,
 } from "@/components/data-table/data-table-faceted-filter";
 import { DataTableCriteriaBar } from "@/components/data-table/data-table-criteria-bar";
+import { DataTableFilterChip } from "@/components/data-table/data-table-filter-chip";
 import { DataTableDateRangeChip } from "@/components/data-table/data-table-date-range-chip";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
@@ -20,8 +20,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Briefcase01Icon,
   Calendar01Icon,
-  Cancel01Icon,
   Clock01Icon,
+  CpuIcon,
   CrownIcon,
   Delete02Icon,
   HashtagIcon,
@@ -43,6 +43,7 @@ const ROLE_OPTIONS: FacetedFilterOption[] = [
   { label: "Manager", value: "manager", icon: Briefcase01Icon },
   { label: "Operator", value: "operator", icon: HeadsetIcon },
   { label: "Base User", value: "base", icon: UserIcon },
+  { label: "Hardware", value: "hardware", icon: CpuIcon },
 ];
 
 const COLUMN_LABELS: Record<string, string> = {
@@ -282,34 +283,23 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
         onResetAll={resetAllCriteria}
       >
         {/* Role Chip (Staff view only) */}
-        {config.hasRoleFilter && roleFilter !== "all" && (
-          <Badge
-            variant="secondary"
-            className="shrink-0 gap-1 py-0.5 pl-2 pr-1 text-2xs font-normal"
-          >
-            <HugeiconsIcon
-              icon={SecurityCheckIcon}
-              className="size-2.5 text-muted-foreground shrink-0"
-              data-icon="inline-start"
-            />
-            <span className="text-muted-foreground">Role:</span>
-            <span className="font-medium">
-              {ROLE_OPTIONS.find((o) => o.value === roleFilter)?.label ?? roleFilter}
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              onClick={() => {
-                setFilter("role", "all");
-              }}
-              className="size-4 rounded-full p-0 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground"
-              aria-label="Remove role filter"
-            >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
-            </Button>
-          </Badge>
-        )}
+        {config.hasRoleFilter &&
+          roleFilter !== "all" &&
+          (() => {
+            const activeRoleOption = ROLE_OPTIONS.find((o) => o.value === roleFilter);
+            const RoleIcon =
+              (activeRoleOption?.icon as typeof SecurityCheckIcon) ?? SecurityCheckIcon;
+            return (
+              <DataTableFilterChip
+                label="Role"
+                value={activeRoleOption?.label ?? roleFilter}
+                icon={RoleIcon}
+                onRemove={() => {
+                  setFilter("role", "all");
+                }}
+              />
+            );
+          })()}
 
         <DataTableDateRangeChip dateRange={dateRange} onRemove={() => setDateRange(undefined)} />
       </DataTableCriteriaBar>

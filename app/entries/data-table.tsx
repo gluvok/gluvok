@@ -2,14 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { DataTableSearchInput } from "@/components/data-table/data-table-search-input";
 import {
   DataTableFacetedFilter,
   type FacetedFilterOption,
 } from "@/components/data-table/data-table-faceted-filter";
 import { DataTableCriteriaBar } from "@/components/data-table/data-table-criteria-bar";
+import { DataTableFilterChip } from "@/components/data-table/data-table-filter-chip";
 import { DataTableDateRangeChip } from "@/components/data-table/data-table-date-range-chip";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
@@ -17,12 +16,11 @@ import { DataTableViewOptions } from "@/components/data-table/data-table-view-op
 import { DatePickerWithRange } from "@/components/data-table/date-range-picker";
 import { DataTableHydrationCard } from "@/components/data-table/data-table-hydration-card";
 import { useDataTable } from "@/components/data-table/use-data-table";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Building01Icon,
   Calendar01Icon,
-  Cancel01Icon,
   Clock01Icon,
+  CpuIcon,
   HashtagIcon,
   Image01Icon,
   TransmissionIcon,
@@ -67,7 +65,7 @@ const COLUMN_ICONS: Record<string, unknown> = {
 
 const SOURCE_OPTIONS: FacetedFilterOption[] = [
   { label: "All Sources", value: "all", icon: TransmissionIcon },
-  { label: "Hardware", value: "hardware", icon: TransmissionIcon },
+  { label: "Hardware", value: "hardware", icon: CpuIcon },
   { label: "Manual", value: "manual", icon: UserIcon },
 ];
 
@@ -117,6 +115,7 @@ export function EntriesDataTable() {
               ...creatorsRes.data.data.map((u) => ({
                 label: `#${u.id} ${u.name}`,
                 value: String(u.id),
+                icon: u.role === "hardware" ? CpuIcon : UserIcon,
               })),
             ]);
           }
@@ -175,17 +174,20 @@ export function EntriesDataTable() {
     );
   }, [customerFilter, customerOptions]);
 
-  const activeCreatorLabel = useMemo(() => {
+  const activeCreatorOption = useMemo(() => {
     if (creatorFilter === "all") return null;
     return (
-      creatorOptions.find((opt) => opt.value === creatorFilter)?.label ??
-      `Creator #${creatorFilter}`
+      creatorOptions.find((opt) => opt.value === creatorFilter) ?? {
+        label: `Creator #${creatorFilter}`,
+        value: creatorFilter,
+        icon: UserIcon,
+      }
     );
   }, [creatorFilter, creatorOptions]);
 
-  const activeSourceLabel = useMemo(() => {
+  const activeSourceOption = useMemo(() => {
     if (sourceFilter === "all") return null;
-    return SOURCE_OPTIONS.find((opt) => opt.value === sourceFilter)?.label ?? sourceFilter;
+    return SOURCE_OPTIONS.find((opt) => opt.value === sourceFilter) ?? null;
   }, [sourceFilter]);
 
   if (!hasHydrated) {
@@ -264,98 +266,42 @@ export function EntriesDataTable() {
       >
         {/* Active Center Filter Chip with Category Icon */}
         {activeCenterLabel && (
-          <Badge
-            variant="secondary"
-            className="flex items-center gap-1.5 py-1 px-2 text-2xs font-normal"
-          >
-            <HugeiconsIcon
-              icon={appIcons.centers}
-              className="size-3 text-muted-foreground shrink-0"
-            />
-            <span className="text-muted-foreground">Center:</span>
-            <span className="font-medium text-foreground">{activeCenterLabel}</span>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={() => setFilter("center_id", "all")}
-              className="size-3.5 p-0 hover:bg-transparent text-muted-foreground hover:text-foreground"
-            >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
-              <span className="sr-only">Clear center filter</span>
-            </Button>
-          </Badge>
+          <DataTableFilterChip
+            label="Center"
+            value={activeCenterLabel}
+            icon={appIcons.centers}
+            onRemove={() => setFilter("center_id", "all")}
+          />
         )}
 
         {/* Active Customer Filter Chip with Category Icon */}
         {activeCustomerLabel && (
-          <Badge
-            variant="secondary"
-            className="flex items-center gap-1.5 py-1 px-2 text-2xs font-normal"
-          >
-            <HugeiconsIcon
-              icon={appIcons.customers}
-              className="size-3 text-muted-foreground shrink-0"
-            />
-            <span className="text-muted-foreground">Customer:</span>
-            <span className="font-medium text-foreground">{activeCustomerLabel}</span>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={() => setFilter("customer_id", "all")}
-              className="size-3.5 p-0 hover:bg-transparent text-muted-foreground hover:text-foreground"
-            >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
-              <span className="sr-only">Clear customer filter</span>
-            </Button>
-          </Badge>
+          <DataTableFilterChip
+            label="Customer"
+            value={activeCustomerLabel}
+            icon={appIcons.customers}
+            onRemove={() => setFilter("customer_id", "all")}
+          />
         )}
 
-        {/* Active Created by Filter Chip with Category Icon */}
-        {activeCreatorLabel && (
-          <Badge
-            variant="secondary"
-            className="flex items-center gap-1.5 py-1 px-2 text-2xs font-normal"
-          >
-            <HugeiconsIcon
-              icon={appIcons.users}
-              className="size-3 text-muted-foreground shrink-0"
-            />
-            <span className="text-muted-foreground">Created by:</span>
-            <span className="font-medium text-foreground">{activeCreatorLabel}</span>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={() => setFilter("created_by", "all")}
-              className="size-3.5 p-0 hover:bg-transparent text-muted-foreground hover:text-foreground"
-            >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
-              <span className="sr-only">Clear creator filter</span>
-            </Button>
-          </Badge>
+        {/* Active Created by Filter Chip with Option Icon */}
+        {activeCreatorOption && (
+          <DataTableFilterChip
+            label="Created by"
+            value={activeCreatorOption.label}
+            icon={activeCreatorOption.icon}
+            onRemove={() => setFilter("created_by", "all")}
+          />
         )}
 
-        {/* Active Source Filter Chip with Category Icon */}
-        {activeSourceLabel && (
-          <Badge
-            variant="secondary"
-            className="flex items-center gap-1.5 py-1 px-2 text-2xs font-normal"
-          >
-            <HugeiconsIcon
-              icon={TransmissionIcon}
-              className="size-3 text-muted-foreground shrink-0"
-            />
-            <span className="text-muted-foreground">Source:</span>
-            <span className="font-medium text-foreground">{activeSourceLabel}</span>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={() => setFilter("source", "all")}
-              className="size-3.5 p-0 hover:bg-transparent text-muted-foreground hover:text-foreground"
-            >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
-              <span className="sr-only">Clear source filter</span>
-            </Button>
-          </Badge>
+        {/* Active Source Filter Chip with Option Icon */}
+        {activeSourceOption && (
+          <DataTableFilterChip
+            label="Source"
+            value={activeSourceOption.label}
+            icon={activeSourceOption.icon}
+            onRemove={() => setFilter("source", "all")}
+          />
         )}
 
         {/* Active Date Range Chip */}

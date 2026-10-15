@@ -21,6 +21,8 @@ import {
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { FilterIcon, Sorting05Icon } from "@hugeicons/core-free-icons";
 import { SortableSortChip, SortChipOverlay } from "./sortable-sort-chip";
 export interface DataTableCriteriaBarProps {
   hasActiveFilters?: boolean;
@@ -103,18 +105,21 @@ export function DataTableCriteriaBar({
   if (!showBar) return null;
 
   return (
-    <div className="flex items-center gap-1.5 overflow-x-auto rounded-md bg-muted/30 px-2 py-1 no-scrollbar whitespace-nowrap">
+    <div className="flex flex-wrap items-center gap-1.5 rounded-md bg-muted/30 px-2 py-1.5">
       {/* Filters Section */}
       {hasActiveFilters && (
         <>
-          <span className="shrink-0 text-2xs font-medium text-muted-foreground">Filters:</span>
+          <div className="flex items-center gap-1 text-2xs font-medium text-muted-foreground shrink-0">
+            <HugeiconsIcon icon={FilterIcon} className="size-3 text-muted-foreground" />
+            <span>Filters:</span>
+          </div>
           {children}
         </>
       )}
 
       {/* Separator between Filters and Sorts */}
       {hasActiveFilters && hasActiveSorts && (
-        <span className="mx-0.5 h-3 w-px shrink-0 bg-border/80" aria-hidden="true" />
+        <span className="mx-0.5 h-3.5 w-px shrink-0 bg-border/80" aria-hidden="true" />
       )}
 
       {/* Drag-and-Drop Sort Priority Section */}
@@ -126,7 +131,10 @@ export function DataTableCriteriaBar({
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
         >
-          <span className="shrink-0 text-2xs font-medium text-muted-foreground">Sorts:</span>
+          <div className="flex items-center gap-1 text-2xs font-medium text-muted-foreground shrink-0">
+            <HugeiconsIcon icon={Sorting05Icon} className="size-3 text-muted-foreground" />
+            <span>Sorts:</span>
+          </div>
           <SortableContext
             items={sorting.map((s) => s.id)}
             strategy={horizontalListSortingStrategy}
@@ -166,6 +174,7 @@ export function DataTableCriteriaBar({
       {/* Clear All Criteria Button */}
       {onResetAll && (
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={onResetAll}

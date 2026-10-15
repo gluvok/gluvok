@@ -99,8 +99,7 @@ export async function fetchUsersList(searchParams: URLSearchParams) {
   }
 
   const role = searchParams.get("role")?.trim();
-  // Strictly forbid filtering by hardware; only allow authorized roles
-  if (role && role !== "hardware" && USER_ROLES.includes(role as (typeof USER_ROLES)[number])) {
+  if (role && USER_ROLES.includes(role as (typeof USER_ROLES)[number])) {
     q = q.eq("role", role);
   } else {
     q = q.not("role", "in", '("customer","hardware")');

@@ -2,9 +2,9 @@ import { Badge } from "@/components/ui/badge";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Briefcase01Icon,
+  CpuIcon,
   CrownIcon,
   HeadsetIcon,
-  SecurityCheckIcon,
   UserCheck01Icon,
   UserIcon,
 } from "@hugeicons/core-free-icons";
@@ -72,7 +72,7 @@ export function RoleBadge({ role }: RoleBadgeProps) {
           variant="outline"
           className="gap-1 text-2xs font-normal text-orange-900 border-orange-300/80 bg-orange-600/10 dark:text-orange-200 dark:border-orange-800/50 dark:bg-orange-950/30"
         >
-          <HugeiconsIcon icon={SecurityCheckIcon} className="size-3" />
+          <HugeiconsIcon icon={CpuIcon} className="size-3" />
           Hardware
         </Badge>
       );

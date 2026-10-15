@@ -21,6 +21,7 @@ import {
   Calendar01Icon,
   Clock01Icon,
   Copy01Icon,
+  CpuIcon,
   HashtagIcon,
   Image01Icon,
   MoreHorizontalIcon,
@@ -116,7 +117,7 @@ export const columns = columnHelper.columns([
             variant="outline"
             className="border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400 gap-1 text-2xs font-medium"
           >
-            <HugeiconsIcon icon={TransmissionIcon} className="size-3" />
+            <HugeiconsIcon icon={CpuIcon} className="size-3" />
             Hardware
           </Badge>
         ) : (

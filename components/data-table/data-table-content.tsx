@@ -33,7 +33,7 @@ export function DataTableContent<TData extends RowData>({
   loadingMessage = "Loading records...",
 }: DataTableContentProps<TData>) {
   return (
-    <div className="overflow-hidden rounded-md border border-border bg-card">
+    <div className="w-full min-w-0 overflow-hidden rounded-md border border-border bg-card">
       {error ? (
         <div className="flex h-64 items-center justify-center">
           <div className="flex flex-col items-center justify-center gap-2 text-destructive">
@@ -67,10 +67,10 @@ export function DataTableContent<TData extends RowData>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="h-9 hover:bg-muted/40"
+                  className="h-8 hover:bg-muted/40"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-3 py-1.5 text-xs">
+                    <TableCell key={cell.id} className="px-3 py-1 text-xs">
                       <table.FlexRender cell={cell} />
                     </TableCell>
                   ))}

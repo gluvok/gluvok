@@ -197,11 +197,11 @@ export function EntriesDataTable() {
   }
 
   return (
-    <div className="flex flex-col gap-2.5 min-w-0">
+    <div className="flex flex-col gap-2 min-w-0">
       {/* Primary Toolbar - 2-Tier Layout */}
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-2">
         {/* Row 1: Search Box & Right-hand Action Controls */}
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <DataTableSearchInput
             placeholder="Search entries..."
             value={search}

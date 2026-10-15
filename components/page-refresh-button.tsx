@@ -10,10 +10,10 @@ export function PageRefreshButton() {
       variant="outline"
       size="sm"
       onClick={() => window.location.reload()}
-      className="h-8 gap-1.5 px-3 text-xs"
+      className="h-7 gap-1.5 px-2.5 text-xs"
       title="Reload page"
     >
-      <HugeiconsIcon icon={RefreshIcon} data-icon="inline-start" className="size-3.5" />
+      <HugeiconsIcon icon={RefreshIcon} data-icon="inline-start" className="size-3" />
       <span>Refresh</span>
     </Button>
   );

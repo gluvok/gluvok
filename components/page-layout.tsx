@@ -8,7 +8,7 @@ interface PageLayoutProps {
 
 export function PageLayout({ title, description, children }: PageLayoutProps) {
   return (
-    <div className="flex flex-col gap-4 min-w-0">
+    <div className="flex flex-col gap-2.5 min-w-0">
       <PageHeader title={title} description={description} />
       {children}
     </div>

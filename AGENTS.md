@@ -213,6 +213,20 @@ For any JavaScript / TypeScript / Node modifications:
   - When a Zod schema defines defaults or fallbacks (`.default(...)`, `.catch(...)`), never write manual fallback arithmetic or nullish coalescing checks (`defaults?.page ?? 1`, `Math.max(1, ...)`). Rely directly on Zod's parse guarantees.
 - **Inline Error Feedback**: Display inline `<FieldError>` messages dynamically beneath fields bound to `errors.<field>?.message`. Indicate mandatory fields with visual asterisks (`*`) in field labels.
 
+## 15. Strict Brand Theme Color Compliance & Earth-Tones Palette
+
+**Never introduce arbitrary or off-theme colors. Always adhere strictly to the project's Rikyū-cha theme and warm earth-tones palette.**
+
+- **Project Brand Foundation**: The application is anchored on a warm alabaster cream background (`oklch(0.992 0.005 105)`) and signature Rikyū-cha tea-moss green (`--primary: #66684f` / dark: `#8a8d6e`).
+- **Strict Prohibition of Off-Theme Colors**: NEVER introduce arbitrary, saturated primary or accent colors (such as neon violet, purple, fuchsia, cyan, magenta, or royal blue) into components or styles.
+- **Authoritative Semantic Palette**: All entity categorization, status tags, badges, chips, and visual accents must draw strictly from the established Japanese tea & earth tones palette:
+  - **Signature Tea-Moss / Primary**: `--primary` (`#66684f`), `bg-primary/10`, `border-primary/30`, `text-primary` (active navigation, sort priority capsules, operator role, primary actions).
+  - **Terracotta Orange**: `text-orange-900 border-orange-300/80 bg-orange-600/10 dark:text-orange-200 dark:border-orange-800/50 dark:bg-orange-950/30` (Hardware source, hardware creator accounts, and hardware role).
+  - **Deep Forest Emerald**: `text-emerald-900 border-emerald-300/80 bg-emerald-600/10 dark:text-emerald-200 dark:border-emerald-800/50 dark:bg-emerald-950/30` (Customers and customer role).
+  - **Golden Honey Amber**: `text-amber-900 border-amber-300/80 bg-amber-600/10 dark:text-amber-200 dark:border-amber-800/50 dark:bg-amber-950/30` (Date range filters and Manager role).
+  - **Warm Natural Stone**: `text-stone-800 border-stone-300/80 bg-stone-500/10 dark:text-stone-200 dark:border-stone-700/80 dark:bg-stone-900/30` (Centers and Base user role).
+  - **Monochrome Zinc**: `text-zinc-900 border-zinc-300 bg-zinc-600/10 dark:text-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/40` (Admin role and neutral utility controls).
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.

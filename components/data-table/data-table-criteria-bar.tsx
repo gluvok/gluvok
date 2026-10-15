@@ -110,10 +110,10 @@ export function DataTableCriteriaBar({
   if (!showBar) return null;
 
   return (
-    <div className="flex flex-col gap-1.5 min-w-0">
-      {/* Dedicated Active Filters Strip */}
+    <div className="flex flex-col gap-1 min-w-0">
+      {/* Active Filters Line - Boxless seamless row */}
       {hasActiveFilters && (
-        <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-border/60 bg-muted/30 px-2.5 py-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 py-0.5">
           <div className="flex items-center gap-1 text-2xs font-medium text-muted-foreground shrink-0">
             <HugeiconsIcon icon={FilterIcon} className="size-3 text-muted-foreground" />
             <span>Filters:</span>
@@ -133,7 +133,7 @@ export function DataTableCriteriaBar({
         </div>
       )}
 
-      {/* Dedicated Active Sorts Strip */}
+      {/* Active Sorts Line - Boxless seamless row */}
       {hasActiveSorts && (
         <DndContext
           sensors={sensors}
@@ -142,7 +142,7 @@ export function DataTableCriteriaBar({
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
         >
-          <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5">
+          <div className="flex flex-wrap items-center gap-1.5 py-0.5">
             <div className="flex items-center gap-1 text-2xs font-medium text-primary shrink-0">
               <HugeiconsIcon icon={Sorting05Icon} className="size-3 text-primary" />
               <span>Sorts:</span>

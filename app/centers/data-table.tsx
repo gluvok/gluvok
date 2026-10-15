@@ -60,9 +60,9 @@ export function CentersDataTable() {
   }
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-2">
       {/* Primary Toolbar */}
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         {/* Filters Group (Left) */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full sm:w-auto">
           {/* Search Input with Clear Button */}

@@ -55,7 +55,7 @@ export function SortableSortChip({
       {isDraggable && (
         <HugeiconsIcon icon={DragDropVerticalIcon} className="size-3 text-primary/70 shrink-0" />
       )}
-      <span className="size-4 shrink-0 rounded-full bg-primary text-primary-foreground font-semibold flex items-center justify-center text-3xs shadow-2xs select-none">
+      <span className="size-3.5 shrink-0 rounded-full bg-primary text-primary-foreground font-semibold flex items-center justify-center text-3xs shadow-2xs select-none">
         {index + 1}
       </span>
       {colIcon ? (
@@ -105,7 +105,7 @@ export function SortChipOverlay({
       className="shrink-0 gap-1 rounded-full border border-primary/50 bg-card/95 py-0.5 pl-1.5 pr-1 text-2xs font-normal text-foreground select-none cursor-grabbing shadow-md scale-105 touch-none"
     >
       <HugeiconsIcon icon={DragDropVerticalIcon} className="size-3 text-primary/80 shrink-0" />
-      <span className="size-4 shrink-0 rounded-full bg-primary text-primary-foreground font-semibold flex items-center justify-center text-3xs shadow-2xs select-none">
+      <span className="size-3.5 shrink-0 rounded-full bg-primary text-primary-foreground font-semibold flex items-center justify-center text-3xs shadow-2xs select-none">
         {index + 1}
       </span>
       {colIcon ? (

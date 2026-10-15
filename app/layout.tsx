@@ -49,14 +49,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SidebarProvider defaultOpen={defaultOpen}>
           <AppSidebar />
           <SidebarInset className="min-w-0 overflow-x-hidden">
-            <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+            <header className="flex h-11 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-11">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
                 <Separator orientation="vertical" className="mr-2 my-auto data-vertical:h-4" />
                 <AppBreadcrumb />
               </div>
             </header>
-            <div className="flex flex-1 flex-col gap-4 p-4 md:p-6 min-w-0">{children}</div>
+            <div className="flex flex-1 flex-col gap-3 p-3 md:px-6 md:py-3.5 min-w-0">
+              {children}
+            </div>
           </SidebarInset>
         </SidebarProvider>
         <Toaster />

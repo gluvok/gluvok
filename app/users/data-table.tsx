@@ -309,7 +309,8 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
               <DataTableFilterChip
                 label="Role"
                 value={activeRoleOption?.label ?? roleFilter}
-                icon={RoleIcon}
+                categoryIcon={SecurityCheckIcon}
+                valueIcon={RoleIcon}
                 variant={roleVariant}
                 onRemove={() => {
                   setFilter("role", "all");

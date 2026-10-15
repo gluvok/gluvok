@@ -126,7 +126,7 @@ export function CentersDataTable() {
       />
 
       {/* Pagination Controls */}
-      <DataTablePagination table={table} />
+      <DataTablePagination table={table} loading={loading} error={error} />
     </div>
   );
 }

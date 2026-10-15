@@ -23,11 +23,19 @@ const PAGE_SIZE_OPTIONS = [
 
 interface DataTablePaginationProps<TData extends RowData> {
   table: ReactTable<DataTableFeatures, TData>;
+  loading?: boolean;
+  error?: string | null;
 }
 
 export function DataTablePagination<TData extends RowData>({
   table,
+  loading = false,
+  error = null,
 }: DataTablePaginationProps<TData>) {
+  if (loading || error) {
+    return null;
+  }
+
   const selectedCount = table.getFilteredSelectedRowModel().rows.length;
   // Number of rows currently rendered in datatable on the current page
   const currentRowsCount = table.getRowModel().rows.length;

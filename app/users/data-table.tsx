@@ -329,7 +329,7 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
       />
 
       {/* Pagination Controls */}
-      <DataTablePagination table={table} />
+      <DataTablePagination table={table} loading={loading} error={error} />
 
       {/* Add / Edit User Form Modal (Dedicated Component) */}
       <FormDialog

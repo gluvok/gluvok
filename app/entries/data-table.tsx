@@ -345,7 +345,7 @@ export function EntriesDataTable() {
       />
 
       {/* Pagination Controls */}
-      <DataTablePagination table={table} />
+      <DataTablePagination table={table} loading={loading} error={error} />
 
       {/* Photo Viewer Carousel Dialog */}
       <EntryPhotosDialog

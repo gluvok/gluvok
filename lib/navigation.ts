@@ -40,6 +40,12 @@ export const mainNavItems: NavItem[] = [
     icon: appIcons.users,
     description: "Configure system operators, roles, and access credentials.",
   },
+  {
+    title: "Tickets",
+    url: "/tickets",
+    icon: appIcons.tickets,
+    description: "Support tickets and issue tracking.",
+  },
 ];
 
 export const secondaryNavItems: NavItem[] = [
@@ -48,12 +54,6 @@ export const secondaryNavItems: NavItem[] = [
     url: "#settings",
     icon: appIcons.settings,
     description: "Platform preferences, system defaults, and configurations.",
-  },
-  {
-    title: "Tickets",
-    url: "/tickets",
-    icon: appIcons.tickets,
-    description: "Support tickets and issue tracking.",
   },
   {
     title: "Support",

@@ -25,14 +25,14 @@ import {
   Clock01Icon,
   HashtagIcon,
   Image01Icon,
-  SecurityCheckIcon,
+  TransmissionIcon,
   TruckIcon,
+  UserGroupIcon,
   UserIcon,
   WeightScale01Icon,
 } from "@hugeicons/core-free-icons";
 import { appIcons } from "@/lib/icons";
-import { columns, type EntriesTableMeta } from "./columns";
-import { EntryDetailSheet } from "./entry-detail-sheet";
+import { columns } from "./columns";
 import { type Entry } from "./types";
 import { type Center } from "@/app/centers/types";
 import { type User } from "@/app/users/types";
@@ -56,9 +56,9 @@ const COLUMN_ICONS: Record<string, unknown> = {
   id: HashtagIcon,
   vehicle_number: TruckIcon,
   weight: WeightScale01Icon,
-  source: SecurityCheckIcon,
+  source: TransmissionIcon,
   center: Building01Icon,
-  customer: UserIcon,
+  customer: UserGroupIcon,
   created_by: UserIcon,
   images: Image01Icon,
   created_at: Calendar01Icon,
@@ -66,15 +66,12 @@ const COLUMN_ICONS: Record<string, unknown> = {
 };
 
 const SOURCE_OPTIONS: FacetedFilterOption[] = [
-  { label: "All Sources", value: "all", icon: appIcons.allFilter },
-  { label: "Hardware", value: "hardware", icon: SecurityCheckIcon },
+  { label: "All Sources", value: "all", icon: TransmissionIcon },
+  { label: "Hardware", value: "hardware", icon: TransmissionIcon },
   { label: "Manual", value: "manual", icon: UserIcon },
 ];
 
 export function EntriesDataTable() {
-  const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
-
   const [centerOptions, setCenterOptions] = useState<FacetedFilterOption[]>([
     { label: "All Centers", value: "all", icon: appIcons.centers },
   ]);
@@ -134,16 +131,6 @@ export function EntriesDataTable() {
     };
   }, []);
 
-  const tableMeta: EntriesTableMeta = useMemo(
-    () => ({
-      onViewDetails: (entry: Entry) => {
-        setSelectedEntry(entry);
-        setSheetOpen(true);
-      },
-    }),
-    [],
-  );
-
   const {
     table,
     loading,
@@ -166,7 +153,6 @@ export function EntriesDataTable() {
     tableId: TABLE_ID,
     columns,
     endpoint: "/api/entries",
-    meta: tableMeta,
   });
 
   const centerFilter = tableState.filters?.center_id ?? "all";
@@ -207,18 +193,30 @@ export function EntriesDataTable() {
   }
 
   return (
-    <div className="flex flex-col gap-2.5">
-      {/* Primary Toolbar */}
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        {/* Filters Group (Left) */}
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          {/* Search Input for Vehicle Plate & Weight */}
+    <div className="flex flex-col gap-2.5 min-w-0">
+      {/* Primary Toolbar - 2-Tier Layout */}
+      <div className="flex flex-col gap-2.5">
+        {/* Row 1: Search Box & Right-hand Action Controls */}
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
           <DataTableSearchInput
             placeholder="Search entries..."
             value={search}
             onChange={setSearch}
           />
 
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+            <DatePickerWithRange
+              date={dateRange}
+              onDateChange={(range) => setDateRange(range)}
+              className="flex-1 sm:flex-initial"
+            />
+
+            <DataTableViewOptions table={table} />
+          </div>
+        </div>
+
+        {/* Row 2: Filter Comboboxes Below Search Box */}
+        <div className="flex flex-wrap items-center gap-2">
           {/* Center Faceted Filter */}
           <DataTableFacetedFilter
             title="Center"
@@ -251,17 +249,6 @@ export function EntriesDataTable() {
             onValueChange={(val: string) => setFilter("source", val)}
           />
         </div>
-
-        {/* Action Controls Group (Right) */}
-        <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-          <DatePickerWithRange
-            date={dateRange}
-            onDateChange={(range) => setDateRange(range)}
-            className="flex-1 sm:flex-initial"
-          />
-
-          <DataTableViewOptions table={table} />
-        </div>
       </div>
 
       {/* Active Criteria Bar (Badges + Drag-and-Drop Sort Priority Chips) */}
@@ -275,12 +262,16 @@ export function EntriesDataTable() {
         columnIcons={COLUMN_ICONS}
         onResetAll={resetAllCriteria}
       >
-        {/* Active Center Filter Chip */}
+        {/* Active Center Filter Chip with Category Icon */}
         {activeCenterLabel && (
           <Badge
             variant="secondary"
             className="flex items-center gap-1.5 py-1 px-2 text-2xs font-normal"
           >
+            <HugeiconsIcon
+              icon={appIcons.centers}
+              className="size-3 text-muted-foreground shrink-0"
+            />
             <span className="text-muted-foreground">Center:</span>
             <span className="font-medium text-foreground">{activeCenterLabel}</span>
             <Button
@@ -295,12 +286,16 @@ export function EntriesDataTable() {
           </Badge>
         )}
 
-        {/* Active Customer Filter Chip */}
+        {/* Active Customer Filter Chip with Category Icon */}
         {activeCustomerLabel && (
           <Badge
             variant="secondary"
             className="flex items-center gap-1.5 py-1 px-2 text-2xs font-normal"
           >
+            <HugeiconsIcon
+              icon={appIcons.customers}
+              className="size-3 text-muted-foreground shrink-0"
+            />
             <span className="text-muted-foreground">Customer:</span>
             <span className="font-medium text-foreground">{activeCustomerLabel}</span>
             <Button
@@ -315,12 +310,16 @@ export function EntriesDataTable() {
           </Badge>
         )}
 
-        {/* Active Created by Filter Chip */}
+        {/* Active Created by Filter Chip with Category Icon */}
         {activeCreatorLabel && (
           <Badge
             variant="secondary"
             className="flex items-center gap-1.5 py-1 px-2 text-2xs font-normal"
           >
+            <HugeiconsIcon
+              icon={appIcons.users}
+              className="size-3 text-muted-foreground shrink-0"
+            />
             <span className="text-muted-foreground">Created by:</span>
             <span className="font-medium text-foreground">{activeCreatorLabel}</span>
             <Button
@@ -335,12 +334,16 @@ export function EntriesDataTable() {
           </Badge>
         )}
 
-        {/* Active Source Filter Chip */}
+        {/* Active Source Filter Chip with Category Icon */}
         {activeSourceLabel && (
           <Badge
             variant="secondary"
             className="flex items-center gap-1.5 py-1 px-2 text-2xs font-normal"
           >
+            <HugeiconsIcon
+              icon={TransmissionIcon}
+              className="size-3 text-muted-foreground shrink-0"
+            />
             <span className="text-muted-foreground">Source:</span>
             <span className="font-medium text-foreground">{activeSourceLabel}</span>
             <Button
@@ -371,9 +374,6 @@ export function EntriesDataTable() {
 
       {/* Pagination Controls */}
       <DataTablePagination table={table} />
-
-      {/* Slide-out Entry Detail Sheet */}
-      <EntryDetailSheet entry={selectedEntry} open={sheetOpen} onOpenChange={setSheetOpen} />
     </div>
   );
 }

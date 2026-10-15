@@ -49,7 +49,7 @@ export function DataTableContent<TData extends RowData>({
       ) : loading ? (
         <LoadingState message={loadingMessage} />
       ) : (
-        <Table>
+        <Table className="min-w-full w-max">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="h-8 hover:bg-transparent">

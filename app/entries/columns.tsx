@@ -10,7 +10,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
@@ -25,18 +24,14 @@ import {
   HashtagIcon,
   Image01Icon,
   MoreHorizontalIcon,
-  SecurityCheckIcon,
+  TransmissionIcon,
   TruckIcon,
+  UserGroupIcon,
   UserIcon,
-  ViewIcon,
   WeightScale01Icon,
 } from "@hugeicons/core-free-icons";
 import { type DataTableFeatures } from "@/components/data-table/data-table-features";
 import { type Entry } from "./types";
-
-export interface EntriesTableMeta {
-  onViewDetails?: (entry: Entry) => void;
-}
 
 const columnHelper = createColumnHelper<DataTableFeatures, Entry>();
 
@@ -79,21 +74,11 @@ export const columns = columnHelper.columns([
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Vehicle Number" icon={TruckIcon} />
     ),
-    cell: ({ row, table }) => {
-      const entry = row.original;
-      const meta = table.options.meta as EntriesTableMeta | undefined;
-
-      return (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-auto p-0 font-mono text-xs font-semibold text-foreground hover:underline hover:bg-transparent"
-          onClick={() => meta?.onViewDetails?.(entry)}
-        >
-          {entry.vehicle_number}
-        </Button>
-      );
-    },
+    cell: ({ row }) => (
+      <span className="font-mono text-xs font-semibold text-foreground">
+        {row.original.vehicle_number}
+      </span>
+    ),
     meta: {
       title: "Vehicle Number",
       icon: TruckIcon,
@@ -122,7 +107,7 @@ export const columns = columnHelper.columns([
     {
       id: "source",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Source" icon={SecurityCheckIcon} />
+        <DataTableColumnHeader column={column} title="Source" icon={TransmissionIcon} />
       ),
       cell: ({ row }) => {
         const isHardware = row.original.created_by_user?.role === "hardware";
@@ -131,7 +116,7 @@ export const columns = columnHelper.columns([
             variant="outline"
             className="border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400 gap-1 text-2xs font-medium"
           >
-            <HugeiconsIcon icon={SecurityCheckIcon} className="size-3" />
+            <HugeiconsIcon icon={TransmissionIcon} className="size-3" />
             Hardware
           </Badge>
         ) : (
@@ -146,7 +131,7 @@ export const columns = columnHelper.columns([
       },
       meta: {
         title: "Source",
-        icon: SecurityCheckIcon,
+        icon: TransmissionIcon,
       },
       enableSorting: true,
     },
@@ -178,7 +163,7 @@ export const columns = columnHelper.columns([
   columnHelper.accessor("customer_id", {
     id: "customer",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Customer" icon={UserIcon} />
+      <DataTableColumnHeader column={column} title="Customer" icon={UserGroupIcon} />
     ),
     cell: ({ row }) => {
       const customer = row.original.customer;
@@ -189,7 +174,7 @@ export const columns = columnHelper.columns([
     },
     meta: {
       title: "Customer",
-      icon: UserIcon,
+      icon: UserGroupIcon,
     },
     enableSorting: true,
   }),
@@ -265,9 +250,8 @@ export const columns = columnHelper.columns([
   }),
   columnHelper.display({
     id: "actions",
-    cell: ({ row, table }) => {
+    cell: ({ row }) => {
       const entry = row.original;
-      const meta = table.options.meta as EntriesTableMeta | undefined;
 
       const handleCopy = (text: string, label: string) => {
         navigator.clipboard.writeText(text);
@@ -298,11 +282,6 @@ export const columns = columnHelper.columns([
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuGroup>
                 <DropdownMenuLabel>Entry #{entry.id}</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => meta?.onViewDetails?.(entry)}>
-                  <HugeiconsIcon icon={ViewIcon} />
-                  <span>View Details</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => handleCopy(entry.vehicle_number, "Vehicle Number")}
                 >

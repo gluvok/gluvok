@@ -103,19 +103,17 @@ The `/entries` route provides an inspection-focused data table for transport and
 - **Schema Mapping**: Maps directly to `entries` table in `schema.sql` (`id`, `detected_vehicle_number`, `vehicle_number`, `weight`, `center_id`, `customer_id`, `factory_id`, `created_by`, `images`, `created_at`, `updated_at`, `deleted_at`).
 - **Features & UX**:
   - **Multi-Field Search**: Instant search matching confirmed plate, detected plate, or numeric scale weight with `"Search entries..."` placeholder.
+  - **2-Tier Toolbar Layout**: Clean visual hierarchy placing Search input and primary controls (Date picker, Column view options) on the top tier, with all 4 faceted filter comboboxes (Center, Customer, Created by, Source) positioned in a dedicated row beneath the search box.
   - **Concurrent Filter Prefetching**: Concurrently pre-fetches Centers, Customers, and Creators on mount using `Promise.all()` for instant filter readiness.
-  - **Refined Faceted Filters**: Combobox filters for Center, Customer, Created by, and Source (Hardware vs Manual). Filter triggers display category icons, while individual dropdown options feature a clean mono `#ID` prefix without icons.
-  - **Active Criteria Bar**: Interactive filter chips for Center, Customer, Created by, Source, and Date Range with one-click removal and drag-and-drop sort priority reordering.
-  - **Clean Vehicle Number Cell**: Clickable mono font plate button to open inspection drawer without cluttering the table view (detailed ANPR status retained in drawer).
-  - **Source & Created By Columns**: Clear badges distinguishing automated Hardware vs Manual entries, and sortable creator column.
+  - **Unified Category Iconography**:
+    - **Customer**: Standardized to `UserGroupIcon` across combobox trigger, dropdown options, table column header, and active criteria chips.
+    - **Source**: Standardized to `TransmissionIcon` across combobox trigger, options, table column header, and active criteria chips, distinct from user role badges.
+  - **Enhanced Active Criteria Bar**: Displays dedicated leading category icons inside each active filter chip (`Center`, `Customer`, `Created by`, `Source`) with one-click removal and drag-and-drop sort priority reordering.
+  - **Horizontal Scrollability with Min-Width Safety**: Table is styled with `min-w-full w-max` inside an `overflow-x-auto` container, ensuring comfortable spacing without cramping columns and enabling smooth horizontal scrolling when multiple columns are enabled.
+  - **Clean Vehicle Number Cell**: Clickable-free, crisp mono font plate typography (`font-mono text-xs font-semibold`).
+  - **Source & Created By Columns**: Badges distinguishing automated Hardware entries (`TransmissionIcon`) from Manual entries (`UserIcon`), and sortable creator column.
   - **Updated At Column**: Dedicated sortable timestamp tracking record modifications, formatted with `formatDateTime`.
-  - **Slide-Out Inspection Drawer (`EntryDetailSheet`)**: Interactive side drawer built with `components/ui/sheet.tsx` for deep record inspection:
-    - Confirmed vehicle license plate and ANPR detected plate comparison with one-click copy buttons.
-    - Prominent scale weight measurement card with unit (`kg`) and copy action.
-    - Facility and operational associations: Processing Center, Assigned Customer, Entry Source, and Created By with `RoleBadge`.
-    - Scale Snapshot Photos gallery with aspect-ratio previews or empty state.
-    - Timestamp metadata (Captured At, Last Updated) formatted via `formatDateTime`.
-  - **Row Actions Menu**: Row-level dropdown menu providing one-click "View Details" (drawer trigger), "Copy Vehicle Number", "Copy Weight", and "Copy Entry ID".
+  - **Row Actions Menu**: Row-level dropdown menu providing one-click "Copy Vehicle Number", "Copy Weight", and "Copy Entry ID".
   - **Full TanStack Table v9 Capabilities**: Drag-and-drop sort priority reordering (`@dnd-kit`), date range picker with presets, column visibility toggling, row selection counter, and responsive `ButtonGroup` pagination.
 
 ## Settings Module & Factory Configuration

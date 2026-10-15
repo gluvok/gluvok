@@ -178,7 +178,7 @@ export function DataTableCriteriaBar({
                 onClick={onResetSorts ?? onResetAll}
                 className="shrink-0 ml-auto h-5 px-1.5 text-2xs text-primary/80 hover:bg-primary/15 hover:text-primary"
               >
-                Clear all sorts
+                Clear sorts
               </Button>
             )}
 

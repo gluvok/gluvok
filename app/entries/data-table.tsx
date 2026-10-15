@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { EntryPhotosDialog } from "@/components/entries/entry-photos-dialog";
 import { DataTableSearchInput } from "@/components/data-table/data-table-search-input";
 import {
   DataTableFacetedFilter,
@@ -130,6 +131,21 @@ export function EntriesDataTable() {
     };
   }, []);
 
+  const [selectedEntryForPhotos, setSelectedEntryForPhotos] = useState<Entry | null>(null);
+  const [photosDialogOpen, setPhotosDialogOpen] = useState<boolean>(false);
+
+  const handleViewPhotos = useCallback((entry: Entry) => {
+    setSelectedEntryForPhotos(entry);
+    setPhotosDialogOpen(true);
+  }, []);
+
+  const tableMeta = useMemo(
+    () => ({
+      onViewPhotos: handleViewPhotos,
+    }),
+    [handleViewPhotos],
+  );
+
   const {
     table,
     loading,
@@ -154,6 +170,7 @@ export function EntriesDataTable() {
     tableId: TABLE_ID,
     columns,
     endpoint: "/api/entries",
+    meta: tableMeta,
   });
 
   const centerFilter = tableState.filters?.center_id ?? "all";
@@ -328,6 +345,13 @@ export function EntriesDataTable() {
 
       {/* Pagination Controls */}
       <DataTablePagination table={table} />
+
+      {/* Photo Viewer Carousel Dialog */}
+      <EntryPhotosDialog
+        entry={selectedEntryForPhotos}
+        open={photosDialogOpen}
+        onOpenChange={setPhotosDialogOpen}
+      />
     </div>
   );
 }

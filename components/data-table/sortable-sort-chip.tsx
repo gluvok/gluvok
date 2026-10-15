@@ -47,7 +47,7 @@ export function SortableSortChip({
       variant="outline"
       {...(isDraggable ? { ...attributes, ...listeners } : {})}
       className={cn(
-        "shrink-0 gap-1 rounded-full border border-primary/35 bg-primary/10 py-0.5 pl-1.5 pr-1 text-2xs font-normal text-foreground select-none transition-transform duration-200 ease-out hover:bg-primary/15",
+        "h-6 inline-flex items-center shrink-0 gap-1 rounded-full border border-primary/35 bg-primary/10 pl-1.5 pr-1 text-2xs font-normal text-foreground select-none transition-transform duration-200 ease-out hover:bg-primary/15",
         isDraggable && "cursor-grab active:cursor-grabbing touch-none",
         isDragging && "opacity-30 border-dashed border-primary/40",
       )}
@@ -78,7 +78,7 @@ export function SortableSortChip({
         onPointerDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onClick={() => onRemove(sortRule.id)}
-        className="size-4 rounded-full p-0 text-primary/70 hover:bg-primary/20 hover:text-primary"
+        className="size-3.5 rounded-full p-0 text-primary/70 hover:bg-primary/20 hover:text-primary"
         aria-label={`Remove ${colTitle} sort`}
       >
         <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
@@ -102,7 +102,7 @@ export function SortChipOverlay({
   return (
     <Badge
       variant="secondary"
-      className="shrink-0 gap-1 rounded-full border border-primary/50 bg-card/95 py-0.5 pl-1.5 pr-1 text-2xs font-normal text-foreground select-none cursor-grabbing shadow-md scale-105 touch-none"
+      className="h-6 inline-flex items-center shrink-0 gap-1 rounded-full border border-primary/50 bg-card/95 pl-1.5 pr-1 text-2xs font-normal text-foreground select-none cursor-grabbing shadow-md scale-105 touch-none"
     >
       <HugeiconsIcon icon={DragDropVerticalIcon} className="size-3 text-primary/80 shrink-0" />
       <span className="size-3.5 shrink-0 rounded-full bg-primary text-primary-foreground font-semibold flex items-center justify-center text-3xs shadow-2xs select-none">

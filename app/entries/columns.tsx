@@ -201,17 +201,28 @@ export const columns = columnHelper.columns([
   }),
   columnHelper.display({
     id: "images",
-    header: "Photos",
-    cell: ({ row }) => {
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Photos" icon={Image01Icon} />
+    ),
+    cell: ({ row, table }) => {
       const count = row.original.images?.length ?? 0;
       if (count === 0) {
         return <span className="text-2xs text-muted-foreground">0</span>;
       }
+      const onViewPhotos = (table.options.meta as { onViewPhotos?: (entry: Entry) => void })
+        ?.onViewPhotos;
       return (
-        <Badge variant="outline" className="text-2xs gap-1 py-0 px-1.5 text-muted-foreground">
+        <Button
+          type="button"
+          variant="outline"
+          size="xs"
+          onClick={() => onViewPhotos?.(row.original)}
+          className="h-5 gap-1 rounded-full px-2 py-0 text-2xs text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-primary transition-colors cursor-pointer"
+          title={`View ${count} photo${count > 1 ? "s" : ""}`}
+        >
           <HugeiconsIcon icon={Image01Icon} className="size-3" />
           <span>{count}</span>
-        </Badge>
+        </Button>
       );
     },
     meta: {
@@ -251,8 +262,10 @@ export const columns = columnHelper.columns([
   }),
   columnHelper.display({
     id: "actions",
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       const entry = row.original;
+      const onViewPhotos = (table.options.meta as { onViewPhotos?: (entry: Entry) => void })
+        ?.onViewPhotos;
 
       const handleCopy = (text: string, label: string) => {
         navigator.clipboard.writeText(text);
@@ -283,6 +296,12 @@ export const columns = columnHelper.columns([
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuGroup>
                 <DropdownMenuLabel>Entry #{entry.id}</DropdownMenuLabel>
+                {entry.images && entry.images.length > 0 && (
+                  <DropdownMenuItem onClick={() => onViewPhotos?.(entry)}>
+                    <HugeiconsIcon icon={Image01Icon} />
+                    <span>View Photos ({entry.images.length})</span>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={() => handleCopy(entry.vehicle_number, "Vehicle Number")}
                 >

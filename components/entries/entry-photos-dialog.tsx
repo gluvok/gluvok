@@ -94,7 +94,7 @@ export function EntryPhotosDialog({ entry, open, onOpenChange }: EntryPhotosDial
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            <div className="relative px-7">
+            <div className="relative px-12">
               <Carousel setApi={setApi} className="w-full">
                 <CarouselContent>
                   {images.map((src, idx) => (
@@ -112,8 +112,8 @@ export function EntryPhotosDialog({ entry, open, onOpenChange }: EntryPhotosDial
                 </CarouselContent>
                 {images.length > 1 && (
                   <>
-                    <CarouselPrevious className="size-7 -left-7" />
-                    <CarouselNext className="size-7 -right-7" />
+                    <CarouselPrevious className="size-8 -left-10" />
+                    <CarouselNext className="size-8 -right-10" />
                   </>
                 )}
               </Carousel>

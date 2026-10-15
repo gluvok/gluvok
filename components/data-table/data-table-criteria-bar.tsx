@@ -22,7 +22,7 @@ import {
 } from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { FilterIcon, Sorting05Icon } from "@hugeicons/core-free-icons";
+import { Cancel01Icon, FilterIcon, Sorting05Icon } from "@hugeicons/core-free-icons";
 import { SortableSortChip, SortChipOverlay } from "./sortable-sort-chip";
 
 export interface DataTableCriteriaBarProps {
@@ -125,9 +125,10 @@ export function DataTableCriteriaBar({
               variant="ghost"
               size="sm"
               onClick={onResetFilters ?? onResetAll}
-              className="shrink-0 ml-auto h-5 px-1.5 text-2xs text-muted-foreground hover:text-foreground"
+              className="shrink-0 ml-auto h-5 gap-1 px-1.5 text-2xs text-muted-foreground hover:text-foreground"
             >
-              Clear filters
+              <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" data-icon="inline-start" />
+              <span>Clear filters</span>
             </Button>
           )}
         </div>
@@ -176,9 +177,10 @@ export function DataTableCriteriaBar({
                 variant="ghost"
                 size="sm"
                 onClick={onResetSorts ?? onResetAll}
-                className="shrink-0 ml-auto h-5 px-1.5 text-2xs text-primary/80 hover:bg-primary/15 hover:text-primary"
+                className="shrink-0 ml-auto h-5 gap-1 px-1.5 text-2xs text-primary/80 hover:bg-primary/15 hover:text-primary"
               >
-                Clear sorts
+                <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" data-icon="inline-start" />
+                <span>Clear all sorts</span>
               </Button>
             )}
 

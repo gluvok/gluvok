@@ -312,18 +312,20 @@ export function EntriesDataTable() {
           <DataTableFilterChip
             label="Created by"
             value={activeCreatorOption.label}
-            icon={activeCreatorOption.icon}
+            categoryIcon={UserIcon}
+            valueIcon={activeCreatorOption.icon}
             variant={activeCreatorOption.icon === CpuIcon ? "orange" : "primary"}
             onRemove={() => setFilter("created_by", "all")}
           />
         )}
 
-        {/* Active Source Filter Chip with Option Icon (Terracotta Orange for Hardware, Warm Stone for Manual) */}
+        {/* Active Source Filter Chip with Category Icon (Transmission) and Value Icon (Cpu for Hardware), Orange for Hardware */}
         {activeSourceOption && (
           <DataTableFilterChip
             label="Source"
             value={activeSourceOption.label}
-            icon={activeSourceOption.icon}
+            categoryIcon={TransmissionIcon}
+            valueIcon={activeSourceOption.icon}
             variant={sourceFilter === "hardware" ? "orange" : "stone"}
             onRemove={() => setFilter("source", "all")}
           />

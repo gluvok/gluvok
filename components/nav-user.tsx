@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AccountDialog } from "@/components/account-dialog";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Logout01Icon,
@@ -22,6 +24,7 @@ import {
   Sorting05Icon,
   UserCircleIcon,
 } from "@hugeicons/core-free-icons";
+import { type User } from "@/app/users/types";
 
 export type UserProps = {
   name: string;
@@ -29,6 +32,12 @@ export type UserProps = {
   avatar?: string;
   initials: string;
 };
+
+export interface NavUserProps {
+  user: UserProps;
+  accountUser: User | null;
+  onUserUpdated: (user: User) => void;
+}
 
 export function UserAvatarInfo({ user }: { user: UserProps }) {
   return (
@@ -45,42 +54,52 @@ export function UserAvatarInfo({ user }: { user: UserProps }) {
   );
 }
 
-export function NavUser({ user }: { user: UserProps }) {
+export function NavUser({ user, accountUser, onUserUpdated }: NavUserProps) {
   const { isMobile } = useSidebar();
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger render={<SidebarMenuButton size="lg" />}>
-            <UserAvatarInfo user={user} />
-            <HugeiconsIcon icon={Sorting05Icon} />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side={isMobile ? "bottom" : "right"}>
-            <DropdownMenuGroup>
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <UserAvatarInfo user={user} />
-              </div>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <HugeiconsIcon icon={UserCircleIcon} />
-                <span>Account</span>
+    <>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<SidebarMenuButton size="lg" />}>
+              <UserAvatarInfo user={user} />
+              <HugeiconsIcon icon={Sorting05Icon} />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side={isMobile ? "bottom" : "right"}>
+              <DropdownMenuGroup>
+                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                  <UserAvatarInfo user={user} />
+                </div>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => setIsAccountOpen(true)}>
+                  <HugeiconsIcon icon={UserCircleIcon} />
+                  <span>Account</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <HugeiconsIcon icon={Notification01Icon} />
+                  <span>Notifications</span>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive">
+                <HugeiconsIcon icon={Logout01Icon} />
+                <span>Log out</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <HugeiconsIcon icon={Notification01Icon} />
-                <span>Notifications</span>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive">
-              <HugeiconsIcon icon={Logout01Icon} />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarMenuItem>
+      </SidebarMenu>
+
+      <AccountDialog
+        open={isAccountOpen}
+        onOpenChange={setIsAccountOpen}
+        user={accountUser}
+        onUserUpdated={onUserUpdated}
+      />
+    </>
   );
 }

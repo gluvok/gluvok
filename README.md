@@ -16,7 +16,9 @@ The application features a responsive sidebar (`AppSidebar`) driven by a central
   - `Support` (`/support`)
   - `Services` (`/services`)
 - **User Navigation** (`NavUser`):
-  - User avatar with interactive dropdown menu (Account, Notifications, Log out).
+  - User avatar with dynamic profile details, initials, and interactive dropdown menu.
+  - Interactive **Account Settings Dialog** (`AccountDialog`): Clicking "Account" opens a modal displaying the user's role badge, factory workspace, and member joined date, with real-time profile editing (Full Name, Username, and optional Password) validated via Zod and synchronized with `/api/users/me`.
+  - Notifications and Log out options.
 
 Navigation routes, metadata, and icons are centrally defined in [`lib/navigation.ts`](lib/navigation.ts) and [`lib/icons.ts`](lib/icons.ts).
 
@@ -31,13 +33,14 @@ The platform adopts a unified **Rikyū-cha (利休茶)** Japanese roasted matcha
   - **Light Mode**: Warm rice-paper/alabaster background (`oklch(0.992 0.005 105)`), subtle tea-wash borders (`oklch(0.915 0.012 105)`), soft muted backgrounds, and crisp card surfaces.
   - **Dark Mode**: Deep forest tea-charcoal background (`oklch(0.155 0.010 105)`), dark matcha card surfaces (`oklch(0.205 0.014 105)`), and soft sage borders.
 - **Active Navigation Styling (`components/nav-group.tsx`)**: Active sidebar items receive a soft tea-moss wash (`bg-primary/10`), crisp bold matcha text (`text-primary font-semibold`), and highlighted primary icons.
-- **Botanical & Earthy Role Badges (`app/users/columns.tsx`)**:
-  - **Customer**: Warm olive/sage with `UserCheck01Icon` (`text-emerald-800 border-emerald-200/80 bg-emerald-500/10 dark:text-emerald-300`).
-  - **Operator**: Rikyū-cha tea-moss with `HeadsetIcon` (`text-primary border-primary/30 bg-primary/10`).
-  - **Manager**: Slate-indigo with `Briefcase01Icon` (`text-indigo-800 border-indigo-200/80 bg-indigo-500/10`).
-  - **Admin**: Charcoal slate with `CrownIcon` (`text-zinc-800 border-zinc-300/80 bg-zinc-500/10`).
-  - **Hardware**: Warm bronze/amber with `SecurityCheckIcon` (`text-amber-800 border-amber-300/80 bg-amber-500/10`).
-  - **Base**: Muted stone (`text-stone-700 border-stone-200/80 bg-stone-500/10`).
+- **Single Source of Truth Role Badges (`components/role-badge.tsx`)**:
+  Enforces an **Earthy Japanese Tea & Botanical Palette** that harmonizes with Rikyū-cha across table columns, account settings, and dialogs:
+  - **Admin**: Sumi charcoal ink (`text-zinc-900 border-zinc-300 bg-zinc-600/10 dark:text-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/40`) with `CrownIcon`.
+  - **Operator**: Signature Rikyū-cha tea-moss green (`text-primary border-primary/30 bg-primary/10 dark:text-primary dark:border-primary/40 dark:bg-primary/15`) with `HeadsetIcon`.
+  - **Manager**: Warm Hōjicha roasted tea bronze (`text-amber-900 border-amber-300/80 bg-amber-600/10 dark:text-amber-200 dark:border-amber-800/50 dark:bg-amber-950/30`) with `Briefcase01Icon`.
+  - **Customer**: Soft Sencha sage green (`text-emerald-900 border-emerald-300/80 bg-emerald-600/10 dark:text-emerald-200 dark:border-emerald-800/50 dark:bg-emerald-950/30`) with `UserCheck01Icon`.
+  - **Hardware**: Terracotta ochre clay (`text-orange-900 border-orange-300/80 bg-orange-600/10 dark:text-orange-200 dark:border-orange-800/50 dark:bg-orange-950/30`) with `SecurityCheckIcon`.
+  - **Base User**: Unglazed warm stone (`text-stone-700 border-stone-300/80 bg-stone-500/10 dark:text-stone-300 dark:border-stone-700/80 dark:bg-stone-900/30`) with `UserIcon`.
 - **Interactive Criteria Chips (`components/data-table/`)**: Active date range filters (`DataTableDateRangeChip`) and multi-column sort chips (`SortableSortChip`) feature subtle matcha-tinted borders and backgrounds (`border-primary/25 bg-primary/10 text-primary`) for clear hierarchy and instant visual scanning.
 - **Toast Feedback**: Top-right anchored (`top-4 right-4`) with `font-heading` titles and semantic status colors.
 
@@ -108,7 +111,9 @@ The `/settings` route provides facility configuration controls powered by the un
 
 Administrative users (`/users`) and agricultural customers (`/customers`) are powered by the unified `/api/users` endpoint and single-source `UsersDataTable` architecture (`roleScope="staff" | "customer"`):
 
-- **Backend Endpoints**: `GET`, `POST`, `PATCH`, `DELETE /api/users`
+- **Backend Endpoints**: `GET`, `POST`, `PATCH`, `DELETE /api/users`, `GET`, `PATCH /api/users/me`
+  - **`GET /api/users/me`**: Fetches the active factory administrative account (`admin1`, Factory 1) with complete role, factory, and creation metadata for user profile inspection.
+  - **`PATCH /api/users/me`**: Updates the logged-in user's profile (`name`, `username`, and optional `password`). Validates username uniqueness and password length via Zod, re-hashes credentials with Argon2id, and synchronizes profile state across the sidebar and user avatar.
   - **`GET /api/users`**: Multi-column sorting (`id`, `username`, `name`, `role`, `created_at`, `updated_at`), search (across `name` and `username`), role filter, date range filter, and server-side pagination with exact total counts. Defaults to factory staff accounts (`role NOT IN ('customer', 'hardware')`) unless a specific role filter like `?role=customer` is requested. Excludes `password_hash` from the response.
   - **`POST /api/users`**: Strict Zod validation (`username`, `name`, `role`, `password`), enforces username uniqueness across active accounts (`deleted_at IS NULL`), hashes passwords with Argon2id, and provisions the user for Factory ID 1. Supports creating staff as well as customer accounts.
   - **`PATCH /api/users`**: Validates input, verifies username uniqueness if updated, optionally resets and re-hashes passwords with Argon2id when provided, and updates user profile and role with strict role safety (customer accounts cannot be upgraded to staff roles, and staff accounts cannot become customer accounts).

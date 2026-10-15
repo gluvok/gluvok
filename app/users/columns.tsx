@@ -1,7 +1,6 @@
 "use client";
 
 import { createColumnHelper } from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -14,26 +13,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { RoleBadge } from "@/components/role-badge";
 import { formatDateTime } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  Briefcase01Icon,
   Calendar01Icon,
   Clock01Icon,
   Copy01Icon,
-  CrownIcon,
   Delete02Icon,
   Edit02Icon,
   HashtagIcon,
-  HeadsetIcon,
   MoreHorizontalIcon,
   SecurityCheckIcon,
   TextFontIcon,
-  UserCheck01Icon,
   UserIcon,
 } from "@hugeicons/core-free-icons";
 import { type DataTableFeatures } from "@/components/data-table/data-table-features";
-import { type User, type UserRole } from "./types";
+import { type User } from "./types";
 
 export interface UsersTableMeta {
   onEditUser?: (user: User) => void;
@@ -41,77 +37,6 @@ export interface UsersTableMeta {
 }
 
 const columnHelper = createColumnHelper<DataTableFeatures, User>();
-
-function getRoleBadge(role: UserRole) {
-  switch (role) {
-    case "admin":
-      return (
-        <Badge
-          variant="outline"
-          className="gap-1 text-2xs font-normal text-zinc-800 border-zinc-300/80 bg-zinc-500/10 dark:text-zinc-200 dark:border-zinc-700/80 dark:bg-zinc-500/15"
-        >
-          <HugeiconsIcon icon={CrownIcon} className="size-3" />
-          Admin
-        </Badge>
-      );
-    case "manager":
-      return (
-        <Badge
-          variant="outline"
-          className="gap-1 text-2xs font-normal text-indigo-800 border-indigo-200/80 bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-900/40 dark:bg-indigo-950/30"
-        >
-          <HugeiconsIcon icon={Briefcase01Icon} className="size-3" />
-          Manager
-        </Badge>
-      );
-    case "operator":
-      return (
-        <Badge
-          variant="outline"
-          className="gap-1 text-2xs font-normal text-primary border-primary/30 bg-primary/10 dark:text-primary dark:border-primary/40 dark:bg-primary/15"
-        >
-          <HugeiconsIcon icon={HeadsetIcon} className="size-3" />
-          Operator
-        </Badge>
-      );
-    case "base":
-      return (
-        <Badge
-          variant="outline"
-          className="gap-1 text-2xs font-normal text-stone-700 border-stone-200/80 bg-stone-500/10 dark:text-stone-300 dark:border-stone-800/80 dark:bg-stone-900/30"
-        >
-          <HugeiconsIcon icon={UserIcon} className="size-3" />
-          Base User
-        </Badge>
-      );
-    case "customer":
-      return (
-        <Badge
-          variant="outline"
-          className="gap-1 text-2xs font-normal text-emerald-800 border-emerald-200/80 bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/30"
-        >
-          <HugeiconsIcon icon={UserCheck01Icon} className="size-3" />
-          Customer
-        </Badge>
-      );
-    case "hardware":
-      return (
-        <Badge
-          variant="outline"
-          className="gap-1 text-2xs font-normal text-amber-800 border-amber-300/80 bg-amber-500/10 dark:text-amber-300 dark:border-amber-900/40 dark:bg-amber-950/30"
-        >
-          <HugeiconsIcon icon={SecurityCheckIcon} className="size-3" />
-          Hardware
-        </Badge>
-      );
-    default:
-      return (
-        <Badge variant="secondary" className="text-2xs font-normal">
-          {role}
-        </Badge>
-      );
-  }
-}
 
 export function getColumns(options?: { showRole?: boolean; entityLabel?: string }) {
   const showRole = options?.showRole ?? true;
@@ -186,7 +111,7 @@ export function getColumns(options?: { showRole?: boolean; entityLabel?: string 
             header: ({ column }) => (
               <DataTableColumnHeader column={column} title="Role" icon={SecurityCheckIcon} />
             ),
-            cell: ({ row }) => getRoleBadge(row.getValue("role")),
+            cell: ({ row }) => <RoleBadge role={row.getValue("role")} />,
             meta: {
               title: "Role",
               icon: SecurityCheckIcon,

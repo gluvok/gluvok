@@ -100,7 +100,6 @@ export function EntryPhotosDialog({ entry, open, onOpenChange }: EntryPhotosDial
                   {images.map((src, idx) => (
                     <CarouselItem key={`${src}-${idx}`}>
                       <div className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-lg border bg-muted/30">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={src}
                           alt={`Entry #${entry.id} photo ${idx + 1} of ${images.length}`}

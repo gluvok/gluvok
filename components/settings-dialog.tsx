@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
-import { getErrorMessage } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   AlertCircleIcon,
@@ -38,6 +38,14 @@ interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const DEFAULT_FACTORY_FALLBACK: Factory = {
+  id: 0,
+  name: "",
+  receipt_images_per_row: 3,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
 function getFactoryFormValues(f: Factory): FactoryFormInput {
   return {
     name: f.name,
@@ -49,6 +57,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [factory, setFactory] = useState<Factory | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const effectiveFactory = factory ?? DEFAULT_FACTORY_FALLBACK;
 
   const {
     handleSubmit,
@@ -125,15 +135,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           <DialogDescription>Facility identity and ticket layout.</DialogDescription>
         </DialogHeader>
 
-        {loading ? (
-          <div className="flex h-56 items-center justify-center">
-            <Spinner className="size-6 text-primary" />
-          </div>
-        ) : error || !factory ? (
+        {error && !factory ? (
           <div className="flex flex-col gap-3 py-4">
             <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-xs text-destructive">
               <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
-              <span>{error || "Factory could not be found."}</span>
+              <span>{error}</span>
             </div>
             <Button
               type="button"
@@ -147,67 +153,81 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             </Button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 py-2">
-            <p className="text-2xs text-muted-foreground">
-              <span className="text-destructive font-semibold">*</span> indicates required field
-            </p>
-
-            <FactoryForm
-              factory={factory}
-              name={name}
-              onNameChange={(val) =>
-                setValue("name", val, { shouldValidate: true, shouldDirty: true })
-              }
-              nameError={errors.name?.message}
-              receiptImagesPerRow={receiptImagesPerRow}
-              onReceiptImagesPerRowChange={(val) =>
-                setValue("receipt_images_per_row", val, {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                })
-              }
-              receiptImagesError={errors.receipt_images_per_row?.message}
-            />
-
-            <DialogFooter className="flex flex-row items-center justify-between sm:justify-between w-full gap-2 pt-2">
-              <FormDirtyIndicator isDirty={isDirty} className="mr-auto" />
-
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onOpenChange(false)}
-                  disabled={isSubmitting}
-                >
-                  <HugeiconsIcon
-                    icon={Cancel01Icon}
-                    className="size-3.5 text-muted-foreground"
-                    data-icon="inline-start"
-                  />
-                  <span>Cancel</span>
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={!isDirty || isSubmitting || !isValid}
-                  className="min-w-28"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Spinner className="size-3.5" />
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-3.5" />
-                      <span>Save Changes</span>
-                    </>
-                  )}
-                </Button>
+          <div className="relative">
+            {loading && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-background/60 backdrop-blur-sm">
+                <Spinner className="size-6 text-primary" />
               </div>
-            </DialogFooter>
-          </form>
+            )}
+
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className={cn(
+                "flex flex-col gap-4 py-2 transition-opacity",
+                loading ? "pointer-events-none opacity-40 select-none" : "opacity-100",
+              )}
+            >
+              <p className="text-2xs text-muted-foreground">
+                <span className="text-destructive font-semibold">*</span> indicates required field
+              </p>
+
+              <FactoryForm
+                factory={effectiveFactory}
+                name={name}
+                onNameChange={(val) =>
+                  setValue("name", val, { shouldValidate: true, shouldDirty: true })
+                }
+                nameError={errors.name?.message}
+                receiptImagesPerRow={receiptImagesPerRow}
+                onReceiptImagesPerRowChange={(val) =>
+                  setValue("receipt_images_per_row", val, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  })
+                }
+                receiptImagesError={errors.receipt_images_per_row?.message}
+              />
+
+              <DialogFooter className="flex flex-row items-center justify-between sm:justify-between w-full gap-2 pt-2">
+                <FormDirtyIndicator isDirty={isDirty} className="mr-auto" />
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onOpenChange(false)}
+                    disabled={isSubmitting}
+                  >
+                    <HugeiconsIcon
+                      icon={Cancel01Icon}
+                      className="size-3.5 text-muted-foreground"
+                      data-icon="inline-start"
+                    />
+                    <span>Cancel</span>
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={!isDirty || isSubmitting || !isValid}
+                    className="min-w-28"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Spinner className="size-3.5" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-3.5" />
+                        <span>Save Changes</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </DialogFooter>
+            </form>
+          </div>
         )}
       </DialogContent>
     </Dialog>

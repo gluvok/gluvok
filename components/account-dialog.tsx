@@ -21,7 +21,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { FormDirtyIndicator } from "@/components/form-dirty-indicator";
 import { RoleBadge } from "@/components/role-badge";
 import { toast } from "@/components/ui/toast";
-import { formatDateTime, getErrorMessage } from "@/lib/utils";
+import { cn, formatDateTime, getErrorMessage } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   AlertCircleIcon,
@@ -63,6 +63,8 @@ export function AccountDialog({ open, onOpenChange, user, onUserUpdated }: Accou
   const [accountUser, setAccountUser] = useState<User | null>(user);
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const displayUser = accountUser ?? user;
 
   const {
     handleSubmit,
@@ -140,36 +142,43 @@ export function AccountDialog({ open, onOpenChange, user, onUserUpdated }: Accou
           <DialogDescription>Personal profile and account credentials.</DialogDescription>
         </DialogHeader>
 
-        {loading ? (
-          <div className="flex h-80 items-center justify-center">
-            <Spinner className="size-6 text-primary" />
-          </div>
-        ) : (
-          <>
-            {accountUser && (
+        <div className="relative">
+          {loading && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-background/60 backdrop-blur-sm">
+              <Spinner className="size-6 text-primary" />
+            </div>
+          )}
+
+          <div
+            className={cn(
+              "flex flex-col gap-4 py-2 transition-opacity",
+              loading ? "pointer-events-none opacity-40 select-none" : "opacity-100",
+            )}
+          >
+            {displayUser && (
               <div className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Assigned Role</span>
-                  <RoleBadge role={accountUser.role} />
+                  <RoleBadge role={displayUser.role} />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1 text-muted-foreground">
                     <HugeiconsIcon icon={Calendar01Icon} className="size-3" />
                     <span>Member Since</span>
                   </span>
-                  <span className="text-foreground">{formatDateTime(accountUser.created_at)}</span>
+                  <span className="text-foreground">{formatDateTime(displayUser.created_at)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1 text-muted-foreground">
                     <HugeiconsIcon icon={Clock01Icon} className="size-3" />
                     <span>Last Updated</span>
                   </span>
-                  <span className="text-foreground">{formatDateTime(accountUser.updated_at)}</span>
+                  <span className="text-foreground">{formatDateTime(displayUser.updated_at)}</span>
                 </div>
               </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 py-2">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <p className="text-2xs text-muted-foreground">
                 <span className="text-destructive font-semibold">*</span> indicates required field
               </p>
@@ -290,8 +299,8 @@ export function AccountDialog({ open, onOpenChange, user, onUserUpdated }: Accou
                 </div>
               </DialogFooter>
             </form>
-          </>
-        )}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

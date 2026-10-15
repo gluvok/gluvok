@@ -18,6 +18,12 @@ export function DataTableDateRangeChip({ dateRange, onRemove }: DataTableDateRan
     : format(dateRange.from, "LLL dd, y");
 
   return (
-    <DataTableFilterChip label="Created" value={value} icon={Calendar01Icon} onRemove={onRemove} />
+    <DataTableFilterChip
+      label="Created"
+      value={value}
+      icon={Calendar01Icon}
+      variant="amber"
+      onRemove={onRemove}
+    />
   );
 }

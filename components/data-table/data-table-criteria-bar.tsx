@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FilterIcon, Sorting05Icon } from "@hugeicons/core-free-icons";
 import { SortableSortChip, SortChipOverlay } from "./sortable-sort-chip";
+
 export interface DataTableCriteriaBarProps {
   hasActiveFilters?: boolean;
   hasActiveSorts?: boolean;
@@ -33,6 +34,8 @@ export interface DataTableCriteriaBarProps {
   onRemoveSort?: (columnId: string) => void;
   columnLabels?: Record<string, string>;
   columnIcons?: Record<string, unknown>;
+  onResetFilters?: () => void;
+  onResetSorts?: () => void;
   onResetAll?: () => void;
 }
 
@@ -45,6 +48,8 @@ export function DataTableCriteriaBar({
   onRemoveSort,
   columnLabels = {},
   columnIcons = {},
+  onResetFilters,
+  onResetSorts,
   onResetAll,
 }: DataTableCriteriaBarProps) {
   const [activeSortId, setActiveSortId] = React.useState<string | null>(null);
@@ -105,24 +110,30 @@ export function DataTableCriteriaBar({
   if (!showBar) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 rounded-md bg-muted/30 px-2 py-1.5">
-      {/* Filters Section */}
+    <div className="flex flex-col gap-1.5 min-w-0">
+      {/* Dedicated Active Filters Strip */}
       {hasActiveFilters && (
-        <>
+        <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-border/60 bg-muted/30 px-2.5 py-1.5">
           <div className="flex items-center gap-1 text-2xs font-medium text-muted-foreground shrink-0">
             <HugeiconsIcon icon={FilterIcon} className="size-3 text-muted-foreground" />
             <span>Filters:</span>
           </div>
           {children}
-        </>
+          {(onResetFilters || onResetAll) && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onResetFilters ?? onResetAll}
+              className="shrink-0 ml-auto h-5 px-1.5 text-2xs text-muted-foreground hover:text-foreground"
+            >
+              Clear filters
+            </Button>
+          )}
+        </div>
       )}
 
-      {/* Separator between Filters and Sorts */}
-      {hasActiveFilters && hasActiveSorts && (
-        <span className="mx-0.5 h-3.5 w-px shrink-0 bg-border/80" aria-hidden="true" />
-      )}
-
-      {/* Drag-and-Drop Sort Priority Section */}
+      {/* Dedicated Active Sorts Strip */}
       {hasActiveSorts && (
         <DndContext
           sensors={sensors}
@@ -131,57 +142,58 @@ export function DataTableCriteriaBar({
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
         >
-          <div className="flex items-center gap-1 text-2xs font-medium text-muted-foreground shrink-0">
-            <HugeiconsIcon icon={Sorting05Icon} className="size-3 text-muted-foreground" />
-            <span>Sorts:</span>
-          </div>
-          <SortableContext
-            items={sorting.map((s) => s.id)}
-            strategy={horizontalListSortingStrategy}
-          >
-            {sorting.map((sortRule, index) => {
-              const colTitle = columnLabels[sortRule.id] ?? sortRule.id;
-              const colIcon = columnIcons[sortRule.id];
-              return (
-                <SortableSortChip
-                  key={sortRule.id}
-                  sortRule={sortRule}
-                  index={index}
-                  colTitle={colTitle}
-                  colIcon={colIcon}
-                  isDraggable={sorting.length > 1}
-                  onRemove={(columnId) => {
-                    onRemoveSort?.(columnId);
-                  }}
+          <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5">
+            <div className="flex items-center gap-1 text-2xs font-medium text-primary shrink-0">
+              <HugeiconsIcon icon={Sorting05Icon} className="size-3 text-primary" />
+              <span>Sorts:</span>
+            </div>
+            <SortableContext
+              items={sorting.map((s) => s.id)}
+              strategy={horizontalListSortingStrategy}
+            >
+              {sorting.map((sortRule, index) => {
+                const colTitle = columnLabels[sortRule.id] ?? sortRule.id;
+                const colIcon = columnIcons[sortRule.id];
+                return (
+                  <SortableSortChip
+                    key={sortRule.id}
+                    sortRule={sortRule}
+                    index={index}
+                    colTitle={colTitle}
+                    colIcon={colIcon}
+                    isDraggable={sorting.length > 1}
+                    onRemove={(columnId) => {
+                      onRemoveSort?.(columnId);
+                    }}
+                  />
+                );
+              })}
+            </SortableContext>
+
+            {(onResetSorts || onResetAll) && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onResetSorts ?? onResetAll}
+                className="shrink-0 ml-auto h-5 px-1.5 text-2xs text-primary/80 hover:bg-primary/15 hover:text-primary"
+              >
+                Clear all sorts
+              </Button>
+            )}
+
+            <DragOverlay>
+              {activeSortRule && activeSortIndex !== -1 ? (
+                <SortChipOverlay
+                  sortRule={activeSortRule}
+                  index={activeSortIndex}
+                  colTitle={columnLabels[activeSortRule.id] ?? activeSortRule.id}
+                  colIcon={columnIcons[activeSortRule.id]}
                 />
-              );
-            })}
-          </SortableContext>
-
-          <DragOverlay>
-            {activeSortRule && activeSortIndex !== -1 ? (
-              <SortChipOverlay
-                sortRule={activeSortRule}
-                index={activeSortIndex}
-                colTitle={columnLabels[activeSortRule.id] ?? activeSortRule.id}
-                colIcon={columnIcons[activeSortRule.id]}
-              />
-            ) : null}
-          </DragOverlay>
+              ) : null}
+            </DragOverlay>
+          </div>
         </DndContext>
-      )}
-
-      {/* Clear All Criteria Button */}
-      {onResetAll && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onResetAll}
-          className="shrink-0 ml-auto h-5 px-1.5 text-2xs text-muted-foreground hover:text-foreground"
-        >
-          Clear all
-        </Button>
       )}
     </div>
   );

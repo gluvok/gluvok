@@ -145,6 +145,8 @@ export function EntriesDataTable() {
     hasActiveSorts,
     hasActiveFilters,
     resetAllCriteria,
+    resetAllFilters,
+    resetSorting,
     setFilter,
     refresh,
     tableState,
@@ -262,49 +264,55 @@ export function EntriesDataTable() {
         onRemoveSort={(columnId) => removeSort(columnId)}
         columnLabels={COLUMN_LABELS}
         columnIcons={COLUMN_ICONS}
+        onResetFilters={resetAllFilters}
+        onResetSorts={resetSorting}
         onResetAll={resetAllCriteria}
       >
-        {/* Active Center Filter Chip with Category Icon */}
+        {/* Active Center Filter Chip with Category Icon (Warm Natural Stone) */}
         {activeCenterLabel && (
           <DataTableFilterChip
             label="Center"
             value={activeCenterLabel}
             icon={appIcons.centers}
+            variant="stone"
             onRemove={() => setFilter("center_id", "all")}
           />
         )}
 
-        {/* Active Customer Filter Chip with Category Icon */}
+        {/* Active Customer Filter Chip with Category Icon (Deep Forest Emerald) */}
         {activeCustomerLabel && (
           <DataTableFilterChip
             label="Customer"
             value={activeCustomerLabel}
             icon={appIcons.customers}
+            variant="emerald"
             onRemove={() => setFilter("customer_id", "all")}
           />
         )}
 
-        {/* Active Created by Filter Chip with Option Icon */}
+        {/* Active Created by Filter Chip with Option Icon (Terracotta Orange for Hardware, Signature Tea-Moss for Human) */}
         {activeCreatorOption && (
           <DataTableFilterChip
             label="Created by"
             value={activeCreatorOption.label}
             icon={activeCreatorOption.icon}
+            variant={activeCreatorOption.icon === CpuIcon ? "orange" : "primary"}
             onRemove={() => setFilter("created_by", "all")}
           />
         )}
 
-        {/* Active Source Filter Chip with Option Icon */}
+        {/* Active Source Filter Chip with Option Icon (Terracotta Orange for Hardware, Warm Stone for Manual) */}
         {activeSourceOption && (
           <DataTableFilterChip
             label="Source"
             value={activeSourceOption.label}
             icon={activeSourceOption.icon}
+            variant={sourceFilter === "hardware" ? "orange" : "stone"}
             onRemove={() => setFilter("source", "all")}
           />
         )}
 
-        {/* Active Date Range Chip */}
+        {/* Active Date Range Chip (Golden Honey Amber) */}
         <DataTableDateRangeChip dateRange={dateRange} onRemove={() => setDateRange(undefined)} />
       </DataTableCriteriaBar>
 

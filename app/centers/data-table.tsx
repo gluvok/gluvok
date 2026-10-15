@@ -46,6 +46,8 @@ export function CentersDataTable() {
     hasActiveSorts,
     hasActiveFilters,
     resetAllCriteria,
+    resetAllFilters,
+    resetSorting,
     refresh,
   } = useDataTable<Center>({
     tableId: TABLE_ID,
@@ -101,6 +103,8 @@ export function CentersDataTable() {
         }}
         columnLabels={COLUMN_LABELS}
         columnIcons={COLUMN_ICONS}
+        onResetFilters={resetAllFilters}
+        onResetSorts={resetSorting}
         onResetAll={resetAllCriteria}
       >
         <DataTableDateRangeChip

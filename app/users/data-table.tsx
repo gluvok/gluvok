@@ -171,6 +171,8 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
     hasActiveSorts,
     hasActiveFilters,
     resetAllCriteria,
+    resetAllFilters,
+    resetSorting,
     setFilter,
     refresh,
     tableState,
@@ -280,20 +282,35 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
         }}
         columnLabels={COLUMN_LABELS}
         columnIcons={COLUMN_ICONS}
+        onResetFilters={resetAllFilters}
+        onResetSorts={resetSorting}
         onResetAll={resetAllCriteria}
       >
-        {/* Role Chip (Staff view only) */}
+        {/* Role Chip (Staff view only) with matching RoleBadge color variant */}
         {config.hasRoleFilter &&
           roleFilter !== "all" &&
           (() => {
             const activeRoleOption = ROLE_OPTIONS.find((o) => o.value === roleFilter);
             const RoleIcon =
               (activeRoleOption?.icon as typeof SecurityCheckIcon) ?? SecurityCheckIcon;
+            const roleVariant =
+              roleFilter === "admin"
+                ? "zinc"
+                : roleFilter === "manager"
+                  ? "amber"
+                  : roleFilter === "operator"
+                    ? "primary"
+                    : roleFilter === "customer"
+                      ? "emerald"
+                      : roleFilter === "hardware"
+                        ? "orange"
+                        : "stone";
             return (
               <DataTableFilterChip
                 label="Role"
                 value={activeRoleOption?.label ?? roleFilter}
                 icon={RoleIcon}
+                variant={roleVariant}
                 onRemove={() => {
                   setFilter("role", "all");
                 }}

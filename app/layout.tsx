@@ -42,6 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         geistSans.variable,
         geistMono.variable,
         manrope.variable,
+        "smooth-scroll",
       )}
     >
       <body className="min-h-full flex flex-col">

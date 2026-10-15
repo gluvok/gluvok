@@ -12,7 +12,7 @@ import {
 import { LoadingState } from "@/components/loading-state";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { AlertCircleIcon } from "@hugeicons/core-free-icons";
+import { AlertCircleIcon, SearchVisualIcon } from "@hugeicons/core-free-icons";
 import { type DataTableFeatures } from "./data-table-features";
 
 export interface DataTableContentProps<TData extends RowData> {
@@ -86,9 +86,15 @@ export function DataTableContent<TData extends RowData>({
                   <TableRow>
                     <TableCell
                       colSpan={table.getVisibleLeafColumns().length}
-                      className="h-24 text-center text-xs text-muted-foreground"
+                      className="h-32 text-center text-xs text-muted-foreground"
                     >
-                      {emptyMessage}
+                      <div className="flex flex-col items-center justify-center gap-1.5 py-6">
+                        <HugeiconsIcon
+                          icon={SearchVisualIcon}
+                          className="size-5 text-muted-foreground/60"
+                        />
+                        <span>{emptyMessage}</span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}

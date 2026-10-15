@@ -20,6 +20,7 @@ export interface FacetedFilterOption {
   label: string;
   value: string;
   icon?: ComponentProps<typeof HugeiconsIcon>["icon"];
+  idPrefix?: string;
 }
 
 export interface DataTableFacetedFilterProps {
@@ -72,6 +73,9 @@ export function DataTableFacetedFilter({
                 className="size-3.5 shrink-0 text-muted-foreground"
               />
             )}
+            {selectedOption?.idPrefix && (
+              <span className="shrink-0 text-muted-foreground">{selectedOption.idPrefix}</span>
+            )}
             <span className="truncate">{selectedOption?.label ?? `Select ${title}...`}</span>
           </span>
           <ChevronsUpDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
@@ -102,6 +106,9 @@ export function DataTableFacetedFilter({
                         icon={icon}
                         className="mr-1.5 size-3.5 text-muted-foreground"
                       />
+                    )}
+                    {item.idPrefix && (
+                      <span className="mr-1.5 text-muted-foreground">{item.idPrefix}</span>
                     )}
                     <span>{item.label}</span>
                   </ComboboxItem>

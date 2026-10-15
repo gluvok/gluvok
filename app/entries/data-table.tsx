@@ -80,6 +80,7 @@ export function EntriesDataTable() {
   const [creatorOptions, setCreatorOptions] = useState<FacetedFilterOption[]>([
     { label: "All Creators", value: "all", icon: appIcons.users },
   ]);
+  const [filterOptionsLoading, setFilterOptionsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -96,7 +97,8 @@ export function EntriesDataTable() {
             setCenterOptions([
               { label: "All Centers", value: "all", icon: appIcons.centers },
               ...centersRes.data.data.map((c) => ({
-                label: `#${c.id} ${c.name}`,
+                idPrefix: `#${c.id}`,
+                label: c.name,
                 value: String(c.id),
               })),
             ]);
@@ -105,7 +107,8 @@ export function EntriesDataTable() {
             setCustomerOptions([
               { label: "All Customers", value: "all", icon: appIcons.customers },
               ...customersRes.data.data.map((u) => ({
-                label: `#${u.id} ${u.name}`,
+                idPrefix: `#${u.id}`,
+                label: u.name,
                 value: String(u.id),
               })),
             ]);
@@ -114,15 +117,19 @@ export function EntriesDataTable() {
             setCreatorOptions([
               { label: "All Creators", value: "all", icon: appIcons.users },
               ...creatorsRes.data.data.map((u) => ({
-                label: `#${u.id} ${u.name}`,
+                idPrefix: `#${u.id}`,
+                label: u.name,
                 value: String(u.id),
                 icon: u.role === "hardware" ? CpuIcon : UserIcon,
               })),
             ]);
           }
+          setFilterOptionsLoading(false);
         }
       } catch {
-        // Fallback to static all options
+        if (isMounted) {
+          setFilterOptionsLoading(false);
+        }
       }
     }
     loadFilterData();
@@ -180,28 +187,27 @@ export function EntriesDataTable() {
 
   const activeCenterLabel = useMemo(() => {
     if (centerFilter === "all") return null;
-    return (
-      centerOptions.find((opt) => opt.value === centerFilter)?.label ?? `Center #${centerFilter}`
-    );
+    const opt = centerOptions.find((o) => o.value === centerFilter);
+    if (!opt) return `Center #${centerFilter}`;
+    return opt.idPrefix ? `${opt.idPrefix} ${opt.label}` : opt.label;
   }, [centerFilter, centerOptions]);
 
   const activeCustomerLabel = useMemo(() => {
     if (customerFilter === "all") return null;
-    return (
-      customerOptions.find((opt) => opt.value === customerFilter)?.label ??
-      `Customer #${customerFilter}`
-    );
+    const opt = customerOptions.find((o) => o.value === customerFilter);
+    if (!opt) return `Customer #${customerFilter}`;
+    return opt.idPrefix ? `${opt.idPrefix} ${opt.label}` : opt.label;
   }, [customerFilter, customerOptions]);
 
   const activeCreatorOption = useMemo(() => {
     if (creatorFilter === "all") return null;
-    return (
-      creatorOptions.find((opt) => opt.value === creatorFilter) ?? {
-        label: `Creator #${creatorFilter}`,
-        value: creatorFilter,
-        icon: UserIcon,
-      }
-    );
+    const opt = creatorOptions.find((o) => o.value === creatorFilter);
+    if (!opt) return { label: `Creator #${creatorFilter}`, value: creatorFilter, icon: UserIcon };
+    return {
+      label: opt.idPrefix ? `${opt.idPrefix} ${opt.label}` : opt.label,
+      value: creatorFilter,
+      icon: opt.icon ?? UserIcon,
+    };
   }, [creatorFilter, creatorOptions]);
 
   const activeSourceOption = useMemo(() => {
@@ -209,7 +215,10 @@ export function EntriesDataTable() {
     return SOURCE_OPTIONS.find((opt) => opt.value === sourceFilter) ?? null;
   }, [sourceFilter]);
 
-  if (!hasHydrated) {
+  const hasNonDefaultDynamicFilter =
+    centerFilter !== "all" || customerFilter !== "all" || creatorFilter !== "all";
+
+  if (!hasHydrated || (filterOptionsLoading && hasNonDefaultDynamicFilter)) {
     return <DataTableHydrationCard />;
   }
 

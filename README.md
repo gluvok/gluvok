@@ -89,6 +89,30 @@ The `/centers` route provides a full-featured data table built with **TanStack T
   - **Zero Layout Shift Hydration Guard**: Utilizes `useTableHydrated` hook to render a centered spinner card until `localStorage` rehydration completes, ensuring zero layout shift, zero flash of default state, and zero duplicate API requests.
   - **Column Visibility & Actions**: Columns dropdown toggle, indeterminate select-all checkbox, and row actions dropdown (`Copy Center ID`, `Copy Center Name`).
 
+## Entries Module & Data Table
+
+The `/entries` route provides an inspection-focused data table for transport and weighbridge entry records built with **TanStack Table v9** powered by server-side execution directly against Supabase:
+
+- **Backend Endpoint**: `GET /api/entries`
+  - Slicing and exact counting: `?page=<N>&pageSize=<N>` (`.range()` + `{ count: "exact" }`)
+  - Server-side plate search: `?search=<text>` (searches both `vehicle_number` and `detected_vehicle_number` using `.or()`)
+  - Dynamic center faceted filtering: `?center_id=<ID>` (`.eq("center_id", ...)`)
+  - Server-side date range filtering: `?from=<ISO>&to=<ISO>` (`applyDateRange` on `created_at`)
+  - Server-side multi-column sorting: `?sort=col1.asc,col2.desc` (whitelisted against `id`, `vehicle_number`, `weight`, `created_at`, `updated_at`)
+  - Relational joins: joins `center:centers(id, name)`, `customer:users!entries_customer_id_fkey(id, name)`, and `created_by_user:users!entries_created_by_fkey(id, name)`.
+- **Schema Mapping**: Maps directly to `entries` table in `schema.sql` (`id`, `detected_vehicle_number`, `vehicle_number`, `weight`, `center_id`, `customer_id`, `factory_id`, `created_by`, `images`, `created_at`, `updated_at`, `deleted_at`).
+- **Features & UX**:
+  - **License Plate & ANPR Verification**: Highlights confirmed vehicle plate in mono font alongside automatic ANPR recognition badges (Emerald "ANPR" vs Amber "Diff" for discrepancies, or manual indicators).
+  - **Dynamic Center Faceted Filter**: Single-select combobox filter (`DataTableFacetedFilter`) populated dynamically on mount from `/api/centers?pageSize=100`, with instant filtering and active criteria badge.
+  - **Slide-Out Inspection Drawer (`EntryDetailSheet`)**: Interactive side drawer built with `components/ui/sheet.tsx` for deep record inspection:
+    - Confirmed vehicle license plate and ANPR detected plate comparison with one-click copy buttons.
+    - Prominent scale weight measurement card with unit (`kg`) and copy action.
+    - Facility and operational associations: Processing Center, Assigned Customer, and Scale Operator.
+    - Scale Snapshot Photos gallery with aspect-ratio previews or empty state.
+    - Timestamp metadata (Captured At, Last Updated) formatted via `formatDateTime`.
+  - **Row Actions Menu**: Row-level dropdown menu providing one-click "View Details" (drawer trigger), "Copy Vehicle Number", "Copy Weight", and "Copy Entry ID".
+  - **Full TanStack Table v9 Capabilities**: Drag-and-drop sort priority reordering (`@dnd-kit`), date range picker with presets, column visibility toggling, row selection counter, and responsive `ButtonGroup` pagination.
+
 ## Settings Module & Factory Configuration
 
 The `/settings` route provides facility configuration controls powered by the unified `/api/factories` endpoint:

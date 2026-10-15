@@ -20,7 +20,6 @@ import { Spinner } from "@/components/ui/spinner";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { FormDirtyIndicator } from "@/components/form-dirty-indicator";
 import { RoleBadge } from "@/components/role-badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { formatDateTime, getErrorMessage } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -50,50 +49,6 @@ interface AccountDialogProps {
   onOpenChange: (open: boolean) => void;
   user: User | null;
   onUserUpdated: (user: User) => void;
-}
-
-function AccountDialogSkeleton() {
-  return (
-    <div className="flex flex-col gap-4 py-2">
-      <div className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-5 w-16 rounded-full" />
-        </div>
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-28" />
-        </div>
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-4 w-28" />
-        </div>
-      </div>
-      <Skeleton className="h-3.5 w-36" />
-      <div className="flex flex-col gap-1.5">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-8 w-full rounded-md" />
-        <Skeleton className="h-3 w-48" />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-8 w-full rounded-md" />
-        <Skeleton className="h-3 w-44" />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Skeleton className="h-4 w-36" />
-        <Skeleton className="h-8 w-full rounded-md" />
-        <Skeleton className="h-3 w-52" />
-      </div>
-      <div className="flex items-center justify-between pt-2">
-        <Skeleton className="h-4 w-28" />
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-8 w-16 rounded-md" />
-          <Skeleton className="h-8 w-28 rounded-md" />
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function getInitialAccountValues(user: User | null): AccountFormInput {
@@ -186,7 +141,9 @@ export function AccountDialog({ open, onOpenChange, user, onUserUpdated }: Accou
         </DialogHeader>
 
         {loading ? (
-          <AccountDialogSkeleton />
+          <div className="flex h-80 items-center justify-center">
+            <Spinner className="size-6 text-primary" />
+          </div>
         ) : (
           <>
             {accountUser && (

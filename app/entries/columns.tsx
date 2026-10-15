@@ -20,12 +20,12 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Building01Icon,
   Calendar01Icon,
-  CheckmarkCircle02Icon,
+  Clock01Icon,
   Copy01Icon,
   HashtagIcon,
-  HeadsetIcon,
   Image01Icon,
   MoreHorizontalIcon,
+  SecurityCheckIcon,
   TruckIcon,
   UserIcon,
   ViewIcon,
@@ -82,39 +82,16 @@ export const columns = columnHelper.columns([
     cell: ({ row, table }) => {
       const entry = row.original;
       const meta = table.options.meta as EntriesTableMeta | undefined;
-      const isMatch =
-        entry.detected_vehicle_number &&
-        entry.detected_vehicle_number.trim().toUpperCase() ===
-          entry.vehicle_number.trim().toUpperCase();
 
       return (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-auto p-0 font-mono text-xs font-semibold text-foreground hover:underline hover:bg-transparent"
-            onClick={() => meta?.onViewDetails?.(entry)}
-          >
-            {entry.vehicle_number}
-          </Button>
-          {entry.detected_vehicle_number &&
-            (isMatch ? (
-              <Badge
-                variant="outline"
-                className="text-2xs py-0 px-1 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
-              >
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-2.5 mr-0.5" />
-                ANPR
-              </Badge>
-            ) : (
-              <Badge
-                variant="outline"
-                className="text-2xs py-0 px-1 border-amber-500/20 text-amber-600 dark:text-amber-400 bg-amber-500/10"
-              >
-                Diff
-              </Badge>
-            ))}
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-auto p-0 font-mono text-xs font-semibold text-foreground hover:underline hover:bg-transparent"
+          onClick={() => meta?.onViewDetails?.(entry)}
+        >
+          {entry.vehicle_number}
+        </Button>
       );
     },
     meta: {
@@ -140,6 +117,40 @@ export const columns = columnHelper.columns([
       icon: WeightScale01Icon,
     },
   }),
+  columnHelper.accessor(
+    (row) => (row.created_by_user?.role === "hardware" ? "Hardware" : "Manual"),
+    {
+      id: "source",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Source" icon={SecurityCheckIcon} />
+      ),
+      cell: ({ row }) => {
+        const isHardware = row.original.created_by_user?.role === "hardware";
+        return isHardware ? (
+          <Badge
+            variant="outline"
+            className="border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400 gap-1 text-2xs font-medium"
+          >
+            <HugeiconsIcon icon={SecurityCheckIcon} className="size-3" />
+            Hardware
+          </Badge>
+        ) : (
+          <Badge
+            variant="outline"
+            className="border-stone-500/20 bg-stone-500/10 text-stone-600 dark:text-stone-400 gap-1 text-2xs font-medium"
+          >
+            <HugeiconsIcon icon={UserIcon} className="size-3" />
+            Manual
+          </Badge>
+        );
+      },
+      meta: {
+        title: "Source",
+        icon: SecurityCheckIcon,
+      },
+      enableSorting: true,
+    },
+  ),
   columnHelper.accessor("center_id", {
     id: "center",
     header: ({ column }) => (
@@ -162,7 +173,7 @@ export const columns = columnHelper.columns([
       title: "Center",
       icon: Building01Icon,
     },
-    enableSorting: false,
+    enableSorting: true,
   }),
   columnHelper.accessor("customer_id", {
     id: "customer",
@@ -180,27 +191,27 @@ export const columns = columnHelper.columns([
       title: "Customer",
       icon: UserIcon,
     },
-    enableSorting: false,
+    enableSorting: true,
   }),
   columnHelper.accessor("created_by", {
-    id: "operator",
+    id: "created_by",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Operator" icon={HeadsetIcon} />
+      <DataTableColumnHeader column={column} title="Created by" icon={UserIcon} />
     ),
     cell: ({ row }) => {
-      const operator = row.original.created_by_user;
-      if (!operator) {
+      const creator = row.original.created_by_user;
+      if (!creator) {
         return (
           <span className="text-2xs text-muted-foreground">User #{row.original.created_by}</span>
         );
       }
-      return <span className="text-xs text-muted-foreground">{operator.name}</span>;
+      return <span className="text-xs text-muted-foreground">{creator.name}</span>;
     },
     meta: {
-      title: "Operator",
-      icon: HeadsetIcon,
+      title: "Created by",
+      icon: UserIcon,
     },
-    enableSorting: false,
+    enableSorting: true,
   }),
   columnHelper.display({
     id: "images",
@@ -236,6 +247,21 @@ export const columns = columnHelper.columns([
       title: "Created At",
       icon: Calendar01Icon,
     },
+  }),
+  columnHelper.accessor("updated_at", {
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Updated At" icon={Clock01Icon} />
+    ),
+    cell: ({ row }) => (
+      <span className="text-xs text-muted-foreground">
+        {formatDateTime(row.getValue("updated_at"))}
+      </span>
+    ),
+    meta: {
+      title: "Updated At",
+      icon: Clock01Icon,
+    },
+    enableSorting: true,
   }),
   columnHelper.display({
     id: "actions",

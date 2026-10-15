@@ -18,12 +18,14 @@ import {
   CheckmarkCircle02Icon,
   Clock01Icon,
   Copy01Icon,
-  HeadsetIcon,
   Image01Icon,
+  SecurityCheckIcon,
   TruckIcon,
   UserIcon,
   WeightScale01Icon,
 } from "@hugeicons/core-free-icons";
+import { RoleBadge } from "@/components/role-badge";
+import type { UserRole } from "@/app/users/types";
 import { type Entry } from "./types";
 
 interface EntryDetailSheetProps {
@@ -174,12 +176,41 @@ export function EntryDetailSheet({ entry, open, onOpenChange }: EntryDetailSheet
 
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-muted-foreground">
-                <HugeiconsIcon icon={HeadsetIcon} className="size-3.5" />
-                <span>Scale Operator</span>
+                <HugeiconsIcon icon={SecurityCheckIcon} className="size-3.5" />
+                <span>Entry Source</span>
               </span>
-              <span className="font-medium text-foreground">
-                {entry.created_by_user?.name || `Operator #${entry.created_by}`}
+              {entry.created_by_user?.role === "hardware" ? (
+                <Badge
+                  variant="outline"
+                  className="gap-1 text-2xs font-medium border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400"
+                >
+                  <HugeiconsIcon icon={SecurityCheckIcon} className="size-3" />
+                  Hardware
+                </Badge>
+              ) : (
+                <Badge
+                  variant="outline"
+                  className="gap-1 text-2xs font-medium border-stone-500/20 bg-stone-500/10 text-stone-600 dark:text-stone-400"
+                >
+                  <HugeiconsIcon icon={UserIcon} className="size-3" />
+                  Manual
+                </Badge>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <HugeiconsIcon icon={UserIcon} className="size-3.5" />
+                <span>Created By</span>
               </span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-foreground">
+                  {entry.created_by_user?.name || `User #${entry.created_by}`}
+                </span>
+                {entry.created_by_user?.role && (
+                  <RoleBadge role={entry.created_by_user.role as UserRole} />
+                )}
+              </div>
             </div>
           </div>
 

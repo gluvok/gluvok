@@ -22,18 +22,20 @@ import {
   Building01Icon,
   Calendar01Icon,
   Cancel01Icon,
+  Clock01Icon,
   HashtagIcon,
-  HeadsetIcon,
   Image01Icon,
-  Layers01Icon,
+  SecurityCheckIcon,
   TruckIcon,
   UserIcon,
   WeightScale01Icon,
 } from "@hugeicons/core-free-icons";
+import { appIcons } from "@/lib/icons";
 import { columns, type EntriesTableMeta } from "./columns";
 import { EntryDetailSheet } from "./entry-detail-sheet";
 import { type Entry } from "./types";
 import { type Center } from "@/app/centers/types";
+import { type User } from "@/app/users/types";
 
 const TABLE_ID = "entries";
 
@@ -41,64 +43,96 @@ const COLUMN_LABELS: Record<string, string> = {
   id: "ID",
   vehicle_number: "Vehicle Number",
   weight: "Weight",
+  source: "Source",
   center: "Center",
   customer: "Customer",
-  operator: "Operator",
+  created_by: "Created by",
   images: "Photos",
   created_at: "Created At",
+  updated_at: "Updated At",
 };
 
 const COLUMN_ICONS: Record<string, unknown> = {
   id: HashtagIcon,
   vehicle_number: TruckIcon,
   weight: WeightScale01Icon,
+  source: SecurityCheckIcon,
   center: Building01Icon,
   customer: UserIcon,
-  operator: HeadsetIcon,
+  created_by: UserIcon,
   images: Image01Icon,
   created_at: Calendar01Icon,
+  updated_at: Clock01Icon,
 };
+
+const SOURCE_OPTIONS: FacetedFilterOption[] = [
+  { label: "All Sources", value: "all", icon: appIcons.allFilter },
+  { label: "Hardware", value: "hardware", icon: SecurityCheckIcon },
+  { label: "Manual", value: "manual", icon: UserIcon },
+];
 
 export function EntriesDataTable() {
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [centerFilter, setCenterFilter] = useState<string>("all");
+
   const [centerOptions, setCenterOptions] = useState<FacetedFilterOption[]>([
-    { label: "All Centers", value: "all", icon: Layers01Icon },
+    { label: "All Centers", value: "all", icon: appIcons.centers },
+  ]);
+  const [customerOptions, setCustomerOptions] = useState<FacetedFilterOption[]>([
+    { label: "All Customers", value: "all", icon: appIcons.customers },
+  ]);
+  const [creatorOptions, setCreatorOptions] = useState<FacetedFilterOption[]>([
+    { label: "All Creators", value: "all", icon: appIcons.users },
   ]);
 
   useEffect(() => {
     let isMounted = true;
-    async function loadCenters() {
+    async function loadFilterData() {
       try {
-        const res = await axios.get<{ data: Center[] }>("/api/centers?pageSize=100");
-        if (isMounted && res.data.data) {
-          const fetchedOptions: FacetedFilterOption[] = res.data.data.map((c) => ({
-            label: c.name,
-            value: String(c.id),
-            icon: Building01Icon,
-          }));
-          setCenterOptions([
-            { label: "All Centers", value: "all", icon: Layers01Icon },
-            ...fetchedOptions,
-          ]);
+        const [centersRes, customersRes, creatorsRes] = await Promise.all([
+          axios.get<{ data: Center[] }>("/api/centers?pageSize=100"),
+          axios.get<{ data: User[] }>("/api/users?role=customer&pageSize=100"),
+          axios.get<{ data: User[] }>("/api/users?pageSize=100"),
+        ]);
+
+        if (isMounted) {
+          if (centersRes.data.data) {
+            setCenterOptions([
+              { label: "All Centers", value: "all", icon: appIcons.centers },
+              ...centersRes.data.data.map((c) => ({
+                label: `#${c.id} ${c.name}`,
+                value: String(c.id),
+              })),
+            ]);
+          }
+          if (customersRes.data.data) {
+            setCustomerOptions([
+              { label: "All Customers", value: "all", icon: appIcons.customers },
+              ...customersRes.data.data.map((u) => ({
+                label: `#${u.id} ${u.name}`,
+                value: String(u.id),
+              })),
+            ]);
+          }
+          if (creatorsRes.data.data) {
+            setCreatorOptions([
+              { label: "All Creators", value: "all", icon: appIcons.users },
+              ...creatorsRes.data.data.map((u) => ({
+                label: `#${u.id} ${u.name}`,
+                value: String(u.id),
+              })),
+            ]);
+          }
         }
       } catch {
-        // Fallback to static all centers option
+        // Fallback to static all options
       }
     }
-    loadCenters();
+    loadFilterData();
     return () => {
       isMounted = false;
     };
   }, []);
-
-  const extraParams = useMemo(() => {
-    if (centerFilter && centerFilter !== "all") {
-      return { center_id: centerFilter };
-    }
-    return undefined;
-  }, [centerFilter]);
 
   const tableMeta: EntriesTableMeta = useMemo(
     () => ({
@@ -122,25 +156,23 @@ export function EntriesDataTable() {
     sorting,
     setSorting,
     removeSort,
-    setPagination,
     hasActiveSorts,
-    hasActiveFilters: baseHasActiveFilters,
-    resetAllCriteria: baseResetAllCriteria,
+    hasActiveFilters,
+    resetAllCriteria,
+    setFilter,
     refresh,
+    tableState,
   } = useDataTable<Entry>({
     tableId: TABLE_ID,
     columns,
     endpoint: "/api/entries",
-    extraParams,
     meta: tableMeta,
   });
 
-  const hasActiveFilters = baseHasActiveFilters || centerFilter !== "all";
-
-  const resetAllCriteria = () => {
-    baseResetAllCriteria();
-    setCenterFilter("all");
-  };
+  const centerFilter = tableState.filters?.center_id ?? "all";
+  const customerFilter = tableState.filters?.customer_id ?? "all";
+  const creatorFilter = tableState.filters?.created_by ?? "all";
+  const sourceFilter = tableState.filters?.source ?? "all";
 
   const activeCenterLabel = useMemo(() => {
     if (centerFilter === "all") return null;
@@ -148,6 +180,27 @@ export function EntriesDataTable() {
       centerOptions.find((opt) => opt.value === centerFilter)?.label ?? `Center #${centerFilter}`
     );
   }, [centerFilter, centerOptions]);
+
+  const activeCustomerLabel = useMemo(() => {
+    if (customerFilter === "all") return null;
+    return (
+      customerOptions.find((opt) => opt.value === customerFilter)?.label ??
+      `Customer #${customerFilter}`
+    );
+  }, [customerFilter, customerOptions]);
+
+  const activeCreatorLabel = useMemo(() => {
+    if (creatorFilter === "all") return null;
+    return (
+      creatorOptions.find((opt) => opt.value === creatorFilter)?.label ??
+      `Creator #${creatorFilter}`
+    );
+  }, [creatorFilter, creatorOptions]);
+
+  const activeSourceLabel = useMemo(() => {
+    if (sourceFilter === "all") return null;
+    return SOURCE_OPTIONS.find((opt) => opt.value === sourceFilter)?.label ?? sourceFilter;
+  }, [sourceFilter]);
 
   if (!hasHydrated) {
     return <DataTableHydrationCard />;
@@ -158,10 +211,10 @@ export function EntriesDataTable() {
       {/* Primary Toolbar */}
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
         {/* Filters Group (Left) */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full sm:w-auto">
-          {/* Search Input for Vehicle Plate */}
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* Search Input for Vehicle Plate & Weight */}
           <DataTableSearchInput
-            placeholder="Search vehicle number..."
+            placeholder="Search entries..."
             value={search}
             onChange={setSearch}
           />
@@ -171,10 +224,31 @@ export function EntriesDataTable() {
             title="Center"
             options={centerOptions}
             value={centerFilter}
-            onValueChange={(val: string) => {
-              setCenterFilter(val);
-              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-            }}
+            onValueChange={(val: string) => setFilter("center_id", val)}
+          />
+
+          {/* Customer Faceted Filter */}
+          <DataTableFacetedFilter
+            title="Customer"
+            options={customerOptions}
+            value={customerFilter}
+            onValueChange={(val: string) => setFilter("customer_id", val)}
+          />
+
+          {/* Created by Faceted Filter */}
+          <DataTableFacetedFilter
+            title="Created by"
+            options={creatorOptions}
+            value={creatorFilter}
+            onValueChange={(val: string) => setFilter("created_by", val)}
+          />
+
+          {/* Source Faceted Filter */}
+          <DataTableFacetedFilter
+            title="Source"
+            options={SOURCE_OPTIONS}
+            value={sourceFilter}
+            onValueChange={(val: string) => setFilter("source", val)}
           />
         </div>
 
@@ -182,10 +256,7 @@ export function EntriesDataTable() {
         <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
           <DatePickerWithRange
             date={dateRange}
-            onDateChange={(range) => {
-              setDateRange(range);
-              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-            }}
+            onDateChange={(range) => setDateRange(range)}
             className="flex-1 sm:flex-initial"
           />
 
@@ -198,14 +269,8 @@ export function EntriesDataTable() {
         hasActiveFilters={hasActiveFilters}
         hasActiveSorts={hasActiveSorts}
         sorting={sorting}
-        onSortingChange={(updater) => {
-          setSorting(updater);
-          setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-        }}
-        onRemoveSort={(columnId) => {
-          removeSort(columnId);
-          setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-        }}
+        onSortingChange={(updater) => setSorting(updater)}
+        onRemoveSort={(columnId) => removeSort(columnId)}
         columnLabels={COLUMN_LABELS}
         columnIcons={COLUMN_ICONS}
         onResetAll={resetAllCriteria}
@@ -221,10 +286,7 @@ export function EntriesDataTable() {
             <Button
               variant="ghost"
               size="icon-xs"
-              onClick={() => {
-                setCenterFilter("all");
-                setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-              }}
+              onClick={() => setFilter("center_id", "all")}
               className="size-3.5 p-0 hover:bg-transparent text-muted-foreground hover:text-foreground"
             >
               <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
@@ -233,14 +295,68 @@ export function EntriesDataTable() {
           </Badge>
         )}
 
+        {/* Active Customer Filter Chip */}
+        {activeCustomerLabel && (
+          <Badge
+            variant="secondary"
+            className="flex items-center gap-1.5 py-1 px-2 text-2xs font-normal"
+          >
+            <span className="text-muted-foreground">Customer:</span>
+            <span className="font-medium text-foreground">{activeCustomerLabel}</span>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setFilter("customer_id", "all")}
+              className="size-3.5 p-0 hover:bg-transparent text-muted-foreground hover:text-foreground"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
+              <span className="sr-only">Clear customer filter</span>
+            </Button>
+          </Badge>
+        )}
+
+        {/* Active Created by Filter Chip */}
+        {activeCreatorLabel && (
+          <Badge
+            variant="secondary"
+            className="flex items-center gap-1.5 py-1 px-2 text-2xs font-normal"
+          >
+            <span className="text-muted-foreground">Created by:</span>
+            <span className="font-medium text-foreground">{activeCreatorLabel}</span>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setFilter("created_by", "all")}
+              className="size-3.5 p-0 hover:bg-transparent text-muted-foreground hover:text-foreground"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
+              <span className="sr-only">Clear creator filter</span>
+            </Button>
+          </Badge>
+        )}
+
+        {/* Active Source Filter Chip */}
+        {activeSourceLabel && (
+          <Badge
+            variant="secondary"
+            className="flex items-center gap-1.5 py-1 px-2 text-2xs font-normal"
+          >
+            <span className="text-muted-foreground">Source:</span>
+            <span className="font-medium text-foreground">{activeSourceLabel}</span>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setFilter("source", "all")}
+              className="size-3.5 p-0 hover:bg-transparent text-muted-foreground hover:text-foreground"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" />
+              <span className="sr-only">Clear source filter</span>
+            </Button>
+          </Badge>
+        )}
+
         {/* Active Date Range Chip */}
-        <DataTableDateRangeChip
-          dateRange={dateRange}
-          onRemove={() => {
-            setDateRange(undefined);
-            setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-          }}
-        />
+        <DataTableDateRangeChip dateRange={dateRange} onRemove={() => setDateRange(undefined)} />
       </DataTableCriteriaBar>
 
       {/* Reusable Data Table Content */}

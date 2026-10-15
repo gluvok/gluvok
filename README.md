@@ -95,19 +95,24 @@ The `/entries` route provides an inspection-focused data table for transport and
 
 - **Backend Endpoint**: `GET /api/entries`
   - Slicing and exact counting: `?page=<N>&pageSize=<N>` (`.range()` + `{ count: "exact" }`)
-  - Server-side plate search: `?search=<text>` (searches both `vehicle_number` and `detected_vehicle_number` using `.or()`)
-  - Dynamic center faceted filtering: `?center_id=<ID>` (`.eq("center_id", ...)`)
+  - Server-side multi-field search: `?search=<text>` (searches across `vehicle_number`, `detected_vehicle_number`, and exact numeric `weight` using `.or()`)
+  - Faceted filters: `?center_id=<ID>`, `?customer_id=<ID>`, `?created_by=<ID>`, and `?source=<hardware|manual>` (filtering via creator role)
   - Server-side date range filtering: `?from=<ISO>&to=<ISO>` (`applyDateRange` on `created_at`)
-  - Server-side multi-column sorting: `?sort=col1.asc,col2.desc` (whitelisted against `id`, `vehicle_number`, `weight`, `created_at`, `updated_at`)
-  - Relational joins: joins `center:centers(id, name)`, `customer:users!entries_customer_id_fkey(id, name)`, and `created_by_user:users!entries_created_by_fkey(id, name)`.
+  - Relational & multi-column sorting: `?sort=col1.asc,col2.desc` with support for native DB fields (`id`, `vehicle_number`, `weight`, `created_at`, `updated_at`) and alphabetical relational sorting by entity names (`center.name`, `customer.name`, `created_by_user.name`, `source`).
+  - Relational joins: joins `center:centers(id, name)`, `customer:users!entries_customer_id_fkey(id, name)`, and `created_by_user:users!entries_created_by_fkey(id, name, role)`.
 - **Schema Mapping**: Maps directly to `entries` table in `schema.sql` (`id`, `detected_vehicle_number`, `vehicle_number`, `weight`, `center_id`, `customer_id`, `factory_id`, `created_by`, `images`, `created_at`, `updated_at`, `deleted_at`).
 - **Features & UX**:
-  - **License Plate & ANPR Verification**: Highlights confirmed vehicle plate in mono font alongside automatic ANPR recognition badges (Emerald "ANPR" vs Amber "Diff" for discrepancies, or manual indicators).
-  - **Dynamic Center Faceted Filter**: Single-select combobox filter (`DataTableFacetedFilter`) populated dynamically on mount from `/api/centers?pageSize=100`, with instant filtering and active criteria badge.
+  - **Multi-Field Search**: Instant search matching confirmed plate, detected plate, or numeric scale weight with `"Search entries..."` placeholder.
+  - **Concurrent Filter Prefetching**: Concurrently pre-fetches Centers, Customers, and Creators on mount using `Promise.all()` for instant filter readiness.
+  - **Refined Faceted Filters**: Combobox filters for Center, Customer, Created by, and Source (Hardware vs Manual). Filter triggers display category icons, while individual dropdown options feature a clean mono `#ID` prefix without icons.
+  - **Active Criteria Bar**: Interactive filter chips for Center, Customer, Created by, Source, and Date Range with one-click removal and drag-and-drop sort priority reordering.
+  - **Clean Vehicle Number Cell**: Clickable mono font plate button to open inspection drawer without cluttering the table view (detailed ANPR status retained in drawer).
+  - **Source & Created By Columns**: Clear badges distinguishing automated Hardware vs Manual entries, and sortable creator column.
+  - **Updated At Column**: Dedicated sortable timestamp tracking record modifications, formatted with `formatDateTime`.
   - **Slide-Out Inspection Drawer (`EntryDetailSheet`)**: Interactive side drawer built with `components/ui/sheet.tsx` for deep record inspection:
     - Confirmed vehicle license plate and ANPR detected plate comparison with one-click copy buttons.
     - Prominent scale weight measurement card with unit (`kg`) and copy action.
-    - Facility and operational associations: Processing Center, Assigned Customer, and Scale Operator.
+    - Facility and operational associations: Processing Center, Assigned Customer, Entry Source, and Created By with `RoleBadge`.
     - Scale Snapshot Photos gallery with aspect-ratio previews or empty state.
     - Timestamp metadata (Captured At, Last Updated) formatted via `formatDateTime`.
   - **Row Actions Menu**: Row-level dropdown menu providing one-click "View Details" (drawer trigger), "Copy Vehicle Number", "Copy Weight", and "Copy Entry ID".

@@ -6,6 +6,7 @@ export interface EntryCenter {
 export interface EntryUserRef {
   id: number;
   name: string;
+  role?: string;
 }
 
 export interface Entry {

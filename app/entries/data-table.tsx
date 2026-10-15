@@ -342,7 +342,6 @@ export function EntriesDataTable() {
         error={error}
         onRetry={refresh}
         emptyMessage="No entries found matching the specified filters."
-        loadingMessage="Loading scale entries..."
       />
 
       {/* Pagination Controls */}

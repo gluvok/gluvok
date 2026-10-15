@@ -123,7 +123,6 @@ export function CentersDataTable() {
         error={error}
         onRetry={refresh}
         emptyMessage="No centers found matching the specified filters."
-        loadingMessage="Loading centers..."
       />
 
       {/* Pagination Controls */}

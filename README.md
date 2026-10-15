@@ -69,7 +69,7 @@ The `/centers` route provides a full-featured data table built with **TanStack T
     - `formatDateTime(isoString)`: Canonical date-time formatter using `Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" })` with null/invalid-date safeguarding, replacing duplicated inline formatters across column definitions and settings cards.
   - **Modular Scalable Data Table Layer (`components/data-table/`)**: Extracted a fully reusable component layer designed to support any current or future entity data tables (`centers`, `factories`, `users`, `tickets`, etc.) while keeping `components/ui/` primitives completely untouched:
     - `useDataTable`: Generic, strongly-typed custom hook managing Zustand store persistence, date range conversion, debounced search (300ms), API query serialization, error handling via `getErrorMessage`, auto-fetching, and TanStack Table (`useTable`) instantiation. Eliminates hundreds of lines of duplicate data table setup across pages.
-    - `DataTableHydrationCard`: Centered spinner fallback component displayed while `localStorage` state rehydrates.
+    - `DataTableHydrationCard`: Seamless centered spinner fallback component (zero white box or card border) displayed while `localStorage` state rehydrates.
     - `DataTableDateRangeChip`: Standardized active date range filter badge consuming `DataTableFilterChip` with formatted date interval and clear button, unifying duplicate chips across all entity tables.
     - `DataTableFilterChip`: Reusable active filter badge engineered at a standardized `h-6` (24px) height with `rounded-md` corners, unified calm natural stone styling (`border-stone-300/80 bg-stone-500/5`), and subtle colored semantic accent icons/dots (`stone`, `emerald`, `orange`, `amber`, `primary`, `zinc`).
     - `SortableSortChip`: Reusable `@dnd-kit` sort priority capsule pill engineered at the exact same `h-6` (24px) height with `rounded-full` corners, tea-moss wash, and compact `size-3.5` numbered priority disks (`#1`, `#2`).
@@ -171,8 +171,8 @@ Administrative users (`/users`) and agricultural customers (`/customers`) are po
     - Extracted a reusable, zero-prop-bloat indicator component encapsulating the pulsing status dot (`bg-amber-500 animate-pulse` when dirty vs `bg-emerald-500` when clean) and status label (`"You have unsaved changes."` vs `"All changes saved."`).
     - Standardized across `app/settings/factory-card.tsx` and `app/users/user-dialog-primitives.tsx` (`UserDialogShell`).
   - **Standardized Centered Loading State (`components/loading-state.tsx`)**:
-    - Extracted a reusable loading pane (`<LoadingState message="..." className="..." />`) encapsulating the centered `Spinner` (`size-6 text-muted-foreground`) and text caption (`text-xs text-muted-foreground`).
-    - Consistently used across `components/data-table/data-table-content.tsx`, `components/data-table/data-table-hydration-card.tsx`, and `app/settings/factory-card.tsx`.
+    - Reusable transparent loading pane (`<LoadingState className="..." />`) encapsulating the centered `Spinner` (`size-6 text-primary`), with zero white box, border, or text caption, eliminating any flash of white boxes during data loading or hydration.
+    - Consistently used across `components/data-table/data-table-content.tsx` and `components/data-table/data-table-hydration-card.tsx`.
   - **Service Layer Deduplication (`app/api/users/service.ts`)**:
     - Single-source column projection constant (`USER_SELECT_PROJECTION = "id, username, name, role, factory_id, created_at, updated_at"`).
     - Unified username availability assertion helper (`assertUsernameAvailable(username, excludeId)`), eliminating ~35 lines of duplicated query logic and error-handling boilerplate.

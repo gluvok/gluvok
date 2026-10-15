@@ -71,7 +71,6 @@ interface EntityConfig {
   searchPlaceholder: string;
   addButtonLabel: string;
   emptyMessage: string;
-  loadingMessage: string;
   hasRoleFilter: boolean;
   extraParams?: Record<string, string>;
   showRoleColumn: boolean;
@@ -91,7 +90,6 @@ const ENTITY_CONFIG: Record<"staff" | "customer", EntityConfig> = {
     searchPlaceholder: "Search staff accounts...",
     addButtonLabel: "Add Staff User",
     emptyMessage: "No staff accounts found matching the specified filters.",
-    loadingMessage: "Loading staff accounts...",
     hasRoleFilter: true,
     extraParams: undefined,
     showRoleColumn: true,
@@ -104,7 +102,6 @@ const ENTITY_CONFIG: Record<"staff" | "customer", EntityConfig> = {
     searchPlaceholder: "Search customers...",
     addButtonLabel: "Add Customer",
     emptyMessage: "No customers found matching the specified filters.",
-    loadingMessage: "Loading customers...",
     hasRoleFilter: false,
     extraParams: { role: "customer" },
     showRoleColumn: false,
@@ -329,7 +326,6 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
         error={error}
         onRetry={refresh}
         emptyMessage={config.emptyMessage}
-        loadingMessage={config.loadingMessage}
       />
 
       {/* Pagination Controls */}

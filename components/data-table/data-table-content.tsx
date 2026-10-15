@@ -21,7 +21,6 @@ export interface DataTableContentProps<TData extends RowData> {
   error?: string | null;
   onRetry?: () => void;
   emptyMessage?: string;
-  loadingMessage?: string;
 }
 
 export function DataTableContent<TData extends RowData>({
@@ -30,8 +29,11 @@ export function DataTableContent<TData extends RowData>({
   error = null,
   onRetry,
   emptyMessage = "No results found matching your filters.",
-  loadingMessage = "Loading records...",
 }: DataTableContentProps<TData>) {
+  if (loading) {
+    return <LoadingState />;
+  }
+
   return (
     <div className="w-full min-w-0 overflow-hidden rounded-md border border-border bg-card">
       {error ? (
@@ -46,8 +48,6 @@ export function DataTableContent<TData extends RowData>({
             )}
           </div>
         </div>
-      ) : loading ? (
-        <LoadingState message={loadingMessage} />
       ) : (
         <Table className="min-w-full w-max">
           <TableHeader>

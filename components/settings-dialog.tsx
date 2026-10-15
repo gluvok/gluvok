@@ -25,7 +25,7 @@ import {
   RefreshIcon,
 } from "@hugeicons/core-free-icons";
 import { FormDirtyIndicator } from "@/components/form-dirty-indicator";
-import { LoadingState } from "@/components/loading-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   type Factory,
   type FactoryApiResponse,
@@ -37,6 +37,34 @@ import { FactoryForm } from "@/app/settings/factory-form";
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+function SettingsDialogSkeleton() {
+  return (
+    <div className="flex flex-col gap-4 py-2">
+      <Skeleton className="h-3.5 w-36" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1.5">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-8 w-full rounded-md" />
+          <Skeleton className="h-3 w-40" />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-8 w-full rounded-md" />
+          <Skeleton className="h-3 w-36" />
+        </div>
+      </div>
+      <Skeleton className="h-16 w-full rounded-lg" />
+      <div className="flex items-center justify-between pt-2">
+        <Skeleton className="h-4 w-28" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-16 rounded-md" />
+          <Skeleton className="h-8 w-28 rounded-md" />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function getFactoryFormValues(f: Factory): FactoryFormInput {
@@ -123,14 +151,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             </div>
             <DialogTitle>Factory Settings</DialogTitle>
           </div>
-          <DialogDescription>
-            Manage facility identity, scale snapshot layout, and system preferences. Fields marked
-            with <span className="text-destructive font-semibold">*</span> are required.
-          </DialogDescription>
+          <DialogDescription>Facility identity and ticket layout.</DialogDescription>
         </DialogHeader>
 
         {loading ? (
-          <LoadingState message="Loading factory preferences..." className="h-48 w-full" />
+          <SettingsDialogSkeleton />
         ) : error || !factory ? (
           <div className="flex flex-col gap-3 py-4">
             <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-xs text-destructive">
@@ -150,6 +175,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </div>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 py-2">
+            <p className="text-2xs text-muted-foreground">
+              <span className="text-destructive font-semibold">*</span> indicates required field
+            </p>
+
             <FactoryForm
               factory={factory}
               name={name}

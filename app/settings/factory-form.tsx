@@ -149,7 +149,7 @@ export function FactoryForm({
             </ComboboxContent>
           </Combobox>
           {receiptImagesError && <FieldError errors={[{ message: receiptImagesError }]} />}
-          <FieldDescription>Snapshot photos embedded per row on printed tickets.</FieldDescription>
+          <FieldDescription>Photos per ticket row.</FieldDescription>
         </Field>
       </div>
 

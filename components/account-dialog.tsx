@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -20,6 +20,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { FormDirtyIndicator } from "@/components/form-dirty-indicator";
 import { RoleBadge } from "@/components/role-badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { formatDateTime, getErrorMessage } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -51,6 +52,50 @@ interface AccountDialogProps {
   onUserUpdated: (user: User) => void;
 }
 
+function AccountDialogSkeleton() {
+  return (
+    <div className="flex flex-col gap-4 py-2">
+      <div className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-28" />
+        </div>
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-28" />
+        </div>
+      </div>
+      <Skeleton className="h-3.5 w-36" />
+      <div className="flex flex-col gap-1.5">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-8 w-full rounded-md" />
+        <Skeleton className="h-3 w-48" />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-8 w-full rounded-md" />
+        <Skeleton className="h-3 w-44" />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Skeleton className="h-4 w-36" />
+        <Skeleton className="h-8 w-full rounded-md" />
+        <Skeleton className="h-3 w-52" />
+      </div>
+      <div className="flex items-center justify-between pt-2">
+        <Skeleton className="h-4 w-28" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-16 rounded-md" />
+          <Skeleton className="h-8 w-28 rounded-md" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getInitialAccountValues(user: User | null): AccountFormInput {
   return {
     name: user?.name ?? "",
@@ -60,6 +105,8 @@ function getInitialAccountValues(user: User | null): AccountFormInput {
 }
 
 export function AccountDialog({ open, onOpenChange, user, onUserUpdated }: AccountDialogProps) {
+  const [accountUser, setAccountUser] = useState<User | null>(user);
+  const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   const {
@@ -78,12 +125,27 @@ export function AccountDialog({ open, onOpenChange, user, onUserUpdated }: Accou
   const username = watch("username");
   const password = watch("password");
 
+  const fetchMe = useCallback(async () => {
+    try {
+      setLoading(true);
+      setFormError(null);
+      const response = await axios.get<{ data: User }>("/api/users/me");
+      const freshUser = response.data.data;
+      setAccountUser(freshUser);
+      reset(getInitialAccountValues(freshUser));
+      onUserUpdated(freshUser);
+    } catch (err: unknown) {
+      setFormError(getErrorMessage(err, "Failed to load account profile."));
+    } finally {
+      setLoading(false);
+    }
+  }, [reset, onUserUpdated]);
+
   useEffect(() => {
     if (open) {
-      reset(getInitialAccountValues(user));
-      setFormError(null);
+      fetchMe();
     }
-  }, [open, user, reset]);
+  }, [open, fetchMe]);
 
   const onSubmit = async (values: AccountFormInput) => {
     try {
@@ -102,6 +164,7 @@ export function AccountDialog({ open, onOpenChange, user, onUserUpdated }: Accou
         description: response.data.message || "Your profile has been saved successfully.",
       });
 
+      setAccountUser(response.data.data);
       onUserUpdated(response.data.data);
       onOpenChange(false);
     } catch (err: unknown) {
@@ -119,153 +182,159 @@ export function AccountDialog({ open, onOpenChange, user, onUserUpdated }: Accou
             </div>
             <DialogTitle>Account Settings</DialogTitle>
           </div>
-          <DialogDescription>
-            Manage your personal profile and account credentials. Fields marked with{" "}
-            <span className="text-destructive font-semibold">*</span> are required.
-          </DialogDescription>
+          <DialogDescription>Personal profile and account credentials.</DialogDescription>
         </DialogHeader>
 
-        {user && (
-          <div className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Assigned Role</span>
-              <RoleBadge role={user.role} />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 text-muted-foreground">
-                <HugeiconsIcon icon={Calendar01Icon} className="size-3" />
-                <span>Member Since</span>
-              </span>
-              <span className="text-foreground">{formatDateTime(user.created_at)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 text-muted-foreground">
-                <HugeiconsIcon icon={Clock01Icon} className="size-3" />
-                <span>Last Updated</span>
-              </span>
-              <span className="text-foreground">{formatDateTime(user.updated_at)}</span>
-            </div>
-          </div>
-        )}
+        {loading ? (
+          <AccountDialogSkeleton />
+        ) : (
+          <>
+            {accountUser && (
+              <div className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Assigned Role</span>
+                  <RoleBadge role={accountUser.role} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <HugeiconsIcon icon={Calendar01Icon} className="size-3" />
+                    <span>Member Since</span>
+                  </span>
+                  <span className="text-foreground">{formatDateTime(accountUser.created_at)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <HugeiconsIcon icon={Clock01Icon} className="size-3" />
+                    <span>Last Updated</span>
+                  </span>
+                  <span className="text-foreground">{formatDateTime(accountUser.updated_at)}</span>
+                </div>
+              </div>
+            )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 py-2">
-          {formError && (
-            <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-2.5 text-xs text-destructive">
-              <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
-              <span>{formError}</span>
-            </div>
-          )}
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 py-2">
+              <p className="text-2xs text-muted-foreground">
+                <span className="text-destructive font-semibold">*</span> indicates required field
+              </p>
+              {formError && (
+                <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-2.5 text-xs text-destructive">
+                  <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
+                  <span>{formError}</span>
+                </div>
+              )}
 
-          <Field data-invalid={Boolean(errors.name)}>
-            <FieldLabel htmlFor="account-name">
-              <HugeiconsIcon icon={UserIcon} className="size-3.5 text-muted-foreground" />
-              <span>Full Name</span>
-              <span className="text-destructive font-semibold" aria-hidden="true">
-                *
-              </span>
-            </FieldLabel>
-            <Input
-              id="account-name"
-              value={name}
-              onChange={(e) =>
-                setValue("name", e.target.value, { shouldValidate: true, shouldDirty: true })
-              }
-              placeholder="e.g. Alex Morgan"
-              aria-invalid={Boolean(errors.name)}
-              className="h-8 text-xs"
-            />
-            {errors.name && <FieldError errors={[{ message: errors.name.message }]} />}
-            <FieldDescription>Your legal or administrative display name.</FieldDescription>
-          </Field>
-
-          <Field data-invalid={Boolean(errors.username)}>
-            <FieldLabel htmlFor="account-username">
-              <HugeiconsIcon icon={TextFontIcon} className="size-3.5 text-muted-foreground" />
-              <span>Username</span>
-              <span className="text-destructive font-semibold" aria-hidden="true">
-                *
-              </span>
-            </FieldLabel>
-            <Input
-              id="account-username"
-              value={username}
-              onChange={(e) =>
-                setValue("username", e.target.value.toLowerCase(), {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                })
-              }
-              placeholder="e.g. admin1"
-              aria-invalid={Boolean(errors.username)}
-              className="h-8 text-xs font-mono"
-              autoComplete="off"
-            />
-            {errors.username && <FieldError errors={[{ message: errors.username.message }]} />}
-            <FieldDescription>Unique lowercase system login handle.</FieldDescription>
-          </Field>
-
-          <Field data-invalid={Boolean(errors.password)}>
-            <FieldLabel htmlFor="account-password">
-              <HugeiconsIcon icon={Key01Icon} className="size-3.5 text-muted-foreground" />
-              <span>New Password (Optional)</span>
-            </FieldLabel>
-            <PasswordInput
-              id="account-password"
-              value={password || ""}
-              onChange={(e) =>
-                setValue("password", e.target.value, {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                })
-              }
-              placeholder="Leave blank to keep current password"
-              aria-invalid={Boolean(errors.password)}
-              className="h-8 text-xs"
-              autoComplete="new-password"
-            />
-            {errors.password && <FieldError errors={[{ message: errors.password.message }]} />}
-            <FieldDescription>Leave empty to keep your existing password.</FieldDescription>
-          </Field>
-
-          <DialogFooter className="flex flex-row items-center justify-between sm:justify-between w-full gap-2 pt-2">
-            <FormDirtyIndicator isDirty={isDirty} className="mr-auto" />
-
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-              >
-                <HugeiconsIcon
-                  icon={Cancel01Icon}
-                  className="size-3.5 text-muted-foreground"
-                  data-icon="inline-start"
+              <Field data-invalid={Boolean(errors.name)}>
+                <FieldLabel htmlFor="account-name">
+                  <HugeiconsIcon icon={UserIcon} className="size-3.5 text-muted-foreground" />
+                  <span>Full Name</span>
+                  <span className="text-destructive font-semibold" aria-hidden="true">
+                    *
+                  </span>
+                </FieldLabel>
+                <Input
+                  id="account-name"
+                  value={name}
+                  onChange={(e) =>
+                    setValue("name", e.target.value, { shouldValidate: true, shouldDirty: true })
+                  }
+                  placeholder="e.g. Alex Morgan"
+                  aria-invalid={Boolean(errors.name)}
+                  className="h-8 text-xs"
                 />
-                <span>Cancel</span>
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={isSubmitting || !isDirty || !isValid}
-                className="min-w-28"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Spinner className="size-3.5" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-3.5" />
-                    <span>Save Changes</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </DialogFooter>
-        </form>
+                {errors.name && <FieldError errors={[{ message: errors.name.message }]} />}
+                <FieldDescription>Your legal or administrative display name.</FieldDescription>
+              </Field>
+
+              <Field data-invalid={Boolean(errors.username)}>
+                <FieldLabel htmlFor="account-username">
+                  <HugeiconsIcon icon={TextFontIcon} className="size-3.5 text-muted-foreground" />
+                  <span>Username</span>
+                  <span className="text-destructive font-semibold" aria-hidden="true">
+                    *
+                  </span>
+                </FieldLabel>
+                <Input
+                  id="account-username"
+                  value={username}
+                  onChange={(e) =>
+                    setValue("username", e.target.value.toLowerCase(), {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    })
+                  }
+                  placeholder="e.g. admin1"
+                  aria-invalid={Boolean(errors.username)}
+                  className="h-8 text-xs font-mono"
+                  autoComplete="off"
+                />
+                {errors.username && <FieldError errors={[{ message: errors.username.message }]} />}
+                <FieldDescription>Unique lowercase system login handle.</FieldDescription>
+              </Field>
+
+              <Field data-invalid={Boolean(errors.password)}>
+                <FieldLabel htmlFor="account-password">
+                  <HugeiconsIcon icon={Key01Icon} className="size-3.5 text-muted-foreground" />
+                  <span>New Password (Optional)</span>
+                </FieldLabel>
+                <PasswordInput
+                  id="account-password"
+                  value={password || ""}
+                  onChange={(e) =>
+                    setValue("password", e.target.value, {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    })
+                  }
+                  placeholder="Leave blank to keep current password"
+                  aria-invalid={Boolean(errors.password)}
+                  className="h-8 text-xs"
+                  autoComplete="new-password"
+                />
+                {errors.password && <FieldError errors={[{ message: errors.password.message }]} />}
+                <FieldDescription>Leave empty to keep your existing password.</FieldDescription>
+              </Field>
+
+              <DialogFooter className="flex flex-row items-center justify-between sm:justify-between w-full gap-2 pt-2">
+                <FormDirtyIndicator isDirty={isDirty} className="mr-auto" />
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onOpenChange(false)}
+                    disabled={isSubmitting}
+                  >
+                    <HugeiconsIcon
+                      icon={Cancel01Icon}
+                      className="size-3.5 text-muted-foreground"
+                      data-icon="inline-start"
+                    />
+                    <span>Cancel</span>
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isSubmitting || !isDirty || !isValid}
+                    className="min-w-28"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Spinner className="size-3.5" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-3.5" />
+                        <span>Save Changes</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </DialogFooter>
+            </form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

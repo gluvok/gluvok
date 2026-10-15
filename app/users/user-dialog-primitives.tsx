@@ -92,10 +92,7 @@ export function UserDialogShell({
             </div>
             <DialogTitle>{title}</DialogTitle>
           </div>
-          <DialogDescription>
-            {description} Fields marked with{" "}
-            <span className="text-destructive font-semibold">*</span> are required.
-          </DialogDescription>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <form
@@ -117,6 +114,10 @@ export function UserDialogShell({
               <span>{formError}</span>
             </div>
           )}
+
+          <p className="text-2xs text-muted-foreground">
+            <span className="text-destructive font-semibold">*</span> indicates required field
+          </p>
 
           {children}
 

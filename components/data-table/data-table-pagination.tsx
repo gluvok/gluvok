@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { ReactTable, RowData } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
@@ -15,11 +16,10 @@ import { cn } from "@/lib/utils";
 import { type DataTableFeatures } from "./data-table-features";
 
 const PAGE_SIZE_OPTIONS = [
-  { label: "10", value: 10 },
-  { label: "20", value: 20 },
+  { label: "15", value: 15 },
   { label: "30", value: 30 },
-  { label: "40", value: 40 },
-  { label: "50", value: 50 },
+  { label: "45", value: 45 },
+  { label: "60", value: 60 },
 ];
 
 interface DataTablePaginationProps<TData extends RowData> {
@@ -42,6 +42,15 @@ export function DataTablePagination<TData extends RowData>({
   const currentRowsCount = table.getRowModel().rows.length;
   const currentPage = table.state.pagination.pageIndex + 1;
   const totalPages = Math.max(1, table.getPageCount());
+
+  const pageOptions = useMemo(
+    () =>
+      Array.from({ length: totalPages }, (_, i) => ({
+        label: String(i + 1),
+        value: i + 1,
+      })),
+    [totalPages],
+  );
 
   return (
     <div
@@ -77,8 +86,30 @@ export function DataTablePagination<TData extends RowData>({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center justify-center text-xs font-medium">
-          Page {currentPage} of {totalPages}
+        <div className="flex items-center gap-1.5 text-xs font-medium">
+          <span>Page</span>
+          <Select
+            items={pageOptions}
+            value={currentPage}
+            onValueChange={(val) => {
+              if (val != null) table.setPageIndex(Number(val) - 1);
+            }}
+            disabled={totalPages <= 1}
+          >
+            <SelectTrigger className="h-7 w-16 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="center" className="min-w-16 max-h-48">
+              <SelectGroup>
+                {pageOptions.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <span>of {totalPages}</span>
         </div>
         <ButtonGroup aria-label="Pagination navigation">
           <Button

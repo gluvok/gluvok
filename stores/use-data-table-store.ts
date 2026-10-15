@@ -22,7 +22,7 @@ export const DEFAULT_TABLE_ITEM_STATE: TableItemState = {
   filters: {},
   dateRange: undefined,
   sorting: [],
-  pagination: { pageIndex: 0, pageSize: 10 },
+  pagination: { pageIndex: 0, pageSize: 15 },
   columnVisibility: {},
 };
 

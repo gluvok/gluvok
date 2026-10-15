@@ -27,7 +27,7 @@ export interface PaginatedResult<T> {
 
 export const paginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).catch(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).catch(10).default(10),
+  pageSize: z.coerce.number().int().min(1).max(100).catch(15).default(15),
 });
 
 const dateQuerySchema = z

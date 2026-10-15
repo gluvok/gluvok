@@ -28,22 +28,18 @@ import {
   Calendar01Icon,
   Cancel01Icon,
   CheckmarkCircle02Icon,
+  Clock01Icon,
   Key01Icon,
   TextFontIcon,
   UserCircleIcon,
   UserIcon,
 } from "@hugeicons/core-free-icons";
-import { nameSchema, usernameSchema, type User } from "@/app/users/types";
+import { nameSchema, usernameSchema, passwordSchema, type User } from "@/app/users/types";
 
 const accountFormSchema = z.object({
   name: nameSchema,
   username: usernameSchema,
-  password: z
-    .string()
-    .refine((val) => !val || val.length >= 6, {
-      message: "Password must be at least 6 characters",
-    })
-    .optional(),
+  password: passwordSchema.optional().or(z.literal("")),
 });
 
 type AccountFormInput = z.infer<typeof accountFormSchema>;
@@ -136,15 +132,18 @@ export function AccountDialog({ open, onOpenChange, user, onUserUpdated }: Accou
               <RoleBadge role={user.role} />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Factory Workspace</span>
-              <span className="font-medium text-foreground">Factory #{user.factory_id}</span>
-            </div>
-            <div className="flex items-center justify-between">
               <span className="flex items-center gap-1 text-muted-foreground">
                 <HugeiconsIcon icon={Calendar01Icon} className="size-3" />
                 <span>Member Since</span>
               </span>
               <span className="text-foreground">{formatDateTime(user.created_at)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <HugeiconsIcon icon={Clock01Icon} className="size-3" />
+                <span>Last Updated</span>
+              </span>
+              <span className="text-foreground">{formatDateTime(user.updated_at)}</span>
             </div>
           </div>
         )}

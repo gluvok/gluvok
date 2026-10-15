@@ -10,14 +10,14 @@ The application features a responsive sidebar (`AppSidebar`) driven by a central
   - `Weighments` (`/weighments`)
   - `Customers` (`/customers`)
   - `Users` (`/users`)
-  - `Settings` (`/settings`)
 - **Secondary Navigation** (`secondaryNavItems`):
+  - `Settings` (Interactive modal trigger opening `SettingsDialog` for factory configuration)
   - `Tickets` (`/tickets`)
   - `Support` (`/support`)
   - `Services` (`/services`)
 - **User Navigation** (`NavUser`):
   - User avatar with dynamic profile details, initials, and interactive dropdown menu.
-  - Interactive **Account Settings Dialog** (`AccountDialog`): Clicking "Account" opens a modal displaying the user's role badge, factory workspace, and member joined date, with real-time profile editing (Full Name, Username, and optional Password) validated via Zod and synchronized with `/api/users/me`.
+  - Interactive **Account Settings Dialog** (`AccountDialog`): Clicking "Account" opens a modal displaying the user's role badge, member since date, and last updated date, with real-time profile editing (Full Name, Username, and optional Password) validated via Zod (`passwordSchema`) and synchronized with `/api/users/me`.
   - Notifications and Log out options.
 
 Navigation routes, metadata, and icons are centrally defined in [`lib/navigation.ts`](lib/navigation.ts) and [`lib/icons.ts`](lib/icons.ts).

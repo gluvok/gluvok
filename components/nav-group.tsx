@@ -17,10 +17,11 @@ import { type NavItem } from "@/lib/navigation";
 export interface NavGroupProps {
   label: string;
   items: NavItem[];
+  onItemClick?: (item: NavItem) => void;
   className?: string;
 }
 
-export function NavGroup({ label, items, className }: NavGroupProps) {
+export function NavGroup({ label, items, onItemClick, className }: NavGroupProps) {
   const pathname = usePathname();
 
   return (
@@ -29,11 +30,14 @@ export function NavGroup({ label, items, className }: NavGroupProps) {
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => {
-            const isActive = pathname === item.url;
+            const isAction = item.url.startsWith("#");
+            const isActive = !isAction && pathname === item.url;
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
-                  render={<Link href={item.url} />}
+                  {...(isAction
+                    ? { onClick: () => onItemClick?.(item) }
+                    : { render: <Link href={item.url} /> })}
                   isActive={isActive}
                   tooltip={item.title}
                   className={cn(

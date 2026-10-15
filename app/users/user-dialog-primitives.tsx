@@ -98,7 +98,15 @@ export function UserDialogShell({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4 py-2">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (isValid && isDirty && !isSubmitting) {
+              onSubmit();
+            }
+          }}
+          className="flex flex-col gap-4 py-2"
+        >
           {formError && (
             <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-2.5 text-xs text-destructive">
               <HugeiconsIcon
@@ -111,47 +119,46 @@ export function UserDialogShell({
           )}
 
           {children}
-        </div>
 
-        <DialogFooter className="flex flex-row items-center justify-between sm:justify-between w-full gap-2 pt-2">
-          <FormDirtyIndicator isDirty={isDirty} className="mr-auto" />
+          <DialogFooter className="flex flex-row items-center justify-between sm:justify-between w-full gap-2 pt-2">
+            <FormDirtyIndicator isDirty={isDirty} className="mr-auto" />
 
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              <HugeiconsIcon
-                icon={Cancel01Icon}
-                className="size-3.5 text-muted-foreground"
-                data-icon="inline-start"
-              />
-              <span>Cancel</span>
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={onSubmit}
-              disabled={isSubmitting || !isDirty || !isValid}
-              className="min-w-28"
-            >
-              {isSubmitting ? (
-                <>
-                  <Spinner className="size-3.5" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-3.5" />
-                  <span>{submitLabel}</span>
-                </>
-              )}
-            </Button>
-          </div>
-        </DialogFooter>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+              >
+                <HugeiconsIcon
+                  icon={Cancel01Icon}
+                  className="size-3.5 text-muted-foreground"
+                  data-icon="inline-start"
+                />
+                <span>Cancel</span>
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isSubmitting || !isDirty || !isValid}
+                className="min-w-28"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Spinner className="size-3.5" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-3.5" />
+                    <span>{submitLabel}</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

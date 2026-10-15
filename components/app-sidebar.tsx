@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { NavGroup } from "@/components/nav-group";
 import { NavUser, type UserProps } from "@/components/nav-user";
+import { SettingsDialog } from "@/components/settings-dialog";
 import { mainNavItems, secondaryNavItems } from "@/lib/navigation";
 import { type User } from "@/app/users/types";
 
@@ -34,6 +35,7 @@ const DEFAULT_USER_PROPS: UserProps = {
 
 export function AppSidebar() {
   const [accountUser, setAccountUser] = React.useState<User | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
 
   React.useEffect(() => {
     let mounted = true;
@@ -62,30 +64,43 @@ export function AppSidebar() {
   }, [accountUser]);
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link href="/" />}>
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold">
-                G
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">Gluvok</span>
-                <span className="truncate text-xs text-muted-foreground">Management</span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-      <SidebarContent>
-        <NavGroup label="Main" items={mainNavItems} />
-        <NavGroup label="Secondary" items={secondaryNavItems} className="mt-auto" />
-      </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={userProps} accountUser={accountUser} onUserUpdated={setAccountUser} />
-      </SidebarFooter>
-      <SidebarRail />
-    </Sidebar>
+    <>
+      <Sidebar collapsible="icon">
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" render={<Link href="/" />}>
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold">
+                  G
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">Gluvok</span>
+                  <span className="truncate text-xs text-muted-foreground">Management</span>
+                </div>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+        <SidebarContent>
+          <NavGroup label="Main" items={mainNavItems} />
+          <NavGroup
+            label="Secondary"
+            items={secondaryNavItems}
+            onItemClick={(item) => {
+              if (item.url === "#settings" || item.title === "Settings") {
+                setIsSettingsOpen(true);
+              }
+            }}
+            className="mt-auto"
+          />
+        </SidebarContent>
+        <SidebarFooter>
+          <NavUser user={userProps} accountUser={accountUser} onUserUpdated={setAccountUser} />
+        </SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
+
+      <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+    </>
   );
 }

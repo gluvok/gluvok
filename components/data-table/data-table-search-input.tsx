@@ -16,17 +16,17 @@ export function DataTableSearchInput({
   placeholder = "Search...",
 }: DataTableSearchInputProps) {
   return (
-    <div className="relative w-full sm:w-60">
+    <div className="relative w-full sm:w-60 p-1">
       <HugeiconsIcon
         icon={Search01Icon}
-        className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+        className="pointer-events-none absolute left-3.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
       />
       <Input
         type="search"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-8 w-full pl-8 pr-7 text-2xs"
+        className="h-8 w-full pl-8 pr-7 text-xs"
       />
       {value && (
         <Button
@@ -34,7 +34,7 @@ export function DataTableSearchInput({
           variant="ghost"
           size="icon-xs"
           onClick={() => onChange("")}
-          className="absolute right-1.5 top-1/2 -translate-y-1/2 size-5 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 size-5 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
           aria-label="Clear search"
         >
           <HugeiconsIcon icon={Cancel01Icon} className="size-3" />

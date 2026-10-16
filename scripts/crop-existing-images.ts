@@ -27,15 +27,15 @@ import sharp from "sharp";
 // ---------------------------------------------------------------------------
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
 const BUCKET = "gluvok";
 const PUBLIC_URL_INDICATOR = "/public/gluvok/";
 const JPEG_QUALITY = 85;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error(
-    "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars.\n" +
-      "Run with: pnpm tsx --env-file=.env.local scripts/crop-existing-images.ts",
+    "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY env vars.\n" +
+    "Run with: pnpm tsx --env-file=.env.local scripts/crop-existing-images.ts",
   );
   process.exit(1);
 }
@@ -125,9 +125,9 @@ async function main() {
     const cropConfigs: CameraCropConfig[] = Array.isArray(factory.camera_crops)
       ? (factory.camera_crops as CameraCropConfig[])
       : [
-          { camera: 1, top: 5, bottom: 34, left: 37, right: 28 },
-          { camera: 2, top: 12, bottom: 31, left: 20, right: 49 },
-        ];
+        { camera: 1, top: 5, bottom: 34, left: 37, right: 28 },
+        { camera: 2, top: 12, bottom: 31, left: 20, right: 49 },
+      ];
 
     console.log(`🏭 Factory: ${factory.name} (ID ${factory.id})`);
     console.log(`   Crop configs: ${JSON.stringify(cropConfigs)}`);

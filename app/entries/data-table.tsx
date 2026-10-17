@@ -1,21 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import { EntryPhotosDialog } from "@/components/entries/entry-photos-dialog";
 import {
-  DataTableSearchInput,
-  DataTableFacetedFilter,
-  type FacetedFilterOption,
-  DataTableCriteriaBar,
-  DataTableFilterChip,
-  DataTableDateRangeChip,
   DataTableContent,
   DataTablePagination,
-  DataTableViewOptions,
-  DatePickerWithRange,
   DataTableHydrationCard,
   useDataTable,
+  type FacetedFilterOption,
 } from "@/components/data-table";
 import {
   Building01Icon,
@@ -31,6 +23,16 @@ import {
   WeightScale01Icon,
 } from "@hugeicons/core-free-icons";
 import { appIcons } from "@/lib/icons";
+import { getErrorMessage } from "@/lib/utils";
+import { useDataTableStore } from "@/stores/use-data-table-store";
+import type { TableItemState } from "@/lib/table-cookie";
+import {
+  EntryPhotosDialog,
+  EntriesToolbar,
+  EntriesCriteriaBar,
+  EntriesErrorState,
+  type EntriesFilterConfig,
+} from "@/components/entries";
 import { columns } from "./columns";
 import { type Entry } from "./types";
 import { type Center } from "@/app/centers/types";
@@ -70,6 +72,105 @@ const SOURCE_OPTIONS: FacetedFilterOption[] = [
   { label: "Manual", value: "manual", icon: UserIcon },
 ];
 
+function formatCenterOptions(centers: Center[]): FacetedFilterOption[] {
+  return [
+    { label: "All Centers", value: "all", icon: appIcons.centers },
+    ...centers.map((c) => ({
+      idPrefix: `#${c.id}`,
+      label: c.name,
+      value: String(c.id),
+    })),
+  ];
+}
+
+function formatCustomerOptions(customers: User[]): FacetedFilterOption[] {
+  return [
+    { label: "All Customers", value: "all", icon: appIcons.customers },
+    ...customers.map((u) => ({
+      idPrefix: `#${u.id}`,
+      label: u.name,
+      value: String(u.id),
+    })),
+  ];
+}
+
+function formatCreatorOptions(creators: User[]): FacetedFilterOption[] {
+  return [
+    { label: "All Creators", value: "all", icon: appIcons.users },
+    ...creators.map((u) => ({
+      idPrefix: `#${u.id}`,
+      label: u.name,
+      value: String(u.id),
+      icon: u.role === "hardware" ? CpuIcon : UserIcon,
+    })),
+  ];
+}
+
+async function fetchFilterOptions() {
+  const [centersRes, customersRes, creatorsRes] = await Promise.all([
+    axios.get<{ data: Center[] }>("/api/centers?all=true&sort=name.asc"),
+    axios.get<{ data: User[] }>("/api/users?role=customer&all=true&sort=name.asc"),
+    axios.get<{ data: User[] }>("/api/users?all=true&includeHardware=true&sort=name.asc"),
+  ]);
+  return {
+    centers: centersRes.data.data ?? [],
+    customers: customersRes.data.data ?? [],
+    creators: creatorsRes.data.data ?? [],
+  };
+}
+
+function validateAndSanitizeFilters(
+  currentFilters: Record<string, string>,
+  centers: Center[],
+  customers: User[],
+  creators: User[],
+  onReset: (key: string) => void,
+): { sanitizedFilters: Record<string, string>; needsFallback: boolean } {
+  let needsFallback = false;
+  const sanitizedFilters = { ...currentFilters };
+  const dynamicEntityChecks: Array<{ key: string; items: Array<{ id: number | string }> }> = [
+    { key: "center_id", items: centers },
+    { key: "customer_id", items: customers },
+    { key: "created_by", items: creators },
+  ];
+
+  for (const { key, items } of dynamicEntityChecks) {
+    const activeVal = sanitizedFilters[key];
+    if (activeVal && activeVal !== "all" && !items.some((item) => String(item.id) === activeVal)) {
+      sanitizedFilters[key] = "all";
+      onReset(key);
+      needsFallback = true;
+    }
+  }
+
+  return { sanitizedFilters, needsFallback };
+}
+
+function buildEntriesQueryParams(
+  tableState: TableItemState,
+  pageOverride?: number,
+  filtersOverride?: Record<string, string>,
+): Record<string, unknown> {
+  const pagination = tableState.pagination;
+  const sorting = tableState.sorting;
+  const search = tableState.search;
+  const fromIso = tableState.dateRange?.from;
+  const toIso = tableState.dateRange?.to;
+  const filters = filtersOverride ?? tableState.filters;
+
+  return {
+    page: pageOverride ?? pagination.pageIndex + 1,
+    pageSize: pagination.pageSize,
+    ...(sorting.length > 0 && {
+      sort: sorting.map((s) => `${s.id}.${s.desc ? "desc" : "asc"}`).join(","),
+    }),
+    ...(search && { search }),
+    ...(fromIso && { from: fromIso }),
+    ...(toIso && { to: toIso }),
+    ...filters,
+  };
+}
+
 export function EntriesDataTable() {
   const [centerOptions, setCenterOptions] = useState<FacetedFilterOption[]>([
     { label: "All Centers", value: "all", icon: appIcons.centers },
@@ -80,64 +181,13 @@ export function EntriesDataTable() {
   const [creatorOptions, setCreatorOptions] = useState<FacetedFilterOption[]>([
     { label: "All Creators", value: "all", icon: appIcons.users },
   ]);
-  const [filterOptionsLoading, setFilterOptionsLoading] = useState<boolean>(true);
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
+  const [initialError, setInitialError] = useState<string | null>(null);
+  const [initialData, setInitialData] = useState<
+    { data: Entry[]; totalCount: number } | undefined
+  >();
 
-  useEffect(() => {
-    let isMounted = true;
-    async function loadFilterData() {
-      try {
-        const [centersRes, customersRes, creatorsRes] = await Promise.all([
-          axios.get<{ data: Center[] }>("/api/centers?pageSize=100"),
-          axios.get<{ data: User[] }>("/api/users?role=customer&pageSize=100"),
-          axios.get<{ data: User[] }>("/api/users?pageSize=100"),
-        ]);
-
-        if (isMounted) {
-          if (centersRes.data.data) {
-            setCenterOptions([
-              { label: "All Centers", value: "all", icon: appIcons.centers },
-              ...centersRes.data.data.map((c) => ({
-                idPrefix: `#${c.id}`,
-                label: c.name,
-                value: String(c.id),
-              })),
-            ]);
-          }
-          if (customersRes.data.data) {
-            setCustomerOptions([
-              { label: "All Customers", value: "all", icon: appIcons.customers },
-              ...customersRes.data.data.map((u) => ({
-                idPrefix: `#${u.id}`,
-                label: u.name,
-                value: String(u.id),
-              })),
-            ]);
-          }
-          if (creatorsRes.data.data) {
-            setCreatorOptions([
-              { label: "All Creators", value: "all", icon: appIcons.users },
-              ...creatorsRes.data.data.map((u) => ({
-                idPrefix: `#${u.id}`,
-                label: u.name,
-                value: String(u.id),
-                icon: u.role === "hardware" ? CpuIcon : UserIcon,
-              })),
-            ]);
-          }
-          setFilterOptionsLoading(false);
-        }
-      } catch {
-        if (isMounted) {
-          setFilterOptionsLoading(false);
-        }
-      }
-    }
-    loadFilterData();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
+  const activeLoadIdRef = useRef<number>(0);
   const [selectedEntryForPhotos, setSelectedEntryForPhotos] = useState<Entry | null>(null);
   const [photosDialogOpen, setPhotosDialogOpen] = useState<boolean>(false);
 
@@ -153,13 +203,125 @@ export function EntriesDataTable() {
     [handleViewPhotos],
   );
 
+  const fetchEntries = useCallback(async (queryParams: Record<string, unknown>) => {
+    const currentTableState = useDataTableStore.getState().getTableState(TABLE_ID);
+    const centerFilter = currentTableState.filters?.center_id ?? "all";
+    const customerFilter = currentTableState.filters?.customer_id ?? "all";
+    const creatorFilter = currentTableState.filters?.created_by ?? "all";
+    const hasActiveDynamicFilter =
+      centerFilter !== "all" || customerFilter !== "all" || creatorFilter !== "all";
+
+    if (hasActiveDynamicFilter) {
+      const [optionsResult, entriesRes] = await Promise.all([
+        fetchFilterOptions(),
+        axios.get<{ data: Entry[]; totalCount: number }>("/api/entries", { params: queryParams }),
+      ]);
+      const { centers, customers, creators } = optionsResult;
+      let finalEntries = entriesRes.data;
+
+      const { sanitizedFilters, needsFallback } = validateAndSanitizeFilters(
+        currentTableState.filters ?? {},
+        centers,
+        customers,
+        creators,
+        (key) => useDataTableStore.getState().setTableFilter(TABLE_ID, key, "all"),
+      );
+
+      if (needsFallback) {
+        useDataTableStore.getState().setTablePagination(TABLE_ID, (prev) => ({
+          ...prev,
+          pageIndex: 0,
+        }));
+        const fallbackParams = {
+          ...queryParams,
+          page: 1,
+          ...sanitizedFilters,
+        };
+        const refetchRes = await axios.get<{ data: Entry[]; totalCount: number }>("/api/entries", {
+          params: fallbackParams,
+        });
+        finalEntries = refetchRes.data;
+      }
+
+      setCenterOptions(formatCenterOptions(centers));
+      setCustomerOptions(formatCustomerOptions(customers));
+      setCreatorOptions(formatCreatorOptions(creators));
+
+      return finalEntries;
+    }
+
+    // Fast path: No dynamic filter active on page switch, fetch only entries
+    const res = await axios.get<{ data: Entry[]; totalCount: number }>("/api/entries", {
+      params: queryParams,
+    });
+    return res.data;
+  }, []);
+
+  const loadInitialData = useCallback(async () => {
+    const currentLoadId = ++activeLoadIdRef.current;
+    setIsInitialLoading(true);
+    setInitialError(null);
+    try {
+      const currentTableState = useDataTableStore.getState().getTableState(TABLE_ID);
+      const initialQueryParams = buildEntriesQueryParams(currentTableState);
+
+      const [optionsResult, entriesRes] = await Promise.all([
+        fetchFilterOptions(),
+        axios.get<{ data: Entry[]; totalCount: number }>("/api/entries", {
+          params: initialQueryParams,
+        }),
+      ]);
+
+      if (currentLoadId !== activeLoadIdRef.current) return;
+
+      const { centers, customers, creators } = optionsResult;
+      let finalEntries = entriesRes.data;
+
+      const { sanitizedFilters, needsFallback } = validateAndSanitizeFilters(
+        currentTableState.filters ?? {},
+        centers,
+        customers,
+        creators,
+        (key) => useDataTableStore.getState().setTableFilter(TABLE_ID, key, "all"),
+      );
+
+      if (needsFallback) {
+        useDataTableStore.getState().setTablePagination(TABLE_ID, (prev) => ({
+          ...prev,
+          pageIndex: 0,
+        }));
+        const fallbackParams = buildEntriesQueryParams(currentTableState, 1, sanitizedFilters);
+        const refetchRes = await axios.get<{ data: Entry[]; totalCount: number }>("/api/entries", {
+          params: fallbackParams,
+        });
+        if (currentLoadId !== activeLoadIdRef.current) return;
+        finalEntries = refetchRes.data;
+      }
+
+      setCenterOptions(formatCenterOptions(centers));
+      setCustomerOptions(formatCustomerOptions(customers));
+      setCreatorOptions(formatCreatorOptions(creators));
+      setInitialData(finalEntries);
+      setIsInitialLoading(false);
+    } catch (err) {
+      if (currentLoadId === activeLoadIdRef.current) {
+        setInitialError(getErrorMessage(err, "Failed to load entries."));
+        setIsInitialLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
+
   const {
     table,
     loading,
     error,
-    hasHydrated,
     search,
     setSearch,
+    clearSearch,
     dateRange,
     setDateRange,
     sorting,
@@ -176,117 +338,71 @@ export function EntriesDataTable() {
   } = useDataTable<Entry>({
     tableId: TABLE_ID,
     columns,
-    endpoint: "/api/entries",
+    fetchData: fetchEntries,
     meta: tableMeta,
+    enabled: !isInitialLoading && !!initialData,
+    initialData,
   });
 
-  const centerFilter = tableState.filters?.center_id ?? "all";
-  const customerFilter = tableState.filters?.customer_id ?? "all";
-  const creatorFilter = tableState.filters?.created_by ?? "all";
-  const sourceFilter = tableState.filters?.source ?? "all";
+  const filterConfigs = useMemo<EntriesFilterConfig[]>(
+    () => [
+      {
+        key: "center_id",
+        title: "Center",
+        options: centerOptions,
+        variant: "stone",
+        categoryIcon: appIcons.centers,
+      },
+      {
+        key: "customer_id",
+        title: "Customer",
+        options: customerOptions,
+        variant: "emerald",
+        categoryIcon: appIcons.customers,
+      },
+      {
+        key: "created_by",
+        title: "Created by",
+        options: creatorOptions,
+        variant: "primary",
+        categoryIcon: UserIcon,
+      },
+      {
+        key: "source",
+        title: "Source",
+        options: SOURCE_OPTIONS,
+        variant: "stone",
+        categoryIcon: TransmissionIcon,
+      },
+    ],
+    [centerOptions, customerOptions, creatorOptions],
+  );
 
-  const activeCenterLabel = useMemo(() => {
-    if (centerFilter === "all") return null;
-    const opt = centerOptions.find((o) => o.value === centerFilter);
-    if (!opt) return `Center #${centerFilter}`;
-    return opt.idPrefix ? `${opt.idPrefix} ${opt.label}` : opt.label;
-  }, [centerFilter, centerOptions]);
-
-  const activeCustomerLabel = useMemo(() => {
-    if (customerFilter === "all") return null;
-    const opt = customerOptions.find((o) => o.value === customerFilter);
-    if (!opt) return `Customer #${customerFilter}`;
-    return opt.idPrefix ? `${opt.idPrefix} ${opt.label}` : opt.label;
-  }, [customerFilter, customerOptions]);
-
-  const activeCreatorOption = useMemo(() => {
-    if (creatorFilter === "all") return null;
-    const opt = creatorOptions.find((o) => o.value === creatorFilter);
-    if (!opt) return { label: `Creator #${creatorFilter}`, value: creatorFilter, icon: UserIcon };
-    return {
-      label: opt.idPrefix ? `${opt.idPrefix} ${opt.label}` : opt.label,
-      value: creatorFilter,
-      icon: opt.icon ?? UserIcon,
-    };
-  }, [creatorFilter, creatorOptions]);
-
-  const activeSourceOption = useMemo(() => {
-    if (sourceFilter === "all") return null;
-    return SOURCE_OPTIONS.find((opt) => opt.value === sourceFilter) ?? null;
-  }, [sourceFilter]);
-
-  const hasNonDefaultDynamicFilter =
-    centerFilter !== "all" || customerFilter !== "all" || creatorFilter !== "all";
-
-  const isInitialFilterLoading = hasNonDefaultDynamicFilter && (filterOptionsLoading || loading);
-
-  if (!hasHydrated || isInitialFilterLoading) {
+  if (isInitialLoading || !initialData) {
     return <DataTableHydrationCard />;
+  }
+
+  if (initialError) {
+    return <EntriesErrorState error={initialError} onRetry={loadInitialData} />;
   }
 
   return (
     <div className="flex flex-1 flex-col gap-2 min-w-0 min-h-0 h-full overflow-hidden">
       {/* Primary Toolbar - 2-Tier Layout */}
-      <div className="flex flex-col gap-2 shrink-0">
-        {/* Row 1: Search Box (Left) & Columns Action Control (Right) */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <DataTableSearchInput
-            placeholder="Search entries..."
-            value={search}
-            onChange={setSearch}
-          />
-
-          <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
-            <DataTableViewOptions table={table} />
-          </div>
-        </div>
-
-        {/* Row 2: Filter Comboboxes (Left) & Date Range Picker (Right) */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Center Faceted Filter */}
-            <DataTableFacetedFilter
-              title="Center"
-              options={centerOptions}
-              value={centerFilter}
-              onValueChange={(val: string) => setFilter("center_id", val)}
-            />
-
-            {/* Customer Faceted Filter */}
-            <DataTableFacetedFilter
-              title="Customer"
-              options={customerOptions}
-              value={customerFilter}
-              onValueChange={(val: string) => setFilter("customer_id", val)}
-            />
-
-            {/* Created by Faceted Filter */}
-            <DataTableFacetedFilter
-              title="Created by"
-              options={creatorOptions}
-              value={creatorFilter}
-              onValueChange={(val: string) => setFilter("created_by", val)}
-            />
-
-            {/* Source Faceted Filter */}
-            <DataTableFacetedFilter
-              title="Source"
-              options={SOURCE_OPTIONS}
-              value={sourceFilter}
-              onValueChange={(val: string) => setFilter("source", val)}
-            />
-          </div>
-
-          <DatePickerWithRange
-            date={dateRange}
-            onDateChange={(range) => setDateRange(range)}
-            className="w-full sm:w-auto"
-          />
-        </div>
-      </div>
+      <EntriesToolbar
+        table={table}
+        search={search}
+        onSearchChange={setSearch}
+        onSearchClear={clearSearch}
+        dateRange={dateRange}
+        onDateRangeChange={(range) => setDateRange(range)}
+        filterConfigs={filterConfigs}
+        filters={tableState.filters}
+        onFilterChange={(key, val) => setFilter(key, val)}
+      />
 
       {/* Active Criteria Bar (Badges + Drag-and-Drop Sort Priority Chips) */}
-      <DataTableCriteriaBar
+      <EntriesCriteriaBar
         hasActiveFilters={hasActiveFilters}
         hasActiveSorts={hasActiveSorts}
         sorting={sorting}
@@ -297,56 +413,12 @@ export function EntriesDataTable() {
         onResetFilters={resetAllFilters}
         onResetSorts={resetSorting}
         onResetAll={resetAllCriteria}
-      >
-        {/* Active Center Filter Chip with Category Icon (Warm Natural Stone) */}
-        {activeCenterLabel && (
-          <DataTableFilterChip
-            label="Center"
-            value={activeCenterLabel}
-            icon={appIcons.centers}
-            variant="stone"
-            onRemove={() => setFilter("center_id", "all")}
-          />
-        )}
-
-        {/* Active Customer Filter Chip with Category Icon (Deep Forest Emerald) */}
-        {activeCustomerLabel && (
-          <DataTableFilterChip
-            label="Customer"
-            value={activeCustomerLabel}
-            icon={appIcons.customers}
-            variant="emerald"
-            onRemove={() => setFilter("customer_id", "all")}
-          />
-        )}
-
-        {/* Active Created by Filter Chip with Option Icon (Terracotta Orange for Hardware, Signature Tea-Moss for Human) */}
-        {activeCreatorOption && (
-          <DataTableFilterChip
-            label="Created by"
-            value={activeCreatorOption.label}
-            categoryIcon={UserIcon}
-            valueIcon={activeCreatorOption.icon}
-            variant={activeCreatorOption.icon === CpuIcon ? "orange" : "primary"}
-            onRemove={() => setFilter("created_by", "all")}
-          />
-        )}
-
-        {/* Active Source Filter Chip with Category Icon (Transmission) and Value Icon (Cpu for Hardware), Orange for Hardware */}
-        {activeSourceOption && (
-          <DataTableFilterChip
-            label="Source"
-            value={activeSourceOption.label}
-            categoryIcon={TransmissionIcon}
-            valueIcon={activeSourceOption.icon}
-            variant={sourceFilter === "hardware" ? "orange" : "stone"}
-            onRemove={() => setFilter("source", "all")}
-          />
-        )}
-
-        {/* Active Date Range Chip (Golden Honey Amber) */}
-        <DataTableDateRangeChip dateRange={dateRange} onRemove={() => setDateRange(undefined)} />
-      </DataTableCriteriaBar>
+        filterConfigs={filterConfigs}
+        filters={tableState.filters}
+        onFilterChange={(key, val) => setFilter(key, val)}
+        dateRange={dateRange}
+        onDateRangeChange={(range) => setDateRange(range)}
+      />
 
       {/* Reusable Data Table Content */}
       <DataTableContent

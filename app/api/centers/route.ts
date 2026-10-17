@@ -5,6 +5,7 @@ import {
   parsePagination,
   parseSorting,
   applyDateRange,
+  applySorting,
   applySortingAndPagination,
   formatPaginatedResponse,
 } from "@/lib/api-query";
@@ -14,6 +15,7 @@ const ALLOWED_SORT_COLUMNS = ["id", "name", "created_at", "updated_at"] as const
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+    const isAll = searchParams.get("all") === "true";
 
     const pagination = parsePagination(searchParams);
     const sortRules = parseSorting(searchParams, ALLOWED_SORT_COLUMNS);
@@ -29,7 +31,15 @@ export async function GET(request: Request) {
     }
 
     query = applyDateRange(query, searchParams);
-    query = applySortingAndPagination(query, sortRules, pagination);
+
+    if (isAll) {
+      query = applySorting(
+        query,
+        sortRules.length > 0 ? sortRules : [{ col: "name", ascending: true }],
+      );
+    } else {
+      query = applySortingAndPagination(query, sortRules, pagination);
+    }
 
     const { data, count, error } = await query;
 
@@ -38,6 +48,16 @@ export async function GET(request: Request) {
         { error: error.message },
         { status: StatusCodes.INTERNAL_SERVER_ERROR },
       );
+    }
+
+    if (isAll) {
+      return NextResponse.json({
+        data: data ?? [],
+        totalCount: data?.length ?? 0,
+        page: 1,
+        pageSize: data?.length ?? 0,
+        totalPages: 1,
+      });
     }
 
     return NextResponse.json(formatPaginatedResponse(data, count, pagination));

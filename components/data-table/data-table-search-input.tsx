@@ -7,14 +7,24 @@ import { Cancel01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 export interface DataTableSearchInputProps {
   value: string;
   onChange: (value: string) => void;
+  onClear?: () => void;
   placeholder?: string;
 }
 
 export function DataTableSearchInput({
   value,
   onChange,
+  onClear,
   placeholder = "Search...",
 }: DataTableSearchInputProps) {
+  const handleClear = () => {
+    if (onClear) {
+      onClear();
+    } else {
+      onChange("");
+    }
+  };
+
   return (
     <div className="relative w-full sm:w-60 p-1">
       <HugeiconsIcon
@@ -32,7 +42,7 @@ export function DataTableSearchInput({
           type="button"
           variant="ghost"
           size="icon-xs"
-          onClick={() => onChange("")}
+          onClick={handleClear}
           className="absolute right-2.5 top-1/2 -translate-y-1/2 size-5 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
           aria-label="Clear search"
         >

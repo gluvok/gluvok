@@ -8,6 +8,8 @@ import type {
 import {
   type TableItemState,
   DEFAULT_TABLE_ITEM_STATE,
+  TABLES_COOKIE_NAME,
+  parseTablesCookie,
   writeTablesCookie,
 } from "@/lib/table-cookie";
 
@@ -44,9 +46,18 @@ interface DataTableStoreState {
   resetTableFilters: (tableId: string) => void;
 }
 
+function getInitialClientTables(): Record<string, TableItemState> {
+  if (typeof document === "undefined") return {};
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${TABLES_COOKIE_NAME}=([^;]*)`));
+  if (!match?.[1]) return {};
+  return parseTablesCookie(match[1]);
+}
+
+const initialClientTables = getInitialClientTables();
+
 export const useDataTableStore = create<DataTableStoreState>()((set, get) => ({
-  tables: {},
-  _hasHydrated: false,
+  tables: initialClientTables,
+  _hasHydrated: true,
   setHasHydrated: (hydrated) => set({ _hasHydrated: hydrated }),
 
   initFromCookies: (initialTables) =>

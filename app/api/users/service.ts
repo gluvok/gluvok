@@ -5,6 +5,7 @@ import {
   parsePagination,
   parseSorting,
   applyDateRange,
+  applySorting,
   applySortingAndPagination,
   formatPaginatedResponse,
 } from "@/lib/api-query";
@@ -80,9 +81,10 @@ export class ServiceError extends Error {
 
 /**
  * Fetches a paginated, sorted, and filtered list of users.
- * Hardware accounts are strictly excluded from results and cannot be filtered by.
+ * Hardware accounts are strictly excluded from results unless includeHardware is specified.
  */
 export async function fetchUsersList(searchParams: URLSearchParams) {
+  const isAll = searchParams.get("all") === "true";
   const pagination = parsePagination(searchParams);
   const sortRules = parseSorting(searchParams, ALLOWED_SORT_COLUMNS);
 
@@ -101,16 +103,33 @@ export async function fetchUsersList(searchParams: URLSearchParams) {
   const role = searchParams.get("role")?.trim();
   if (role && USER_ROLES.includes(role as (typeof USER_ROLES)[number])) {
     q = q.eq("role", role);
+  } else if (searchParams.get("includeHardware") === "true") {
+    q = q.not("role", "eq", "customer");
   } else {
     q = q.not("role", "in", '("customer","hardware")');
   }
 
   q = applyDateRange(q, searchParams);
-  q = applySortingAndPagination(q, sortRules, pagination);
+
+  if (isAll) {
+    q = applySorting(q, sortRules.length > 0 ? sortRules : [{ col: "name", ascending: true }]);
+  } else {
+    q = applySortingAndPagination(q, sortRules, pagination);
+  }
 
   const result = await q;
   if (result.error) {
     throw new ServiceError(result.error.message, StatusCodes.INTERNAL_SERVER_ERROR);
+  }
+
+  if (isAll) {
+    return {
+      data: (result.data as User[]) ?? [],
+      totalCount: result.data?.length ?? 0,
+      page: 1,
+      pageSize: result.data?.length ?? 0,
+      totalPages: 1,
+    };
   }
 
   return formatPaginatedResponse<User>(result.data as User[] | null, result.count, pagination);

@@ -8,7 +8,7 @@ interface LoadingStateProps {
 
 export function LoadingState({ className }: LoadingStateProps) {
   return (
-    <div className={cn("flex h-64 items-center justify-center", className)}>
+    <div className={cn("flex flex-1 min-h-0 h-full w-full items-center justify-center", className)}>
       <Spinner className="size-6 text-primary" />
     </div>
   );

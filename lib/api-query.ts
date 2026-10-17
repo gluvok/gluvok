@@ -118,6 +118,21 @@ export function applyDateRange<
 }
 
 /**
+ * Applies sequential sorting rules to a Supabase query builder.
+ */
+export function applySorting<
+  TQuery extends {
+    order(col: string, opts: { ascending: boolean }): TQuery;
+  },
+>(query: TQuery, sortRules: readonly SortRule<string>[]): TQuery {
+  let updated = query;
+  for (const rule of sortRules) {
+    updated = updated.order(rule.col, { ascending: rule.ascending });
+  }
+  return updated;
+}
+
+/**
  * Applies sequential sorting rules and range pagination slice to a Supabase query builder.
  */
 export function applySortingAndPagination<
@@ -126,11 +141,10 @@ export function applySortingAndPagination<
     range(from: number, to: number): TQuery;
   },
 >(query: TQuery, sortRules: readonly SortRule<string>[], pagination: PaginationParams): TQuery {
-  let updated = query;
-  for (const rule of sortRules) {
-    updated = updated.order(rule.col, { ascending: rule.ascending });
-  }
-  return updated.range(pagination.offset, pagination.offset + pagination.pageSize - 1);
+  return applySorting(query, sortRules).range(
+    pagination.offset,
+    pagination.offset + pagination.pageSize - 1,
+  );
 }
 
 /**

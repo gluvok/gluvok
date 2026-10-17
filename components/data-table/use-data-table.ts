@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import {
   useTable,
@@ -31,6 +31,8 @@ export interface UseDataTableOptions<TData extends RowData> {
   fetchData?: (params: Record<string, unknown>) => Promise<{ data: TData[]; totalCount: number }>;
   meta?: TableMeta<DataTableFeatures, TData>;
   defaultSortColumn?: string;
+  enabled?: boolean;
+  initialData?: { data: TData[]; totalCount: number };
 }
 
 export function useDataTable<TData extends RowData>({
@@ -41,24 +43,41 @@ export function useDataTable<TData extends RowData>({
   fetchData,
   meta,
   defaultSortColumn = "id",
+  enabled = true,
+  initialData,
 }: UseDataTableOptions<TData>) {
   const hasHydrated = useTableHydrated();
   const store = useDataTableStore();
   const tableState = store.tables[tableId] ?? DEFAULT_TABLE_ITEM_STATE;
 
-  const [data, setData] = useState<TData[]>([]);
-  const [totalCount, setTotalCount] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [data, setData] = useState<TData[]>(initialData?.data ?? []);
+  const [totalCount, setTotalCount] = useState<number>(initialData?.totalCount ?? 0);
+  const [loading, setLoading] = useState<boolean>(enabled && !initialData);
   const [error, setError] = useState<string | null>(null);
+  const initialDataConsumedRef = useRef<boolean>(!!initialData);
+  const requestIdRef = useRef<number>(0);
+
+  // Sync state synchronously during render when initialData changes to eliminate 1-frame empty table flash
+  const [prevInitialData, setPrevInitialData] = useState(initialData);
+  if (initialData && initialData !== prevInitialData) {
+    setPrevInitialData(initialData);
+    setData(initialData.data);
+    setTotalCount(initialData.totalCount);
+    setLoading(false);
+    initialDataConsumedRef.current = true;
+  }
 
   const search = tableState.search;
+  const fromIso = tableState.dateRange?.from;
+  const toIso = tableState.dateRange?.to;
+
   const dateRange = useMemo<DateRange | undefined>(() => {
-    if (!tableState.dateRange?.from) return undefined;
+    if (!fromIso) return undefined;
     return {
-      from: new Date(tableState.dateRange.from),
-      to: tableState.dateRange.to ? new Date(tableState.dateRange.to) : undefined,
+      from: new Date(fromIso),
+      to: toIso ? new Date(toIso) : undefined,
     };
-  }, [tableState.dateRange]);
+  }, [fromIso, toIso]);
 
   const sorting = tableState.sorting;
   const pagination = tableState.pagination;
@@ -111,57 +130,84 @@ export function useDataTable<TData extends RowData>({
   const extraParamsKey = useMemo(() => JSON.stringify(extraParams ?? {}), [extraParams]);
   const filtersKey = useMemo(() => JSON.stringify(tableState.filters ?? {}), [tableState.filters]);
 
-  // Data fetching routine
-  const fetchTableData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  // Data fetching routine with sequence counter to prevent race conditions
+  const fetchTableData = useCallback(
+    async (overrideSearch?: string) => {
+      const currentRequestId = ++requestIdRef.current;
+      setLoading(true);
+      setError(null);
 
-    const queryParams: Record<string, unknown> = {
-      page: pagination.pageIndex + 1,
-      pageSize: pagination.pageSize,
-      ...(sorting.length > 0 && {
-        sort: sorting.map((s) => `${s.id}.${s.desc ? "desc" : "asc"}`).join(","),
-      }),
-      ...(debouncedSearch && { search: debouncedSearch }),
-      ...(dateRange?.from && { from: dateRange.from.toISOString() }),
-      ...(dateRange?.to && { to: dateRange.to.toISOString() }),
-      ...tableState.filters,
-      ...extraParams,
-    };
+      const activeSearch = overrideSearch !== undefined ? overrideSearch : debouncedSearch;
 
-    try {
-      if (fetchData) {
-        const res = await fetchData(queryParams);
-        setData(res.data ?? []);
-        setTotalCount(res.totalCount ?? 0);
-      } else if (endpoint) {
-        const res = await axios.get<{ data: TData[]; totalCount: number }>(endpoint, {
-          params: queryParams,
-        });
-        setData(res.data.data ?? []);
-        setTotalCount(res.data.totalCount ?? 0);
+      const queryParams: Record<string, unknown> = {
+        page: pagination.pageIndex + 1,
+        pageSize: pagination.pageSize,
+        ...(sorting.length > 0 && {
+          sort: sorting.map((s) => `${s.id}.${s.desc ? "desc" : "asc"}`).join(","),
+        }),
+        ...(activeSearch && { search: activeSearch }),
+        ...(fromIso && { from: fromIso }),
+        ...(toIso && { to: toIso }),
+        ...tableState.filters,
+        ...extraParams,
+      };
+
+      try {
+        if (fetchData) {
+          const res = await fetchData(queryParams);
+          if (currentRequestId === requestIdRef.current) {
+            setData(res.data ?? []);
+            setTotalCount(res.totalCount ?? 0);
+          }
+        } else if (endpoint) {
+          const res = await axios.get<{ data: TData[]; totalCount: number }>(endpoint, {
+            params: queryParams,
+          });
+          if (currentRequestId === requestIdRef.current) {
+            setData(res.data.data ?? []);
+            setTotalCount(res.data.totalCount ?? 0);
+          }
+        }
+      } catch (err) {
+        if (currentRequestId === requestIdRef.current) {
+          setError(getErrorMessage(err, "An unexpected error occurred."));
+        }
+      } finally {
+        if (currentRequestId === requestIdRef.current) {
+          setLoading(false);
+        }
       }
-    } catch (err) {
-      setError(getErrorMessage(err, "An unexpected error occurred."));
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    pagination.pageIndex,
-    pagination.pageSize,
-    sorting,
-    debouncedSearch,
-    dateRange,
-    endpoint,
-    fetchData,
-    filtersKey,
-    extraParamsKey,
-  ]);
+    },
+    [
+      pagination.pageIndex,
+      pagination.pageSize,
+      sorting,
+      debouncedSearch,
+      fromIso,
+      toIso,
+      endpoint,
+      fetchData,
+      filtersKey,
+      extraParamsKey,
+      tableState.filters,
+      extraParams,
+    ],
+  );
+
+  // Immediate search clear without 300ms debounce delay
+  const clearSearch = useCallback(() => {
+    store.setTableSearch(tableId, "");
+    fetchTableData("");
+  }, [store, tableId, fetchTableData]);
 
   useEffect(() => {
-    if (!hasHydrated) return;
+    if (!hasHydrated || !enabled) return;
+    if (initialDataConsumedRef.current) {
+      initialDataConsumedRef.current = false;
+      return;
+    }
     fetchTableData();
-  }, [hasHydrated, fetchTableData]);
+  }, [hasHydrated, enabled, fetchTableData]);
 
   // TanStack table instance
   const table = useTable({
@@ -206,11 +252,14 @@ export function useDataTable<TData extends RowData>({
     table,
     data,
     totalCount,
+    setData,
+    setTotalCount,
     loading,
     error,
     hasHydrated,
     search,
     setSearch,
+    clearSearch,
     debouncedSearch,
     dateRange,
     setDateRange,

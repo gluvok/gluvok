@@ -202,7 +202,7 @@ export function UsersDataTable({ roleScope }: UsersDataTableProps) {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-2 min-w-0 min-h-0 h-full overflow-hidden">
+    <div className="flex flex-1 flex-col gap-2 min-w-0 min-h-0 h-full overflow-hidden p-1">
       {/* Primary Toolbar */}
       <div className="flex flex-col gap-2 shrink-0 sm:flex-row sm:items-center sm:justify-between">
         {/* Filters Group (Left) */}

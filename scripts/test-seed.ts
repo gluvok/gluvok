@@ -17,13 +17,10 @@ type TicketStatus = "pending" | "approved" | "rejected";
 const TABLES_IN_CLEAR_ORDER = [
   "automatic_tickets",
   "manual_tickets",
-  "tickets",
   "automatic_weighments",
   "manual_weighments",
-  "weighments",
   "automatic_entries",
   "manual_entries",
-  "entries",
   "devices",
   "sessions",
   "commodities",
@@ -370,20 +367,41 @@ async function main() {
     api_key_hash: deviceKeyHash,
   }));
 
-  const { data: createdDevices, error: devicesErr } = await supabase
+  // 1) Fetch existing devices that are not deleted
+  const { data: existingDevices, error: fetchDevErr } = await supabase
     .from("devices")
-    .upsert(devicesToInsert, { onConflict: "center_id" })
-    .select("id, center_id");
+    .select("id, center_id")
+    .is("deleted_at", null);
 
-  if (devicesErr) {
-    if (devicesErr.code === "PGRST205") {
+  if (fetchDevErr) {
+    if (fetchDevErr.code === "PGRST205") {
       console.warn("  ⚠️ Note: 'devices' table does not exist in schema cache yet.");
     } else {
-      console.warn("  ⚠️ Could not seed devices:", devicesErr.message);
+      console.warn("  ⚠️ Could not fetch devices:", fetchDevErr.message);
     }
-  } else if (createdDevices) {
-    for (const d of createdDevices) {
-      deviceMap.set(d.center_id, d.id);
+  } else {
+    const existingCenterIds = new Set<number>();
+    if (existingDevices) {
+      for (const d of existingDevices) {
+        deviceMap.set(d.center_id, d.id);
+        existingCenterIds.add(d.center_id);
+      }
+    }
+
+    const missingDevices = devicesToInsert.filter((d) => !existingCenterIds.has(d.center_id));
+    if (missingDevices.length > 0) {
+      const { data: createdDevices, error: devicesErr } = await supabase
+        .from("devices")
+        .insert(missingDevices)
+        .select("id, center_id");
+
+      if (devicesErr) {
+        console.warn("  ⚠️ Could not seed devices:", devicesErr.message);
+      } else if (createdDevices) {
+        for (const d of createdDevices) {
+          deviceMap.set(d.center_id, d.id);
+        }
+      }
     }
     console.log(`  ✓ Provisioned ${deviceMap.size} 1:1 hardware devices in 'devices' table.`);
   }
@@ -877,66 +895,125 @@ async function main() {
     });
   }
 
-  interface EntryInsert {
-    vehicle_number: string;
+  // Split pairedVehicles: 30 for automatic (hardware-captured), 30 for manual (operator-created)
+  const autoPairedVehicles = pairedVehicles.slice(0, 30);
+  const manualPairedVehicles = pairedVehicles.slice(30);
+
+  const fallbackDeviceId = Array.from(deviceMap.values())[0] ?? 1;
+
+  // --- AUTOMATIC PAIRED ENTRIES ---
+  interface AutomaticEntryInsert {
+    device_id: number;
+    center_id: number;
+    customer_id: number | null;
     detected_vehicle_number: string;
+    vehicle_number: string;
+    weight: number;
+    images: string[];
+    created_at: string;
+  }
+
+  const autoInEntriesToInsert: AutomaticEntryInsert[] = [];
+  const autoOutEntriesToInsert: AutomaticEntryInsert[] = [];
+
+  for (const pv of autoPairedVehicles) {
+    const devId = deviceMap.get(pv.centerId) ?? fallbackDeviceId;
+    autoInEntriesToInsert.push({
+      device_id: devId,
+      center_id: pv.centerId,
+      customer_id: pv.customerId,
+      detected_vehicle_number: pv.vehicle,
+      vehicle_number: pv.vehicle,
+      weight: pv.grossWeight,
+      images: [],
+      created_at: daysAgo(pv.daysOffset, pv.minutesOffset + 120),
+    });
+
+    autoOutEntriesToInsert.push({
+      device_id: devId,
+      center_id: pv.centerId,
+      customer_id: pv.customerId,
+      detected_vehicle_number: pv.vehicle,
+      vehicle_number: pv.vehicle,
+      weight: pv.tareWeight,
+      images: [],
+      created_at: daysAgo(pv.daysOffset, pv.minutesOffset),
+    });
+  }
+
+  const { data: createdAutoIn, error: autoInErr } = await supabase
+    .from("automatic_entries")
+    .insert(autoInEntriesToInsert)
+    .select("id, center_id, device_id");
+
+  if (autoInErr || !createdAutoIn) {
+    throw autoInErr || new Error("Failed to bulk insert automatic inbound entries");
+  }
+
+  const { data: createdAutoOut, error: autoOutErr } = await supabase
+    .from("automatic_entries")
+    .insert(autoOutEntriesToInsert)
+    .select("id, center_id, device_id");
+
+  if (autoOutErr || !createdAutoOut) {
+    throw autoOutErr || new Error("Failed to bulk insert automatic outbound entries");
+  }
+
+  // --- MANUAL PAIRED ENTRIES ---
+  interface ManualEntryInsert {
+    vehicle_number: string;
     weight: number;
     center_id: number;
-    customer_id: number;
-    factory_id: number;
+    customer_id: number | null;
     created_by: number;
     images: string[];
     created_at: string;
   }
 
-  const inEntriesToInsert: EntryInsert[] = [];
-  const outEntriesToInsert: EntryInsert[] = [];
+  const manualInEntriesToInsert: ManualEntryInsert[] = [];
+  const manualOutEntriesToInsert: ManualEntryInsert[] = [];
 
-  for (const pv of pairedVehicles) {
-    inEntriesToInsert.push({
+  for (const pv of manualPairedVehicles) {
+    manualInEntriesToInsert.push({
       vehicle_number: pv.vehicle,
-      detected_vehicle_number: pv.vehicle,
       weight: pv.grossWeight,
       center_id: pv.centerId,
       customer_id: pv.customerId,
-      factory_id: pv.factoryId,
       created_by: pv.operatorId,
       images: [],
       created_at: daysAgo(pv.daysOffset, pv.minutesOffset + 120),
     });
 
-    outEntriesToInsert.push({
+    manualOutEntriesToInsert.push({
       vehicle_number: pv.vehicle,
-      detected_vehicle_number: pv.vehicle,
       weight: pv.tareWeight,
       center_id: pv.centerId,
       customer_id: pv.customerId,
-      factory_id: pv.factoryId,
       created_by: pv.operatorId,
       images: [],
       created_at: daysAgo(pv.daysOffset, pv.minutesOffset),
     });
   }
 
-  const { data: createdInEntries, error: inErr } = await supabase
-    .from("entries")
-    .insert(inEntriesToInsert)
-    .select("id");
+  const { data: createdManualIn, error: manualInErr } = await supabase
+    .from("manual_entries")
+    .insert(manualInEntriesToInsert)
+    .select("id, center_id");
 
-  if (inErr || !createdInEntries) {
-    throw inErr || new Error("Failed to bulk insert inbound entries");
+  if (manualInErr || !createdManualIn) {
+    throw manualInErr || new Error("Failed to bulk insert manual inbound entries");
   }
 
-  const { data: createdOutEntries, error: outErr } = await supabase
-    .from("entries")
-    .insert(outEntriesToInsert)
-    .select("id");
+  const { data: createdManualOut, error: manualOutErr } = await supabase
+    .from("manual_entries")
+    .insert(manualOutEntriesToInsert)
+    .select("id, center_id");
 
-  if (outErr || !createdOutEntries) {
-    throw outErr || new Error("Failed to bulk insert outbound entries");
+  if (manualOutErr || !createdManualOut) {
+    throw manualOutErr || new Error("Failed to bulk insert manual outbound entries");
   }
 
-  // Create linked weighments
+  // Create linked automatic weighments
   interface WeighmentInsert {
     in_entry_id: number;
     out_entry_id: number;
@@ -945,122 +1022,180 @@ async function main() {
     created_at: string;
   }
 
-  const weighmentsToInsert: WeighmentInsert[] = [];
-  for (let i = 0; i < createdInEntries.length; i++) {
-    const pv = pairedVehicles[i];
-    weighmentsToInsert.push({
-      in_entry_id: createdInEntries[i].id,
-      out_entry_id: createdOutEntries[i].id,
+  const autoWeighmentsToInsert: WeighmentInsert[] = [];
+  for (let i = 0; i < createdAutoIn.length; i++) {
+    const pv = autoPairedVehicles[i];
+    autoWeighmentsToInsert.push({
+      in_entry_id: createdAutoIn[i].id,
+      out_entry_id: createdAutoOut[i].id,
       unit: "kg",
       type: i % 4 === 0 ? "out" : i % 7 === 0 ? "unassigned" : "in",
       created_at: daysAgo(pv.daysOffset, pv.minutesOffset),
     });
   }
 
-  const { data: createdWeighments, error: weighmentErr } = await supabase
-    .from("weighments")
-    .insert(weighmentsToInsert)
+  const { data: createdAutoWeighments, error: autoWeighmentErr } = await supabase
+    .from("automatic_weighments")
+    .insert(autoWeighmentsToInsert)
     .select("id");
 
-  if (weighmentErr || !createdWeighments) {
-    throw weighmentErr || new Error("Failed to bulk insert weighments");
+  if (autoWeighmentErr || !createdAutoWeighments) {
+    throw autoWeighmentErr || new Error("Failed to bulk insert automatic weighments");
+  }
+
+  // Create linked manual weighments
+  const manualWeighmentsToInsert: WeighmentInsert[] = [];
+  for (let i = 0; i < createdManualIn.length; i++) {
+    const pv = manualPairedVehicles[i];
+    manualWeighmentsToInsert.push({
+      in_entry_id: createdManualIn[i].id,
+      out_entry_id: createdManualOut[i].id,
+      unit: "kg",
+      type: i % 4 === 0 ? "out" : i % 7 === 0 ? "unassigned" : "in",
+      created_at: daysAgo(pv.daysOffset, pv.minutesOffset),
+    });
+  }
+
+  const { data: createdManualWeighments, error: manualWeighmentErr } = await supabase
+    .from("manual_weighments")
+    .insert(manualWeighmentsToInsert)
+    .select("id");
+
+  if (manualWeighmentErr || !createdManualWeighments) {
+    throw manualWeighmentErr || new Error("Failed to bulk insert manual weighments");
   }
 
   console.log(
-    `  ✓ Created ${createdWeighments.length} weighments linking ${createdInEntries.length} inbound and ${createdOutEntries.length} outbound entries.`,
+    `  ✓ Created ${createdAutoWeighments.length} automatic weighments and ${createdManualWeighments.length} manual weighments.`,
   );
 
-  // 7. STANDALONE UNPAIRED ENTRIES (50 Entries: 25 for Main Weighbridge, 25 for other centers)
-  console.log("\n📋 [7/8] Seeding 50 Standalone Entries (25 concentrated on Main Weighbridge)...");
-  interface StandaloneEntryData {
-    vehicle_number: string;
-    detected_vehicle_number: string;
-    weight: number;
-    center_id: number;
-    customer_id: number | null;
-    factory_id: number;
-    created_by: number;
-    images: string[];
-    created_at: string;
+  // 7. STANDALONE UNPAIRED ENTRIES (50 Entries: 25 Automatic, 25 Manual)
+  console.log("\n📋 [7/8] Seeding 50 Standalone Entries (25 Automatic, 25 Manual)...");
+
+  const autoStandaloneToInsert: AutomaticEntryInsert[] = [];
+  const manualStandaloneToInsert: ManualEntryInsert[] = [];
+
+  // 25 Automatic Standalone Entries (15 Main Weighbridge, 10 other Factory 1 centers)
+  const otherFactory1CenterIds = factory1CenterIds.filter((id) => id !== mainWeighbridgeId);
+  for (let i = 1; i <= 15; i++) {
+    const plate = `DL01XY${3000 + i}`;
+    const customerId = i % 4 === 0 ? null : customerIdsArray[i % 35];
+    const devId = deviceMap.get(mainWeighbridgeId) ?? fallbackDeviceId;
+
+    autoStandaloneToInsert.push({
+      device_id: devId,
+      center_id: mainWeighbridgeId,
+      customer_id: customerId,
+      detected_vehicle_number: plate,
+      vehicle_number: plate,
+      weight: 16000 + ((i * 1250) % 28000),
+      images: [],
+      created_at: daysAgo(Math.floor(i / 2) + 1, (i * 47) % 720),
+    });
   }
 
-  const standaloneEntriesToInsert: StandaloneEntryData[] = [];
+  for (let i = 1; i <= 10; i++) {
+    const plate = `KA04CD${4000 + i}`;
+    const centerId = otherFactory1CenterIds[i % otherFactory1CenterIds.length];
+    const customerId = i % 3 === 0 ? null : customerIdsArray[(i * 2) % 35];
+    const devId = deviceMap.get(centerId) ?? fallbackDeviceId;
 
-  // 25 Standalone Entries on "Main Weighbridge" (20 operator inbound, 5 operator outbound)
-  for (let i = 1; i <= 25; i++) {
+    autoStandaloneToInsert.push({
+      device_id: devId,
+      center_id: centerId,
+      customer_id: customerId,
+      detected_vehicle_number: plate,
+      vehicle_number: plate,
+      weight: 18000 + ((i * 1150) % 22000),
+      images: [],
+      created_at: daysAgo(5 + i, (i * 35) % 60),
+    });
+  }
+
+  const { data: createdAutoStandalone, error: autoStandaloneErr } = await supabase
+    .from("automatic_entries")
+    .insert(autoStandaloneToInsert)
+    .select("id, center_id, device_id");
+
+  if (autoStandaloneErr || !createdAutoStandalone) {
+    throw autoStandaloneErr || new Error("Failed to bulk insert automatic standalone entries");
+  }
+
+  // 25 Manual Standalone Entries (10 Main Weighbridge, 5 other Factory 1, 10 Factory 2)
+  for (let i = 16; i <= 25; i++) {
     const plate = `DL01XY${3000 + i}`;
     const customerId = i % 4 === 0 ? null : customerIdsArray[i % 35];
     const operatorId = i % 2 === 0 ? operator1Id : operator3Id;
 
-    standaloneEntriesToInsert.push({
+    manualStandaloneToInsert.push({
       vehicle_number: plate,
-      detected_vehicle_number: plate,
       weight: 16000 + ((i * 1250) % 28000),
       center_id: mainWeighbridgeId,
       customer_id: customerId,
-      factory_id: primaryFactoryId,
       created_by: operatorId,
       images: [],
       created_at: daysAgo(Math.floor(i / 2) + 1, (i * 47) % 720),
     });
   }
 
-  // 15 Standalone Entries on other Factory 1 centers
-  const otherFactory1CenterIds = factory1CenterIds.filter((id) => id !== mainWeighbridgeId);
-  for (let i = 1; i <= 15; i++) {
+  for (let i = 11; i <= 15; i++) {
     const plate = `KA04CD${4000 + i}`;
     const centerId = otherFactory1CenterIds[i % otherFactory1CenterIds.length];
     const customerId = i % 3 === 0 ? null : customerIdsArray[(i * 2) % 35];
 
-    standaloneEntriesToInsert.push({
+    manualStandaloneToInsert.push({
       vehicle_number: plate,
-      detected_vehicle_number: plate,
       weight: 18000 + ((i * 1150) % 22000),
       center_id: centerId,
       customer_id: customerId,
-      factory_id: primaryFactoryId,
       created_by: operator1Id,
       images: [],
       created_at: daysAgo(5 + i, (i * 35) % 60),
     });
   }
 
-  // 10 Standalone Entries on Factory 2 centers
   for (let i = 1; i <= 10; i++) {
     const plate = `GJ03EF${5000 + i}`;
     const centerId = factory2CenterIds[i % factory2CenterIds.length];
 
-    standaloneEntriesToInsert.push({
+    manualStandaloneToInsert.push({
       vehicle_number: plate,
-      detected_vehicle_number: plate,
       weight: 14000 + ((i * 2100) % 36000),
       center_id: centerId,
       customer_id: null,
-      factory_id: secondaryFactoryId,
       created_by: operator2Id,
       images: [],
       created_at: daysAgo(8 + i, (i * 50) % 60),
     });
   }
 
-  const { data: createdStandaloneEntries, error: standaloneErr } = await supabase
-    .from("entries")
-    .insert(standaloneEntriesToInsert)
-    .select("id");
+  const { data: createdManualStandalone, error: manualStandaloneErr } = await supabase
+    .from("manual_entries")
+    .insert(manualStandaloneToInsert)
+    .select("id, center_id");
 
-  if (standaloneErr || !createdStandaloneEntries) {
-    throw standaloneErr || new Error("Failed to bulk insert standalone entries");
+  if (manualStandaloneErr || !createdManualStandalone) {
+    throw manualStandaloneErr || new Error("Failed to bulk insert manual standalone entries");
   }
 
   console.log(
-    `  ✓ Created ${createdStandaloneEntries.length} standalone entries (Total Entries: ${
-      createdInEntries.length + createdOutEntries.length + createdStandaloneEntries.length
-    }, Main Weighbridge: 105 entries).`,
+    `  ✓ Created ${createdAutoStandalone.length} automatic standalone entries and ${createdManualStandalone.length} manual standalone entries.`,
   );
 
-  // 8. TICKETS (40 Support Tickets: 20 linked to entries, 20 linked to weighments)
-  console.log("\n🎫 [8/8] Seeding 40 Support Tickets (Constraint Validated)...");
-  interface TicketInsert {
+  // 8. TICKETS (40 Support Tickets: 20 Automatic, 20 Manual)
+  console.log("\n🎫 [8/8] Seeding 40 Support Tickets (20 Automatic, 20 Manual)...");
+  interface AutomaticTicketInsert {
+    concern: string;
+    reply: string | null;
+    status: TicketStatus;
+    entry_id: number | null;
+    weighment_id: number | null;
+    user_id: number;
+    device_id: number | null;
+    created_at: string;
+  }
+
+  interface ManualTicketInsert {
     concern: string;
     reply: string | null;
     status: TicketStatus;
@@ -1173,64 +1308,121 @@ async function main() {
     },
   ];
 
-  const ticketsToInsert: TicketInsert[] = [];
+  const autoTicketsToInsert: AutomaticTicketInsert[] = [];
+  const manualTicketsToInsert: ManualTicketInsert[] = [];
 
-  // 20 Tickets linked to standalone entries (entry_id set, weighment_id null)
-  for (let i = 0; i < 20; i++) {
-    const entryId = createdStandaloneEntries[i].id;
+  // 10 Automatic Tickets linked to automatic standalone entries
+  for (let i = 0; i < 10; i++) {
+    const entry = createdAutoStandalone[i];
     const template = ticketConcerns[i % ticketConcerns.length];
-    ticketsToInsert.push({
+    autoTicketsToInsert.push({
       concern: template.concern,
       reply: template.reply,
       status: template.status,
-      entry_id: entryId,
+      entry_id: entry.id,
+      weighment_id: null,
+      user_id: i % 2 === 0 ? operator1Id : manager1Id,
+      device_id: entry.device_id,
+      created_at: daysAgo(10 - Math.floor(i / 2), (i * 20) % 60),
+    });
+  }
+
+  // 10 Automatic Tickets linked to automatic weighments
+  for (let i = 0; i < 10; i++) {
+    const weighment = createdAutoWeighments[i];
+    const template = ticketConcerns[(i + 5) % ticketConcerns.length];
+    autoTicketsToInsert.push({
+      concern: `[Automatic Weighment #${weighment.id}] ${template.concern}`,
+      reply: template.reply,
+      status: template.status,
+      entry_id: null,
+      weighment_id: weighment.id,
+      user_id: i % 2 === 0 ? manager1Id : operator1Id,
+      device_id: null,
+      created_at: daysAgo(15 - Math.floor(i / 2), (i * 25) % 60),
+    });
+  }
+
+  const { data: createdAutoTickets, error: autoTicketErr } = await supabase
+    .from("automatic_tickets")
+    .insert(autoTicketsToInsert)
+    .select("id");
+
+  if (autoTicketErr || !createdAutoTickets) {
+    throw autoTicketErr || new Error("Failed to bulk insert automatic tickets");
+  }
+
+  // 10 Manual Tickets linked to manual standalone entries
+  for (let i = 0; i < 10; i++) {
+    const entry = createdManualStandalone[i];
+    const template = ticketConcerns[i % ticketConcerns.length];
+    manualTicketsToInsert.push({
+      concern: template.concern,
+      reply: template.reply,
+      status: template.status,
+      entry_id: entry.id,
       weighment_id: null,
       user_id: i % 2 === 0 ? operator1Id : manager1Id,
       created_at: daysAgo(10 - Math.floor(i / 2), (i * 20) % 60),
     });
   }
 
-  // 20 Tickets linked to weighments (entry_id null, weighment_id set)
-  for (let i = 0; i < 20; i++) {
-    const weighmentId = createdWeighments[i].id;
+  // 10 Manual Tickets linked to manual weighments
+  for (let i = 0; i < 10; i++) {
+    const weighment = createdManualWeighments[i];
     const template = ticketConcerns[(i + 5) % ticketConcerns.length];
-    ticketsToInsert.push({
-      concern: `[Weighment #${weighmentId}] ${template.concern}`,
+    manualTicketsToInsert.push({
+      concern: `[Manual Weighment #${weighment.id}] ${template.concern}`,
       reply: template.reply,
       status: template.status,
       entry_id: null,
-      weighment_id: weighmentId,
+      weighment_id: weighment.id,
       user_id: i % 2 === 0 ? manager1Id : operator1Id,
       created_at: daysAgo(15 - Math.floor(i / 2), (i * 25) % 60),
     });
   }
 
-  const { data: createdTickets, error: ticketErr } = await supabase
-    .from("tickets")
-    .insert(ticketsToInsert)
+  const { data: createdManualTickets, error: manualTicketErr } = await supabase
+    .from("manual_tickets")
+    .insert(manualTicketsToInsert)
     .select("id");
 
-  if (ticketErr || !createdTickets) {
-    throw ticketErr || new Error("Failed to bulk insert tickets");
+  if (manualTicketErr || !createdManualTickets) {
+    throw manualTicketErr || new Error("Failed to bulk insert manual tickets");
   }
 
-  console.log(`  ✓ Seeded ${createdTickets.length} support tickets.`);
+  console.log(
+    `  ✓ Seeded ${createdAutoTickets.length} automatic tickets and ${createdManualTickets.length} manual tickets.`,
+  );
 
   console.log("\n=================================================");
   console.log("🎉 Database Seeding Completed Successfully!");
   console.log("=================================================");
   console.log("📊 Summary of Seeded Data Volumes:");
-  console.log(`  • Factories:   ${factoryMap.size}`);
-  console.log(`  • Users:       ${userMap.size} (Admin, Manager, Operator, Base, Customer)`);
-  console.log(`  • Centers:     ${centerMap.size} (Ideal for multi-page pagination testing)`);
-  console.log(`  • Devices:     ${deviceMap.size} (1:1 with Centers, API key authenticated)`);
-  console.log(`  • Commodities: ${commodityMap.size}`);
-  console.log(`  • Customers:   ${customerMap.size}`);
+  console.log(`  • Factories:            ${factoryMap.size}`);
   console.log(
-    `  • Entries:     ${createdInEntries.length + createdOutEntries.length + createdStandaloneEntries.length} (${createdInEntries.length + createdOutEntries.length} paired, ${createdStandaloneEntries.length} standalone)`,
+    `  • Users:                ${userMap.size} (Admin, Manager, Operator, Base, Customer)`,
   );
-  console.log(`  • Weighments:  ${createdWeighments.length} (Linked paired cycles)`);
-  console.log(`  • Tickets:     ${createdTickets.length} (20 linked to entries, 20 to weighments)`);
+  console.log(
+    `  • Centers:              ${centerMap.size} (Ideal for multi-page pagination testing)`,
+  );
+  console.log(
+    `  • Devices:              ${deviceMap.size} (1:1 with Centers, API key authenticated)`,
+  );
+  console.log(`  • Commodities:          ${commodityMap.size}`);
+  console.log(`  • Customers:            ${customerMap.size}`);
+  console.log(
+    `  • Automatic Entries:    ${createdAutoIn.length + createdAutoOut.length + createdAutoStandalone.length} (${createdAutoIn.length + createdAutoOut.length} paired, ${createdAutoStandalone.length} standalone)`,
+  );
+  console.log(
+    `  • Manual Entries:       ${createdManualIn.length + createdManualOut.length + createdManualStandalone.length} (${createdManualIn.length + createdManualOut.length} paired, ${createdManualStandalone.length} standalone)`,
+  );
+  console.log(`  • Automatic Weighments: ${createdAutoWeighments.length} (Linked paired cycles)`);
+  console.log(`  • Manual Weighments:    ${createdManualWeighments.length} (Linked paired cycles)`);
+  console.log(`  • Automatic Tickets:    ${createdAutoTickets.length} (10 entries, 10 weighments)`);
+  console.log(
+    `  • Manual Tickets:       ${createdManualTickets.length} (10 entries, 10 weighments)`,
+  );
   console.log("=================================================");
   console.log("📋 Test User Credentials Summary:");
   console.log("  [Factory 1: Default Factory]");

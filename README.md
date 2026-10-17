@@ -262,9 +262,9 @@ Running `pnpm run seed:test` or `pnpm run seed:test:clean` provisions high-volum
 - **Centers**: 50 (35 in Factory 1, 15 in Factory 2) with staggered `created_at` dates (ideal for testing 10, 20, 30, 40, and 50 page sizes)
 - **Commodities**: 20 bulk agricultural commodities
 - **Customers**: 50 customer accounts (`role: customer` in `users` table)
-- **Entries**: 100 entries (60 paired for weighment cycles + 40 standalone entries)
-- **Weighments**: 30 linked inbound/outbound cycles
-- **Tickets**: 40 support tickets (20 linked to entries, 20 linked to weighments)
+- **Automatic & Manual Entries**: 170 entries (85 automatic entries + 85 manual entries; 60 paired cycles and 50 standalone entries)
+- **Automatic & Manual Weighments**: 60 linked inbound/outbound cycles (30 automatic + 30 manual)
+- **Automatic & Manual Tickets**: 40 support tickets (20 automatic tickets and 20 manual tickets, linked to entries or weighments with XOR check constraints)
 
 ### Seeded Test Credentials
 

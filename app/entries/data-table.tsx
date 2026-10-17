@@ -126,10 +126,23 @@ function validateAndSanitizeFilters(
 
   for (const { key, items } of dynamicEntityChecks) {
     const activeVal = sanitizedFilters[key];
-    if (activeVal && activeVal !== "all" && !items.some((item) => String(item.id) === activeVal)) {
-      sanitizedFilters[key] = "all";
-      onReset(key);
-      needsFallback = true;
+    if (activeVal && activeVal !== "all") {
+      if (key === "center_id") {
+        const ids = activeVal.split(",").filter(Boolean);
+        const validIds = ids.filter((id) => items.some((item) => String(item.id) === id));
+        if (validIds.length === 0) {
+          sanitizedFilters[key] = "all";
+          onReset(key);
+          needsFallback = true;
+        } else if (validIds.length !== ids.length) {
+          sanitizedFilters[key] = validIds.join(",");
+          needsFallback = true;
+        }
+      } else if (!items.some((item) => String(item.id) === activeVal)) {
+        sanitizedFilters[key] = "all";
+        onReset(key);
+        needsFallback = true;
+      }
     }
   }
 

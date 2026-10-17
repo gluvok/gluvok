@@ -57,8 +57,9 @@ export function EntriesCriteriaBar({
       onResetSorts={onResetSorts}
       onResetAll={onResetAll}
     >
-      {/* Dynamic & Static Active Filter Chips via declarative loop */}
+      {/* Dynamic & Static Active Filter Chips via declarative loop (center_id is omitted as it has inline chips) */}
       {filterConfigs.map((config) => {
+        if (config.key === "center_id") return null;
         const activeVal = filters[config.key] ?? "all";
         if (!activeVal || activeVal === "all") return null;
 

@@ -5,6 +5,7 @@ import type { DateRange } from "react-day-picker";
 import {
   DataTableSearchInput,
   DataTableFacetedFilter,
+  DataTableMultiComboboxFilter,
   type FacetedFilterOption,
   DataTableViewOptions,
   DatePickerWithRange,
@@ -62,7 +63,7 @@ export function EntriesToolbar<TData extends RowData>({
           <div
             role="radiogroup"
             aria-label="Entry mode"
-            className="inline-flex h-8 items-center rounded-md border border-border bg-muted/40 p-0.5 text-muted-foreground shrink-0"
+            className="inline-flex h-8 w-fit self-start items-center rounded-md border border-border bg-muted/40 p-0.5 text-muted-foreground shrink-0"
           >
             <Button
               type="button"
@@ -120,15 +121,26 @@ export function EntriesToolbar<TData extends RowData>({
 
       {/* Row 2: Filter Comboboxes via declarative loop */}
       <div className="flex flex-wrap items-center gap-2">
-        {filterConfigs.map((config) => (
-          <DataTableFacetedFilter
-            key={config.key}
-            title={config.title}
-            options={config.options}
-            value={filters[config.key] ?? "all"}
-            onValueChange={(val: string) => onFilterChange(config.key, val)}
-          />
-        ))}
+        {filterConfigs.map((config) =>
+          config.key === "center_id" ? (
+            <DataTableMultiComboboxFilter
+              key={config.key}
+              title={config.title}
+              icon={config.categoryIcon as React.ComponentProps<typeof HugeiconsIcon>["icon"]}
+              options={config.options}
+              value={filters[config.key] ?? "all"}
+              onValueChange={(val: string) => onFilterChange(config.key, val)}
+            />
+          ) : (
+            <DataTableFacetedFilter
+              key={config.key}
+              title={config.title}
+              options={config.options}
+              value={filters[config.key] ?? "all"}
+              onValueChange={(val: string) => onFilterChange(config.key, val)}
+            />
+          ),
+        )}
       </div>
     </div>
   );

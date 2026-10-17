@@ -30,15 +30,21 @@ export function parseNumericWeight(search: string): number | null {
 export function applyCommonEntriesFilters<
   TQuery extends {
     eq(col: string, val: number): TQuery;
+    in(col: string, vals: number[]): TQuery;
   },
 >(query: TQuery, searchParams: URLSearchParams): TQuery {
   let updated = query;
 
   const centerId = searchParams.get("center_id")?.trim();
   if (centerId && centerId !== "all") {
-    const parsedCenterId = Number(centerId);
-    if (!isNaN(parsedCenterId)) {
-      updated = updated.eq("center_id", parsedCenterId);
+    const ids = centerId
+      .split(",")
+      .map((id) => Number(id.trim()))
+      .filter((n) => !isNaN(n) && n > 0);
+    if (ids.length === 1) {
+      updated = updated.eq("center_id", ids[0]);
+    } else if (ids.length > 1) {
+      updated = updated.in("center_id", ids);
     }
   }
 

@@ -22,7 +22,6 @@ export function DataTableSearchInput({
         className="pointer-events-none absolute left-3.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
       />
       <Input
-        type="search"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}

@@ -8,6 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppBreadcrumb } from "@/components/app-breadcrumb";
 import { Toaster } from "@/components/ui/toast";
+import { parseTablesCookie, TABLES_COOKIE_NAME } from "@/lib/table-cookie";
+import { DataTableStoreInitializer } from "@/components/data-table/data-table-store-initializer";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -32,6 +34,8 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
+  const tablesStateRaw = cookieStore.get(TABLES_COOKIE_NAME)?.value;
+  const initialTables = parseTablesCookie(tablesStateRaw);
 
   return (
     <html
@@ -46,6 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       )}
     >
       <body>
+        <DataTableStoreInitializer initialTables={initialTables} />
         <SidebarProvider defaultOpen={defaultOpen} className="h-full">
           <AppSidebar />
           <SidebarInset className="min-w-0 h-svh max-h-svh flex flex-col">

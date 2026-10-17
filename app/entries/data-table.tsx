@@ -226,7 +226,7 @@ export function EntriesDataTable() {
     <div className="flex flex-1 flex-col gap-2 min-w-0 min-h-0 h-full overflow-hidden">
       {/* Primary Toolbar - 2-Tier Layout */}
       <div className="flex flex-col gap-2 shrink-0">
-        {/* Row 1: Search Box & Right-hand Action Controls */}
+        {/* Row 1: Search Box (Left) & Columns Action Control (Right) */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <DataTableSearchInput
             placeholder="Search entries..."
@@ -234,49 +234,51 @@ export function EntriesDataTable() {
             onChange={setSearch}
           />
 
-          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-            <DatePickerWithRange
-              date={dateRange}
-              onDateChange={(range) => setDateRange(range)}
-              className="flex-1 sm:flex-initial"
-            />
-
+          <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
             <DataTableViewOptions table={table} />
           </div>
         </div>
 
-        {/* Row 2: Filter Comboboxes Below Search Box */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Center Faceted Filter */}
-          <DataTableFacetedFilter
-            title="Center"
-            options={centerOptions}
-            value={centerFilter}
-            onValueChange={(val: string) => setFilter("center_id", val)}
-          />
+        {/* Row 2: Filter Comboboxes (Left) & Date Range Picker (Right) */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Center Faceted Filter */}
+            <DataTableFacetedFilter
+              title="Center"
+              options={centerOptions}
+              value={centerFilter}
+              onValueChange={(val: string) => setFilter("center_id", val)}
+            />
 
-          {/* Customer Faceted Filter */}
-          <DataTableFacetedFilter
-            title="Customer"
-            options={customerOptions}
-            value={customerFilter}
-            onValueChange={(val: string) => setFilter("customer_id", val)}
-          />
+            {/* Customer Faceted Filter */}
+            <DataTableFacetedFilter
+              title="Customer"
+              options={customerOptions}
+              value={customerFilter}
+              onValueChange={(val: string) => setFilter("customer_id", val)}
+            />
 
-          {/* Created by Faceted Filter */}
-          <DataTableFacetedFilter
-            title="Created by"
-            options={creatorOptions}
-            value={creatorFilter}
-            onValueChange={(val: string) => setFilter("created_by", val)}
-          />
+            {/* Created by Faceted Filter */}
+            <DataTableFacetedFilter
+              title="Created by"
+              options={creatorOptions}
+              value={creatorFilter}
+              onValueChange={(val: string) => setFilter("created_by", val)}
+            />
 
-          {/* Source Faceted Filter */}
-          <DataTableFacetedFilter
-            title="Source"
-            options={SOURCE_OPTIONS}
-            value={sourceFilter}
-            onValueChange={(val: string) => setFilter("source", val)}
+            {/* Source Faceted Filter */}
+            <DataTableFacetedFilter
+              title="Source"
+              options={SOURCE_OPTIONS}
+              value={sourceFilter}
+              onValueChange={(val: string) => setFilter("source", val)}
+            />
+          </div>
+
+          <DatePickerWithRange
+            date={dateRange}
+            onDateChange={(range) => setDateRange(range)}
+            className="w-full sm:w-auto"
           />
         </div>
       </div>

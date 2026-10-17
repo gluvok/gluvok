@@ -41,7 +41,7 @@ const ROLE_OPTIONS: FacetedFilterOption[] = [
   { label: "Admin", value: "admin", icon: CrownIcon },
   { label: "Manager", value: "manager", icon: Briefcase01Icon },
   { label: "Operator", value: "operator", icon: HeadsetIcon },
-  { label: "Base User", value: "base", icon: UserIcon },
+  { label: "Base", value: "base", icon: UserIcon },
 ];
 
 const COLUMN_LABELS: Record<string, string> = {

@@ -46,7 +46,7 @@ export const ROLE_OPTIONS = [
   { value: "admin", label: "Admin", icon: CrownIcon },
   { value: "manager", label: "Manager", icon: Briefcase01Icon },
   { value: "operator", label: "Operator", icon: HeadsetIcon },
-  { value: "base", label: "Base User", icon: UserIcon },
+  { value: "base", label: "Base", icon: UserIcon },
 ];
 
 /* -------------------------------------------------------------------------- */

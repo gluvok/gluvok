@@ -52,7 +52,7 @@ export function RoleBadge({ role }: RoleBadgeProps) {
           className="gap-1 text-2xs font-normal text-stone-700 border-stone-300/80 bg-stone-500/10 dark:text-stone-300 dark:border-stone-700/80 dark:bg-stone-900/30"
         >
           <HugeiconsIcon icon={UserIcon} className="size-3" />
-          Base User
+          Base
         </Badge>
       );
     case "customer":

@@ -39,7 +39,7 @@ The platform adopts a unified **Rikyū-cha (利休茶)** Japanese roasted matcha
   - **Operator**: Signature Rikyū-cha tea-moss green (`text-primary border-primary/30 bg-primary/10 dark:text-primary dark:border-primary/40 dark:bg-primary/15`) with `HeadsetIcon`.
   - **Manager**: Warm Hōjicha roasted tea bronze (`text-amber-900 border-amber-300/80 bg-amber-600/10 dark:text-amber-200 dark:border-amber-800/50 dark:bg-amber-950/30`) with `Briefcase01Icon`.
   - **Customer**: Soft Sencha sage green (`text-emerald-900 border-emerald-300/80 bg-emerald-600/10 dark:text-emerald-200 dark:border-emerald-800/50 dark:bg-emerald-950/30`) with `UserCheck01Icon`.
-  - **Base User**: Unglazed warm stone (`text-stone-700 border-stone-300/80 bg-stone-500/10 dark:text-stone-300 dark:border-stone-700/80 dark:bg-stone-900/30`) with `UserIcon`.
+  - **Base**: Unglazed warm stone (`text-stone-700 border-stone-300/80 bg-stone-500/10 dark:text-stone-300 dark:border-stone-700/80 dark:bg-stone-900/30`) with `UserIcon`.
 - **Interactive Criteria Chips (`components/data-table/`)**: Active date range filters (`DataTableDateRangeChip`) and multi-column sort chips (`SortableSortChip`) feature subtle matcha-tinted borders and backgrounds (`border-primary/25 bg-primary/10 text-primary`) for clear hierarchy and instant visual scanning.
 - **Toast Feedback**: Top-right anchored (`top-4 right-4`) with `font-heading` titles and semantic status colors.
 
@@ -110,8 +110,9 @@ The `/entries` route provides an inspection-focused data table for transport and
   - `manual_entries`: Operator captured via `created_by REFERENCES users(id)`, `center_id`, `customer_id`, `vehicle_number`, `weight`, `images`. Strictly omits redundant `factory_id` (resolved via `center_id`) and `detected_vehicle_number`.
   - Corresponding split tables for weighments (`automatic_weighments`, `manual_weighments`) and tickets (`automatic_tickets`, `manual_tickets`).
 - **Features & UX**:
-  - **Segmented Button Group Radio Toggle**: Row 1 of `EntriesToolbar` houses the Search input alongside a compact, modern segmented button-group toggle (`h-8`, styled with inner active toggle pill and theme icons: `CpuIcon` in orange for Automatic, `UserIcon` in stone for Manual). Persisted in the `gluvok_tables_state` cookie for immediate server-side pre-render and 0ms mount delay.
-  - **Global Header Refresh Trigger (`HeaderRefreshButton`)**: Refresh trigger is positioned globally in the top layout bar (`app/layout.tsx`) on the right side of the breadcrumbs. Dispatches an `app:table-refresh` event which `useDataTable` subscribes to, seamlessly refreshing the active datatable with all filters and sorting preserved without page reloads.
+  - **Mobile-Adaptive Segmented Button Group Radio Toggle**: Row 1 of `EntriesToolbar` houses the Search input alongside a compact, modern segmented button-group toggle (`h-8`, styled with inner active toggle pill and theme icons: `CpuIcon` in orange, `UserIcon` in stone). Adapts responsively with compact `"Auto"` text on mobile (`<span className="sm:hidden">Auto</span>`) and full `"Automatic"` on desktop, with tighter padding (`px-2`) for comfortable mobile fit. Persisted in the `gluvok_tables_state` cookie for immediate server-side pre-render and 0ms mount delay.
+  - **Global Header Refresh Trigger (`HeaderRefreshButton`)**: Refresh trigger is positioned globally in the top layout bar (`app/layout.tsx`) on the right side of the breadcrumbs. Rendered as a clean outline button (`variant="outline" size="sm" h-8`) displaying the text "Refresh" alongside the spinning refresh icon. Dispatches an `app:table-refresh` event which `useDataTable` subscribes to, seamlessly refreshing the active datatable with all filters and sorting preserved without page reloads.
+  - **Centralized Entries API Query Deduplication (`lib/entries-query.ts`)**: Centralizes shared query routines across `/api/entries/automatic` and `/api/entries/manual` (`parseNumericWeight`, `applyCommonEntriesFilters`, `sortEntriesRelational`, `paginateInMemory`), eliminating hundreds of lines of duplicate in-memory sorting, filter parsing, and pagination routines.
   - **Strict Compositional Typing (`app/entries/types.ts`)**: Models entries with `BaseEntry`, `AutomaticEntry`, and `ManualEntry` united as `type Entry = AutomaticEntry | ManualEntry`, accompanied by type guards `isAutomaticEntry` and `isManualEntry`.
   - **Modular Feature Architecture (`components/entries/`)**: Extracted focused, single-responsibility components with unified barrel exports (`components/entries/index.ts`):
     - `EntriesToolbar`: 2-tier responsive layout encapsulating Row 1 search box, automatic/manual segmented toggle, date range picker, column visibility options, and Row 2 faceted filters.
@@ -123,9 +124,9 @@ The `/entries` route provides an inspection-focused data table for transport and
     - Keyboard-first search input debounced at 300ms, allowing users to type, edit, and clear terms naturally with standard keyboard shortcuts without redundant API calls.
     - `useDataTable` and `loadInitialData` enforce request sequence tracking (`requestIdRef`), guaranteeing that stale out-of-order responses can never overwrite newer search queries or clears.
   - **Multi-Field Search**: Instant search matching confirmed plate, detected plate, or numeric scale weight on Automatic entries, and vehicle number or weight on Manual entries.
-  - **Dynamic Columns by Mode**:
-    - **Automatic Mode**: displays `Device ID` column referencing hardware device.
-    - **Manual Mode**: displays `Created By` column with operator role badge and name.
+  - **Clean Focused Columns**:
+    - **Automatic Mode**: Focused directly on core scale metrics (ID, Vehicle Number, Weight, Center, Customer, Photos, Created At, Updated At) without redundant device columns.
+    - **Manual Mode**: Displays `Created By` column with operator name.
   - **Coordinated `Promise.all()` & Dynamic Filter Validation**: Concurrently fetches filter options (`/api/centers`, `/api/users`) and entries in a single `Promise.all()` round-trip on mount behind `<DataTableHydrationCard />`. When an active dynamic filter is present, each page switch validates entity existence, automatically falling back to `"all"` if deleted.
   - **Unified Iconography**:
     - **Customer**: Standardized to `UserGroupIcon` across combobox trigger, dropdown options, table column header, and active criteria chips.
@@ -204,8 +205,8 @@ Administrative users (`/users`) and agricultural customers (`/customers`) are po
       - `app/api/users/service.ts`: Enforces domain tier conversions with domain predicate comparisons and standardized `StatusCodes` from `http-status-codes`.
     - **Configuration-Driven Data Table (`ENTITY_CONFIG`)**: `UsersDataTable` consumes a centralized typed configuration dictionary mapping table IDs, singular/plural labels, search placeholders, add labels, role filter flags, and dialog constructors, eliminating all inline conditionals from the table render tree.
   - **Universal Comboboxes & Subtle Role Iconography**:
-    - System Role dropdown utilizes `kibo-ui/combobox` with search and leading role icons (`Admin`: `CrownIcon`, `Manager`: `Briefcase01Icon`, `Operator`: `HeadsetIcon`, `Base User`: `UserIcon`).
-    - Subtly tinted badges in the data table: Admin uses refined Slate/Neutral (violet/purple removed), and Manager, Operator, Base User use gentle 5% background tints and soft muted borders.
+    - System Role dropdown utilizes `kibo-ui/combobox` with search and leading role icons (`Admin`: `CrownIcon`, `Manager`: `Briefcase01Icon`, `Operator`: `HeadsetIcon`, `Base`: `UserIcon`).
+    - Subtly tinted badges in the data table: Admin uses refined Slate/Neutral (violet/purple removed), and Manager, Operator, Base use gentle 5% background tints and soft muted borders.
     - Hardware accounts are completely hidden from filter dropdowns and strictly rejected/ignored in backend filtering.
   - **Universal React Hook Form & Zod Architecture**:
     - **Form State Delegation (`react-hook-form` + `@hookform/resolvers/zod`)**: All user modals (`StaffUserDialog`, `CustomerUserDialog`) and settings forms (`FactoryCard`) manage state and submission via `useForm` paired with `zodResolver`, eliminating ad-hoc dirty tracking and manual validation branches.

@@ -21,7 +21,6 @@ import {
   Calendar01Icon,
   Clock01Icon,
   Copy01Icon,
-  CpuIcon,
   HashtagIcon,
   Image01Icon,
   MoreHorizontalIcon,
@@ -30,7 +29,7 @@ import {
   UserIcon,
   WeightScale01Icon,
 } from "@hugeicons/core-free-icons";
-import { type Entry, type EntryMode, isAutomaticEntry, isManualEntry } from "./types";
+import { type Entry, type EntryMode, isManualEntry } from "./types";
 
 const columnHelper = createColumnHelper<DataTableFeatures, Entry>();
 
@@ -104,33 +103,8 @@ export function getColumns(mode: EntryMode) {
         icon: WeightScale01Icon,
       },
     }),
-    ...(mode === "automatic"
+    ...(mode === "manual"
       ? [
-          columnHelper.accessor((row) => (isAutomaticEntry(row) ? row.device_id : undefined), {
-            id: "device",
-            header: ({ column }) => (
-              <DataTableColumnHeader column={column} title="Device" icon={CpuIcon} />
-            ),
-            cell: ({ row }) => {
-              const deviceId = isAutomaticEntry(row.original) ? row.original.device_id : null;
-              return (
-                <Badge
-                  variant="outline"
-                  className="border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400 gap-1 text-2xs font-medium"
-                >
-                  <HugeiconsIcon icon={CpuIcon} className="size-3" />
-                  Scale #{deviceId}
-                </Badge>
-              );
-            },
-            meta: {
-              title: "Device",
-              icon: CpuIcon,
-            },
-            enableSorting: false,
-          }),
-        ]
-      : [
           columnHelper.accessor((row) => (isManualEntry(row) ? row.created_by : undefined), {
             id: "created_by",
             header: ({ column }) => (
@@ -150,7 +124,8 @@ export function getColumns(mode: EntryMode) {
             },
             enableSorting: true,
           }),
-        ]),
+        ]
+      : []),
     columnHelper.accessor("center_id", {
       id: "center",
       header: ({ column }) => (

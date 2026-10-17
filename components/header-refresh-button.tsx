@@ -21,16 +21,20 @@ export function HeaderRefreshButton() {
 
   return (
     <Button
-      variant="ghost"
-      size="icon-sm"
+      variant="outline"
+      size="sm"
       onClick={handleRefresh}
       disabled={spinning}
-      className="text-muted-foreground hover:text-foreground cursor-pointer"
+      className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer shrink-0"
       title="Refresh data"
       aria-label="Refresh data"
     >
-      <HugeiconsIcon icon={RefreshIcon} className={cn("size-3.5", spinning && "animate-spin")} />
-      <span className="sr-only">Refresh data</span>
+      <HugeiconsIcon
+        icon={RefreshIcon}
+        className={cn("size-3.5", spinning && "animate-spin")}
+        data-icon="inline-start"
+      />
+      <span>Refresh</span>
     </Button>
   );
 }

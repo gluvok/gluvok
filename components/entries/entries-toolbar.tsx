@@ -72,7 +72,7 @@ export function EntriesToolbar<TData extends RowData>({
               size="sm"
               onClick={() => onModeChange("automatic")}
               className={cn(
-                "h-7 gap-1.5 rounded-sm px-2.5 text-xs font-medium transition-all cursor-pointer",
+                "h-7 gap-1 rounded-sm px-2 text-2xs sm:gap-1.5 sm:px-2.5 sm:text-xs font-medium transition-all cursor-pointer",
                 mode === "automatic"
                   ? "bg-background text-foreground shadow-xs border border-border/50 font-semibold"
                   : "text-muted-foreground hover:text-foreground hover:bg-transparent",
@@ -80,9 +80,10 @@ export function EntriesToolbar<TData extends RowData>({
             >
               <HugeiconsIcon
                 icon={CpuIcon}
-                className="size-3.5 text-orange-600 dark:text-orange-400"
+                className="size-3 text-orange-600 dark:text-orange-400 sm:size-3.5"
               />
-              Automatic
+              <span className="sm:hidden">Auto</span>
+              <span className="hidden sm:inline">Automatic</span>
             </Button>
             <Button
               type="button"
@@ -92,7 +93,7 @@ export function EntriesToolbar<TData extends RowData>({
               size="sm"
               onClick={() => onModeChange("manual")}
               className={cn(
-                "h-7 gap-1.5 rounded-sm px-2.5 text-xs font-medium transition-all cursor-pointer",
+                "h-7 gap-1 rounded-sm px-2 text-2xs sm:gap-1.5 sm:px-2.5 sm:text-xs font-medium transition-all cursor-pointer",
                 mode === "manual"
                   ? "bg-background text-foreground shadow-xs border border-border/50 font-semibold"
                   : "text-muted-foreground hover:text-foreground hover:bg-transparent",
@@ -100,9 +101,9 @@ export function EntriesToolbar<TData extends RowData>({
             >
               <HugeiconsIcon
                 icon={UserIcon}
-                className="size-3.5 text-stone-600 dark:text-stone-400"
+                className="size-3 text-stone-600 dark:text-stone-400 sm:size-3.5"
               />
-              Manual
+              <span>Manual</span>
             </Button>
           </div>
         </div>

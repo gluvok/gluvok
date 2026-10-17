@@ -22,6 +22,11 @@ export { DataTableHydrationCard } from "./data-table-hydration-card";
 
 export { DataTablePagination } from "./data-table-pagination";
 
+export {
+  DataTableRefreshButton,
+  type DataTableRefreshButtonProps,
+} from "./data-table-refresh-button";
+
 export { DataTableSearchInput, type DataTableSearchInputProps } from "./data-table-search-input";
 
 export { DataTableStoreInitializer } from "./data-table-store-initializer";

@@ -7,7 +7,6 @@ import {
   DataTableFilterChip,
   DataTableDateRangeChip,
 } from "@/components/data-table";
-import { CpuIcon } from "@hugeicons/core-free-icons";
 import type { EntriesFilterConfig } from "./entries-toolbar";
 
 export interface EntriesCriteriaBarProps {
@@ -70,12 +69,7 @@ export function EntriesCriteriaBar({
             : selectedOption.label
           : `${config.title} #${activeVal}`;
 
-        let chipVariant = config.variant;
-        if (config.key === "created_by" && selectedOption?.icon === CpuIcon) {
-          chipVariant = "orange";
-        } else if (config.key === "source" && activeVal === "hardware") {
-          chipVariant = "orange";
-        }
+        const chipVariant = config.variant;
 
         return (
           <DataTableFilterChip

@@ -3,26 +3,54 @@ export interface EntryCenter {
   name: string;
 }
 
-export interface EntryUserRef {
+export interface EntryCustomer {
+  id: number;
+  name: string;
+}
+
+export interface EntryDevice {
+  id: number;
+}
+
+export interface EntryOperator {
   id: number;
   name: string;
   role?: string;
 }
 
-export interface Entry {
+export interface BaseEntry {
   id: number;
-  detected_vehicle_number: string | null;
   vehicle_number: string;
   weight: number;
   center_id: number;
   customer_id: number | null;
-  factory_id: number;
-  created_by: number;
   images: string[];
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
   center?: EntryCenter | null;
-  customer?: EntryUserRef | null;
-  created_by_user?: EntryUserRef | null;
+  customer?: EntryCustomer | null;
+}
+
+export interface AutomaticEntry extends BaseEntry {
+  device_id: number;
+  detected_vehicle_number: string | null;
+  device?: EntryDevice | null;
+}
+
+export interface ManualEntry extends BaseEntry {
+  created_by: number;
+  created_by_user?: EntryOperator | null;
+}
+
+export type Entry = AutomaticEntry | ManualEntry;
+
+export type EntryMode = "automatic" | "manual";
+
+export function isAutomaticEntry(entry: Entry): entry is AutomaticEntry {
+  return "device_id" in entry;
+}
+
+export function isManualEntry(entry: Entry): entry is ManualEntry {
+  return "created_by" in entry;
 }

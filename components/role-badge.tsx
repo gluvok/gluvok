@@ -2,7 +2,6 @@ import { Badge } from "@/components/ui/badge";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Briefcase01Icon,
-  CpuIcon,
   CrownIcon,
   HeadsetIcon,
   UserCheck01Icon,
@@ -64,16 +63,6 @@ export function RoleBadge({ role }: RoleBadgeProps) {
         >
           <HugeiconsIcon icon={UserCheck01Icon} className="size-3" />
           Customer
-        </Badge>
-      );
-    case "hardware":
-      return (
-        <Badge
-          variant="outline"
-          className="gap-1 text-2xs font-normal text-orange-900 border-orange-300/80 bg-orange-600/10 dark:text-orange-200 dark:border-orange-800/50 dark:bg-orange-950/30"
-        >
-          <HugeiconsIcon icon={CpuIcon} className="size-3" />
-          Hardware
         </Badge>
       );
   }

@@ -5,9 +5,10 @@
  * 1. A new Factory
  * 2. A new Admin user (dynamically numbered based on existing admins)
  * 3. Centers for the new factory
- * 4. 1:1 Matching Hardware users (pi<N>, dynamically numbered, with password hardware123)
+ * 4. 1:1 Matching Hardware Devices (provisions devices table entry with API key hash)
  */
 
+import crypto from "node:crypto";
 import argon2 from "argon2";
 import { supabase } from "./supabase.ts";
 
@@ -16,7 +17,6 @@ interface ParsedArgs {
   centersCount: number;
   centerNames?: string[];
   adminPassword: string;
-  hardwarePassword: string;
   help?: boolean;
 }
 
@@ -55,10 +55,6 @@ function parseCliArgs(args: string[]): ParsedArgs {
     centerNames,
     adminPassword:
       typeof options["admin-password"] === "string" ? options["admin-password"] : "admin123",
-    hardwarePassword:
-      typeof options["hardware-password"] === "string"
-        ? options["hardware-password"]
-        : "hardware123",
     help: !!options.help,
   };
 }
@@ -71,7 +67,7 @@ Provisions the minimal required entities to onboard a new client:
   • 1 New Factory
   • 1 New Admin user (username auto-indexed from current admin count)
   • N New Centers
-  • N New Hardware users (pi<N> kept 1:1 in sync with centers)
+  • N New Hardware Devices in 'devices' table (1:1 with centers, API key hash authenticated)
 
 Usage:
   pnpm run seed [options]
@@ -81,7 +77,6 @@ Options:
   --centers <count>           Number of centers to create (default: 1)
   --center-names <names>      Comma-separated center names (e.g. 'Terminal A,Terminal B')
   --admin-password <pass>     Admin password (default: 'admin123')
-  --hardware-password <pass>  Hardware device password (default: 'hardware123')
   -h, --help                  Show this help guide
 
 Examples:
@@ -119,19 +114,16 @@ async function main() {
   // 1. QUERY EXISTING DATA COUNTS & SUFFIXES
   console.log("\n🔍 Inspecting existing database state...");
 
-  const [factoriesRes, adminsRes, hardwareRes] = await Promise.all([
+  const [factoriesRes, adminsRes] = await Promise.all([
     supabase.from("factories").select("id, name").is("deleted_at", null),
     supabase.from("users").select("id, username").eq("role", "admin").is("deleted_at", null),
-    supabase.from("users").select("id, username").eq("role", "hardware").is("deleted_at", null),
   ]);
 
   if (factoriesRes.error) throw factoriesRes.error;
   if (adminsRes.error) throw adminsRes.error;
-  if (hardwareRes.error) throw hardwareRes.error;
 
   const existingFactories = factoriesRes.data ?? [];
   const existingAdmins = adminsRes.data ?? [];
-  const existingHardware = hardwareRes.data ?? [];
 
   const nextFactoryNum = getNextSuffix(
     existingFactories.map((f) => f.name),
@@ -145,12 +137,6 @@ async function main() {
     existingAdmins.length,
   );
 
-  const nextPiNum = getNextSuffix(
-    existingHardware.map((u) => u.username),
-    /^pi(\d+)$/i,
-    existingHardware.length,
-  );
-
   const factoryName = args.factoryName || `Factory ${nextFactoryNum}`;
   const adminUsername = `admin${nextAdminNum}`;
   const adminName = `Admin ${factoryName}`;
@@ -160,9 +146,6 @@ async function main() {
   );
   console.log(
     `  • Existing Admins:    ${existingAdmins.length} → Next Admin:   '${adminUsername}'`,
-  );
-  console.log(
-    `  • Existing Hardware:  ${existingHardware.length} → Next Pi Start: 'pi${nextPiNum}' (${args.centersCount} center/pi pair${args.centersCount > 1 ? "s" : ""})`,
   );
 
   // 2. CREATE FACTORY
@@ -201,8 +184,7 @@ async function main() {
   );
 
   // 4. CREATE CENTERS & 1:1 HARDWARE DEVICES
-  console.log(`\n⚖️ Provisioning ${args.centersCount} center(s) and matching hardware devices...`);
-  const hardwareHash = await argon2.hash(args.hardwarePassword);
+  console.log(`\n⚖️ Provisioning ${args.centersCount} center(s) and matching 1:1 devices...`);
 
   const centersToInsert = Array.from({ length: args.centersCount }, (_, i) => {
     const centerIndex = i + 1;
@@ -223,48 +205,44 @@ async function main() {
     throw centersError || new Error("Failed to bulk create centers");
   }
 
-  const hardwareToInsert = createdCenters.map((center, i) => {
-    const currentPiIndex = nextPiNum + i;
-    const piUsername = `pi${currentPiIndex}`;
-    const piDisplayName = `Hardware Scale ${center.name} - ${createdFactory.name}`;
-    return {
-      username: piUsername,
-      name: piDisplayName,
-      role: "hardware" as const,
-      password_hash: hardwareHash,
-      factory_id: createdFactory.id,
-    };
-  });
-
-  const { data: createdPis, error: pisError } = await supabase
-    .from("users")
-    .insert(hardwareToInsert)
-    .select("id, username");
-
-  if (pisError || !createdPis) {
-    throw pisError || new Error("Failed to bulk create hardware users");
-  }
-
-  const createdPairs: Array<{
+  const devicePairs: Array<{
     centerId: number;
     centerName: string;
-    piId: number;
-    piUsername: string;
+    deviceId?: number;
+    rawApiKey: string;
   }> = [];
 
-  for (let i = 0; i < createdCenters.length; i++) {
-    const center = createdCenters[i];
-    const pi = createdPis[i];
-    createdPairs.push({
+  for (const center of createdCenters) {
+    const rawApiKey = `glv_live_${crypto.randomUUID().replace(/-/g, "")}`;
+    const apiKeyHash = await argon2.hash(rawApiKey);
+
+    const { data: devData, error: devError } = await supabase
+      .from("devices")
+      .insert({
+        center_id: center.id,
+        api_key_hash: apiKeyHash,
+      })
+      .select("id")
+      .single();
+
+    if (devError) {
+      if (devError.code === "PGRST205") {
+        console.warn(
+          `  ⚠️ Note: 'devices' table does not exist in schema cache yet. Skipping device row insertion.`,
+        );
+      } else {
+        console.warn(`  ⚠️ Failed to insert device for center ${center.id}:`, devError.message);
+      }
+    }
+
+    devicePairs.push({
       centerId: center.id,
       centerName: center.name,
-      piId: pi.id,
-      piUsername: pi.username,
+      deviceId: devData?.id,
+      rawApiKey,
     });
 
-    console.log(
-      `  ✓ Center '${center.name}' (ID: ${center.id}) ↔ Hardware '${pi.username}' (ID: ${pi.id})`,
-    );
+    console.log(`  ✓ Center '${center.name}' (ID: ${center.id}) ↔ Device (API Key: ${rawApiKey})`);
   }
 
   // 5. SUMMARY
@@ -277,9 +255,9 @@ async function main() {
     `  • Admin:     ${createdAdmin.username} / ${args.adminPassword} (ID: ${createdAdmin.id})`,
   );
   console.log("  • Centers & Hardware Scale Devices:");
-  for (const pair of createdPairs) {
+  for (const pair of devicePairs) {
     console.log(
-      `    - ${pair.centerName} (ID: ${pair.centerId}) ➜ ${pair.piUsername} / ${args.hardwarePassword} (ID: ${pair.piId})`,
+      `    - ${pair.centerName} (Center ID: ${pair.centerId}${pair.deviceId ? `, Device ID: ${pair.deviceId}` : ""}) ➜ Device API Key: ${pair.rawApiKey}`,
     );
   }
   console.log("=================================================");

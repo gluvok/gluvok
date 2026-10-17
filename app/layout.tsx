@@ -10,6 +10,7 @@ import { AppBreadcrumb } from "@/components/app-breadcrumb";
 import { Toaster } from "@/components/ui/toast";
 import { parseTablesCookie, TABLES_COOKIE_NAME } from "@/lib/table-cookie";
 import { DataTableStoreInitializer } from "@/components/data-table";
+import { HeaderRefreshButton } from "@/components/header-refresh-button";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -27,8 +28,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Gluvok",
-  description: "Gluvok Management Platform",
+  title: "Mesto",
+  description: "Mesto Automations Platform",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -54,11 +55,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SidebarProvider defaultOpen={defaultOpen} className="h-full">
           <AppSidebar />
           <SidebarInset className="min-w-0 h-svh max-h-svh flex flex-col">
-            <header className="flex h-11 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-11">
+            <header className="flex h-11 shrink-0 items-center justify-between gap-2 border-b px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-11">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
                 <Separator orientation="vertical" className="mr-2 my-auto data-vertical:h-4" />
                 <AppBreadcrumb />
+              </div>
+              <div className="flex items-center gap-2">
+                <HeaderRefreshButton />
               </div>
             </header>
             <div className="flex flex-1 flex-col gap-3 p-3 md:px-6 md:py-3.5 min-w-0 min-h-0 overflow-hidden">

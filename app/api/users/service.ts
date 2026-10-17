@@ -103,10 +103,8 @@ export async function fetchUsersList(searchParams: URLSearchParams) {
   const role = searchParams.get("role")?.trim();
   if (role && USER_ROLES.includes(role as (typeof USER_ROLES)[number])) {
     q = q.eq("role", role);
-  } else if (searchParams.get("includeHardware") === "true") {
-    q = q.not("role", "eq", "customer");
   } else {
-    q = q.not("role", "in", '("customer","hardware")');
+    q = q.not("role", "eq", "customer");
   }
 
   q = applyDateRange(q, searchParams);

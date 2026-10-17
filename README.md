@@ -39,7 +39,6 @@ The platform adopts a unified **Rikyū-cha (利休茶)** Japanese roasted matcha
   - **Operator**: Signature Rikyū-cha tea-moss green (`text-primary border-primary/30 bg-primary/10 dark:text-primary dark:border-primary/40 dark:bg-primary/15`) with `HeadsetIcon`.
   - **Manager**: Warm Hōjicha roasted tea bronze (`text-amber-900 border-amber-300/80 bg-amber-600/10 dark:text-amber-200 dark:border-amber-800/50 dark:bg-amber-950/30`) with `Briefcase01Icon`.
   - **Customer**: Soft Sencha sage green (`text-emerald-900 border-emerald-300/80 bg-emerald-600/10 dark:text-emerald-200 dark:border-emerald-800/50 dark:bg-emerald-950/30`) with `UserCheck01Icon`.
-  - **Hardware**: Terracotta ochre clay (`text-orange-900 border-orange-300/80 bg-orange-600/10 dark:text-orange-200 dark:border-orange-800/50 dark:bg-orange-950/30`) with `SecurityCheckIcon`.
   - **Base User**: Unglazed warm stone (`text-stone-700 border-stone-300/80 bg-stone-500/10 dark:text-stone-300 dark:border-stone-700/80 dark:bg-stone-900/30`) with `UserIcon`.
 - **Interactive Criteria Chips (`components/data-table/`)**: Active date range filters (`DataTableDateRangeChip`) and multi-column sort chips (`SortableSortChip`) feature subtle matcha-tinted borders and backgrounds (`border-primary/25 bg-primary/10 text-primary`) for clear hierarchy and instant visual scanning.
 - **Toast Feedback**: Top-right anchored (`top-4 right-4`) with `font-heading` titles and semantic status colors.
@@ -53,15 +52,14 @@ The `/centers` route provides a full-featured data table built with **TanStack T
   - Server-side text search: `?search=<text>` (`.ilike("name", ...)`)
   - Server-side created date range: `?from=<ISO>&to=<ISO>` (`.gte("created_at", ...)`, `.lte("created_at", ...)`)
   - Server-side multi-column sorting: `?sort=col1.asc,col2.desc` (defaults to `id.desc`, sequentially executed via `.order()`)
-- **Schema Mapping**: Maps directly to `centers` table in `schema.sql` (`id`, `name`, `created_at`, `updated_at`).
+- **Schema Mapping**: Maps directly to `centers` table in `schema.sql` (`id`, `name`, `created_at`, `updated_at`). 1:1 hardware relationship with `devices` (`id`, `center_id`, `api_key_hash`).
 - **Features**:
   - **Server-Side Multi-Column Sorting**: Support for sorting across multiple columns simultaneously with defined precedence (e.g., `Name` -> `Created At` -> `ID`).
   - **Draggable Sort Priority Reordering (`@dnd-kit`)**: When 2 or more sorts are active, sorting chips in the Unified Criteria Bar display drag handles and can be reordered via drag-and-drop powered by `@dnd-kit/core`, `@dnd-kit/sortable`, and `@dnd-kit/utilities`. Dropping a chip immediately reorders sort priority indices (`#1`, `#2`, `#3`), re-queries the backend with the updated precedence (`?sort=...`), and persists to `gluvok_tables_state` cookies. Fully touch-ready for mobile/tablet with press-and-hold activation constraints (`TouchSensor`: 250ms hold, 5px tolerance) so swiping to scroll horizontally remains smooth, and desktop pointer distance thresholds (`PointerSensor`: 5px).
   - **Default Backend Ordering**: The backend endpoint defaults to ordering by `id` descending (newest ID first) when no explicit sorting criteria is provided. The frontend initializes with an empty sort state (displaying no default sort chips or header badges) to eliminate user confusion; sort badges and criteria chips appear only when columns are actively sorted.
   - **Unified Active Criteria Bar**: Filters and active sort badges render together in a single compact bar (`Filters: [📅 Date Range (x)] | Sorts: [#1 # ID: ↓ Desc (x)] [#2 📅 Created At: ↑ Asc (x)] Clear all`) with individual dismiss controls and full reset actions. Filter chips display column and option icons, and sort chips display column and directional sort icons (`ArrowUp01Icon`, `ArrowDown01Icon`).
-  - **Scoped Datatable Loading**: Toolbar (search, combobox, datepicker), active criteria badges, and pagination remain permanently mounted; the loading spinner is scoped exclusively to the table card area, eliminating focus loss and toolbar flicker during searches or pagination.
-  - **Comfortable Density & Clean Layout**: Streamlined table rows (`h-9` rows with `py-1.5 px-3 text-xs` cell padding; `h-8 px-3` header; `px-2 py-1` criteria bar; `gap-4` and `gap-2.5` container spacing), providing comfortable breathing room and legibility while maintaining a compact vertical footprint.
-  - **Unified Page Header (`components/page-header.tsx`)**: Centralized reusable header component providing standard title, description, and right-aligned reload action (`PageRefreshButton`), delivering layout consistency across all entity pages (`/centers`, `/settings`, etc.).
+  - **Scoped Datatable Loading & Scoped Refresh (`DataTableRefreshButton`)**: Toolbar (search, combobox, datepicker), active criteria badges, and pagination remain permanently mounted; the loading spinner is scoped exclusively to the table card area, eliminating focus loss and toolbar flicker during searches or pagination. Scoped `<DataTableRefreshButton>` re-executes table queries on demand without whole-page reloads.
+  - **Comfortable Density & Remodeled Viewport Layout**: Reclaimed ~50–60px of vertical space by eliminating redundant page-level headings (`<h1>` + `<p>`) and whole-page reloads in favor of route context in `<AppBreadcrumb />` in the top layout bar, allowing datatables and pagination to comfortably fit inside the viewport without page scrolling.
   - **Axios API Client**: Native `fetch` replaced with typed `axios.get()` requests.
   - **Centralized API Query Engine (`lib/api-query.ts`) & `http-status-codes`**: Standardized server-side pagination powered by Zod `.catch().default()` schemas (`parsePagination` with zero fallback math), multi-column sorting (`parseSorting`), date range filtering with inclusive end-of-day normalization (`applyDateRange`), and response formatting (`formatPaginatedResponse`) across all datatable endpoints, along with strict HTTP status code enums (`StatusCodes` from `http-status-codes`) eliminating magic numbers and duplicate routines.
   - **Centralized Utilities (`lib/utils.ts`)**:
@@ -103,35 +101,38 @@ The `/centers` route provides a full-featured data table built with **TanStack T
 
 The `/entries` route provides an inspection-focused data table for transport and weighbridge entry records built with **TanStack Table v9** powered by server-side execution directly against Supabase:
 
-- **Backend Endpoint**: `GET /api/entries`
-  - Slicing and exact counting: `?page=<N>&pageSize=<N>` (`.range()` + `{ count: "exact" }`)
-  - Server-side multi-field search: `?search=<text>` (searches across `vehicle_number`, `detected_vehicle_number`, and exact numeric `weight` using `.or()`)
-  - Faceted filters: `?center_id=<ID>`, `?customer_id=<ID>`, `?created_by=<ID>`, and `?source=<hardware|manual>` (filtering via creator role)
-  - Server-side date range filtering: `?from=<ISO>&to=<ISO>` (`applyDateRange` on `created_at`)
-  - Relational & multi-column sorting: `?sort=col1.asc,col2.desc` with support for native DB fields (`id`, `vehicle_number`, `weight`, `created_at`, `updated_at`) and alphabetical relational sorting by entity names (`center.name`, `customer.name`, `created_by_user.name`, `source`).
-  - Relational joins: joins `center:centers(id, name)`, `customer:users!entries_customer_id_fkey(id, name)`, and `created_by_user:users!entries_created_by_fkey(id, name, role)`.
-- **Schema Mapping**: Maps directly to `entries` table in `schema.sql` (`id`, `detected_vehicle_number`, `vehicle_number`, `weight`, `center_id`, `customer_id`, `factory_id`, `created_by`, `images`, `created_at`, `updated_at`, `deleted_at`).
+- **Backend Endpoints**:
+  - `GET /api/entries/automatic`: Dedicated endpoint for hardware-captured entries querying `automatic_entries` with joins to `centers`, `users` (customer), and `devices`. Supports search on confirmed plate, detected plate, and weight.
+  - `GET /api/entries/manual`: Dedicated endpoint for operator-entered entries querying `manual_entries` with joins to `centers`, `users` (customer), and `users` (creator). Schema strictly excludes `factory_id` and `detected_vehicle_number`. Search strictly covers `vehicle_number` and numeric `weight`.
+  - `GET /api/entries`: Thin backwards-compatibility dispatcher routing queries to the respective dedicated endpoint based on `mode`.
+- **Schema Mapping**: Segregated into symmetrical table pairs in `schema.sql`:
+  - `automatic_entries`: Hardware captured via `device_id REFERENCES devices(id)`, `center_id`, `customer_id`, `detected_vehicle_number`, `vehicle_number`, `weight`, `images`.
+  - `manual_entries`: Operator captured via `created_by REFERENCES users(id)`, `center_id`, `customer_id`, `vehicle_number`, `weight`, `images`. Strictly omits redundant `factory_id` (resolved via `center_id`) and `detected_vehicle_number`.
+  - Corresponding split tables for weighments (`automatic_weighments`, `manual_weighments`) and tickets (`automatic_tickets`, `manual_tickets`).
 - **Features & UX**:
+  - **Segmented Button Group Radio Toggle**: Row 1 of `EntriesToolbar` houses the Search input alongside a compact, modern segmented button-group toggle (`h-8`, styled with inner active toggle pill and theme icons: `CpuIcon` in orange for Automatic, `UserIcon` in stone for Manual). Persisted in the `gluvok_tables_state` cookie for immediate server-side pre-render and 0ms mount delay.
+  - **Global Header Refresh Trigger (`HeaderRefreshButton`)**: Refresh trigger is positioned globally in the top layout bar (`app/layout.tsx`) on the right side of the breadcrumbs. Dispatches an `app:table-refresh` event which `useDataTable` subscribes to, seamlessly refreshing the active datatable with all filters and sorting preserved without page reloads.
+  - **Strict Compositional Typing (`app/entries/types.ts`)**: Models entries with `BaseEntry`, `AutomaticEntry`, and `ManualEntry` united as `type Entry = AutomaticEntry | ManualEntry`, accompanied by type guards `isAutomaticEntry` and `isManualEntry`.
   - **Modular Feature Architecture (`components/entries/`)**: Extracted focused, single-responsibility components with unified barrel exports (`components/entries/index.ts`):
-    - `EntriesToolbar`: 2-tier responsive layout encapsulating Row 1 search box, date range picker, column visibility options, and Row 2 declarative loop rendering faceted filters for all 4 dimensions (`Center`, `Customer`, `Created by`, `Source`).
-    - `EntriesCriteriaBar`: Unified criteria bar with declarative loop rendering active filter chips with Rikyū-cha earth tone styling (Warm Natural Stone, Deep Forest Emerald, Terracotta Orange), date range chip, and drag-and-drop sort priority chips.
+    - `EntriesToolbar`: 2-tier responsive layout encapsulating Row 1 search box, automatic/manual segmented toggle, date range picker, column visibility options, and Row 2 faceted filters.
+    - `EntriesCriteriaBar`: Unified criteria bar with declarative loop rendering active filter chips with Rikyū-cha earth tone styling (Warm Natural Stone, Deep Forest Emerald), date range chip, and drag-and-drop sort priority chips.
     - `EntriesErrorState`: Clean error card with retry button.
     - `EntryPhotosDialog`: Embla Carousel dialog for photo browsing.
   - **Zero-Flash Synchronous Render State Sync**: `useDataTable` synchronously synchronizes `initialData` into state during render, eliminating the 1-frame post-paint empty table state and flash of "No entries found" on page reload. `EntriesDataTable` holds `<DataTableHydrationCard />` until both loading completes and initial data is populated.
   - **Smooth Debounced Search & Race-Condition Sequencing**:
-    - Keyboard-first search input debounced at 300ms, allowing users to type, edit, and clear terms naturally with standard keyboard shortcuts (Backspace, Cmd+A + Delete) without redundant API calls.
-    - `useDataTable` and `loadInitialData` enforce request sequence tracking (`requestIdRef`), guaranteeing that stale out-of-order responses (from typing, page switching, or initial loads) can never overwrite newer search queries or clears.
-  - **Multi-Field Search**: Instant search matching confirmed plate, detected plate, or numeric scale weight with `"Search entries..."` placeholder.
-  - **2-Tier Toolbar Layout**: Clean visual hierarchy placing Search input and primary controls (Date picker, Column view options) on the top tier, with all 4 faceted filter comboboxes (Center, Customer, Created by, Source) positioned in a dedicated row beneath the search box.
-  - **Coordinated `Promise.all()` & Dynamic Filter Validation**: Concurrently fetches filter options (`/api/centers`, `/api/users`) and entries in a single `Promise.all()` round-trip on mount behind `<DataTableHydrationCard />` (unified page-centered spinner). When an active dynamic filter is present, each page switch triggers `Promise.all()` with loop-based entity validation to verify existence. If an active entity filter was deleted, it automatically falls back to `"all"` and resets to page 1 in both the combobox and the table, eliminating stale IDs and layout shifts. When no dynamic filter is active, pagination switches use the fast path.
-  - **Unified Iconography & Option Delineation**:
+    - Keyboard-first search input debounced at 300ms, allowing users to type, edit, and clear terms naturally with standard keyboard shortcuts without redundant API calls.
+    - `useDataTable` and `loadInitialData` enforce request sequence tracking (`requestIdRef`), guaranteeing that stale out-of-order responses can never overwrite newer search queries or clears.
+  - **Multi-Field Search**: Instant search matching confirmed plate, detected plate, or numeric scale weight on Automatic entries, and vehicle number or weight on Manual entries.
+  - **Dynamic Columns by Mode**:
+    - **Automatic Mode**: displays `Device ID` column referencing hardware device.
+    - **Manual Mode**: displays `Created By` column with operator role badge and name.
+  - **Coordinated `Promise.all()` & Dynamic Filter Validation**: Concurrently fetches filter options (`/api/centers`, `/api/users`) and entries in a single `Promise.all()` round-trip on mount behind `<DataTableHydrationCard />`. When an active dynamic filter is present, each page switch validates entity existence, automatically falling back to `"all"` if deleted.
+  - **Unified Iconography**:
     - **Customer**: Standardized to `UserGroupIcon` across combobox trigger, dropdown options, table column header, and active criteria chips.
-    - **Source vs Hardware**: Standardized on `TransmissionIcon` for the overarching **Source** category (combobox trigger, column header, criteria chip category prefix) while assigning a dedicated **`CpuIcon`** to **Hardware** (for automated entry badges, combobox options, and active filter chips) and **`UserIcon`** to **Manual**.
-    - **RoleBadge & Users Role Filter**: `RoleBadge` uses `CpuIcon` for the `hardware` role, and `Hardware` (`CpuIcon`) is available in the `/users` table Role filter dropdown.
-  - **Option-Specific Filter Chip Icons**: Active filter chips dynamically render the selected option's distinct icon (`CpuIcon` for Hardware, `UserIcon` for Manual, `CrownIcon` for Admin, `Building01Icon` for Center, etc.) alongside the value and clear button.
+    - **Center**: Standardized to `Building01Icon`.
+    - **Device**: Standardized to `CpuIcon`.
   - **Horizontal Scroll Containment**: Constrained with `min-w-0 overflow-x-hidden` on `SidebarInset` and `w-full min-w-0` on table containers, guaranteeing that `min-w-full w-max` tables scroll horizontally strictly inside the data table card with zero window-level horizontal overflow.
   - **Clean Vehicle Number Cell**: Clickable-free, crisp mono font plate typography (`font-mono text-xs font-semibold`).
-  - **Source & Created By Columns**: Badges distinguishing automated Hardware entries (`CpuIcon`, orange) from Manual entries (`UserIcon`, stone), and sortable creator column with role-specific icons.
   - **Updated At Column**: Dedicated sortable timestamp tracking record modifications, formatted with `formatDateTime`.
   - **Row Actions Menu**: Row-level dropdown menu providing one-click "Copy Vehicle Number", "Copy Weight", and "Copy Entry ID".
   - **Full TanStack Table v9 Capabilities**: Drag-and-drop sort priority reordering (`@dnd-kit`), date range picker with presets, column visibility toggling, row selection counter, and responsive `ButtonGroup` pagination.
@@ -145,14 +146,13 @@ The `/settings` route provides facility configuration controls powered by the un
   - Strict validation using **Zod** (`updateFactorySchema.strict()`): validates `name` (min 1 character) and `receipt_images_per_row` (integer between 1 and 6). Strict rejection with HTTP 400 on unexpected or invalid keys.
 - **Schema Mapping**: Maps to `factories` table in `schema.sql` (`id`, `name`, `receipt_images_per_row`, `created_at`, `updated_at`). `camera_crops` and `check_center_on_merge` have been removed from the schema and recorded in `migration.sql`.
 - **Features & UX**:
-  - **Cohesive Constrained Layout (`max-w-3xl`)**: Constrained layout width prevents overly stretched form fields on wide displays and aligns `<PageRefreshButton>` directly with the top right of `<FactoryCard>`.
-  - **Unified Page Header & Reload**: Standard `<PageHeader>` with "Settings" title, descriptive subtitle, and integrated `PageRefreshButton`.
+  - **Cohesive Constrained Layout (`max-w-3xl`)**: Constrained layout width prevents overly stretched form fields on wide displays and aligns `<DataTableRefreshButton>` directly with the top right of `<FactoryCard>`.
   - **Clean Loading State**: Renders a centered `<Spinner />` with status message during initial data fetching, eliminating empty card shells.
   - **Dedicated Iconography**: Factory card uses `Factory01Icon` (distinct from Center's `Building01Icon`), Receipt Images uses `ImagesIcon` in the field label (distinct from the 1 per row option `Image01Icon`), and each receipt image row option (1–6) renders specialized layout/grid icons (`Image01Icon`, `LayoutTwoColumnIcon`, `LayoutThreeColumnIcon`, `Grid2x2Icon`, `Layout05Icon`, `Grid3x2Icon`) with dynamic trigger synchronization.
   - **Input Controls**: `<Input>` for factory name and searchable `kibo-ui/combobox` (values 1–6) for receipt snapshot row layout.
   - **Base UI Toast Feedback**: Integrated notification system powered by `@base-ui/react/toast` with `<Toaster />` anchored at the **top-right** (`top-4 right-4`), featuring fluid downward stack animations, upward swipe dismiss, custom typography (`font-heading` for titles and `font-sans` for descriptions), and semantic status colors (Emerald for success, Amber for warning, Destructive red for error, and Sky blue for info).
   - **Client-Side Zod Validation**: Form validates against `updateFactorySchema` before dispatching updates.
-  - **Dirty State Tracking**: Save Changes and Reset buttons detect client form changes with disabled controls when pristine, `<Spinner>` indicators during requests (retaining constant button labels to eliminate layout shifts), and inline timestamp tracking.
+  - **Dirty State Tracking**: Save Changes and Reset buttons detect client form changes with disabled controls when pristine, `<Spinner>` indicators during requests, and inline timestamp tracking.
 
 ## Users & Customers Administration
 
@@ -161,14 +161,14 @@ Administrative users (`/users`) and agricultural customers (`/customers`) are po
 - **Backend Endpoints**: `GET`, `POST`, `PATCH`, `DELETE /api/users`, `GET`, `PATCH /api/users/me`
   - **`GET /api/users/me`**: Fetches the active factory administrative account (`admin1`, Factory 1) with complete role, factory, and creation metadata for user profile inspection.
   - **`PATCH /api/users/me`**: Updates the logged-in user's profile (`name`, `username`, and optional `password`). Validates username uniqueness and password length via Zod, re-hashes credentials with Argon2id, and synchronizes profile state across the sidebar and user avatar.
-  - **`GET /api/users`**: Multi-column sorting (`id`, `username`, `name`, `role`, `created_at`, `updated_at`), search (across `name` and `username`), role filter, date range filter, and server-side pagination with exact total counts. Defaults to factory staff accounts (`role NOT IN ('customer', 'hardware')`) unless a specific role filter like `?role=customer` is requested. Excludes `password_hash` from the response.
+  - **`GET /api/users`**: Multi-column sorting (`id`, `username`, `name`, `role`, `created_at`, `updated_at`), search (across `name` and `username`), role filter, date range filter, and server-side pagination with exact total counts. Defaults to factory staff accounts (`role NOT IN ('customer')`) unless a specific role filter like `?role=customer` is requested. Excludes `password_hash` from the response. Hardware devices authenticate via `devices.api_key_hash` rather than user accounts.
   - **`POST /api/users`**: Strict Zod validation (`username`, `name`, `role`, `password`), enforces username uniqueness across active accounts (`deleted_at IS NULL`), hashes passwords with Argon2id, and provisions the user for Factory ID 1. Supports creating staff as well as customer accounts.
   - **`PATCH /api/users`**: Validates input, verifies username uniqueness if updated, optionally resets and re-hashes passwords with Argon2id when provided, and updates user profile and role with strict role safety (customer accounts cannot be upgraded to staff roles, and staff accounts cannot become customer accounts).
   - **`DELETE /api/users`**: Supports single (`id`) and bulk (`ids`) deletion. Performs constant O(1) batched pre-flight integrity checks partitioned by role:
-    - **Staff Users**: verified against `entries.created_by` and `tickets.user_id`.
-    - **Customer Users**: verified against `entries.customer_id`.
+    - **Staff Users**: verified against `entries.created_by` (or `manual_entries.created_by`) and `tickets.user_id` (or `manual_tickets.user_id`).
+    - **Customer Users**: verified against `entries.customer_id` (or `manual_entries.customer_id`, `automatic_entries.customer_id`).
       Blocks deletion with HTTP 409 Conflict if linked historical records exist. Soft-deletes (`deleted_at: NOW()`) when safe.
-  - **Unified Page Layout (`components/page-layout.tsx`)**: Consolidated repeated page container wrappers (`<div className="flex flex-col gap-4">`) across all datatable and settings pages (`/users`, `/customers`, `/centers`, `/settings`) with standardized header and metadata presentation.
+  - **Scoped Datatable Refresh**: Includes `<DataTableRefreshButton>` in the toolbar action group for fast, single-click table refreshing.
   - **Optional & Co-Dependent Customer Credentials**: Customers (`role = 'customer'`) can be registered with or without portal login credentials:
     - **Direct Portal Access Switch**: Defaults cleanly to an "Enable Customer Portal Access" switch, displaying username and password fields only when enabled.
     - **Flexible Co-Dependent Validation**: If a portal username is set, a password is mandatory; if a password is set, a username is mandatory; if neither is provided, only the customer's full name is required for delivery ticket tracking. Staff accounts retain strictly mandatory credentials.

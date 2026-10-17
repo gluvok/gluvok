@@ -9,15 +9,22 @@
 import argon2 from "argon2";
 import { supabase } from "./supabase.ts";
 
-type Role = "admin" | "manager" | "operator" | "base" | "hardware" | "customer";
+type Role = "admin" | "manager" | "operator" | "base" | "customer";
 type Unit = "kg" | "q" | "gal";
 type WeighmentType = "unassigned" | "in" | "out";
 type TicketStatus = "pending" | "approved" | "rejected";
 
 const TABLES_IN_CLEAR_ORDER = [
+  "automatic_tickets",
+  "manual_tickets",
   "tickets",
+  "automatic_weighments",
+  "manual_weighments",
   "weighments",
+  "automatic_entries",
+  "manual_entries",
   "entries",
+  "devices",
   "sessions",
   "commodities",
   "centers",
@@ -117,15 +124,14 @@ async function main() {
   const primaryFactoryId = factoryMap.get("Default Factory")!;
   const secondaryFactoryId = factoryMap.get("Apex Agro Logistics")!;
 
-  // 2. USERS (28 Users across all 5 roles)
-  console.log("\n👥 [2/8] Seeding Users (28 personnel & client profiles)...");
+  // 2. USERS (Staff & Core profiles)
+  console.log("\n👥 [2/8] Seeding Users (Staff & Client profiles)...");
   console.log("  🔒 Pre-hashing role passwords once with Argon2id...");
-  const [adminHash, managerHash, operatorHash, userHash, hardwareHash] = await Promise.all([
+  const [adminHash, managerHash, operatorHash, userHash] = await Promise.all([
     argon2.hash("admin123"),
     argon2.hash("manager123"),
     argon2.hash("operator123"),
     argon2.hash("user123"),
-    argon2.hash("hardware123"),
   ]);
 
   interface UserSeedConfig {
@@ -180,41 +186,6 @@ async function main() {
       passwordHash: operatorHash,
       factoryId: primaryFactoryId,
     },
-    {
-      username: "pi1",
-      name: "Hardware Scale - Main Weighbridge",
-      role: "hardware",
-      passwordHash: hardwareHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "pi3",
-      name: "Hardware Scale - North Automatic",
-      role: "hardware",
-      passwordHash: hardwareHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "pi4",
-      name: "Hardware Scale - South Gate",
-      role: "hardware",
-      passwordHash: hardwareHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "pi5",
-      name: "Hardware Scale - East Inbound",
-      role: "hardware",
-      passwordHash: hardwareHash,
-      factoryId: primaryFactoryId,
-    },
-    {
-      username: "pi6",
-      name: "Hardware Scale - West Outbound",
-      role: "hardware",
-      passwordHash: hardwareHash,
-      factoryId: primaryFactoryId,
-    },
 
     // Factory 2 Core & Staff
     {
@@ -243,27 +214,6 @@ async function main() {
       name: "Apex Terminal Operator 2",
       role: "operator",
       passwordHash: operatorHash,
-      factoryId: secondaryFactoryId,
-    },
-    {
-      username: "pi2",
-      name: "Hardware Scale - Apex Terminal 1",
-      role: "hardware",
-      passwordHash: hardwareHash,
-      factoryId: secondaryFactoryId,
-    },
-    {
-      username: "pi7",
-      name: "Hardware Scale - Apex South Scale",
-      role: "hardware",
-      passwordHash: hardwareHash,
-      factoryId: secondaryFactoryId,
-    },
-    {
-      username: "pi8",
-      name: "Hardware Scale - Apex East Gate",
-      role: "hardware",
-      passwordHash: hardwareHash,
       factoryId: secondaryFactoryId,
     },
   ];
@@ -410,6 +360,33 @@ async function main() {
     }
   }
   console.log(`  ✓ Seeded ${centerMap.size} centers (35 Default Factory, 15 Apex Agro Logistics).`);
+
+  // Provision 1:1 matching devices for each center
+  const deviceMap = new Map<number, number>();
+  const deviceKeyHash = await argon2.hash("device_secret_key_123");
+  const allCenterIds = Array.from(centerMap.values());
+  const devicesToInsert = allCenterIds.map((centerId) => ({
+    center_id: centerId,
+    api_key_hash: deviceKeyHash,
+  }));
+
+  const { data: createdDevices, error: devicesErr } = await supabase
+    .from("devices")
+    .upsert(devicesToInsert, { onConflict: "center_id" })
+    .select("id, center_id");
+
+  if (devicesErr) {
+    if (devicesErr.code === "PGRST205") {
+      console.warn("  ⚠️ Note: 'devices' table does not exist in schema cache yet.");
+    } else {
+      console.warn("  ⚠️ Could not seed devices:", devicesErr.message);
+    }
+  } else if (createdDevices) {
+    for (const d of createdDevices) {
+      deviceMap.set(d.center_id, d.id);
+    }
+    console.log(`  ✓ Provisioned ${deviceMap.size} 1:1 hardware devices in 'devices' table.`);
+  }
 
   // 4. COMMODITIES (20 Agricultural Commodities)
   console.log("\n🌾 [4/8] Seeding 20 Commodities...");
@@ -820,10 +797,7 @@ async function main() {
   const operator1Id = userMap.get("operator1")!;
   const operator3Id = userMap.get("operator3")!;
   const manager1Id = userMap.get("manager1")!;
-  const pi1Id = userMap.get("pi1")!;
-
   const operator2Id = userMap.get("operator2")!;
-  const pi2Id = userMap.get("pi2")!;
 
   // 6. PAIRED ENTRIES & WEIGHMENTS (60 Pairs = 120 Entries & 60 Weighments)
   // 40 pairs (80 entries) concentrated specifically on 'Main Weighbridge' for pagination testing
@@ -1012,12 +986,11 @@ async function main() {
 
   const standaloneEntriesToInsert: StandaloneEntryData[] = [];
 
-  // 25 Standalone Entries on "Main Weighbridge" (15 operator inbound, 5 hardware automatic, 5 operator outbound)
+  // 25 Standalone Entries on "Main Weighbridge" (20 operator inbound, 5 operator outbound)
   for (let i = 1; i <= 25; i++) {
     const plate = `DL01XY${3000 + i}`;
     const customerId = i % 4 === 0 ? null : customerIdsArray[i % 35];
-    const isHardware = i > 15 && i <= 20;
-    const operatorId = isHardware ? pi1Id : i % 2 === 0 ? operator1Id : operator3Id;
+    const operatorId = i % 2 === 0 ? operator1Id : operator3Id;
 
     standaloneEntriesToInsert.push({
       vehicle_number: plate,
@@ -1064,7 +1037,7 @@ async function main() {
       center_id: centerId,
       customer_id: null,
       factory_id: secondaryFactoryId,
-      created_by: i % 3 === 0 ? pi2Id : operator2Id,
+      created_by: operator2Id,
       images: [],
       created_at: daysAgo(8 + i, (i * 50) % 60),
     });
@@ -1248,8 +1221,9 @@ async function main() {
   console.log("=================================================");
   console.log("📊 Summary of Seeded Data Volumes:");
   console.log(`  • Factories:   ${factoryMap.size}`);
-  console.log(`  • Users:       ${userMap.size} (Admin, Manager, Operator, Base, Hardware)`);
+  console.log(`  • Users:       ${userMap.size} (Admin, Manager, Operator, Base, Customer)`);
   console.log(`  • Centers:     ${centerMap.size} (Ideal for multi-page pagination testing)`);
+  console.log(`  • Devices:     ${deviceMap.size} (1:1 with Centers, API key authenticated)`);
   console.log(`  • Commodities: ${commodityMap.size}`);
   console.log(`  • Customers:   ${customerMap.size}`);
   console.log(
@@ -1264,13 +1238,11 @@ async function main() {
   console.log("  • Manager:   manager1 / manager123");
   console.log("  • Operator:  operator1, operator3, operator4, operator5 / operator123");
   console.log("  • Customer:  customer1, customer2, customer3, customer4, customer5 / user123");
-  console.log("  • Hardware:  pi1, pi3, pi4, pi5, pi6 / hardware123");
   console.log("  [Factory 2: Apex Agro Logistics]");
   console.log("  • Admin:     admin2 / admin123");
   console.log("  • Manager:   manager2 / manager123");
   console.log("  • Operator:  operator2, operator6 / operator123");
   console.log("  • Customer:  customer6, customer7, customer8, customer9, customer10 / user123");
-  console.log("  • Hardware:  pi2, pi7, pi8 / hardware123");
   console.log("=================================================");
 }
 

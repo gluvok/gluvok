@@ -200,6 +200,18 @@ export function useDataTable<TData extends RowData>({
     fetchTableData();
   }, [hasHydrated, enabled, fetchTableData]);
 
+  // Global app header refresh listener
+  useEffect(() => {
+    if (!hasHydrated || !enabled) return;
+    const handleRefresh = () => {
+      fetchTableData();
+    };
+    window.addEventListener("app:table-refresh", handleRefresh);
+    return () => {
+      window.removeEventListener("app:table-refresh", handleRefresh);
+    };
+  }, [hasHydrated, enabled, fetchTableData]);
+
   // TanStack table instance
   const table = useTable({
     features,

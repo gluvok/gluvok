@@ -21,7 +21,6 @@ import {
   Briefcase01Icon,
   Calendar01Icon,
   Clock01Icon,
-  CpuIcon,
   CrownIcon,
   Delete02Icon,
   HashtagIcon,
@@ -43,7 +42,6 @@ const ROLE_OPTIONS: FacetedFilterOption[] = [
   { label: "Manager", value: "manager", icon: Briefcase01Icon },
   { label: "Operator", value: "operator", icon: HeadsetIcon },
   { label: "Base User", value: "base", icon: UserIcon },
-  { label: "Hardware", value: "hardware", icon: CpuIcon },
 ];
 
 const COLUMN_LABELS: Record<string, string> = {

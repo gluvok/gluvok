@@ -71,11 +71,11 @@ export function AppSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" render={<Link href="/" />}>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold">
-                  G
+                  M
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Gluvok</span>
-                  <span className="truncate text-xs text-muted-foreground">Management</span>
+                  <span className="truncate font-semibold">Mesto</span>
+                  <span className="truncate text-xs text-muted-foreground">Automations</span>
                 </div>
               </SidebarMenuButton>
             </SidebarMenuItem>

@@ -10,6 +10,11 @@ import {
   DatePickerWithRange,
   type DataTableFeatures,
 } from "@/components/data-table";
+import { Button } from "@/components/ui/button";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CpuIcon, UserIcon } from "@hugeicons/core-free-icons";
+import { cn } from "@/lib/utils";
+import type { EntryMode } from "@/app/entries/types";
 
 export interface EntriesFilterConfig {
   key: string;
@@ -23,6 +28,8 @@ export interface EntriesToolbarProps<TData extends RowData> {
   table: ReactTable<DataTableFeatures, TData>;
   search: string;
   onSearchChange: (value: string) => void;
+  mode: EntryMode;
+  onModeChange: (mode: EntryMode) => void;
   dateRange: DateRange | undefined;
   onDateRangeChange: (range: DateRange | undefined) => void;
   filterConfigs: EntriesFilterConfig[];
@@ -34,6 +41,8 @@ export function EntriesToolbar<TData extends RowData>({
   table,
   search,
   onSearchChange,
+  mode,
+  onModeChange,
   dateRange,
   onDateRangeChange,
   filterConfigs,
@@ -42,13 +51,61 @@ export function EntriesToolbar<TData extends RowData>({
 }: EntriesToolbarProps<TData>) {
   return (
     <div className="flex flex-col gap-2 shrink-0">
-      {/* Row 1: Search Box (Left) & Date Range Picker + Columns Action Control (Right) */}
+      {/* Row 1: Search Box & Automatic/Manual Segmented Pill Toggle (Left) + Date Range Picker & Columns (Right) */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <DataTableSearchInput
-          placeholder="Search entries..."
-          value={search}
-          onChange={onSearchChange}
-        />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+          <DataTableSearchInput
+            placeholder="Search entries..."
+            value={search}
+            onChange={onSearchChange}
+          />
+          <div
+            role="radiogroup"
+            aria-label="Entry mode"
+            className="inline-flex h-8 items-center rounded-md border border-border bg-muted/40 p-0.5 text-muted-foreground shrink-0"
+          >
+            <Button
+              type="button"
+              role="radio"
+              aria-checked={mode === "automatic"}
+              variant="ghost"
+              size="sm"
+              onClick={() => onModeChange("automatic")}
+              className={cn(
+                "h-7 gap-1.5 rounded-sm px-2.5 text-xs font-medium transition-all cursor-pointer",
+                mode === "automatic"
+                  ? "bg-background text-foreground shadow-xs border border-border/50 font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-transparent",
+              )}
+            >
+              <HugeiconsIcon
+                icon={CpuIcon}
+                className="size-3.5 text-orange-600 dark:text-orange-400"
+              />
+              Automatic
+            </Button>
+            <Button
+              type="button"
+              role="radio"
+              aria-checked={mode === "manual"}
+              variant="ghost"
+              size="sm"
+              onClick={() => onModeChange("manual")}
+              className={cn(
+                "h-7 gap-1.5 rounded-sm px-2.5 text-xs font-medium transition-all cursor-pointer",
+                mode === "manual"
+                  ? "bg-background text-foreground shadow-xs border border-border/50 font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-transparent",
+              )}
+            >
+              <HugeiconsIcon
+                icon={UserIcon}
+                className="size-3.5 text-stone-600 dark:text-stone-400"
+              />
+              Manual
+            </Button>
+          </div>
+        </div>
 
         <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
           <DatePickerWithRange

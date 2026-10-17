@@ -16,10 +16,10 @@ export function DataTableSearchInput({
   placeholder = "Search...",
 }: DataTableSearchInputProps) {
   return (
-    <div className="relative w-full sm:w-60 p-1">
+    <div className="relative w-full sm:w-60">
       <HugeiconsIcon
         icon={Search01Icon}
-        className="pointer-events-none absolute left-3.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+        className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
       />
       <Input
         placeholder={placeholder}

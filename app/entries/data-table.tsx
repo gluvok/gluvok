@@ -16,7 +16,6 @@ import {
   CpuIcon,
   HashtagIcon,
   Image01Icon,
-  TransmissionIcon,
   TruckIcon,
   UserGroupIcon,
   UserIcon,
@@ -33,8 +32,8 @@ import {
   EntriesErrorState,
   type EntriesFilterConfig,
 } from "@/components/entries";
-import { columns } from "./columns";
-import { type Entry } from "./types";
+import { getColumns } from "./columns";
+import { type Entry, type EntryMode } from "./types";
 import { type Center } from "@/app/centers/types";
 import { type User } from "@/app/users/types";
 
@@ -44,7 +43,7 @@ const COLUMN_LABELS: Record<string, string> = {
   id: "ID",
   vehicle_number: "Vehicle Number",
   weight: "Weight",
-  source: "Source",
+  device: "Device",
   center: "Center",
   customer: "Customer",
   created_by: "Created by",
@@ -57,7 +56,7 @@ const COLUMN_ICONS: Record<string, unknown> = {
   id: HashtagIcon,
   vehicle_number: TruckIcon,
   weight: WeightScale01Icon,
-  source: TransmissionIcon,
+  device: CpuIcon,
   center: Building01Icon,
   customer: UserGroupIcon,
   created_by: UserIcon,
@@ -65,12 +64,6 @@ const COLUMN_ICONS: Record<string, unknown> = {
   created_at: Calendar01Icon,
   updated_at: Clock01Icon,
 };
-
-const SOURCE_OPTIONS: FacetedFilterOption[] = [
-  { label: "All Sources", value: "all", icon: TransmissionIcon },
-  { label: "Hardware", value: "hardware", icon: CpuIcon },
-  { label: "Manual", value: "manual", icon: UserIcon },
-];
 
 function formatCenterOptions(centers: Center[]): FacetedFilterOption[] {
   return [
@@ -101,7 +94,7 @@ function formatCreatorOptions(creators: User[]): FacetedFilterOption[] {
       idPrefix: `#${u.id}`,
       label: u.name,
       value: String(u.id),
-      icon: u.role === "hardware" ? CpuIcon : UserIcon,
+      icon: UserIcon,
     })),
   ];
 }
@@ -110,7 +103,7 @@ async function fetchFilterOptions() {
   const [centersRes, customersRes, creatorsRes] = await Promise.all([
     axios.get<{ data: Center[] }>("/api/centers?all=true&sort=name.asc"),
     axios.get<{ data: User[] }>("/api/users?role=customer&all=true&sort=name.asc"),
-    axios.get<{ data: User[] }>("/api/users?all=true&includeHardware=true&sort=name.asc"),
+    axios.get<{ data: User[] }>("/api/users?all=true&sort=name.asc"),
   ]);
   return {
     centers: centersRes.data.data ?? [],
@@ -159,6 +152,7 @@ function buildEntriesQueryParams(
   const filters = filtersOverride ?? tableState.filters;
 
   return {
+    mode: filters.mode === "manual" ? "manual" : "automatic",
     page: pageOverride ?? pagination.pageIndex + 1,
     pageSize: pagination.pageSize,
     ...(sorting.length > 0 && {
@@ -204,7 +198,9 @@ export function EntriesDataTable() {
   );
 
   const fetchEntries = useCallback(async (queryParams: Record<string, unknown>) => {
-    const res = await axios.get<{ data: Entry[]; totalCount: number }>("/api/entries", {
+    const isManual = queryParams.mode === "manual";
+    const endpoint = isManual ? "/api/entries/manual" : "/api/entries/automatic";
+    const res = await axios.get<{ data: Entry[]; totalCount: number }>(endpoint, {
       params: queryParams,
     });
     return res.data;
@@ -216,11 +212,13 @@ export function EntriesDataTable() {
     setInitialError(null);
     try {
       const currentTableState = useDataTableStore.getState().getTableState(TABLE_ID);
+      const isManual = currentTableState.filters.mode === "manual";
       const initialQueryParams = buildEntriesQueryParams(currentTableState);
+      const initialEndpoint = isManual ? "/api/entries/manual" : "/api/entries/automatic";
 
-      const [optionsResult, entriesRes] = await Promise.all([
+      const [optionsResult, entriesResult] = await Promise.all([
         fetchFilterOptions(),
-        axios.get<{ data: Entry[]; totalCount: number }>("/api/entries", {
+        axios.get<{ data: Entry[]; totalCount: number }>(initialEndpoint, {
           params: initialQueryParams,
         }),
       ]);
@@ -228,24 +226,23 @@ export function EntriesDataTable() {
       if (currentLoadId !== activeLoadIdRef.current) return;
 
       const { centers, customers, creators } = optionsResult;
-      let finalEntries = entriesRes.data;
-
       const { sanitizedFilters, needsFallback } = validateAndSanitizeFilters(
-        currentTableState.filters ?? {},
+        currentTableState.filters,
         centers,
         customers,
         creators,
         (key) => useDataTableStore.getState().setTableFilter(TABLE_ID, key, "all"),
       );
 
+      let finalEntries = entriesResult.data;
       if (needsFallback) {
-        useDataTableStore.getState().setTablePagination(TABLE_ID, (prev) => ({
-          ...prev,
-          pageIndex: 0,
-        }));
-        const fallbackParams = buildEntriesQueryParams(currentTableState, 1, sanitizedFilters);
-        const refetchRes = await axios.get<{ data: Entry[]; totalCount: number }>("/api/entries", {
-          params: fallbackParams,
+        const sanitizedQueryParams = buildEntriesQueryParams(
+          currentTableState,
+          1,
+          sanitizedFilters,
+        );
+        const refetchRes = await axios.get<{ data: Entry[]; totalCount: number }>(initialEndpoint, {
+          params: sanitizedQueryParams,
         });
         if (currentLoadId !== activeLoadIdRef.current) return;
         finalEntries = refetchRes.data;
@@ -268,6 +265,13 @@ export function EntriesDataTable() {
     loadInitialData();
   }, [loadInitialData]);
 
+  const currentStoreState = useDataTableStore();
+  const rawTableState = currentStoreState.tables[TABLE_ID];
+  const mode = (rawTableState?.filters?.mode === "manual" ? "manual" : "automatic") as EntryMode;
+
+  const columns = useMemo(() => getColumns(mode), [mode]);
+  const extraParams = useMemo(() => ({ mode }), [mode]);
+
   const {
     table,
     loading,
@@ -279,6 +283,7 @@ export function EntriesDataTable() {
     sorting,
     setSorting,
     removeSort,
+    setPagination,
     hasActiveSorts,
     hasActiveFilters,
     resetAllCriteria,
@@ -290,14 +295,23 @@ export function EntriesDataTable() {
   } = useDataTable<Entry>({
     tableId: TABLE_ID,
     columns,
+    extraParams,
     fetchData: fetchEntries,
     meta: tableMeta,
     enabled: !isInitialLoading && !!initialData,
     initialData,
   });
 
-  const filterConfigs = useMemo<EntriesFilterConfig[]>(
-    () => [
+  const handleModeChange = useCallback(
+    (newMode: EntryMode) => {
+      setFilter("mode", newMode);
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    },
+    [setFilter, setPagination],
+  );
+
+  const filterConfigs = useMemo<EntriesFilterConfig[]>(() => {
+    const configs: EntriesFilterConfig[] = [
       {
         key: "center_id",
         title: "Center",
@@ -312,28 +326,20 @@ export function EntriesDataTable() {
         variant: "emerald",
         categoryIcon: appIcons.customers,
       },
-      {
+    ];
+
+    if (mode === "manual") {
+      configs.push({
         key: "created_by",
         title: "Created by",
         options: creatorOptions,
         variant: "primary",
         categoryIcon: UserIcon,
-      },
-      {
-        key: "source",
-        title: "Source",
-        options: SOURCE_OPTIONS,
-        variant: "stone",
-        categoryIcon: TransmissionIcon,
-      },
-    ],
-    [centerOptions, customerOptions, creatorOptions],
-  );
+      });
+    }
 
-  const handleFullRefresh = useCallback(() => {
-    loadInitialData();
-    refresh();
-  }, [loadInitialData, refresh]);
+    return configs;
+  }, [centerOptions, customerOptions, creatorOptions, mode]);
 
   if (isInitialLoading || !initialData) {
     return <DataTableHydrationCard />;
@@ -345,11 +351,13 @@ export function EntriesDataTable() {
 
   return (
     <div className="flex flex-1 flex-col gap-2 min-w-0 min-h-0 h-full overflow-hidden">
-      {/* Primary Toolbar - 2-Tier Layout */}
+      {/* Primary Toolbar - 2-Tier Layout with Automatic/Manual RadioGroup & Scoped Refresh */}
       <EntriesToolbar
         table={table}
         search={search}
         onSearchChange={setSearch}
+        mode={mode}
+        onModeChange={handleModeChange}
         dateRange={dateRange}
         onDateRangeChange={(range) => setDateRange(range)}
         filterConfigs={filterConfigs}
@@ -377,25 +385,19 @@ export function EntriesDataTable() {
       />
 
       {/* Reusable Data Table Content */}
-      <DataTableContent
-        table={table}
-        loading={loading}
-        error={error}
-        onRetry={handleFullRefresh}
-        emptyMessage="No entries found matching the specified filters."
-      />
+      <DataTableContent table={table} loading={loading} error={error} onRetry={refresh} />
 
-      {/* Pagination Controls */}
-      <div className="shrink-0">
-        <DataTablePagination table={table} loading={loading} error={error} />
-      </div>
+      {/* Permanently Anchored Bottom Pagination Bar */}
+      <DataTablePagination table={table} loading={loading} />
 
-      {/* Photo Viewer Carousel Dialog */}
-      <EntryPhotosDialog
-        entry={selectedEntryForPhotos}
-        open={photosDialogOpen}
-        onOpenChange={setPhotosDialogOpen}
-      />
+      {/* Interactive Photo Carousel Modal */}
+      {selectedEntryForPhotos && (
+        <EntryPhotosDialog
+          open={photosDialogOpen}
+          onOpenChange={setPhotosDialogOpen}
+          entry={selectedEntryForPhotos}
+        />
+      )}
     </div>
   );
 }

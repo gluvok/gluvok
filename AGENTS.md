@@ -229,6 +229,14 @@ For any JavaScript / TypeScript / Node modifications:
     - **Warm Natural Stone**: `text-stone-800 border-stone-300/80 bg-stone-500/10 dark:text-stone-200 dark:border-stone-700/80 dark:bg-stone-900/30` (Centers and Base user role).
     - **Monochrome Zinc**: `text-zinc-900 border-zinc-300 bg-zinc-600/10 dark:text-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/40` (Admin role and neutral utility controls).
 
+## 16. Unified Feature Module Barrel Exports (`index.ts`)
+
+**In reusable feature modules (such as `components/data-table/`), maintain an authoritative `index.ts` barrel file.**
+
+- **Module-Level Exports**: All public components, hooks, utilities, and types within a reusable feature module must be exported from its root `index.ts`.
+- **Clean Call Sites**: Callers MUST import directly from the module root (e.g. `@/components/data-table`) rather than scattering multi-line deep imports (e.g. `@/components/data-table/data-table-content`, `@/components/data-table/use-data-table`).
+- **Unified Surface**: Keeps imports cohesive, clean, and prevents circular dependencies or duplicate definitions across consuming pages and components.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.

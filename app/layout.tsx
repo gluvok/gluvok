@@ -9,7 +9,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { AppBreadcrumb } from "@/components/app-breadcrumb";
 import { Toaster } from "@/components/ui/toast";
 import { parseTablesCookie, TABLES_COOKIE_NAME } from "@/lib/table-cookie";
-import { DataTableStoreInitializer } from "@/components/data-table/data-table-store-initializer";
+import { DataTableStoreInitializer } from "@/components/data-table";
 
 const manrope = Manrope({
   subsets: ["latin"],

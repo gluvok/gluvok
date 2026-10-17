@@ -1,14 +1,16 @@
 "use client";
 
-import { DataTableSearchInput } from "@/components/data-table/data-table-search-input";
-import { DataTableCriteriaBar } from "@/components/data-table/data-table-criteria-bar";
-import { DataTableDateRangeChip } from "@/components/data-table/data-table-date-range-chip";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
-import { DatePickerWithRange } from "@/components/data-table/date-range-picker";
-import { DataTableHydrationCard } from "@/components/data-table/data-table-hydration-card";
-import { useDataTable } from "@/components/data-table/use-data-table";
+import {
+  DataTableContent,
+  DataTableCriteriaBar,
+  DataTableDateRangeChip,
+  DataTableHydrationCard,
+  DataTablePagination,
+  DataTableSearchInput,
+  DataTableViewOptions,
+  DatePickerWithRange,
+  useDataTable,
+} from "@/components/data-table";
 import { Calendar01Icon, Clock01Icon, HashtagIcon, TextFontIcon } from "@hugeicons/core-free-icons";
 import { columns } from "./columns";
 import { type Center } from "./types";

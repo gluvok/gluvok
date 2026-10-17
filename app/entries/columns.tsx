@@ -12,7 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { DataTableColumnHeader, type DataTableFeatures } from "@/components/data-table";
 import { toast } from "@/components/ui/toast";
 import { formatDateTime } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -31,7 +31,6 @@ import {
   UserIcon,
   WeightScale01Icon,
 } from "@hugeicons/core-free-icons";
-import { type DataTableFeatures } from "@/components/data-table/data-table-features";
 import { type Entry } from "./types";
 
 const columnHelper = createColumnHelper<DataTableFeatures, Entry>();

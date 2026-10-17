@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { DataTableColumnHeader, type DataTableFeatures } from "@/components/data-table";
 import { RoleBadge } from "@/components/role-badge";
 import { formatDateTime } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -28,7 +28,6 @@ import {
   TextFontIcon,
   UserIcon,
 } from "@hugeicons/core-free-icons";
-import { type DataTableFeatures } from "@/components/data-table/data-table-features";
 import { type User } from "./types";
 
 export interface UsersTableMeta {

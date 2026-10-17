@@ -3,20 +3,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { EntryPhotosDialog } from "@/components/entries/entry-photos-dialog";
-import { DataTableSearchInput } from "@/components/data-table/data-table-search-input";
 import {
+  DataTableSearchInput,
   DataTableFacetedFilter,
   type FacetedFilterOption,
-} from "@/components/data-table/data-table-faceted-filter";
-import { DataTableCriteriaBar } from "@/components/data-table/data-table-criteria-bar";
-import { DataTableFilterChip } from "@/components/data-table/data-table-filter-chip";
-import { DataTableDateRangeChip } from "@/components/data-table/data-table-date-range-chip";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
-import { DatePickerWithRange } from "@/components/data-table/date-range-picker";
-import { DataTableHydrationCard } from "@/components/data-table/data-table-hydration-card";
-import { useDataTable } from "@/components/data-table/use-data-table";
+  DataTableCriteriaBar,
+  DataTableFilterChip,
+  DataTableDateRangeChip,
+  DataTableContent,
+  DataTablePagination,
+  DataTableViewOptions,
+  DatePickerWithRange,
+  DataTableHydrationCard,
+  useDataTable,
+} from "@/components/data-table";
 import {
   Building01Icon,
   Calendar01Icon,
@@ -218,7 +218,9 @@ export function EntriesDataTable() {
   const hasNonDefaultDynamicFilter =
     centerFilter !== "all" || customerFilter !== "all" || creatorFilter !== "all";
 
-  if (!hasHydrated || (filterOptionsLoading && hasNonDefaultDynamicFilter)) {
+  const isInitialFilterLoading = hasNonDefaultDynamicFilter && (filterOptionsLoading || loading);
+
+  if (!hasHydrated || isInitialFilterLoading) {
     return <DataTableHydrationCard />;
   }
 

@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { useDataTableStore } from "@/stores/use-data-table-store";
 import type { TableItemState } from "@/lib/table-cookie";
 
-interface DataTableStoreInitializerProps {
+export interface DataTableStoreInitializerProps {
   initialTables: Record<string, TableItemState>;
 }
 

@@ -43,12 +43,11 @@ export function DataTableFacetedFilter({
   }, [options, value]);
 
   const getOptionIcon = React.useCallback((opt?: FacetedFilterOption) => {
-    if (!opt) return undefined;
+    if (!opt) return;
     if (opt.icon) return opt.icon;
-    if (opt.value === "all") {
-      return appIcons.allFilter;
-    }
-    return undefined;
+    if (opt.value === "all") return appIcons.allFilter;
+
+    return;
   }, []);
 
   const selectedIcon = getOptionIcon(selectedOption);
@@ -99,6 +98,7 @@ export function DataTableFacetedFilter({
                   <ComboboxItem
                     key={item.value}
                     value={item.value}
+                    keywords={[item.label, item.idPrefix ?? ""]}
                     className="text-xs whitespace-nowrap"
                   >
                     {icon && (

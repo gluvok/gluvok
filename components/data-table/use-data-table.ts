@@ -131,74 +131,65 @@ export function useDataTable<TData extends RowData>({
   const filtersKey = useMemo(() => JSON.stringify(tableState.filters ?? {}), [tableState.filters]);
 
   // Data fetching routine with sequence counter to prevent race conditions
-  const fetchTableData = useCallback(
-    async (overrideSearch?: string) => {
-      const currentRequestId = ++requestIdRef.current;
-      setLoading(true);
-      setError(null);
+  const fetchTableData = useCallback(async () => {
+    const activeSearch = debouncedSearch;
 
-      const activeSearch = overrideSearch !== undefined ? overrideSearch : debouncedSearch;
+    const queryParams: Record<string, unknown> = {
+      page: pagination.pageIndex + 1,
+      pageSize: pagination.pageSize,
+      ...(sorting.length > 0 && {
+        sort: sorting.map((s) => `${s.id}.${s.desc ? "desc" : "asc"}`).join(","),
+      }),
+      ...(activeSearch && { search: activeSearch }),
+      ...(fromIso && { from: fromIso }),
+      ...(toIso && { to: toIso }),
+      ...tableState.filters,
+      ...extraParams,
+    };
 
-      const queryParams: Record<string, unknown> = {
-        page: pagination.pageIndex + 1,
-        pageSize: pagination.pageSize,
-        ...(sorting.length > 0 && {
-          sort: sorting.map((s) => `${s.id}.${s.desc ? "desc" : "asc"}`).join(","),
-        }),
-        ...(activeSearch && { search: activeSearch }),
-        ...(fromIso && { from: fromIso }),
-        ...(toIso && { to: toIso }),
-        ...tableState.filters,
-        ...extraParams,
-      };
+    const currentRequestId = ++requestIdRef.current;
+    setLoading(true);
+    setError(null);
 
-      try {
-        if (fetchData) {
-          const res = await fetchData(queryParams);
-          if (currentRequestId === requestIdRef.current) {
-            setData(res.data ?? []);
-            setTotalCount(res.totalCount ?? 0);
-          }
-        } else if (endpoint) {
-          const res = await axios.get<{ data: TData[]; totalCount: number }>(endpoint, {
-            params: queryParams,
-          });
-          if (currentRequestId === requestIdRef.current) {
-            setData(res.data.data ?? []);
-            setTotalCount(res.data.totalCount ?? 0);
-          }
-        }
-      } catch (err) {
+    try {
+      if (fetchData) {
+        const res = await fetchData(queryParams);
         if (currentRequestId === requestIdRef.current) {
-          setError(getErrorMessage(err, "An unexpected error occurred."));
+          setData(res.data ?? []);
+          setTotalCount(res.totalCount ?? 0);
         }
-      } finally {
+      } else if (endpoint) {
+        const res = await axios.get<{ data: TData[]; totalCount: number }>(endpoint, {
+          params: queryParams,
+        });
         if (currentRequestId === requestIdRef.current) {
-          setLoading(false);
+          setData(res.data.data ?? []);
+          setTotalCount(res.data.totalCount ?? 0);
         }
       }
-    },
-    [
-      pagination.pageIndex,
-      pagination.pageSize,
-      sorting,
-      debouncedSearch,
-      fromIso,
-      toIso,
-      endpoint,
-      fetchData,
-      filtersKey,
-      extraParamsKey,
-      tableState.filters,
-      extraParams,
-    ],
-  );
-
-  // Immediate search clear without 300ms debounce delay
-  const clearSearch = useCallback(() => {
-    store.setTableSearch(tableId, "");
-    fetchTableData("");
-  }, [store, tableId, fetchTableData]);
+    } catch (err) {
+      if (currentRequestId === requestIdRef.current) {
+        setError(getErrorMessage(err, "An unexpected error occurred."));
+      }
+    } finally {
+      if (currentRequestId === requestIdRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [
+    pagination.pageIndex,
+    pagination.pageSize,
+    sorting,
+    debouncedSearch,
+    fromIso,
+    toIso,
+    endpoint,
+    fetchData,
+    filtersKey,
+    extraParamsKey,
+    tableState.filters,
+    extraParams,
+  ]);
 
   useEffect(() => {
     if (!hasHydrated || !enabled) return;
@@ -259,7 +250,6 @@ export function useDataTable<TData extends RowData>({
     hasHydrated,
     search,
     setSearch,
-    clearSearch,
     debouncedSearch,
     dateRange,
     setDateRange,

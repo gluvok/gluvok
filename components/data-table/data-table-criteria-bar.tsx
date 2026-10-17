@@ -180,7 +180,7 @@ export function DataTableCriteriaBar({
                 className="shrink-0 ml-auto h-5 gap-1 px-1.5 text-2xs text-primary/80 hover:bg-primary/15 hover:text-primary"
               >
                 <HugeiconsIcon icon={Cancel01Icon} className="size-2.5" data-icon="inline-start" />
-                <span>Clear all sorts</span>
+                <span>Clear sorts</span>
               </Button>
             )}
 

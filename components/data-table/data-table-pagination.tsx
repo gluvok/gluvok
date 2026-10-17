@@ -59,8 +59,9 @@ export function DataTablePagination<TData extends RowData>({
         loading && "opacity-40 pointer-events-none select-none",
       )}
     >
-      <div className="w-full text-center text-xs text-muted-foreground sm:w-auto sm:text-left">
-        {selectedCount} of {currentRowsCount} row(s) selected.
+      <div className="w-full text-center text-xs text-muted-foreground sm:w-auto sm:min-w-48 sm:text-left tabular-nums">
+        <span className="font-medium tabular-nums">{selectedCount}</span> of{" "}
+        <span className="font-medium tabular-nums">{currentRowsCount}</span> row(s) selected.
       </div>
       <div className="flex w-full flex-wrap items-center justify-between gap-3 sm:w-auto sm:justify-end sm:gap-6">
         <div className="flex items-center gap-2">

@@ -825,8 +825,12 @@ async function main() {
   const operator2Id = userMap.get("operator2")!;
   const pi2Id = userMap.get("pi2")!;
 
-  // 6. PAIRED ENTRIES & WEIGHMENTS (30 Pairs = 60 Entries & 30 Weighments)
-  console.log("\n🚛 [6/8] Seeding 30 Paired Inbound/Outbound Entries and Linked Weighments...");
+  // 6. PAIRED ENTRIES & WEIGHMENTS (60 Pairs = 120 Entries & 60 Weighments)
+  // 40 pairs (80 entries) concentrated specifically on 'Main Weighbridge' for pagination testing
+  console.log(
+    "\n🚛 [6/8] Seeding 60 Paired Inbound/Outbound Entries and Linked Weighments (40 pairs for Main Weighbridge)...",
+  );
+  const mainWeighbridgeId = centerMap.get("Main Weighbridge")!;
   const pairedVehicles: Array<{
     vehicle: string;
     factoryId: number;
@@ -836,15 +840,36 @@ async function main() {
     grossWeight: number;
     tareWeight: number;
     daysOffset: number;
+    minutesOffset: number;
   }> = [];
 
-  // 20 Paired vehicles in Factory 1
-  for (let i = 1; i <= 20; i++) {
+  // 40 Paired vehicles in Factory 1 concentrated on "Main Weighbridge"
+  for (let i = 1; i <= 40; i++) {
     const vehicleNum = `MH12AB${1000 + i}`;
-    const centerId = factory1CenterIds[i % factory1CenterIds.length];
     const customerId = customerIdsArray[i % 35]; // Factory 1 customer
     const gross = 28000 + ((i * 950) % 22000); // 28,000 - 50,000 kg
     const tare = 9000 + ((i * 350) % 6500); // 9,000 - 15,500 kg
+    pairedVehicles.push({
+      vehicle: vehicleNum,
+      factoryId: primaryFactoryId,
+      centerId: mainWeighbridgeId,
+      customerId,
+      operatorId: i % 2 === 0 ? operator1Id : operator3Id,
+      grossWeight: gross,
+      tareWeight: tare,
+      daysOffset: Math.floor(i / 2) + 1,
+      minutesOffset: (i * 35) % 720,
+    });
+  }
+
+  // 10 Paired vehicles across other Factory 1 centers
+  for (let i = 1; i <= 10; i++) {
+    const vehicleNum = `MH12AB${1040 + i}`;
+    const otherCenters = factory1CenterIds.filter((id) => id !== mainWeighbridgeId);
+    const centerId = otherCenters[i % otherCenters.length];
+    const customerId = customerIdsArray[(i + 5) % 35];
+    const gross = 29000 + ((i * 850) % 21000);
+    const tare = 9500 + ((i * 320) % 6000);
     pairedVehicles.push({
       vehicle: vehicleNum,
       factoryId: primaryFactoryId,
@@ -853,7 +878,8 @@ async function main() {
       operatorId: i % 2 === 0 ? operator1Id : operator3Id,
       grossWeight: gross,
       tareWeight: tare,
-      daysOffset: 32 - i,
+      daysOffset: 15 + i,
+      minutesOffset: (i * 45) % 720,
     });
   }
 
@@ -873,6 +899,7 @@ async function main() {
       grossWeight: gross,
       tareWeight: tare,
       daysOffset: 20 - i,
+      minutesOffset: (i * 25) % 720,
     });
   }
 
@@ -901,7 +928,7 @@ async function main() {
       factory_id: pv.factoryId,
       created_by: pv.operatorId,
       images: [],
-      created_at: daysAgo(pv.daysOffset, 120),
+      created_at: daysAgo(pv.daysOffset, pv.minutesOffset + 120),
     });
 
     outEntriesToInsert.push({
@@ -913,7 +940,7 @@ async function main() {
       factory_id: pv.factoryId,
       created_by: pv.operatorId,
       images: [],
-      created_at: daysAgo(pv.daysOffset, 0),
+      created_at: daysAgo(pv.daysOffset, pv.minutesOffset),
     });
   }
 
@@ -952,7 +979,7 @@ async function main() {
       out_entry_id: createdOutEntries[i].id,
       unit: "kg",
       type: i % 4 === 0 ? "out" : i % 7 === 0 ? "unassigned" : "in",
-      created_at: daysAgo(pv.daysOffset, 0),
+      created_at: daysAgo(pv.daysOffset, pv.minutesOffset),
     });
   }
 
@@ -969,10 +996,8 @@ async function main() {
     `  ✓ Created ${createdWeighments.length} weighments linking ${createdInEntries.length} inbound and ${createdOutEntries.length} outbound entries.`,
   );
 
-  // 7. STANDALONE UNPAIRED ENTRIES (40 Entries: Pending, Auto-Approved, Rejected)
-  console.log(
-    "\n📋 [7/8] Seeding 40 Standalone Entries (20 Pending, 10 Auto-Approved, 10 Rejected)...",
-  );
+  // 7. STANDALONE UNPAIRED ENTRIES (50 Entries: 25 for Main Weighbridge, 25 for other centers)
+  console.log("\n📋 [7/8] Seeding 50 Standalone Entries (25 concentrated on Main Weighbridge)...");
   interface StandaloneEntryData {
     vehicle_number: string;
     detected_vehicle_number: string;
@@ -987,56 +1012,50 @@ async function main() {
 
   const standaloneEntriesToInsert: StandaloneEntryData[] = [];
 
-  // 20 Inbound Standalone Entries
-  for (let i = 1; i <= 20; i++) {
+  // 25 Standalone Entries on "Main Weighbridge" (15 operator inbound, 5 hardware automatic, 5 operator outbound)
+  for (let i = 1; i <= 25; i++) {
     const plate = `DL01XY${3000 + i}`;
-    const factoryId = i <= 14 ? primaryFactoryId : secondaryFactoryId;
-    const centerList = factoryId === primaryFactoryId ? factory1CenterIds : factory2CenterIds;
-    const centerId = centerList[i % centerList.length];
-    const customerId = i % 3 === 0 ? null : customerIdsArray[i % customerIdsArray.length];
-    const operatorId = factoryId === primaryFactoryId ? operator1Id : operator2Id;
+    const customerId = i % 4 === 0 ? null : customerIdsArray[i % 35];
+    const isHardware = i > 15 && i <= 20;
+    const operatorId = isHardware ? pi1Id : i % 2 === 0 ? operator1Id : operator3Id;
 
     standaloneEntriesToInsert.push({
       vehicle_number: plate,
       detected_vehicle_number: plate,
-      weight: 18000 + ((i * 1150) % 25000),
-      center_id: centerId,
+      weight: 16000 + ((i * 1250) % 28000),
+      center_id: mainWeighbridgeId,
       customer_id: customerId,
-      factory_id: factoryId,
+      factory_id: primaryFactoryId,
       created_by: operatorId,
       images: [],
-      created_at: daysAgo(Math.floor(i / 4), (i * 37) % 60),
+      created_at: daysAgo(Math.floor(i / 2) + 1, (i * 47) % 720),
     });
   }
 
-  // 10 Hardware Scale Standalone Entries
-  for (let i = 1; i <= 10; i++) {
+  // 15 Standalone Entries on other Factory 1 centers
+  const otherFactory1CenterIds = factory1CenterIds.filter((id) => id !== mainWeighbridgeId);
+  for (let i = 1; i <= 15; i++) {
     const plate = `KA04CD${4000 + i}`;
-    const factoryId = i <= 6 ? primaryFactoryId : secondaryFactoryId;
-    const centerList = factoryId === primaryFactoryId ? factory1CenterIds : factory2CenterIds;
-    const centerId = centerList[i % centerList.length];
-    const piId = factoryId === primaryFactoryId ? pi1Id : pi2Id;
+    const centerId = otherFactory1CenterIds[i % otherFactory1CenterIds.length];
+    const customerId = i % 3 === 0 ? null : customerIdsArray[(i * 2) % 35];
 
     standaloneEntriesToInsert.push({
       vehicle_number: plate,
       detected_vehicle_number: plate,
-      weight: 20000 + ((i * 1250) % 18000),
+      weight: 18000 + ((i * 1150) % 22000),
       center_id: centerId,
-      customer_id: customerIdsArray[(i * 3) % customerIdsArray.length],
-      factory_id: factoryId,
-      created_by: piId,
+      customer_id: customerId,
+      factory_id: primaryFactoryId,
+      created_by: operator1Id,
       images: [],
-      created_at: daysAgo(5 + i, (i * 45) % 60),
+      created_at: daysAgo(5 + i, (i * 35) % 60),
     });
   }
 
-  // 10 Outbound Standalone Entries
+  // 10 Standalone Entries on Factory 2 centers
   for (let i = 1; i <= 10; i++) {
     const plate = `GJ03EF${5000 + i}`;
-    const factoryId = i <= 7 ? primaryFactoryId : secondaryFactoryId;
-    const centerList = factoryId === primaryFactoryId ? factory1CenterIds : factory2CenterIds;
-    const centerId = centerList[i % centerList.length];
-    const operatorId = factoryId === primaryFactoryId ? operator1Id : operator2Id;
+    const centerId = factory2CenterIds[i % factory2CenterIds.length];
 
     standaloneEntriesToInsert.push({
       vehicle_number: plate,
@@ -1044,8 +1063,8 @@ async function main() {
       weight: 14000 + ((i * 2100) % 36000),
       center_id: centerId,
       customer_id: null,
-      factory_id: factoryId,
-      created_by: operatorId,
+      factory_id: secondaryFactoryId,
+      created_by: i % 3 === 0 ? pi2Id : operator2Id,
       images: [],
       created_at: daysAgo(8 + i, (i * 50) % 60),
     });
@@ -1063,7 +1082,7 @@ async function main() {
   console.log(
     `  ✓ Created ${createdStandaloneEntries.length} standalone entries (Total Entries: ${
       createdInEntries.length + createdOutEntries.length + createdStandaloneEntries.length
-    }).`,
+    }, Main Weighbridge: 105 entries).`,
   );
 
   // 8. TICKETS (40 Support Tickets: 20 linked to entries, 20 linked to weighments)

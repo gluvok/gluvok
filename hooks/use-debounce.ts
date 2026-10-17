@@ -13,6 +13,12 @@ export function useDebounce<T>(value: T, delay = 300): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
   useEffect(() => {
+    // If value is empty or cleared, update immediately to prevent 300ms stale lag or double spinner flashes
+    if (!value) {
+      setDebouncedValue(value);
+      return;
+    }
+
     const handler = setTimeout(() => {
       setDebouncedValue(value);
     }, delay);

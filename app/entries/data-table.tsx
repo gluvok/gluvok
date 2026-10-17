@@ -204,53 +204,6 @@ export function EntriesDataTable() {
   );
 
   const fetchEntries = useCallback(async (queryParams: Record<string, unknown>) => {
-    const currentTableState = useDataTableStore.getState().getTableState(TABLE_ID);
-    const centerFilter = currentTableState.filters?.center_id ?? "all";
-    const customerFilter = currentTableState.filters?.customer_id ?? "all";
-    const creatorFilter = currentTableState.filters?.created_by ?? "all";
-    const hasActiveDynamicFilter =
-      centerFilter !== "all" || customerFilter !== "all" || creatorFilter !== "all";
-
-    if (hasActiveDynamicFilter) {
-      const [optionsResult, entriesRes] = await Promise.all([
-        fetchFilterOptions(),
-        axios.get<{ data: Entry[]; totalCount: number }>("/api/entries", { params: queryParams }),
-      ]);
-      const { centers, customers, creators } = optionsResult;
-      let finalEntries = entriesRes.data;
-
-      const { sanitizedFilters, needsFallback } = validateAndSanitizeFilters(
-        currentTableState.filters ?? {},
-        centers,
-        customers,
-        creators,
-        (key) => useDataTableStore.getState().setTableFilter(TABLE_ID, key, "all"),
-      );
-
-      if (needsFallback) {
-        useDataTableStore.getState().setTablePagination(TABLE_ID, (prev) => ({
-          ...prev,
-          pageIndex: 0,
-        }));
-        const fallbackParams = {
-          ...queryParams,
-          page: 1,
-          ...sanitizedFilters,
-        };
-        const refetchRes = await axios.get<{ data: Entry[]; totalCount: number }>("/api/entries", {
-          params: fallbackParams,
-        });
-        finalEntries = refetchRes.data;
-      }
-
-      setCenterOptions(formatCenterOptions(centers));
-      setCustomerOptions(formatCustomerOptions(customers));
-      setCreatorOptions(formatCreatorOptions(creators));
-
-      return finalEntries;
-    }
-
-    // Fast path: No dynamic filter active on page switch, fetch only entries
     const res = await axios.get<{ data: Entry[]; totalCount: number }>("/api/entries", {
       params: queryParams,
     });
@@ -321,7 +274,6 @@ export function EntriesDataTable() {
     error,
     search,
     setSearch,
-    clearSearch,
     dateRange,
     setDateRange,
     sorting,
@@ -378,6 +330,11 @@ export function EntriesDataTable() {
     [centerOptions, customerOptions, creatorOptions],
   );
 
+  const handleFullRefresh = useCallback(() => {
+    loadInitialData();
+    refresh();
+  }, [loadInitialData, refresh]);
+
   if (isInitialLoading || !initialData) {
     return <DataTableHydrationCard />;
   }
@@ -393,7 +350,6 @@ export function EntriesDataTable() {
         table={table}
         search={search}
         onSearchChange={setSearch}
-        onSearchClear={clearSearch}
         dateRange={dateRange}
         onDateRangeChange={(range) => setDateRange(range)}
         filterConfigs={filterConfigs}
@@ -425,7 +381,7 @@ export function EntriesDataTable() {
         table={table}
         loading={loading}
         error={error}
-        onRetry={refresh}
+        onRetry={handleFullRefresh}
         emptyMessage="No entries found matching the specified filters."
       />
 

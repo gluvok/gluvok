@@ -146,16 +146,15 @@ export function UserDialogShell({
                 className="min-w-28"
               >
                 {isSubmitting ? (
-                  <>
-                    <Spinner className="size-3.5" />
-                    <span>Saving...</span>
-                  </>
+                  <Spinner className="size-3.5" data-icon="inline-start" />
                 ) : (
-                  <>
-                    <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-3.5" />
-                    <span>{submitLabel}</span>
-                  </>
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle02Icon}
+                    className="size-3.5"
+                    data-icon="inline-start"
+                  />
                 )}
+                <span>{submitLabel}</span>
               </Button>
             </div>
           </DialogFooter>

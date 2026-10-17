@@ -285,16 +285,15 @@ export function AccountDialog({ open, onOpenChange, user, onUserUpdated }: Accou
                     className="min-w-28"
                   >
                     {isSubmitting ? (
-                      <>
-                        <Spinner className="size-3.5" />
-                        <span>Saving...</span>
-                      </>
+                      <Spinner className="size-3.5" data-icon="inline-start" />
                     ) : (
-                      <>
-                        <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-3.5" />
-                        <span>Save Changes</span>
-                      </>
+                      <HugeiconsIcon
+                        icon={CheckmarkCircle02Icon}
+                        className="size-3.5"
+                        data-icon="inline-start"
+                      />
                     )}
+                    <span>Save Changes</span>
                   </Button>
                 </div>
               </DialogFooter>

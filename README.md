@@ -139,7 +139,7 @@ The `/settings` route provides facility configuration controls powered by the un
   - **Input Controls**: `<Input>` for factory name and searchable `kibo-ui/combobox` (values 1–6) for receipt snapshot row layout.
   - **Base UI Toast Feedback**: Integrated notification system powered by `@base-ui/react/toast` with `<Toaster />` anchored at the **top-right** (`top-4 right-4`), featuring fluid downward stack animations, upward swipe dismiss, custom typography (`font-heading` for titles and `font-sans` for descriptions), and semantic status colors (Emerald for success, Amber for warning, Destructive red for error, and Sky blue for info).
   - **Client-Side Zod Validation**: Form validates against `updateFactorySchema` before dispatching updates.
-  - **Dirty State Tracking**: Save Changes and Reset buttons detect client form changes with disabled controls when pristine, `<Spinner>` indicators during requests, and inline timestamp tracking.
+  - **Dirty State Tracking**: Save Changes and Reset buttons detect client form changes with disabled controls when pristine, `<Spinner>` indicators during requests (retaining constant button labels to eliminate layout shifts), and inline timestamp tracking.
 
 ## Users & Customers Administration
 
@@ -199,7 +199,7 @@ Administrative users (`/users`) and agricultural customers (`/customers`) are po
     - **Inline Field Validation (`<FieldError>`)**: Inputs, comboboxes, and password fields render contextual inline `<FieldError>` messages dynamically as users type or change values.
     - **API Search Parameter Delegation (`lib/api-query.ts`)**: Pagination (`page`, `pageSize`) and date range filters are validated and coerced via centralized Zod schemas (`paginationQuerySchema`), eliminating raw fallback arithmetic.
     - **Visual Mandatory Asterisks (`*`) & Notice**: Required fields display `<span className="text-destructive font-semibold">*</span>`, accompanied by `"Fields marked with * are required."` in dialog and card headers.
-    - **Direct Zod-Driven Button State (`isValid`)**: The Save Changes button remains visible in modal footers to prevent jarring layout shifts, but is strictly disabled (`disabled={!isDirty || !isValid || isSubmitting}`) until form state evaluates to valid.
+    - **Direct Zod-Driven Button State (`isValid`) & Zero Layout Shift**: The Save Changes button remains visible in modal footers to prevent jarring layout shifts, is strictly disabled (`disabled={!isDirty || !isValid || isSubmitting}`) until form state evaluates to valid, and retains a constant label with an icon-swap `<Spinner>` during submission for a stable 0px width delta.
     - **Customer Portal Revocation Safeguards**:
       - Toggling OFF portal access on an existing active portal user displays an amber warning banner informing the user that login credentials will be revoked.
       - In `app/api/users/service.ts`, clearing a customer's `username` (`null`) automatically clears `password_hash` (`null`), preventing orphan password hashes from persisting.
